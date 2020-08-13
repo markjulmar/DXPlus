@@ -1,0 +1,10 @@
+﻿<w:style w:type='character' w:styleId='Hyperlink' xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'>
+  <w:name w:val='Hyperlink' />
+  <w:basedOn w:val='Normal' />
+  <w:uiPriority w:val='99' />
+  <w:unhideWhenUsed />
+  <w:rPr>
+    <w:color w:val='0000FF' w:themeColor='hyperlink' />
+    <w:u w:val='single' />
+  </w:rPr>
+</w:style>

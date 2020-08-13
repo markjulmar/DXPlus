@@ -1,0 +1,34 @@
+﻿namespace DXPlus
+{
+    public enum FlowchartShapes
+    {
+        FlowChartProcess,
+        FlowChartAlternateProcess,
+        FlowChartDecision,
+        FlowChartInputOutput,
+        FlowChartPredefinedProcess,
+        FlowChartInternalStorage,
+        FlowChartDocument,
+        FlowChartMultidocument,
+        FlowChartTerminator,
+        FlowChartPreparation,
+        FlowChartManualInput,
+        FlowChartManualOperation,
+        FlowChartConnector,
+        FlowChartOffpageConnector,
+        FlowChartPunchedCard,
+        FlowChartPunchedTape,
+        FlowChartSummingJunction,
+        FlowChartOr,
+        FlowChartCollate,
+        FlowChartSort,
+        FlowChartExtract,
+        FlowChartMerge,
+        FlowChartOnlineStorage,
+        FlowChartDelay,
+        FlowChartMagneticTape,
+        FlowChartMagneticDisk,
+        FlowChartMagneticDrum,
+        FlowChartDisplay
+    };
+}

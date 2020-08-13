@@ -1,0 +1,57 @@
+﻿<w:sdt xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'>
+  <w:sdtPr>
+    <w:docPartObj>
+      <w:docPartGallery w:val='Table of Contents'/>
+      <w:docPartUnique/>
+    </w:docPartObj>\
+  </w:sdtPr>
+  <w:sdtEndPr>
+    <w:rPr>
+      <w:rFonts w:asciiTheme='minorHAnsi' w:cstheme='minorBidi' w:eastAsiaTheme='minorHAnsi' w:hAnsiTheme='minorHAnsi'/>
+      <w:color w:val='auto'/>
+      <w:sz w:val='22'/>
+      <w:szCs w:val='22'/>
+      <w:lang w:eastAsia='en-US'/>
+    </w:rPr>
+  </w:sdtEndPr>
+  <w:sdtContent>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val='{0}'/>
+      </w:pPr>
+      <w:r>
+        <w:t>{1}</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val='TOC1'/>
+        <w:tabs>
+          <w:tab w:val='right' w:leader='dot' w:pos='{2}'/>
+        </w:tabs>
+        <w:rPr>
+          <w:noProof/>
+        </w:rPr>
+      </w:pPr>
+      <w:r>
+        <w:fldChar w:fldCharType='begin' w:dirty='true'/>
+      </w:r>
+      <w:r>
+        <w:instrText xml:space='preserve'> {3} </w:instrText>
+      </w:r>
+      <w:r>
+        <w:fldChar w:fldCharType='separate'/>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:rPr>
+          <w:b/>
+          <w:bCs/>
+          <w:noProof/>
+        </w:rPr>
+        <w:fldChar w:fldCharType='end'/>
+      </w:r>
+    </w:p>
+  </w:sdtContent>
+</w:sdt>
