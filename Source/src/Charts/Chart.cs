@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using System.Xml.Serialization;
+using DXPlus.Helpers;
 
-namespace DXPlus
+namespace DXPlus.Charts
 {
     /// <summary>
     /// Specifies the possible positions for a legend.
@@ -64,7 +65,7 @@ namespace DXPlus
 
             // Create result plotarea element
             XElement plotAreaXml = new XElement(DocxNamespace.Chart + "plotArea",
-                                        new XElement(DocxNamespace.Chart + "layout"), 
+                                        new XElement(DocxNamespace.Chart + "layout"),
                                             ChartXml);
 
             // Set labels
@@ -90,7 +91,7 @@ namespace DXPlus
                 XElement axIDvalXml = XElement.Parse($@"<c:axId val=""{ValueAxis.Id}"" xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart""/>");
 
                 // Sourceman: seems to be necessary to keep track of the order of elements as defined in the schema (Word 2013)
-                var insertPoint = ChartXml.Element(DocxNamespace.Chart + "gapWidth");
+                XElement insertPoint = ChartXml.Element(DocxNamespace.Chart + "gapWidth");
                 if (insertPoint != null)
                 {
                     insertPoint.AddAfterSelf(axIDvalXml);
@@ -138,7 +139,7 @@ namespace DXPlus
         /// <summary>
         /// Return maximum count of series
         /// </summary>
-        public virtual short MaxSeriesCount { get { return Int16.MaxValue; } }
+        public virtual short MaxSeriesCount => Int16.MaxValue;
 
         /// <summary>
         /// Chart's series
@@ -209,8 +210,10 @@ namespace DXPlus
         public void AddLegend(ChartLegendPosition position, bool overlay)
         {
             if (Legend != null)
+            {
                 RemoveLegend();
-            
+            }
+
             Legend = new ChartLegend(position, overlay);
             ChartRootXml.Element(DocxNamespace.Chart + "plotArea").AddAfterSelf(Legend.Xml);
         }
@@ -222,11 +225,13 @@ namespace DXPlus
         {
             int serCount = ChartXml.Elements(DocxNamespace.Chart + "ser").Count();
             if (serCount >= MaxSeriesCount)
+            {
                 throw new InvalidOperationException($"{serCount} > {MaxSeriesCount} series count for {GetType().Name}");
+            }
 
             series.Xml.AddFirst(new XElement(DocxNamespace.Chart + "order", new XAttribute("val", (serCount + 1).ToString())));
             series.Xml.AddFirst(new XElement(DocxNamespace.Chart + "idx", new XAttribute("val", (serCount + 1).ToString())));
-            
+
             ChartXml.Add(series.Xml);
         }
 

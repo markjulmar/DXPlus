@@ -1,6 +1,7 @@
 ﻿using System.Xml.Linq;
+using DXPlus.Helpers;
 
-namespace DXPlus
+namespace DXPlus.Charts
 {
     /// <summary>
     /// Axis base class
@@ -27,7 +28,7 @@ namespace DXPlus
         public bool IsVisible
         {
             get => Xml.Element(DocxNamespace.Chart + "delete").GetVal() == "0";
-            set => Xml.Element(DocxNamespace.Chart + "delete").Attribute("val").Value = value ? "0" : "1";
+            set => Xml.Element(DocxNamespace.Chart + "delete")?.SetValue(value ? 0 : 1);
         }
 
         /// <summary>

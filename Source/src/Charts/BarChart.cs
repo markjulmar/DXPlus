@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Xml.Linq;
 using System.Xml.Serialization;
+using DXPlus.Helpers;
 
-namespace DXPlus
+namespace DXPlus.Charts
 {
     /// <summary>
     /// Specifies the possible directions for a bar chart.
@@ -57,7 +58,10 @@ namespace DXPlus
             set
             {
                 if ((value < 1) || (value > 500))
+                {
                     throw new ArgumentException("GapWidth must be between 0% and 500%!", nameof(GapWidth));
+                }
+
                 ChartXml.Element(DocxNamespace.Chart + "gapWidth").Attribute("val").Value = value.ToString();
             }
         }

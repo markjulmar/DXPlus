@@ -67,7 +67,9 @@ namespace DXPlus
             {
                 // If this w:t contains no space attribute, add one.
                 if (space == null)
+                {
                     e.Add(new XAttribute(XNamespace.Xml + "space", "preserve"));
+                }
             }
 
             // This w:t's text does not begin or end with a space
@@ -81,32 +83,46 @@ namespace DXPlus
         internal static XElement[] SplitText(TextBlock t, int index)
         {
             if (index < t.StartIndex || index > t.EndIndex)
+            {
                 throw new ArgumentOutOfRangeException(nameof(index));
+            }
 
             XElement splitLeft = null, splitRight = null;
-            
+
             if (t.Xml.Name.LocalName == "t" || t.Xml.Name.LocalName == "delText")
             {
                 // The original text element, now containing only the text before the index point.
                 splitLeft = new XElement(t.Xml.Name, t.Xml.Attributes(), t.Xml.Value.Substring(0, index - t.StartIndex));
                 if (splitLeft.Value.Length == 0)
+                {
                     splitLeft = null;
+                }
                 else
+                {
                     PreserveSpace(splitLeft);
+                }
 
                 // The original text element, now containing only the text after the index point.
                 splitRight = new XElement(t.Xml.Name, t.Xml.Attributes(), t.Xml.Value.Substring(index - t.StartIndex, t.Xml.Value.Length - (index - t.StartIndex)));
                 if (splitRight.Value.Length == 0)
+                {
                     splitRight = null;
+                }
                 else
+                {
                     PreserveSpace(splitRight);
+                }
             }
             else
             {
                 if (index == t.EndIndex)
+                {
                     splitLeft = t.Xml;
+                }
                 else
+                {
                     splitRight = t.Xml;
+                }
             }
 
             return new XElement[] { splitLeft, splitRight };

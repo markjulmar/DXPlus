@@ -1,5 +1,5 @@
-﻿using System.Xml.Linq;
-using System.IO.Packaging;
+﻿using System.IO.Packaging;
+using System.Xml.Linq;
 
 namespace DXPlus
 {
@@ -43,9 +43,9 @@ namespace DXPlus
             }
         }
 
-        internal Footer(DocX document, XElement xml, PackagePart mainPart): base(document, xml)
+        internal Footer(DocX document, XElement xml, PackagePart mainPart) : base(document, xml)
         {
-            this.packagePart = mainPart;
+            packagePart = mainPart;
         }
     }
 }

@@ -5,17 +5,17 @@ namespace DXPlus
 {
     internal static class DocxNamespace
     {
-        static internal XNamespace Main = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
-        static internal XNamespace RelatedPackage = "http://schemas.openxmlformats.org/package/2006/relationships";
-        static internal XNamespace Math = "http://schemas.openxmlformats.org/officeDocument/2006/math";
-        static internal XNamespace CustomPropertiesSchema = "http://schemas.openxmlformats.org/officeDocument/2006/custom-properties";
-        static internal XNamespace CustomVTypesSchema = "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes";
-        static internal XNamespace WordProcessingDrawing = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing";
-        static internal XNamespace DrawingMain = "http://schemas.openxmlformats.org/drawingml/2006/main";
-        static internal XNamespace Chart = "http://schemas.openxmlformats.org/drawingml/2006/chart";
-        static internal XNamespace VML = "urn:schemas-microsoft-com:vml";
-        static internal XNamespace Numbering = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering";
-        static internal XNamespace RelatedDoc = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+        internal static XNamespace Main = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+        internal static XNamespace RelatedPackage = "http://schemas.openxmlformats.org/package/2006/relationships";
+        internal static XNamespace Math = "http://schemas.openxmlformats.org/officeDocument/2006/math";
+        internal static XNamespace CustomPropertiesSchema = "http://schemas.openxmlformats.org/officeDocument/2006/custom-properties";
+        internal static XNamespace CustomVTypesSchema = "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes";
+        internal static XNamespace WordProcessingDrawing = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing";
+        internal static XNamespace DrawingMain = "http://schemas.openxmlformats.org/drawingml/2006/main";
+        internal static XNamespace Chart = "http://schemas.openxmlformats.org/drawingml/2006/chart";
+        internal static XNamespace VML = "urn:schemas-microsoft-com:vml";
+        internal static XNamespace Numbering = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering";
+        internal static XNamespace RelatedDoc = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
     }
 
     internal static class DocxContentType

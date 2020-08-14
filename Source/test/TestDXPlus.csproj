@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DXPlus\DXPlus.csproj" />
+    <ProjectReference Include="..\src\DXPlus.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="DocumentWithBookmarks.docx">

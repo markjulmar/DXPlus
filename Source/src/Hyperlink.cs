@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
+using DXPlus.Helpers;
 
 namespace DXPlus
 {
@@ -45,9 +46,11 @@ namespace DXPlus
                 if (type == 0)
                 {
                     // Get all the runs in this Text.
-                    var runs = Xml.LocalNameElements("r").ToList();
+                    List<XElement> runs = Xml.LocalNameElements("r").ToList();
                     for (int i = 0; i < runs.Count; i++)
+                    {
                         runs.Remove();
+                    }
 
                     Xml.Add(newRuns);
                 }

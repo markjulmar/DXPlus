@@ -1,6 +1,7 @@
 ﻿using System.Xml.Linq;
+using DXPlus.Helpers;
 
-namespace DXPlus
+namespace DXPlus.Charts
 {
 
     /// <summary>
@@ -26,8 +27,8 @@ namespace DXPlus
         /// </summary>
         public bool Overlay
         {
-            get { return Xml.Element(DocxNamespace.Chart + "overlay").GetVal() == "1"; }
-            set { Xml.Element(DocxNamespace.Chart + "overlay").Attribute("val").Value = value ? "1" : "0"; }
+            get => Xml.Element(DocxNamespace.Chart + "overlay").GetVal() == "1";
+            set => Xml.Element(DocxNamespace.Chart + "overlay").Attribute("val").Value = value ? "1" : "0";
         }
 
         /// <summary>

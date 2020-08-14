@@ -2,8 +2,9 @@
 using System.Collections;
 using System.Drawing;
 using System.Xml.Linq;
+using DXPlus.Helpers;
 
-namespace DXPlus
+namespace DXPlus.Charts
 {
 
     /// <summary>
@@ -52,7 +53,7 @@ namespace DXPlus
             LoadCache();
         }
 
-        void LoadCache()
+        private void LoadCache()
         {
             strCache = Xml.Element(DocxNamespace.Chart + "cat").Element(DocxNamespace.Chart + "strRef").Element(DocxNamespace.Chart + "strCache");
             numCache = Xml.Element(DocxNamespace.Chart + "val").Element(DocxNamespace.Chart + "numRef").Element(DocxNamespace.Chart + "numCache");
@@ -87,7 +88,7 @@ namespace DXPlus
         /// Series xml element
         /// </summary>
         internal XElement Xml { get; }
-        
+
         public void Bind(ICollection list, string categoryPropertyName, string valuePropertyName)
         {
             strCache.RemoveAll();
@@ -101,9 +102,9 @@ namespace DXPlus
             numCache.Add(ptCount);
 
             int index = 0;
-            foreach (var item in list)
+            foreach (object item in list)
             {
-                var pt = new XElement(DocxNamespace.Chart + "pt",
+                XElement pt = new XElement(DocxNamespace.Chart + "pt",
                             new XAttribute("idx", index),
                             new XElement(DocxNamespace.Chart + "v", item.GetType().GetProperty(categoryPropertyName).GetValue(item, null)));
                 strCache.Add(pt);
@@ -119,7 +120,9 @@ namespace DXPlus
         public void Bind(IList categories, IList values)
         {
             if (categories.Count != values.Count)
+            {
                 throw new ArgumentException("Categories count must equal to Values count", nameof(categories));
+            }
 
             strCache.RemoveAll();
             numCache.RemoveAll();
@@ -133,7 +136,7 @@ namespace DXPlus
 
             for (int index = 0; index < categories.Count; index++)
             {
-                var pt = new XElement(DocxNamespace.Chart + "pt",
+                XElement pt = new XElement(DocxNamespace.Chart + "pt",
                             new XAttribute("idx", index),
                             new XElement(DocxNamespace.Chart + "v", categories[index].ToString()));
                 strCache.Add(pt);

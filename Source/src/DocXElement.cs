@@ -32,8 +32,8 @@ namespace DXPlus
         /// <param name="xml">The Xml that gives this element substance</param>
         internal DocXElement(DocX document, XElement xml)
         {
-            this.Document = document;
-            this.Xml = xml;
+            Document = document;
+            Xml = xml;
         }
     }
 }

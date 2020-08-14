@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.Xml.Linq;
+using DXPlus.Helpers;
 
 namespace DXPlus
 {
@@ -12,44 +13,28 @@ namespace DXPlus
         /// Name
         /// </summary>
         public string Name { get; }
-        
+
         /// <summary>
         /// Paragraph this bookmark is tied to
         /// </summary>
         public Paragraph Paragraph { get; }
 
-        public void SetText(string newText)
+        /// <summary>
+        /// Change the text associated with this bookmark.
+        /// </summary>
+        /// <param name="text">New text value</param>
+        public void SetText(string text)
         {
-            ReplaceBookmark(Name, newText);
-        }
-
-        public Bookmark(string name, Paragraph p)
-        {
-            Name = name;
-            Paragraph = p;
-        }
-
-        private void AddBookmarkRef(string toInsert, XElement bookmark)
-        {
-            var run = HelperFunctions.FormatInput(toInsert, null);
-            bookmark.AddAfterSelf(run);
-            Paragraph.runs = Paragraph.Xml.Elements(DocxNamespace.Main + "r").ToList();
-            HelperFunctions.RenumberIDs(Paragraph.Document);
-        }
-
-        private void ReplaceBookmark(string bookmarkName, string toInsert)
-        {
-            XElement bookmark = Paragraph.Xml.Descendants(DocxNamespace.Main + "bookmarkStart")
-                                         .FindByAttrVal(DocxNamespace.Main + "name", bookmarkName);
+            var bookmark = Paragraph.Xml.Descendants(DocxNamespace.Main + "bookmarkStart")
+                                                .FindByAttrVal(DocxNamespace.Main + "name", Name);
             if (bookmark == null)
                 return;
 
-            XNode nextNode = bookmark.NextNode;
-            XElement nextElement = nextNode as XElement;
+            var nextNode = bookmark.NextNode;
+            var nextElement = nextNode as XElement;
             while (nextElement == null
-                    || nextElement.Name.NamespaceName != DocxNamespace.Main.NamespaceName 
-                    || (nextElement.Name.LocalName != "r" 
-                        && nextElement.Name.LocalName != "bookmarkEnd"))
+                   || nextElement.Name.NamespaceName != DocxNamespace.Main.NamespaceName
+                   || (nextElement.Name.LocalName != "r" && nextElement.Name.LocalName != "bookmarkEnd"))
             {
                 nextNode = nextNode.NextNode;
                 nextElement = nextNode as XElement;
@@ -58,19 +43,42 @@ namespace DXPlus
             // Check if next element is a bookmarkEnd
             if (nextElement.Name.LocalName == "bookmarkEnd")
             {
-                AddBookmarkRef(toInsert, bookmark);
+                AddBookmarkRef(bookmark, text);
                 return;
             }
 
-            XElement contentElement = nextElement.Elements(DocxNamespace.Main + "t").FirstOrDefault();
+            var contentElement = nextElement.Elements(DocxNamespace.Main + "t").FirstOrDefault();
             if (contentElement == null)
             {
-                AddBookmarkRef(toInsert, bookmark);
+                AddBookmarkRef(bookmark, text);
                 return;
             }
 
-            contentElement.Value = toInsert;
+            contentElement.Value = text;
         }
 
+        /// <summary>
+        /// Bookmark constructor
+        /// </summary>
+        /// <param name="name">Bookmark name</param>
+        /// <param name="p">Associated paragraph object</param>
+        public Bookmark(string name, Paragraph p)
+        {
+            Name = name;
+            Paragraph = p;
+        }
+
+        /// <summary>
+        /// Adds a bookmark reference
+        /// </summary>
+        /// <param name="bookmark">Bookmark XML element</param>
+        /// <param name="text">Text to insert</param>
+        private void AddBookmarkRef(XNode bookmark, string text)
+        {
+            var run = HelperFunctions.FormatInput(text, null);
+            bookmark.AddAfterSelf(run);
+            Paragraph.runs = Paragraph.Xml.Elements(DocxNamespace.Main + "r").ToList();
+            HelperFunctions.RenumberIDs(Paragraph.Document);
+        }
     }
 }

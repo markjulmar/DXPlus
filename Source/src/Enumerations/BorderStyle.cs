@@ -6,9 +6,9 @@
     /// </summary>
     public enum BorderStyle
     {
-        Empty   = -1,
-        None    = 0,
-        Single  = 1,
+        Empty = -1,
+        None = 0,
+        Single = 1,
         Thick,
         DoubleLine,
         Dotted,

@@ -1,17 +1,18 @@
-﻿using System;
+﻿using DXPlus;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using DXPlus;
+using DXPlus.Charts;
 
-namespace Examples
+namespace TestDXPlus
 {
     public static class Program
     {
-        static void Main()
+        private static void Main()
         {
             Setup("docs");
 
@@ -49,20 +50,20 @@ namespace Examples
         {
             Enter();
 
-            var doc = DocX.Load(Path.Combine("..", "Input.docx"));
+            DocX doc = DocX.Load(Path.Combine("..", "Input.docx"));
 
-            foreach (var p in doc.Paragraphs)
+            foreach (Paragraph p in doc.Paragraphs)
             {
                 Console.WriteLine(p.Text);
             }
         }
 
-        static void Enter([CallerMemberName] string name = "")
+        private static void Enter([CallerMemberName] string name = "")
         {
             Console.WriteLine($"=> {name}");
         }
 
-        static void DocumentHeading()
+        private static void DocumentHeading()
         {
             Enter();
 
@@ -81,8 +82,8 @@ namespace Examples
         {
             Enter();
 
-            var document = DocX.Create("Lists.docx");
-            var numberedList = document.CreateList()
+            DocX document = DocX.Create("Lists.docx");
+            List numberedList = document.CreateList()
                                         .AddItem("First List Item.", 0, ListItemType.Numbered, 2)
                                         .AddItem("First sub list item", 1)
                                         .AddItem("Second List Item.")
@@ -90,7 +91,7 @@ namespace Examples
                                         .AddItem("Nested item.", 1)
                                         .AddItem("Second nested item.", 1);
 
-            var bulletedList = document.CreateList()
+            List bulletedList = document.CreateList()
                                         .AddItem("First Bulleted Item.", 0, ListItemType.Bulleted)
                                         .AddItem("Second bullet item")
                                         .AddItem("Sub bullet item", 1)
@@ -102,11 +103,11 @@ namespace Examples
             document.Save();
         }
 
-        static void AddToc()
+        private static void AddToc()
         {
             Enter();
 
-            var document = DocX.Create("Toc.docx");
+            DocX document = DocX.Create("Toc.docx");
 
             document.InsertTableOfContents("I can haz table of contentz",
                 TableOfContentsSwitches.O | TableOfContentsSwitches.U | TableOfContentsSwitches.Z | TableOfContentsSwitches.H, "Heading2");
@@ -127,18 +128,18 @@ namespace Examples
             document.Save();
         }
 
-        static void AddTocByReference()
+        private static void AddTocByReference()
         {
             Enter();
 
-            var document = DocX.Create("TocByReference.docx");
+            DocX document = DocX.Create("TocByReference.docx");
 
             document.InsertParagraph("Heading 1").Style("Heading1");
             document.InsertParagraph("Some very interesting content here");
             document.InsertParagraph("Heading 2").Style("Heading1");
             document.InsertSectionPageBreak();
             document.InsertParagraph("Some very interesting content here as well");
-            var h2 = document.InsertParagraph("Heading 2.1").Style("Heading2");
+            Paragraph h2 = document.InsertParagraph("Heading 2.1").Style("Heading2");
             document.InsertParagraph("Not so very interesting....");
 
             document.InsertTableOfContents(h2, "I can haz table of contentz",
@@ -188,11 +189,11 @@ namespace Examples
         {
             Enter();
 
-            var document = DocX.Create("Bookmarks.docx");
+            DocX document = DocX.Create("Bookmarks.docx");
 
             document.InsertBookmark("firstBookmark");
 
-            var paragraph2 = document.InsertParagraph("This is a paragraph which contains a ")
+            Paragraph paragraph2 = document.InsertParagraph("This is a paragraph which contains a ")
                 .AppendBookmark("secondBookmark").Append("bookmark");
 
             paragraph2.InsertAtBookmark("handy ", "secondBookmark");
@@ -211,7 +212,9 @@ namespace Examples
             DocX docX = DocX.Load(Path.Combine("..", "DocumentWithBookmarks.docx"));
 
             foreach (Bookmark bookmark in docX.Bookmarks)
+            {
                 Console.WriteLine("Found bookmark {0}", bookmark.Name);
+            }
 
             // Replace bookmars content
             docX.Bookmarks["bmkNoContent"].SetText("Here there was a bookmark");
@@ -261,7 +264,7 @@ namespace Examples
             t.Alignment = Alignment.Left;
             t.Design = TableDesign.MediumGrid1Accent2;
 
-            var cells = t.Rows[0].Cells.ToList();
+            List<Cell> cells = t.Rows[0].Cells.ToList();
 
             cells[0].Paragraphs[0].Append("A");
             cells[0].TextDirection = TextDirection.BottomToTopLeftToEnd;
@@ -307,7 +310,7 @@ namespace Examples
 
             // created bulleted lists
 
-            var bulletedList = document.CreateList()
+            List bulletedList = document.CreateList()
                 .AddItem("First Bulleted Item.", 0, ListItemType.Bulleted)
                 .AddItem("Second bullet item")
                 .AddItem("Sub bullet item", 1)
@@ -333,7 +336,7 @@ namespace Examples
                 const double fontSize = 15;
 
                 // created numbered lists 
-                var numberedList = document.CreateList()
+                List numberedList = document.CreateList()
                     .AddItem("First List Item.", 0, ListItemType.Numbered, 1)
                     .AddItem("First sub list item", 1)
                     .AddItem("Second List Item.")
@@ -342,7 +345,7 @@ namespace Examples
                     .AddItem("Second nested item.", 1);
 
                 // created bulleted lists
-                var bulletedList = document.CreateList()
+                List bulletedList = document.CreateList()
                     .AddItem("First Bulleted Item.", 0, ListItemType.Bulleted)
                     .AddItem("Second bullet item")
                     .AddItem("Sub bullet item", 1)
@@ -390,32 +393,32 @@ namespace Examples
             document.DifferentOddAndEvenPages = true;
 
             // Get the first, odd and even Headers for this document.
-            Header header_first = document.Headers.First;
-            Header header_odd = document.Headers.Odd;
-            Header header_even = document.Headers.Even;
+            Header headerFirst = document.Headers.First;
+            Header headerOdd = document.Headers.Odd;
+            Header headerEven = document.Headers.Even;
 
             // Get the first, odd and even Footer for this document.
-            Footer footer_first = document.Footers.First;
-            Footer footer_odd = document.Footers.Odd;
-            Footer footer_even = document.Footers.Even;
+            Footer footerFirst = document.Footers.First;
+            Footer footerOdd = document.Footers.Odd;
+            Footer footerEven = document.Footers.Even;
 
             // Insert a Paragraph into the first Header.
-            header_first.InsertParagraph().Append("Hello First Header.").Bold();
+            headerFirst.InsertParagraph().Append("Hello First Header.").Bold();
 
             // Insert a Paragraph into the odd Header.
-            header_odd.InsertParagraph().Append("Hello Odd Header.").Bold();
+            headerOdd.InsertParagraph().Append("Hello Odd Header.").Bold();
 
             // Insert a Paragraph into the even Header.
-            header_even.InsertParagraph().Append("Hello Even Header.").Bold();
+            headerEven.InsertParagraph().Append("Hello Even Header.").Bold();
 
             // Insert a Paragraph into the first Footer.
-            footer_first.InsertParagraph().Append("Hello First Footer.").Bold();
+            footerFirst.InsertParagraph().Append("Hello First Footer.").Bold();
 
             // Insert a Paragraph into the odd Footer.
-            footer_odd.InsertParagraph().Append("Hello Odd Footer.").Bold();
+            footerOdd.InsertParagraph().Append("Hello Odd Footer.").Bold();
 
             // Insert a Paragraph into the even Header.
-            footer_even.InsertParagraph().Append("Hello Even Footer.").Bold();
+            footerEven.InsertParagraph().Append("Hello Even Footer.").Bold();
 
             // Insert a Paragraph into the document.
             // Create a second page to show that the first page has its own header and footer.
@@ -442,7 +445,7 @@ namespace Examples
             document.InsertSection();
 
             //Create a paragraph in the new section
-            var p10 = document.InsertParagraph();
+            Paragraph p10 = document.InsertParagraph();
             p10.Append("Continuous section paragraph.");
 
             // Save all changes to this document.
@@ -452,7 +455,7 @@ namespace Examples
         /// <summary>
         /// Creates a simple document with the text Hello World.
         /// </summary>
-        static void HelloWorld()
+        private static void HelloWorld()
         {
             Enter();
 
@@ -474,14 +477,14 @@ namespace Examples
         /// <summary>
         /// Create a document with two pictures. One picture is inserted normal way, the other one with rotation
         /// </summary>
-        static void HelloWorldAddPictureToWord()
+        private static void HelloWorldAddPictureToWord()
         {
             Enter();
 
             DocX document = DocX.Create("HelloWorldAddPictureToWord.docx");
 
             // Add an image into the document.    
-            var image = document.AddImage(Path.Combine("..", "images", "logo_template.png"));
+            DXPlus.Image image = document.AddImage(Path.Combine("..", "images", "logo_template.png"));
 
             // Create a picture (A custom view of an Image).
             Picture picture = image.CreatePicture()
@@ -524,7 +527,7 @@ namespace Examples
             document.Save();
         }
 
-        static void HelloWorldAdvancedFormatting()
+        private static void HelloWorldAdvancedFormatting()
         {
             Enter();
 
@@ -549,7 +552,7 @@ namespace Examples
             document.Save();
         }
 
-        static void HelloWorldProtectedDocument()
+        private static void HelloWorldProtectedDocument()
         {
             Enter();
 
@@ -597,7 +600,7 @@ namespace Examples
             document.SaveAs("HelloWorldWithoutPasswordTrackedChangesOnly.docx");
         }
 
-        static void HighlightWords()
+        private static void HighlightWords()
         {
             Enter();
 
@@ -654,20 +657,20 @@ namespace Examples
             document.Save();
         }
 
-        static void LargeTable()
+        private static void LargeTable()
         {
-            var NoBorder = new Border(BorderStyle.None, 0, 0, Color.White);
+            Border noBorder = new Border(BorderStyle.None, 0, 0, Color.White);
 
             Enter();
 
-            var doc = DocX.Create("LargeTables.docx");
-            var table = doc.InsertTable(1, 18);
+            DocX doc = DocX.Create("LargeTables.docx");
+            Table table = doc.InsertTable(1, 18);
 
-            var wholeWidth = doc.PageWidth - doc.MarginLeft - doc.MarginRight;
-            var colWidth = wholeWidth / table.ColumnCount;
+            float wholeWidth = doc.PageWidth - doc.MarginLeft - doc.MarginRight;
+            float colWidth = wholeWidth / table.ColumnCount;
             table.AutoFit = AutoFit.Contents;
-            var row = table.Rows[0];
-            var cells = row.Cells.ToList();
+            Row row = table.Rows[0];
+            List<Cell> cells = row.Cells.ToList();
 
             for (int i = 0; i < cells.Count; i++)
             {
@@ -679,12 +682,12 @@ namespace Examples
                 cells[i].TopMargin = 0;
             }
 
-            table.SetBorder(TableBorderType.Bottom, NoBorder);
-            table.SetBorder(TableBorderType.Left, NoBorder);
-            table.SetBorder(TableBorderType.Right, NoBorder);
-            table.SetBorder(TableBorderType.Top, NoBorder);
-            table.SetBorder(TableBorderType.InsideV, NoBorder);
-            table.SetBorder(TableBorderType.InsideH, NoBorder);
+            table.SetBorder(TableBorderType.Bottom, noBorder);
+            table.SetBorder(TableBorderType.Left, noBorder);
+            table.SetBorder(TableBorderType.Right, noBorder);
+            table.SetBorder(TableBorderType.Top, noBorder);
+            table.SetBorder(TableBorderType.InsideV, noBorder);
+            table.SetBorder(TableBorderType.InsideH, noBorder);
 
             doc.Save();
         }
@@ -749,7 +752,7 @@ namespace Examples
         /// Loads a document 'Input.docx' and writes the text 'Hello World' into the first imbedded Image.
         /// This code creates the file 'Output.docx'.
         /// </summary>
-        static void ProgrammaticallyManipulateImbeddedImage()
+        private static void ProgrammaticallyManipulateImbeddedImage()
         {
             Enter();
 
@@ -759,10 +762,10 @@ namespace Examples
             if (document.Images.Count > 0)
             {
                 Bitmap b;
-                var img = document.Images[0];
+                DXPlus.Image img = document.Images[0];
 
                 // Write "Hello World" into this Image.
-                using (var stm = img.GetStream(FileMode.Open, FileAccess.Read))
+                using (Stream stm = img.GetStream(FileMode.Open, FileAccess.Read))
                 {
                     b = new Bitmap(stm);
                     Graphics g = Graphics.FromImage(b);
@@ -770,8 +773,10 @@ namespace Examples
                 }
 
                 // Save this Bitmap back into the document using a Create\Write stream.
-                using (var stm = img.GetStream(FileMode.Create, FileAccess.Write))
+                using (Stream stm = img.GetStream(FileMode.Create, FileAccess.Write))
+                {
                     b.Save(stm, ImageFormat.Png);
+                }
             }
             else
             {
@@ -806,7 +811,10 @@ namespace Examples
         private static void Setup(string testFolder)
         {
             if (Directory.Exists(testFolder))
+            {
                 Directory.Delete(testFolder, true);
+            }
+
             Directory.CreateDirectory(testFolder);
 
             Directory.SetCurrentDirectory(testFolder);
@@ -822,7 +830,7 @@ namespace Examples
             table.Design = TableDesign.ColorfulGrid;
             table.Alignment = Alignment.Center;
 
-            var cells = table.Rows[0].Cells.ToList();
+            List<Cell> cells = table.Rows[0].Cells.ToList();
             cells[0].Paragraphs[0].Append("1");
             cells[1].Paragraphs[0].Append("2");
 

@@ -6,6 +6,7 @@ using System.IO.Packaging;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using DXPlus.Helpers;
 
 namespace DXPlus
 {
@@ -21,11 +22,11 @@ namespace DXPlus
                 List<Paragraph> paragraphs = new List<Paragraph>();
                 GetParagraphs(Xml, 0, paragraphs, false);
 
-                foreach (var p in paragraphs)
+                foreach (Paragraph p in paragraphs)
                 {
                     // If the next sibling node is a table, then link it up to this
                     // paragraph node.
-                    var nextNode = p.Xml.ElementsAfterSelf().FirstOrDefault();
+                    XElement nextNode = p.Xml.ElementsAfterSelf().FirstOrDefault();
                     if (nextNode?.Name.Equals(DocxNamespace.Main + "tbl") == true)
                     {
                         p.FollowingTable = new Table(Document, nextNode);
@@ -60,7 +61,7 @@ namespace DXPlus
         public bool RemoveParagraphAt(int index)
         {
             int i = 0;
-            foreach (var paragraph in Xml.Descendants(DocxNamespace.Main + "p"))
+            foreach (XElement paragraph in Xml.Descendants(DocxNamespace.Main + "p"))
             {
                 if (i == index)
                 {
@@ -80,7 +81,7 @@ namespace DXPlus
         /// <returns>True if removed</returns>
         public bool RemoveParagraph(Paragraph p)
         {
-            foreach (var paragraph in Xml.Descendants(DocxNamespace.Main + "p"))
+            foreach (XElement paragraph in Xml.Descendants(DocxNamespace.Main + "p"))
             {
                 if (paragraph.Equals(p.Xml))
                 {
@@ -96,16 +97,16 @@ namespace DXPlus
         {
             get
             {
-                var allParas = Paragraphs;
+                ReadOnlyCollection<Paragraph> allParas = Paragraphs;
 
-                var parasInASection = new List<Paragraph>();
-                var sections = new List<Section>();
+                List<Paragraph> parasInASection = new List<Paragraph>();
+                List<Section> sections = new List<Section>();
 
-                foreach (var para in allParas)
+                foreach (Paragraph para in allParas)
                 {
                     parasInASection.Add(para);
 
-                    var sectionInPara = para.Xml.FirstLocalNameDescendant("sectPr");
+                    XElement sectionInPara = para.Xml.FirstLocalNameDescendant("sectPr");
                     if (sectionInPara != null)
                     {
                         sections.Add(new Section(Document, sectionInPara) { SectionParagraphs = parasInASection });
@@ -153,8 +154,8 @@ namespace DXPlus
                                             .FindByAttrVal(DocxNamespace.Main + "ilvl", numberingLevel)
                                             .FirstLocalNameDescendant("numFmt");
 
-                p.ListItemType = numberingFormat.TryGetEnumValue<ListItemType>(out var result) 
-                    ? result 
+                p.ListItemType = numberingFormat.TryGetEnumValue<ListItemType>(out ListItemType result)
+                    ? result
                     : ListItemType.Numbered;
             }
         }
@@ -167,7 +168,9 @@ namespace DXPlus
                 paragraphs.Add(SetParentContainerBasedOnType(new Paragraph(Document, Xml, index)));
                 index += HelperFunctions.GetText(Xml).Length;
                 if (!deepSearch)
+                {
                     keepSearching = false;
+                }
             }
 
             if (keepSearching && Xml.HasElements)
@@ -181,23 +184,17 @@ namespace DXPlus
             return index;
         }
 
-        public virtual IEnumerable<Table> Tables
-        {
-            get
-            {
-                return Xml.Descendants(DocxNamespace.Main + "tbl")
-                          .Select(t => new Table(Document, t) { packagePart = this.packagePart });
-            }
-        }
+        public virtual IEnumerable<Table> Tables => Xml.Descendants(DocxNamespace.Main + "tbl")
+                          .Select(t => new Table(Document, t) { packagePart = packagePart });
 
         public virtual List<List> Lists
         {
             get
             {
-                var lists = new List<List>();
-                var list = new List(Document, Xml);
+                List<List> lists = new List<List>();
+                List list = new List(Document, Xml);
 
-                foreach (var paragraph in Paragraphs)
+                foreach (Paragraph paragraph in Paragraphs)
                 {
                     paragraph.packagePart = packagePart;
                     if (paragraph.IsListItem)
@@ -231,7 +228,9 @@ namespace DXPlus
         public virtual void SetDirection(Direction direction)
         {
             foreach (Paragraph p in Paragraphs)
+            {
                 p.Direction = direction;
+            }
         }
 
         /// <summary>
@@ -262,7 +261,7 @@ namespace DXPlus
         {
             foreach (Paragraph p in Paragraphs)
             {
-                foreach (var (index, text) in p.FindPattern(pattern, options))
+                foreach ((int index, string text) in p.FindPattern(pattern, options))
                 {
                     yield return (index: index + p.startIndex, text);
                 }
@@ -272,14 +271,19 @@ namespace DXPlus
         public virtual void ReplaceText(string searchValue, string newValue, bool trackChanges = false, RegexOptions options = RegexOptions.None, Formatting newFormatting = null, Formatting matchFormatting = null, MatchFormattingOptions formattingOptions = MatchFormattingOptions.SubsetMatch, bool escapeRegEx = true, bool useRegExSubstitutions = false)
         {
             if (string.IsNullOrEmpty(searchValue))
+            {
                 throw new ArgumentException("oldValue cannot be null or empty", nameof(searchValue));
+            }
+
             if (newValue == null)
+            {
                 throw new ArgumentException("newValue cannot be null or empty", nameof(newValue));
+            }
 
             // ReplaceText in Headers of the document.
-            foreach (var header in new List<Header> { Document.Headers.First, Document.Headers.Even, Document.Headers.Odd }.Where(h => h != null))
+            foreach (Header header in new List<Header> { Document.Headers.First, Document.Headers.Even, Document.Headers.Odd }.Where(h => h != null))
             {
-                foreach (var paragraph in header.Paragraphs)
+                foreach (Paragraph paragraph in header.Paragraphs)
                 {
                     paragraph.ReplaceText(searchValue, newValue, trackChanges, options,
                         newFormatting, matchFormatting, formattingOptions,
@@ -288,7 +292,7 @@ namespace DXPlus
             }
 
             // ReplaceText int main body of document.
-            foreach (var paragraph in Paragraphs)
+            foreach (Paragraph paragraph in Paragraphs)
             {
                 paragraph.ReplaceText(searchValue, newValue, trackChanges, options,
                     newFormatting, matchFormatting, formattingOptions,
@@ -296,9 +300,9 @@ namespace DXPlus
             }
 
             // ReplaceText in Footers of the document.
-            foreach (var footer in new List<Footer> { Document.Footers.First, Document.Footers.Even, Document.Footers.Odd }.Where(h => h != null))
+            foreach (Footer footer in new List<Footer> { Document.Footers.First, Document.Footers.Even, Document.Footers.Odd }.Where(h => h != null))
             {
-                foreach (var paragraph in footer.Paragraphs)
+                foreach (Paragraph paragraph in footer.Paragraphs)
                 {
                     paragraph.ReplaceText(searchValue, newValue, trackChanges, options,
                         newFormatting, matchFormatting, formattingOptions,
@@ -320,27 +324,31 @@ namespace DXPlus
         public virtual void ReplaceText(string searchValue, Func<string, string> regexMatchHandler, bool trackChanges = false, RegexOptions options = RegexOptions.None, Formatting newFormatting = null, Formatting matchFormatting = null, MatchFormattingOptions formattingOptions = MatchFormattingOptions.SubsetMatch)
         {
             if (string.IsNullOrEmpty(searchValue))
+            {
                 throw new ArgumentException("oldValue cannot be null or empty", nameof(searchValue));
+            }
 
             if (regexMatchHandler == null)
+            {
                 throw new ArgumentException("regexMatchHandler cannot be null", nameof(regexMatchHandler));
+            }
 
             // ReplaceText in Headers/Footers of the document.
-            var containerList = new List<Container> {
+            List<Container> containerList = new List<Container> {
                 Document.Headers.First, Document.Headers.Even, Document.Headers.Odd,
                 Document.Footers.First, Document.Footers.Even, Document.Footers.Odd
             };
 
-            foreach (var container in containerList.Where(c => c != null))
+            foreach (Container container in containerList.Where(c => c != null))
             {
-                foreach (var paragraph in container.Paragraphs)
+                foreach (Paragraph paragraph in container.Paragraphs)
                 {
                     paragraph.ReplaceText(searchValue, regexMatchHandler, trackChanges, options, newFormatting, matchFormatting, formattingOptions);
                 }
             }
 
             // ReplaceText int main body of document.
-            foreach (var paragraph in Paragraphs)
+            foreach (Paragraph paragraph in Paragraphs)
             {
                 paragraph.ReplaceText(searchValue, regexMatchHandler, trackChanges, options, newFormatting, matchFormatting, formattingOptions);
             }
@@ -352,8 +360,8 @@ namespace DXPlus
         /// <returns>Numer of texts removed</returns>
         public int RemoveTextInGivenFormat(Formatting matchFormatting, MatchFormattingOptions matchOptions = MatchFormattingOptions.SubsetMatch)
         {
-            var deletedCount = 0;
-            foreach (var x in Xml.Elements())
+            int deletedCount = 0;
+            foreach (XElement x in Xml.Elements())
             {
                 deletedCount += RemoveTextWithFormatRecursive(x, matchFormatting, matchOptions);
             }
@@ -363,8 +371,8 @@ namespace DXPlus
 
         internal int RemoveTextWithFormatRecursive(XElement element, Formatting matchFormatting, MatchFormattingOptions fo)
         {
-            var deletedCount = 0;
-            foreach (var x in element.Elements())
+            int deletedCount = 0;
+            foreach (XElement x in element.Elements())
             {
                 if ("rPr".Equals(x.Name.LocalName)
                     && HelperFunctions.ContainsEveryChildOf(matchFormatting.Xml, x, fo))
@@ -382,26 +390,30 @@ namespace DXPlus
         public virtual void InsertAtBookmark(string toInsert, string bookmarkName)
         {
             if (string.IsNullOrWhiteSpace(bookmarkName))
-                throw new ArgumentException("bookmark cannot be null or empty", nameof(bookmarkName));
-
-            var headerCollection = Document.Headers;
-            var headers = new List<Header> { headerCollection.First, headerCollection.Even, headerCollection.Odd };
-            foreach (var header in headers.Where(x => x != null))
             {
-                foreach (var paragraph in header.Paragraphs)
+                throw new ArgumentException("bookmark cannot be null or empty", nameof(bookmarkName));
+            }
+
+            Headers headerCollection = Document.Headers;
+            List<Header> headers = new List<Header> { headerCollection.First, headerCollection.Even, headerCollection.Odd };
+            foreach (Header header in headers.Where(x => x != null))
+            {
+                foreach (Paragraph paragraph in header.Paragraphs)
                 {
                     paragraph.InsertAtBookmark(toInsert, bookmarkName);
                 }
             }
 
-            foreach (var paragraph in Paragraphs)
-                paragraph.InsertAtBookmark(toInsert, bookmarkName);
-
-            var footerCollection = Document.Footers;
-            var footers = new List<Footer> { footerCollection.First, footerCollection.Even, footerCollection.Odd };
-            foreach (var footer in footers.Where(x => x != null))
+            foreach (Paragraph paragraph in Paragraphs)
             {
-                foreach (var paragraph in footer.Paragraphs)
+                paragraph.InsertAtBookmark(toInsert, bookmarkName);
+            }
+
+            Footers footerCollection = Document.Footers;
+            List<Footer> footers = new List<Footer> { footerCollection.First, footerCollection.Even, footerCollection.Odd };
+            foreach (Footer footer in footers.Where(x => x != null))
+            {
+                foreach (Paragraph paragraph in footer.Paragraphs)
                 {
                     paragraph.InsertAtBookmark(toInsert, bookmarkName);
                 }
@@ -410,11 +422,11 @@ namespace DXPlus
 
         public string[] ValidateBookmarks(params string[] bookmarkNames)
         {
-            var headers = new[] { Document.Headers.First, Document.Headers.Even, Document.Headers.Odd }.Where(h => h != null).ToList();
-            var footers = new[] { Document.Footers.First, Document.Footers.Even, Document.Footers.Odd }.Where(f => f != null).ToList();
+            List<Header> headers = new[] { Document.Headers.First, Document.Headers.Even, Document.Headers.Odd }.Where(h => h != null).ToList();
+            List<Footer> footers = new[] { Document.Footers.First, Document.Footers.Even, Document.Footers.Odd }.Where(f => f != null).ToList();
 
-            var nonMatching = new List<string>();
-            foreach (var bookmarkName in bookmarkNames)
+            List<string> nonMatching = new List<string>();
+            foreach (string bookmarkName in bookmarkNames)
             {
                 if (headers.SelectMany(h => h.Paragraphs).Any(p => p.ValidateBookmark(bookmarkName))
                     || footers.SelectMany(h => h.Paragraphs).Any(p => p.ValidateBookmark(bookmarkName))
@@ -473,7 +485,7 @@ namespace DXPlus
 
                 // Get all the styleId values from the current style
                 XElement styles = styleDoc.Element(DocxNamespace.Main + "styles");
-                var ids = styles.Descendants(DocxNamespace.Main + "style")
+                List<string> ids = styles.Descendants(DocxNamespace.Main + "style")
                                 .Select(e => e.Attribute(DocxNamespace.Main + "styleId")?.Value)
                                 .Where(v => v != null)
                                 .ToList();
@@ -485,7 +497,9 @@ namespace DXPlus
                 }
 
                 using (TextWriter tw = new StreamWriter(stylePackagePart.GetStream()))
+                {
                     styleDoc.Save(tw);
+                }
             }
 
             XElement newXElement = new XElement(p.Xml);
@@ -497,9 +511,13 @@ namespace DXPlus
             {
                 index = Document.paragraphLookup.Last().Key;
                 if (Document.paragraphLookup.Last().Value.Text.Length == 0)
+                {
                     index++;
+                }
                 else
+                {
                     index += Document.paragraphLookup.Last().Value.Text.Length;
+                }
             }
 
             Paragraph newParagraph = new Paragraph(Document, newXElement, index);
@@ -517,7 +535,7 @@ namespace DXPlus
 
             if (firstPar != null)
             {
-                var splitindex = index - firstPar.startIndex;
+                int splitindex = index - firstPar.startIndex;
                 if (splitindex <= 0)
                 {
                     firstPar.Xml.ReplaceWith(newParagraph.Xml, firstPar.Xml);
@@ -570,7 +588,7 @@ namespace DXPlus
 
         public virtual void InsertSection(bool trackChanges = false)
         {
-            var newParagraphSection = new XElement(DocxNamespace.Main + "p",
+            XElement newParagraphSection = new XElement(DocxNamespace.Main + "p",
                 new XElement(DocxNamespace.Main + "pPr",
                     new XElement(DocxNamespace.Main + "sectPr",
                         new XElement(DocxNamespace.Main + "type",
@@ -590,30 +608,50 @@ namespace DXPlus
 
         public virtual void InsertSectionPageBreak(bool trackChanges = false)
         {
-            var newParagraphSection = new XElement(DocxNamespace.Main + "p",
-                new XElement(DocxNamespace.Main + "pPr", 
+            XElement newParagraphSection = new XElement(DocxNamespace.Main + "p",
+                new XElement(DocxNamespace.Main + "pPr",
                     new XElement(DocxNamespace.Main + "sectPr")
                 )
             );
 
             if (trackChanges)
+            {
                 newParagraphSection = HelperFunctions.CreateEdit(EditType.Ins, DateTime.Now, newParagraphSection);
+            }
 
             Xml.Add(newParagraphSection);
         }
 
-        public virtual Paragraph InsertParagraph() => InsertParagraph(string.Empty, false, new Formatting());
-        public virtual Paragraph InsertParagraph(string text) => InsertParagraph(text, false, new Formatting());
-        public virtual Paragraph InsertParagraph(string text, bool trackChanges) => InsertParagraph(text, trackChanges, new Formatting());
-        public virtual Paragraph InsertParagraph(int index, string text, bool trackChanges) => InsertParagraph(index, text, trackChanges, null);
+        public virtual Paragraph InsertParagraph()
+        {
+            return InsertParagraph(string.Empty, false, new Formatting());
+        }
+
+        public virtual Paragraph InsertParagraph(string text)
+        {
+            return InsertParagraph(text, false, new Formatting());
+        }
+
+        public virtual Paragraph InsertParagraph(string text, bool trackChanges)
+        {
+            return InsertParagraph(text, trackChanges, new Formatting());
+        }
+
+        public virtual Paragraph InsertParagraph(int index, string text, bool trackChanges)
+        {
+            return InsertParagraph(index, text, trackChanges, null);
+        }
+
         public virtual Paragraph InsertParagraph(string text, bool trackChanges, Formatting formatting)
         {
             XElement newParagraph = new XElement(DocxNamespace.Main + "p",
-                                        new XElement(DocxNamespace.Main + "pPr"), 
+                                        new XElement(DocxNamespace.Main + "pPr"),
                                             HelperFunctions.FormatInput(text, formatting.Xml));
 
             if (trackChanges)
+            {
                 newParagraph = HelperFunctions.CreateEdit(EditType.Ins, DateTime.Now, newParagraph);
+            }
 
             Xml.Add(newParagraph);
             return SetParentContainerBasedOnType(new Paragraph(Document, newParagraph, 0));
@@ -628,12 +666,15 @@ namespace DXPlus
 
         public virtual Paragraph InsertBookmark(string bookmarkName)
         {
-            var p = InsertParagraph();
+            Paragraph p = InsertParagraph();
             p.AppendBookmark(bookmarkName);
             return p;
         }
 
-        public Table InsertTable(int rowCount, int columnCount) => InsertTable(Document.CreateTable(rowCount, columnCount));
+        public Table InsertTable(int rowCount, int columnCount)
+        {
+            return InsertTable(Document.CreateTable(rowCount, columnCount));
+        }
 
         public Table InsertTable(Table t)
         {
@@ -671,7 +712,7 @@ namespace DXPlus
 
         public List InsertList(List list)
         {
-            foreach (var item in list.Items)
+            foreach (Paragraph item in list.Items)
             {
                 Xml.Add(item.Xml);
             }
@@ -681,7 +722,7 @@ namespace DXPlus
 
         public List InsertList(List list, double fontSize)
         {
-            foreach (var item in list.Items)
+            foreach (Paragraph item in list.Items)
             {
                 item.FontSize(fontSize);
                 Xml.Add(item.Xml);
@@ -692,7 +733,7 @@ namespace DXPlus
 
         public List InsertList(List list, System.Drawing.FontFamily fontFamily, double fontSize)
         {
-            foreach (var item in list.Items)
+            foreach (Paragraph item in list.Items)
             {
                 item.Font(fontFamily);
                 item.FontSize(fontSize);
@@ -707,7 +748,7 @@ namespace DXPlus
             Paragraph p = HelperFunctions.GetFirstParagraphAffectedByInsert(Document, index);
 
             XElement[] split = HelperFunctions.SplitParagraph(p, index - p.startIndex);
-            var elements = new List<XElement> { split[0] };
+            List<XElement> elements = new List<XElement> { split[0] };
             elements.AddRange(list.Items.Select(i => new XElement(i.Xml)));
             elements.Add(split[1]);
             p.Xml.ReplaceWith(elements.ToArray());

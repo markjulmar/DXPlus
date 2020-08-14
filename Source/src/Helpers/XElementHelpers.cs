@@ -5,24 +5,44 @@ using System.Reflection;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 
-namespace DXPlus
+namespace DXPlus.Helpers
 {
     internal static class XElementHelpers
     {
         public static XElement GetOrCreateElement(this XElement el, XName name, string defaultValue = "")
         {
-            XElement node = el.Element(name);
+            if (el == null)
+                throw new ArgumentNullException(nameof(el));
+            
+            var node = el.Element(name);
             if (node == null)
             {
-                el.SetElementValue(name, defaultValue);
-                node = el.Element(name);
+                node = new XElement(name, defaultValue);
+                el.Add(node);
             }
-            
             return node;
+        }
+
+        public static XAttribute GetOrCreateAttribute(this XElement el, XName name, string defaultValue = "")
+        {
+            if (el == null)
+                throw new ArgumentNullException(nameof(el));
+
+            var attr = el.Attribute(name);
+            if (attr == null)
+            {
+                attr = new XAttribute(name, defaultValue);
+                el.Add(attr);
+            }
+
+            return attr;
         }
 
         public static XElement FindByAttrVal(this IEnumerable<XElement> nodes, XName name, string attributeValue)
         {
+            if (nodes == null)
+                throw new ArgumentNullException(nameof(nodes));
+
             return nodes.FirstOrDefault(node => node.AttributeValue(name).Equals(attributeValue));
         }
 
@@ -40,21 +60,21 @@ namespace DXPlus
         {
             if (el == null)
                 throw new ArgumentNullException(nameof(el));
-            if (value == null)
-                value = "";
+
+            value ??= "";
 
             el.SetAttributeValue(DocxNamespace.Main + "val", value.ToString());
         }
 
         public static string AttributeValue(this XElement el, XName name, string defaultValue = "")
         {
-            XAttribute attr = el?.Attribute(name);
+            var attr = el?.Attribute(name);
             return attr != null ? attr.Value : defaultValue;
         }
 
-        public static IEnumerable<XElement> LocalNameElements(this XContainer e, string localName)
+        public static IEnumerable<XElement> LocalNameElements(this XContainer xml, string localName)
         {
-            return e.Elements().Where(e => e.Name.LocalName.Equals(localName));
+            return xml.Elements().Where(e => e.Name.LocalName.Equals(localName));
         }
 
         public static XElement FirstLocalNameDescendant(this XContainer e, string localName)
@@ -62,13 +82,17 @@ namespace DXPlus
             return e.LocalNameDescendants(localName).FirstOrDefault();
         }
 
-        public static IEnumerable<XElement> LocalNameDescendants(this XContainer e, string localName)
+        public static IEnumerable<XElement> LocalNameDescendants(this XContainer xml, string localName)
         {
-            if (e == null) 
+            if (xml == null)
+            {
                 yield break;
+            }
 
             if (string.IsNullOrWhiteSpace(localName))
+            {
                 throw new ArgumentNullException(nameof(localName));
+            }
 
             if (localName.Contains('/'))
             {
@@ -76,7 +100,7 @@ namespace DXPlus
                 string name = localName.Substring(0, pos);
                 localName = localName.Substring(pos + 1);
 
-                foreach (var item in e.Descendants().Where(e => e.Name.LocalName == name))
+                foreach (var item in xml.Descendants().Where(e => e.Name.LocalName == name))
                 {
                     foreach (var child in LocalNameDescendants(item, localName))
                     {
@@ -86,21 +110,21 @@ namespace DXPlus
             }
             else
             {
-                foreach (var item in e.Descendants().Where(e => e.Name.LocalName == localName))
+                foreach (var item in xml.Descendants().Where(e => e.Name.LocalName == localName))
                 {
                     yield return item;
                 }
             }
         }
 
-        public static IEnumerable<XAttribute> DescendantAttributes(this XContainer e, XName attribName)
+        public static IEnumerable<XAttribute> DescendantAttributes(this XContainer xml, XName attribName)
         {
-            return e.Descendants().Attributes(attribName);
+            return xml.Descendants().Attributes(attribName);
         }
 
-        public static IEnumerable<string> DescendantAttributeValues(this XElement e, XName attribName)
+        public static IEnumerable<string> DescendantAttributeValues(this XElement xml, XName attribName)
         {
-            return e.DescendantAttributes(attribName).Select(a => a.Value);
+            return xml.DescendantAttributes(attribName).Select(a => a.Value);
         }
 
         /// <summary>
@@ -109,8 +133,13 @@ namespace DXPlus
         /// <typeparam name="T">Enum type</typeparam>
         internal static T GetEnumValue<T>(this XElement element)
         {
+            if (element == null)
+                throw new ArgumentNullException(nameof(element));
+            
             if (!TryGetEnumValue(element, out T result))
+            {
                 throw new ArgumentException($"{element.GetVal()} could not be matched to enum {typeof(T).Name}.");
+            }
 
             return result;
         }
@@ -122,7 +151,9 @@ namespace DXPlus
         internal static T GetEnumValue<T>(this XAttribute attr)
         {
             if (!TryGetEnumValue(attr, out T result))
+            {
                 throw new ArgumentException($"{attr.Value} could not be matched to enum {typeof(T).Name}.");
+            }
 
             return result;
         }
@@ -134,7 +165,9 @@ namespace DXPlus
         internal static void SetEnumValue<T>(this XElement element, T value)
         {
             if (element == null)
+            {
                 throw new ArgumentNullException(nameof(element));
+            }
 
             element.SetAttributeValue("val", GetEnumName(value));
         }
@@ -142,14 +175,16 @@ namespace DXPlus
         internal static bool TryGetEnumValue<T>(this XAttribute attr, out T result)
         {
             if (attr == null || string.IsNullOrWhiteSpace(attr.Value))
+            {
                 throw new ArgumentNullException(nameof(attr));
+            }
 
             string value = attr.Value;
             foreach (T e in Enum.GetValues(typeof(T)))
             {
                 FieldInfo fi = typeof(T).GetField(e.ToString());
                 string name = fi.GetCustomAttribute<XmlAttributeAttribute>()?.AttributeName ?? e.ToString();
-                if (string.Compare(name, value, true) == 0)
+                if (String.Compare(name, value, StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     result = e;
                     return true;
@@ -163,14 +198,16 @@ namespace DXPlus
         internal static bool TryGetEnumValue<T>(this XElement element, out T result)
         {
             if (element == null)
+            {
                 throw new ArgumentNullException(nameof(element));
+            }
 
             string value = element.GetVal();
             foreach (T e in Enum.GetValues(typeof(T)))
             {
                 FieldInfo fi = typeof(T).GetField(e.ToString());
                 string name = fi.GetCustomAttribute<XmlAttributeAttribute>()?.AttributeName ?? e.ToString();
-                if (string.Compare(name, value, true) == 0)
+                if (String.Compare(name, value, StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     result = e;
                     return true;
@@ -188,7 +225,9 @@ namespace DXPlus
         internal static string GetEnumName<T>(this T value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
 
             FieldInfo fi = typeof(T).GetField(value.ToString());
             return fi.GetCustomAttribute<XmlAttributeAttribute>()?.AttributeName ?? value.ToCamelCase();

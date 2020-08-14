@@ -31,7 +31,7 @@ namespace DXPlus
         {
             this.document = document;
             this.pr = pr;
-            this.Id = pr.Id;
+            Id = pr.Id;
         }
 
         /// <summary>

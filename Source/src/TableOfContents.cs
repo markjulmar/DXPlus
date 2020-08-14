@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
+using DXPlus.Helpers;
 
 namespace DXPlus
 {
@@ -19,7 +20,7 @@ namespace DXPlus
             if (!document.settings.Descendants(DocxNamespace.Main + "updateFields").Any())
             {
                 // Tell Word to update the document ToC the next time this document is loaded.
-                document.settings.Root.Add(new XElement(DocxNamespace.Main + "updateFields", 
+                document.settings.Root.Add(new XElement(DocxNamespace.Main + "updateFields",
                                            new XAttribute(DocxNamespace.Main + "val", true)));
             }
 
@@ -28,26 +29,26 @@ namespace DXPlus
 
         internal static TableOfContents CreateTableOfContents(DocX document, string title, TableOfContentsSwitches switches, string headerStyle = null, int lastIncludeLevel = 3, int? rightTabPos = null)
         {
-            var reader = XmlReader.Create(
+            XmlReader reader = XmlReader.Create(
                 new StringReader(
-                    string.Format(Resources.TocXmlBase, 
-                                    headerStyle ?? HeaderStyle, 
-                                    title, 
-                                    rightTabPos ?? RightTabPos, 
+                    string.Format(Resources.TocXmlBase,
+                                    headerStyle ?? HeaderStyle,
+                                    title,
+                                    rightTabPos ?? RightTabPos,
                                     BuildSwitchString(switches, lastIncludeLevel)
                     )
                 )
             );
-            
+
             return new TableOfContents(document, XElement.Load(reader), headerStyle);
         }
 
         private static string BuildSwitchString(TableOfContentsSwitches switches, int lastIncludeLevel)
         {
             string switchString = "TOC";
-            
-            var allSwitches = Enum.GetValues(typeof(TableOfContentsSwitches)).Cast<TableOfContentsSwitches>();
-            foreach (var tocSwitch in allSwitches.Where(s => s != TableOfContentsSwitches.None && (switches & s) != 0))
+
+            System.Collections.Generic.IEnumerable<TableOfContentsSwitches> allSwitches = Enum.GetValues(typeof(TableOfContentsSwitches)).Cast<TableOfContentsSwitches>();
+            foreach (TableOfContentsSwitches tocSwitch in allSwitches.Where(s => s != TableOfContentsSwitches.None && (switches & s) != 0))
             {
                 switchString += " " + tocSwitch.GetEnumName();
                 if (tocSwitch == TableOfContentsSwitches.O)
@@ -61,7 +62,7 @@ namespace DXPlus
 
         private void EnsureTocStylesArePresent(DocX document, string headerStyle)
         {
-            var availableStyles = new (string headerStyle, string applyTo, string template, string name)[]
+            (string headerStyle, string applyTo, string template, string name)[] availableStyles = new (string headerStyle, string applyTo, string template, string name)[]
             {
                 (headerStyle, "paragraph", Resources.TocHeadingStyleBase, headerStyle ?? HeaderStyle),
                 ("TOC1", "paragraph", Resources.TocElementStyleBase, "toc 1"),
@@ -71,12 +72,12 @@ namespace DXPlus
                 ("Hyperlink", "character", Resources.TocHyperLinkStyleBase, "")
             };
 
-            foreach (var style in availableStyles)
+            foreach ((string headerStyle, string applyTo, string template, string name) style in availableStyles)
             {
                 if (!document.HasStyle(style.headerStyle, style.applyTo))
                 {
-                    var reader = XmlReader.Create(new StringReader(string.Format(style.template, style.headerStyle, style.name)));
-                    var xml = XElement.Load(reader);
+                    XmlReader reader = XmlReader.Create(new StringReader(string.Format(style.template, style.headerStyle, style.name)));
+                    XElement xml = XElement.Load(reader);
                     document.styles.Root.Add(xml);
                 }
             }

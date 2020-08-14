@@ -4,18 +4,16 @@ namespace DXPlus
 {
     public class FormattedText : IComparable
     {
-        public int index;
-        public string text;
-        public Formatting formatting;
+        public int Index { get; set; }
+        public string Text { get; set; }
+        public Formatting Formatting { get; set; }
 
         public int CompareTo(object obj)
         {
-            FormattedText other = (FormattedText) obj;
-            FormattedText tf = this;
-
-            return other.formatting == null || tf.formatting == null
+            var other = (FormattedText)obj;
+            return other.Formatting == null || Formatting == null
                 ? -1
-                : tf.formatting.CompareTo(other.formatting);
+                : Formatting.CompareTo(other.Formatting);
         }
 
         public override bool Equals(object obj)
@@ -35,7 +33,7 @@ namespace DXPlus
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(formatting);
+            return HashCode.Combine(Formatting, Index, Text);
         }
 
         public static bool operator ==(FormattedText left, FormattedText right)

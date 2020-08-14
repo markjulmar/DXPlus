@@ -22,7 +22,7 @@ namespace DXPlus
         {
             Assembly assembly = Assembly.GetExecutingAssembly();
             Stream stream = assembly.GetManifestResourceStream(resourceName);
-            using var sr = new StreamReader(stream);
+            using StreamReader sr = new StreamReader(stream);
             return sr.ReadToEnd();
         }
 

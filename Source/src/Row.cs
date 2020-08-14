@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Xml.Linq;
+using DXPlus.Helpers;
 
 namespace DXPlus
 {
@@ -11,13 +11,15 @@ namespace DXPlus
     /// </summary>
     public class Row : Container
     {
-        internal Table table;
+        /// <summary>
+        /// Table owner
+        /// </summary>
+        internal Table Table { get; set; }
 
-        internal Row(Table table, DocX document, XElement xml)
-                    : base(document, xml)
+        internal Row(Table table, XElement xml) : base(table.Document, xml)
         {
-            this.table = table;
-            this.packagePart = table.packagePart;
+            Table = table;
+            packagePart = table.packagePart;
         }
 
         /// <summary>
@@ -34,10 +36,12 @@ namespace DXPlus
                    .SetElementValue(DocxNamespace.Main + "cantSplit", value ? null : string.Empty);
         }
 
+        private ReadOnlyCollection<Cell> cellsCache;
+
         /// <summary>
         /// A list of Cells in this Row.
         /// </summary>
-        public IEnumerable<Cell> Cells => Xml.Elements(DocxNamespace.Main + "tc").Select(c => new Cell(this, Document, c));
+        public ReadOnlyCollection<Cell> Cells => cellsCache ??= Xml.Elements(DocxNamespace.Main + "tc").Select(c => new Cell(this, c)).ToList().AsReadOnly();
 
         /// <summary>
         /// Calculates columns count in the row, taking spanned cells into account
@@ -46,19 +50,17 @@ namespace DXPlus
         {
             get
             {
-                int gridSpanSum = 0;
-                int count = 0;
-                foreach (Cell c in Cells)
+                int gridSpanSum = 0, count = 0;
+                foreach (var c in Cells)
                 {
                     count++;
 
                     XElement gridSpan = c.Xml.Element(DocxNamespace.Main + "tcPr")?
                                              .Element(DocxNamespace.Main + "gridSpan");
-                    if (gridSpan != null)
+                    XAttribute val = gridSpan?.GetValAttr();
+                    if (val != null && int.TryParse(val.Value, out int value))
                     {
-                        XAttribute val = gridSpan.GetValAttr();
-                        if (val != null && int.TryParse(val.Value, out int value))
-                            gridSpanSum += value - 1;
+                        gridSpanSum += value - 1;
                     }
                 }
 
@@ -84,15 +86,12 @@ namespace DXPlus
 
                 return heightInWordUnits / 15;
             }
-            set
-            {
-                SetHeight(value, true);
-            }
+            set => SetHeight(value, true);
         }
 
-        public override ReadOnlyCollection<Paragraph> Paragraphs 
+        public override ReadOnlyCollection<Paragraph> Paragraphs
             => Xml.Descendants(DocxNamespace.Main + "p")
-                    .Select(p => new Paragraph(Document, p, 0) { packagePart = table.packagePart })
+                    .Select(p => new Paragraph(Document, p, 0) { packagePart = Table.packagePart })
                     .ToList()
                     .AsReadOnly();
 
@@ -105,9 +104,9 @@ namespace DXPlus
                       .Element(DocxNamespace.Main + "tblHeader") != null;
             set
             {
-                XElement trPr = Xml.GetOrCreateElement(DocxNamespace.Main + "trPr");
-                XElement tblHeader = trPr.Element(DocxNamespace.Main + "tblHeader");
-                
+                var trPr = Xml.GetOrCreateElement(DocxNamespace.Main + "trPr");
+                var tblHeader = trPr.Element(DocxNamespace.Main + "tblHeader");
+
                 if (tblHeader == null && value)
                 {
                     trPr.SetElementValue(DocxNamespace.Main + "tblHeader", string.Empty);
@@ -124,47 +123,62 @@ namespace DXPlus
         /// </summary>
         public void MergeCells(int startIndex, int endIndex)
         {
-            var cells = Cells.ToList();
-
             // Check for valid start and end indexes.
-            if (startIndex < 0 || endIndex <= startIndex || endIndex > cells.Count + 1)
+            if (startIndex < 0 || endIndex <= startIndex || endIndex > Cells.Count + 1)
+            {
                 throw new IndexOutOfRangeException();
+            }
 
-            // The sum of all merged gridSpans.
-            int gridSpanSum = 0; int value;
+            int gridSpanSum = 0; 
+            int value;
 
             // Foreach each Cell between startIndex and endIndex inclusive.
-            foreach (Cell c in cells.Where((_, i) => i > startIndex && i <= endIndex))
+            foreach (var c in Cells.Where((_, i) => i > startIndex && i <= endIndex).ToList())
             {
                 var gsVal = c.Xml.Element(DocxNamespace.Main + "tcPr")?
                                  .Element(DocxNamespace.Main + "gridSpan")?
                                  .GetValAttr();
                 if (gsVal != null && int.TryParse(gsVal.Value, out value))
+                {
                     gridSpanSum += value - 1;
+                }
 
-                // Add this cells Pragraph to the merge start Cell.
-                cells[startIndex].Xml.Add(c.Xml.Elements(DocxNamespace.Main + "p"));
+                // Add this cells Paragraph to the merge start Cell.
+                Cells[startIndex].Xml.Add(c.Xml.Elements(DocxNamespace.Main + "p"));
 
                 // Remove this Cell.
                 c.Xml.Remove();
             }
 
-            XElement startTcPr = cells[startIndex].Xml.GetOrCreateElement(DocxNamespace.Main + "tcPr");
-            XElement startGridSpan = startTcPr.GetOrCreateElement(DocxNamespace.Main + "gridSpan");
-            XAttribute startVal = startGridSpan.GetValAttr();
+            var startTcPr = Cells[startIndex].Xml.GetOrCreateElement(DocxNamespace.Main + "tcPr");
+            var startGridSpan = startTcPr.GetOrCreateElement(DocxNamespace.Main + "gridSpan");
+            var startVal = startGridSpan.GetValAttr();
             if (startVal != null && int.TryParse(startVal.Value, out value))
+            {
                 gridSpanSum += value - 1;
+            }
 
             // Set the val attribute to the number of merged cells.
             startGridSpan.SetVal(gridSpanSum + endIndex - startIndex + 1);
+
+            // Reset the cell cache
+            cellsCache = null;
         }
 
+        /// <summary>
+        /// Remove this cell
+        /// </summary>
         public void Remove()
         {
-            XElement table = Xml.Parent;
+            var tableOwner = Xml.Parent;
             Xml.Remove();
-            if (!table.Elements(DocxNamespace.Main + "tr").Any())
-                table.Remove();
+            if (tableOwner?.Elements(DocxNamespace.Main + "tr").Any() == false)
+            {
+                tableOwner.Remove();
+            }
+
+            // Reset the cell cache
+            cellsCache = null;
         }
 
         /// <summary>
@@ -175,12 +189,20 @@ namespace DXPlus
         /// </param>
         private void SetHeight(double height, bool exact)
         {
-            XElement trPr = Xml.GetOrCreateElement(DocxNamespace.Main + "trPr");
-            XElement trHeight = trPr.GetOrCreateElement(DocxNamespace.Main + "trHeight");
+            var trPr = Xml.GetOrCreateElement(DocxNamespace.Main + "trPr");
+            var trHeight = trPr.GetOrCreateElement(DocxNamespace.Main + "trHeight");
 
             // 15 "word units" is equal to one pixel.
             trHeight.SetAttributeValue(DocxNamespace.Main + "hRule", exact ? "exact" : "atLeast");
             trHeight.SetAttributeValue(DocxNamespace.Main + "val", height * 15);
+        }
+
+        /// <summary>
+        /// Throw away the cell cache
+        /// </summary>
+        internal void InvalidateCellCache()
+        {
+            cellsCache = null;
         }
     }
 }

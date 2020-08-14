@@ -24,9 +24,9 @@ namespace DXPlus
 
         internal CustomProperty(string name, string type, string value)
         {
-            this.Name = name;
-            this.Type = type;
-            this.Value = type switch
+            Name = name;
+            Type = type;
+            Value = type switch
             {
                 LPWSTR => value,
                 I4 => int.Parse(value, System.Globalization.CultureInfo.InvariantCulture),
@@ -39,9 +39,9 @@ namespace DXPlus
 
         private CustomProperty(string name, string type, object value)
         {
-            this.Name = name;
-            this.Type = type;
-            this.Value = value;
+            Name = name;
+            Type = type;
+            Value = value;
         }
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace DXPlus
         /// <param name="name">The name of this CustomProperty.</param>
         /// <param name="value">The value of this CustomProperty.</param>
         public CustomProperty(string name, bool value) : this(name, BOOL, value)
-        { 
+        {
         }
     }
 }

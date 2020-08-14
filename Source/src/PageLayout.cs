@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Xml.Linq;
+using DXPlus.Helpers;
 
 namespace DXPlus
 {
@@ -18,10 +19,10 @@ namespace DXPlus
             get
             {
                 // Get the pgSz (page size) value + orient attribute
-                var value = Xml.Element(DocxNamespace.Main + "pgSz")?
+                string value = Xml.Element(DocxNamespace.Main + "pgSz")?
                     .AttributeValue(DocxNamespace.Main + "orient");
 
-                return value.Equals("landscape", StringComparison.CurrentCultureIgnoreCase)
+                return value?.Equals("landscape", StringComparison.CurrentCultureIgnoreCase) == true
                     ? Orientation.Landscape
                     : Orientation.Portrait; // default
             }
@@ -30,7 +31,9 @@ namespace DXPlus
             {
                 // Check if already correct value.
                 if (Orientation == value)
+                {
                     return;
+                }
 
                 XElement pgSz = Xml.GetOrCreateElement(DocxNamespace.Main + "pgSz");
                 pgSz.SetAttributeValue(DocxNamespace.Main + "orient", value.GetEnumName());

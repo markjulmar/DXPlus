@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
+using DXPlus.Helpers;
 
 namespace DXPlus
 {
@@ -64,7 +65,7 @@ namespace DXPlus
             EndIndex = currentPos;
         }
 
-        static internal XElement[] SplitRun(Run run, int index, EditType editType = EditType.Ins)
+        internal static XElement[] SplitRun(Run run, int index, EditType editType = EditType.Ins)
         {
             index -= run.StartIndex;
 
@@ -74,20 +75,24 @@ namespace DXPlus
             XElement splitLeft = new XElement(run.Xml.Name,
                                         run.Xml.Attributes(),
                                         run.Xml.Element(DocxNamespace.Main + "rPr"),
-                                        text.Xml.ElementsBeforeSelf().Where(n => n.Name.LocalName != "rPr"), 
+                                        text.Xml.ElementsBeforeSelf().Where(n => n.Name.LocalName != "rPr"),
                                         splitText[0]);
 
             if (Paragraph.GetElementTextLength(splitLeft) == 0)
+            {
                 splitLeft = null;
+            }
 
-            XElement splitRight = new XElement(run.Xml.Name, 
-                                        run.Xml.Attributes(), 
-                                        run.Xml.Element(DocxNamespace.Main + "rPr"), 
-                                        splitText[1], 
+            XElement splitRight = new XElement(run.Xml.Name,
+                                        run.Xml.Attributes(),
+                                        run.Xml.Element(DocxNamespace.Main + "rPr"),
+                                        splitText[1],
                                         text.Xml.ElementsAfterSelf().Where(n => n.Name.LocalName != "rPr"));
-            
+
             if (Paragraph.GetElementTextLength(splitRight) == 0)
+            {
                 splitRight = null;
+            }
 
             return new XElement[] { splitLeft, splitRight };
         }
@@ -96,7 +101,9 @@ namespace DXPlus
         {
             // Make sure we are looking within an acceptable index range.
             if (index < 0 || index > HelperFunctions.GetText(Xml).Length)
+            {
                 throw new ArgumentOutOfRangeException();
+            }
 
             // Need some memory that can be updated by the recursive search for the XElement to Split.
             int count = 0;
@@ -117,11 +124,15 @@ namespace DXPlus
             }
 
             if (Xml.HasElements)
+            {
                 foreach (XElement e in Xml.Elements())
                 {
                     if (theOne == null)
+                    {
                         GetFirstTextEffectedByEditRecursive(e, index, ref count, ref theOne);
+                    }
                 }
+            }
         }
     }
 }

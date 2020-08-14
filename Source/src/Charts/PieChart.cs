@@ -1,6 +1,6 @@
 ﻿using System.Xml.Linq;
 
-namespace DXPlus
+namespace DXPlus.Charts
 {
     /// <summary>
     /// This element contains the 2-D pie series for this chart.

@@ -7,6 +7,7 @@ using System.IO.Packaging;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using DXPlus.Helpers;
 
 namespace DXPlus
 {
@@ -51,7 +52,7 @@ namespace DXPlus
             get
             {
                 XElement jc = ParaProperties().Element(DocxNamespace.Main + "jc");
-                if (jc != null && jc.TryGetEnumValue<Alignment>(out var result))
+                if (jc != null && jc.TryGetEnumValue<Alignment>(out Alignment result))
                 {
                     return result;
                 }
@@ -106,7 +107,9 @@ namespace DXPlus
                 if (direction == Direction.RightToLeft)
                 {
                     if (bidi == null)
+                    {
                         pPr.Add(new XElement(DocxNamespace.Main + "bidi"));
+                    }
                 }
                 else
                 {
@@ -160,7 +163,9 @@ namespace DXPlus
                         // Find the parent run, no matter how deeply nested we are.
                         XElement e = he;
                         while (e.Name.LocalName != "r")
+                        {
                             e = e.Parent;
+                        }
 
                         // Take every element until we reach w:fldCharType="end"
                         List<XElement> hyperlink_runs = new List<XElement>();
@@ -214,9 +219,13 @@ namespace DXPlus
 
                     XAttribute right = ind.Attribute(DocxNamespace.Main + "right");
                     if (right != null)
+                    {
                         right.Value = indentation;
+                    }
                     else
+                    {
                         ind.Add(new XAttribute(DocxNamespace.Main + "right", indentation));
+                    }
                 }
             }
         }
@@ -245,9 +254,13 @@ namespace DXPlus
 
                     XAttribute left = ind.Attribute(DocxNamespace.Main + "left");
                     if (left != null)
+                    {
                         left.Value = indentation;
+                    }
                     else
+                    {
                         ind.Add(new XAttribute(DocxNamespace.Main + "left", indentation));
+                    }
                 }
             }
         }
@@ -279,9 +292,13 @@ namespace DXPlus
                     string indentation = ((indentationFirstLine / 0.1) * 57).ToString();
                     XAttribute firstLine = ind.Attribute(DocxNamespace.Main + "firstLine");
                     if (firstLine != null)
+                    {
                         firstLine.Value = indentation;
+                    }
                     else
+                    {
                         ind.Add(new XAttribute(DocxNamespace.Main + "firstLine", indentation));
+                    }
                 }
             }
         }
@@ -312,9 +329,13 @@ namespace DXPlus
                     string indentation = (indentationHanging / 0.1 * 57).ToString();
                     XAttribute hanging = ind.Attribute(DocxNamespace.Main + "hanging");
                     if (hanging != null)
+                    {
                         hanging.Value = indentation;
+                    }
                     else
+                    {
                         ind.Add(new XAttribute(DocxNamespace.Main + "hanging", indentation));
+                    }
                 }
             }
         }
@@ -330,8 +351,8 @@ namespace DXPlus
         {
             get
             {
-                var pPr = ParaProperties();
-                var keepWithNextE = pPr.Element(DocxNamespace.Main + "keepNext");
+                XElement pPr = ParaProperties();
+                XElement keepWithNextE = pPr.Element(DocxNamespace.Main + "keepNext");
                 return keepWithNextE != null;
             }
         }
@@ -360,10 +381,7 @@ namespace DXPlus
                 return 1.1f * 20.0f;
             }
 
-            set
-            {
-                Spacing(value);
-            }
+            set => Spacing(value);
         }
 
         public float LineSpacingAfter
@@ -385,10 +403,7 @@ namespace DXPlus
                 return 10.0f;
             }
 
-            set
-            {
-                SpacingAfter(value);
-            }
+            set => SpacingAfter(value);
         }
 
         public float LineSpacingBefore
@@ -410,10 +425,7 @@ namespace DXPlus
                 return 0.0f;
             }
 
-            set
-            {
-                SpacingBefore(value);
-            }
+            set => SpacingBefore(value);
         }
 
         /// <summary>
@@ -435,7 +447,7 @@ namespace DXPlus
             {
                 if (paragraphNumberProperties == null)
                 {
-                    var node = Xml.FirstLocalNameDescendant("numPr");
+                    XElement node = Xml.FirstLocalNameDescendant("numPr");
                     paragraphNumberProperties = node.FirstLocalNameDescendant("numId").GetVal() == "0" ? null : node;
                 }
 
@@ -469,11 +481,11 @@ namespace DXPlus
         {
             get
             {
-                var element = ParaProperties();
-                var styleElement = element.Element(DocxNamespace.Main + "pStyle");
+                XElement element = ParaProperties();
+                XElement styleElement = element.Element(DocxNamespace.Main + "pStyle");
                 if (styleElement != null)
                 {
-                    var attr = styleElement.Attribute(DocxNamespace.Main + "val");
+                    XAttribute attr = styleElement.Attribute(DocxNamespace.Main + "val");
                     if (attr != null && !string.IsNullOrEmpty(attr.Value))
                     {
                         return attr.Value;
@@ -487,8 +499,8 @@ namespace DXPlus
                 {
                     value = "Normal";
                 }
-                var element = ParaProperties();
-                var styleElement = element.Element(DocxNamespace.Main + "pStyle");
+                XElement element = ParaProperties();
+                XElement styleElement = element.Element(DocxNamespace.Main + "pStyle");
                 if (styleElement == null)
                 {
                     element.Add(new XElement(DocxNamespace.Main + "pStyle"));
@@ -582,7 +594,7 @@ namespace DXPlus
         /// </example>
         public Paragraph AppendDocProperty(CustomProperty cp, bool trackChanges = false, Formatting f = null)
         {
-            this.InsertDocProperty(cp, trackChanges, f);
+            InsertDocProperty(cp, trackChanges, f);
             return this;
         }
 
@@ -625,10 +637,12 @@ namespace DXPlus
 
             // Check to see if the rels file exists and create it if not.
             if (!Document.package.PartExists(rels_path))
+            {
                 HelperFunctions.CreateRelsPackagePart(Document, rels_path);
+            }
 
             // Check to see if a rel for this Hyperlink exists, create it if not.
-            var Id = GetOrGenerateRel(h);
+            string Id = GetOrGenerateRel(h);
 
             Xml.Add(h.Xml);
             Xml.Elements().Last().SetAttributeValue(DocxNamespace.RelatedDoc + "id", Id);
@@ -680,9 +694,13 @@ namespace DXPlus
             XElement fldSimple = new XElement(DocxNamespace.Main + "fldSimple");
 
             if (pnf == PageNumberFormat.Normal)
+            {
                 fldSimple.Add(new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES   \* MERGEFORMAT "));
+            }
             else
+            {
                 fldSimple.Add(new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES  \* ROMAN  \* MERGEFORMAT "));
+            }
 
             XElement content = XElement.Parse
             (
@@ -737,9 +755,13 @@ namespace DXPlus
             XElement fldSimple = new XElement(DocxNamespace.Main + "fldSimple");
 
             if (pnf == PageNumberFormat.Normal)
+            {
                 fldSimple.Add(new XAttribute(DocxNamespace.Main + "instr", @" PAGE   \* MERGEFORMAT "));
+            }
             else
+            {
                 fldSimple.Add(new XAttribute(DocxNamespace.Main + "instr", @" PAGE  \* ROMAN  \* MERGEFORMAT "));
+            }
 
             XElement content = XElement.Parse
             (
@@ -768,10 +790,12 @@ namespace DXPlus
 
             // Check to see if the rels file exists and create it if not.
             if (!Document.package.PartExists(rels_path))
+            {
                 HelperFunctions.CreateRelsPackagePart(Document, rels_path);
+            }
 
             // Check to see if a rel for this Picture exists, create it if not.
-            var Id = GetOrGenerateRel(p);
+            string Id = GetOrGenerateRel(p);
 
             // Add the Picture Xml to the end of the Paragragraph Xml.
             Xml.Add(p.Xml);
@@ -847,7 +871,9 @@ namespace DXPlus
         public Paragraph CapsStyle(CapsStyle capsStyle)
         {
             if (capsStyle != DXPlus.CapsStyle.None)
+            {
                 ApplyTextFormattingProperty(DocxNamespace.Main + capsStyle.ToString(), string.Empty, null);
+            }
 
             return this;
         }
@@ -912,7 +938,7 @@ namespace DXPlus
         /// <returns>A list of indexes.</returns>
         public IEnumerable<int> FindAll(string text, RegexOptions options)
         {
-            MatchCollection mc = Regex.Matches(this.Text, Regex.Escape(text), options);
+            MatchCollection mc = Regex.Matches(Text, Regex.Escape(text), options);
             return mc.Cast<Match>().Select(m => m.Index);
         }
 
@@ -924,7 +950,7 @@ namespace DXPlus
         /// <returns></returns>
         public IEnumerable<(int index, string text)> FindPattern(string pattern, RegexOptions options)
         {
-            MatchCollection mc = Regex.Matches(this.Text, pattern, options);
+            MatchCollection mc = Regex.Matches(Text, pattern, options);
             return mc.Cast<Match>().Select(m => (index: m.Index, text: m.Value));
         }
 
@@ -994,9 +1020,14 @@ namespace DXPlus
         public Paragraph FontSize(double fontSize)
         {
             if (fontSize < 0 || fontSize > 1639)
+            {
                 throw new ArgumentException("Size", "Value must be in the range 0 - 1638");
+            }
+
             if (fontSize - (int)fontSize != 0)
+            {
                 throw new ArgumentException("Size", "Value must be either a whole or half number, examples: 32, 32.5");
+            }
 
             ApplyTextFormattingProperty(DocxNamespace.Main + "sz", string.Empty, new XAttribute(DocxNamespace.Main + "val", fontSize * 2));
             ApplyTextFormattingProperty(DocxNamespace.Main + "szCs", string.Empty, new XAttribute(DocxNamespace.Main + "val", fontSize * 2));
@@ -1058,11 +1089,11 @@ namespace DXPlus
 
         public void InsertAtBookmark(string toInsert, string bookmarkName)
         {
-            var bookmark = Xml.Descendants(DocxNamespace.Main + "bookmarkStart")
+            XElement bookmark = Xml.Descendants(DocxNamespace.Main + "bookmarkStart")
                                 .SingleOrDefault(x => x.Attribute(DocxNamespace.Main + "name").Value == bookmarkName);
             if (bookmark != null)
             {
-                var run = HelperFunctions.FormatInput(toInsert, null);
+                List<XElement> run = HelperFunctions.FormatInput(toInsert, null);
                 bookmark.AddBeforeSelf(run);
                 runs = Xml.Elements(DocxNamespace.Main + "r").ToList();
                 HelperFunctions.RenumberIDs(Document);
@@ -1108,7 +1139,9 @@ namespace DXPlus
         {
             XElement f_xml = null;
             if (f != null)
+            {
                 f_xml = f.Xml;
+            }
 
             XElement e = new XElement
             (
@@ -1145,10 +1178,12 @@ namespace DXPlus
 
             // Check to see if the rels file exists and create it if not.
             if (!Document.package.PartExists(rels_path))
+            {
                 HelperFunctions.CreateRelsPackagePart(Document, rels_path);
+            }
 
             // Check to see if a rel for this Picture exists, create it if not.
-            var Id = GetOrGenerateRel(h);
+            string Id = GetOrGenerateRel(h);
 
             XElement h_xml;
             if (index == 0)
@@ -1237,9 +1272,13 @@ namespace DXPlus
             XElement fldSimple = new XElement(DocxNamespace.Main + "fldSimple");
 
             if (pnf == PageNumberFormat.Normal)
+            {
                 fldSimple.Add(new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES   \* MERGEFORMAT "));
+            }
             else
+            {
                 fldSimple.Add(new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES  \* ROMAN  \* MERGEFORMAT "));
+            }
 
             XElement content = XElement.Parse(
              @"<w:r w:rsidR='001D0226' xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
@@ -1303,9 +1342,13 @@ namespace DXPlus
             XElement fldSimple = new XElement(DocxNamespace.Main + "fldSimple");
 
             if (pnf == PageNumberFormat.Normal)
+            {
                 fldSimple.Add(new XAttribute(DocxNamespace.Main + "instr", @" PAGE   \* MERGEFORMAT "));
+            }
             else
+            {
                 fldSimple.Add(new XAttribute(DocxNamespace.Main + "instr", @" PAGE  \* ROMAN  \* MERGEFORMAT "));
+            }
 
             XElement content = XElement.Parse(
              @"<w:r w:rsidR='001D0226' xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
@@ -1345,10 +1388,12 @@ namespace DXPlus
 
             // Check to see if the rels file exists and create it if not.
             if (!Document.package.PartExists(rels_path))
+            {
                 HelperFunctions.CreateRelsPackagePart(Document, rels_path);
+            }
 
             // Check to see if a rel for this Picture exists, create it if not.
-            var Id = GetOrGenerateRel(p);
+            string Id = GetOrGenerateRel(p);
 
             XElement p_xml;
             if (index == 0)
@@ -1409,7 +1454,9 @@ namespace DXPlus
         public void InsertText(string value, Formatting formatting = null)
         {
             if (formatting == null)
+            {
                 formatting = new Formatting();
+            }
 
             List<XElement> newRuns = HelperFunctions.FormatInput(value, formatting.Xml);
             Xml.Add(newRuns);
@@ -1436,18 +1483,25 @@ namespace DXPlus
             {
                 object insert;
                 if (formatting != null) //not sure how to get original formatting here when run == null
+                {
                     insert = HelperFunctions.FormatInput(value, formatting.Xml);
+                }
                 else
+                {
                     insert = HelperFunctions.FormatInput(value, null);
+                }
 
                 if (trackChanges)
+                {
                     insert = HelperFunctions.CreateEdit(EditType.Ins, insert_datetime, insert);
+                }
+
                 Xml.Add(insert);
             }
             else
             {
                 object newRuns;
-                var rprel = run.Xml.Element(DocxNamespace.Main + "rPr");
+                XElement rprel = run.Xml.Element(DocxNamespace.Main + "rPr");
                 if (formatting != null)
                 {
                     Formatting oldfmt = null;
@@ -1511,7 +1565,9 @@ namespace DXPlus
 
                     case "del":
                         if (trackChanges)
+                        {
                             insert = HelperFunctions.CreateEdit(EditType.Ins, insert_datetime, newRuns);
+                        }
 
                         // Split this Edit at the point you want to insert
                         XElement[] splitEdit = SplitEdit(parentElement, index, EditType.Ins);
@@ -1573,8 +1629,8 @@ namespace DXPlus
         /// </summary>
         public Paragraph KeepLinesTogether(bool keepTogether = true)
         {
-            var pPr = ParaProperties();
-            var keepLinesE = pPr.Element(DocxNamespace.Main + "keepLines");
+            XElement pPr = ParaProperties();
+            XElement keepLinesE = pPr.Element(DocxNamespace.Main + "keepLines");
             if (keepLinesE == null && keepTogether)
             {
                 pPr.Add(new XElement(DocxNamespace.Main + "keepLines"));
@@ -1592,8 +1648,8 @@ namespace DXPlus
         /// <param name="keepWithNext"></param>
         public Paragraph KeepWithNext(bool keepWithNext = true)
         {
-            var pPr = ParaProperties();
-            var keepWithNextE = pPr.Element(DocxNamespace.Main + "keepNext");
+            XElement pPr = ParaProperties();
+            XElement keepWithNextE = pPr.Element(DocxNamespace.Main + "keepNext");
             if (keepWithNextE == null && keepWithNext)
             {
                 pPr.Add(new XElement(DocxNamespace.Main + "keepNext"));
@@ -1608,7 +1664,9 @@ namespace DXPlus
         public Paragraph Kerning(int kerning)
         {
             if (!new int?[] { 8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72 }.Contains(kerning))
+            {
                 throw new ArgumentOutOfRangeException("Kerning", "Value must be one of the following: 8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48 or 72");
+            }
 
             ApplyTextFormattingProperty(DocxNamespace.Main + "kern", string.Empty, new XAttribute(DocxNamespace.Main + "val", kerning * 2));
             return this;
@@ -1646,7 +1704,9 @@ namespace DXPlus
         public Paragraph PercentageScale(int percentageScale)
         {
             if (!(new int?[] { 200, 150, 100, 90, 80, 66, 50, 33 }).Contains(percentageScale))
+            {
                 throw new ArgumentOutOfRangeException("PercentageScale", "Value must be one of the following: 200, 150, 100, 90, 80, 66, 50 or 33");
+            }
 
             ApplyTextFormattingProperty(DocxNamespace.Main + "w", string.Empty, new XAttribute(DocxNamespace.Main + "val", percentageScale));
 
@@ -1656,7 +1716,9 @@ namespace DXPlus
         public Paragraph Position(double position)
         {
             if (!(position > -1585 && position < 1585))
+            {
                 throw new ArgumentOutOfRangeException("Position", "Value must be in the range -1585 - 1585");
+            }
 
             ApplyTextFormattingProperty(DocxNamespace.Main + "position", string.Empty, new XAttribute(DocxNamespace.Main + "val", position * 2));
 
@@ -1692,7 +1754,9 @@ namespace DXPlus
                 }
 
                 if (temp.Count > 0)
+                {
                     Xml.Add(HelperFunctions.CreateEdit(EditType.Del, now, temp));
+                }
             }
             else
             {
@@ -1719,7 +1783,9 @@ namespace DXPlus
         {
             // Dosen't make sense to remove a Hyperlink at a negative index.
             if (index < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(index));
+            }
 
             // Need somewhere to store the count.
             int count = 0;
@@ -1728,7 +1794,9 @@ namespace DXPlus
 
             // If !found then the user tried to remove a hyperlink at an index greater than the last.
             if (!found)
+            {
                 throw new ArgumentOutOfRangeException(nameof(index));
+            }
         }
 
         /// <summary>
@@ -1785,7 +1853,9 @@ namespace DXPlus
                             processed += GetElementTextLength(middle as XElement);
 
                             if (!trackChanges)
+                            {
                                 middle = null;
+                            }
 
                             parentElement.ReplaceWith
                             (
@@ -1824,7 +1894,9 @@ namespace DXPlus
                             processed += GetElementTextLength(middle as XElement);
 
                             if (!trackChanges)
+                            {
                                 middle = null;
+                            }
 
                             run.Xml.ReplaceWith(splitRunBefore[0], middle, splitRunAfter[1]);
                         }
@@ -1839,7 +1911,9 @@ namespace DXPlus
                         // Need to make sure there is no drawing element within the parent element.
                         // Picture elements contain no text length but they are still content.
                         if (!parentElement.Descendants(DocxNamespace.Main + "drawing").Any())
+                        {
                             parentElement.Remove();
+                        }
                     }
                 }
             }
@@ -1915,10 +1989,12 @@ namespace DXPlus
                         XElement rPr = run.Xml.Element(DocxNamespace.Main + "rPr");
 
                         if (rPr == null)
+                        {
                             rPr = new Formatting().Xml;
+                        }
 
-                         // Make sure that every formatting element in f.xml is also in this run,
-                         // if this is not true, then their formatting does not match.
+                        // Make sure that every formatting element in f.xml is also in this run,
+                        // if this is not true, then their formatting does not match.
                         if (!HelperFunctions.ContainsEveryChildOf(matchFormatting.Xml, rPr, fo))
                         {
                             formattingMatch = false;
@@ -1934,7 +2010,7 @@ namespace DXPlus
                 if (formattingMatch)
                 {
                     string repl = newValue;
-                    
+
                     //perform RegEx substitutions. Only named groups are not supported. Everything else is supported. However character escapes are not covered.
                     if (useRegExSubstitutions && !string.IsNullOrEmpty(repl))
                     {
@@ -1944,9 +2020,12 @@ namespace DXPlus
                             int lastcap = 0;
                             for (int k = 0; k < m.Groups.Count; k++)
                             {
-                                var g = m.Groups[k];
+                                Group g = m.Groups[k];
                                 if ((g == null) || (g.Value == ""))
+                                {
                                     continue;
+                                }
+
                                 repl = repl.Replace("$" + k.ToString(), g.Value);
                                 lastcap = k;
                                 //cannot get named groups ATM
@@ -1965,9 +2044,14 @@ namespace DXPlus
                         repl = repl.Replace("$$", "$");
                     }
                     if (!string.IsNullOrEmpty(repl))
+                    {
                         InsertText(m.Index + m.Length, repl, trackChanges, newFormatting);
+                    }
+
                     if (m.Length > 0)
+                    {
                         RemoveText(m.Index, m.Length, trackChanges);
+                    }
                 }
             }
         }
@@ -1984,10 +2068,10 @@ namespace DXPlus
         /// <param name="fo"></param>
         public void ReplaceText(string findPattern, Func<string, string> regexMatchHandler, bool trackChanges = false, RegexOptions options = RegexOptions.None, Formatting newFormatting = null, Formatting matchFormatting = null, MatchFormattingOptions fo = MatchFormattingOptions.SubsetMatch)
         {
-            var matchCollection = Regex.Matches(Text, findPattern, options);
+            MatchCollection matchCollection = Regex.Matches(Text, findPattern, options);
 
             // Loop through the matches in reverse order
-            foreach (var match in matchCollection.Cast<Match>().Reverse())
+            foreach (Match match in matchCollection.Cast<Match>().Reverse())
             {
                 // Assume the formatting matches until proven otherwise.
                 bool formattingMatch = true;
@@ -2007,7 +2091,9 @@ namespace DXPlus
                         XElement rPr = run.Xml.Element(DocxNamespace.Main + "rPr");
 
                         if (rPr == null)
+                        {
                             rPr = new Formatting().Xml;
+                        }
 
                         /*
                          * Make sure that every formatting element in f.xml is also in this run,
@@ -2027,7 +2113,7 @@ namespace DXPlus
                 // If the formatting matches, do the replace.
                 if (formattingMatch)
                 {
-                    var newValue = regexMatchHandler.Invoke(match.Groups[1].Value);
+                    string newValue = regexMatchHandler.Invoke(match.Groups[1].Value);
                     InsertText(match.Index + match.Value.Length, newValue, trackChanges, newFormatting);
                     RemoveText(match.Index, match.Value.Length, trackChanges);
                 }
@@ -2084,8 +2170,8 @@ namespace DXPlus
             spacingFloat = spacingFloat * 240;
             int spacingValue = (int)spacingFloat;
 
-            var pPr = this.ParaProperties();
-            var spacing = pPr.Element(DocxNamespace.Main + "spacing");
+            XElement pPr = ParaProperties();
+            XElement spacing = pPr.Element(DocxNamespace.Main + "spacing");
             if (spacing == null)
             {
                 pPr.Add(new XElement(DocxNamespace.Main + "spacing"));
@@ -2123,8 +2209,8 @@ namespace DXPlus
         {
             int spacingValue = 100;
 
-            var pPr = this.ParaProperties();
-            var spacing = pPr.Element(DocxNamespace.Main + "spacing");
+            XElement pPr = ParaProperties();
+            XElement spacing = pPr.Element(DocxNamespace.Main + "spacing");
 
             if (spacingType.Equals(LineSpacingTypeAuto.None))
             {
@@ -2179,10 +2265,14 @@ namespace DXPlus
             if (spacing - (int)spacing == 0)
             {
                 if (!(spacing > -1585 && spacing < 1585))
+                {
                     throw new ArgumentException("Spacing", "Value must be in the range: -1584 - 1584");
+                }
             }
             else
+            {
                 throw new ArgumentException("Spacing", "Value must be either a whole or acurate to one decimal, examples: 32, 32.1, 32.2, 32.9");
+            }
 
             ApplyTextFormattingProperty(DocxNamespace.Main + "spacing", string.Empty, new XAttribute(DocxNamespace.Main + "val", spacing));
 
@@ -2193,8 +2283,8 @@ namespace DXPlus
         {
             spacingAfter *= 20;
 
-            var pPr = ParaProperties();
-            var spacing = pPr.Element(DocxNamespace.Main + "spacing");
+            XElement pPr = ParaProperties();
+            XElement spacing = pPr.Element(DocxNamespace.Main + "spacing");
             if (spacingAfter > 0)
             {
                 if (spacing == null)
@@ -2202,18 +2292,24 @@ namespace DXPlus
                     spacing = new XElement(DocxNamespace.Main + "spacing");
                     pPr.Add(spacing);
                 }
-                var attr = spacing.Attribute(DocxNamespace.Main + "after");
+                XAttribute attr = spacing.Attribute(DocxNamespace.Main + "after");
                 if (attr == null)
+                {
                     spacing.SetAttributeValue(DocxNamespace.Main + "after", spacingAfter);
+                }
                 else
+                {
                     attr.SetValue(spacingAfter);
+                }
             }
             if (Math.Abs(spacingAfter) < 0.1f && spacing != null)
             {
-                var attr = spacing.Attribute(DocxNamespace.Main + "after");
+                XAttribute attr = spacing.Attribute(DocxNamespace.Main + "after");
                 attr.Remove();
                 if (!spacing.HasAttributes)
+                {
                     spacing.Remove();
+                }
             }
             //ApplyTextFormattingProperty(DocxNamespace.Main + "after", DocxNamespace.w.NamespaceName), string.Empty, new XAttribute(DocxNamespace.Main + "val", DocxNamespace.w.NamespaceName), spacingAfter));
 
@@ -2224,8 +2320,8 @@ namespace DXPlus
         {
             spacingBefore *= 20;
 
-            var pPr = ParaProperties();
-            var spacing = pPr.Element(DocxNamespace.Main + "spacing");
+            XElement pPr = ParaProperties();
+            XElement spacing = pPr.Element(DocxNamespace.Main + "spacing");
             if (spacingBefore > 0)
             {
                 if (spacing == null)
@@ -2233,18 +2329,24 @@ namespace DXPlus
                     spacing = new XElement(DocxNamespace.Main + "spacing");
                     pPr.Add(spacing);
                 }
-                var attr = spacing.Attribute(DocxNamespace.Main + "before");
+                XAttribute attr = spacing.Attribute(DocxNamespace.Main + "before");
                 if (attr == null)
+                {
                     spacing.SetAttributeValue(DocxNamespace.Main + "before", spacingBefore);
+                }
                 else
+                {
                     attr.SetValue(spacingBefore);
+                }
             }
             if (Math.Abs(spacingBefore) < 0.1f && spacing != null)
             {
-                var attr = spacing.Attribute(DocxNamespace.Main + "before");
+                XAttribute attr = spacing.Attribute(DocxNamespace.Main + "before");
                 attr.Remove();
                 if (!spacing.HasAttributes)
+                {
                     spacing.Remove();
+                }
             }
 
             return this;
@@ -2269,7 +2371,7 @@ namespace DXPlus
         /// <param name="styleName">Stylename</param>
         public Paragraph Style(string styleName)
         {
-            this.StyleName = styleName;
+            StyleName = styleName;
             return this;
         }
 
@@ -2363,21 +2465,25 @@ namespace DXPlus
         /// <param name="id">A unique id that identifies an Image embedded in this document.</param>
         /// <param name="name">The name of this Picture.</param>
         /// <param name="descr">The description of this Picture.</param>
-        static internal Picture CreatePicture(DocX document, string id, string name, string descr)
+        internal static Picture CreatePicture(DocX document, string id, string name, string descr)
         {
             PackagePart part = document.package.GetPart(document.packagePart.GetRelationship(id).TargetUri);
 
             int newDocPrId = 1;
             List<string> existingIds = new List<string>();
-            foreach (var bookmarkId in document.Xml.Descendants(DocxNamespace.Main + "bookmarkStart"))
+            foreach (XElement bookmarkId in document.Xml.Descendants(DocxNamespace.Main + "bookmarkStart"))
             {
-                var idAtt = bookmarkId.Attributes().FirstOrDefault(x => x.Name.LocalName == "id");
+                XAttribute idAtt = bookmarkId.Attributes().FirstOrDefault(x => x.Name.LocalName == "id");
                 if (idAtt != null)
+                {
                     existingIds.Add(idAtt.Value);
+                }
             }
 
             while (existingIds.Contains(newDocPrId.ToString()))
+            {
                 newDocPrId++;
+            }
 
             int cx, cy;
 
@@ -2432,19 +2538,24 @@ namespace DXPlus
             return new Picture(document, xml, new Image(document, document.packagePart.GetRelationship(id)));
         }
 
-        static internal int GetElementTextLength(XElement run)
+        internal static int GetElementTextLength(XElement run)
         {
             int count = 0;
             if (run == null)
+            {
                 return count;
+            }
 
-            foreach (var d in run.Descendants())
+            foreach (XElement d in run.Descendants())
             {
                 switch (d.Name.LocalName)
                 {
                     case "tab":
                         if (d.Parent.Name.LocalName != "tabs")
+                        {
                             goto case "br";
+                        }
+
                         break;
 
                     case "br":
@@ -2480,7 +2591,7 @@ namespace DXPlus
                 }
 
                 rPr.SetElementValue(textFormatPropName, value);
-                var last = rPr.Elements(textFormatPropName).Last();
+                XElement last = rPr.Elements(textFormatPropName).Last();
                 if (content is XAttribute attribute)
                 {
                     if (last.Attribute(attribute.Name) == null)
@@ -2495,7 +2606,7 @@ namespace DXPlus
                 return;
             }
 
-            var properties = content as IEnumerable<object>;
+            IEnumerable<object> properties = content as IEnumerable<object>;
             bool isListOfAttributes = properties?.All(o => o is XAttribute) == true;
 
             foreach (XElement run in runs)
@@ -2515,7 +2626,7 @@ namespace DXPlus
                     // List of attributes, as in the case when specifying a font family
                     foreach (XAttribute property in properties)
                     {
-                        var lastAttribute = last.Attribute(property.Name);
+                        XAttribute lastAttribute = last.Attribute(property.Name);
                         if (lastAttribute == null)
                         {
                             last.Add(property);
@@ -2548,7 +2659,9 @@ namespace DXPlus
         {
             int len = HelperFunctions.GetText(Xml).Length;
             if (index < 0 || (type == EditType.Ins && index > len) || (type == EditType.Del && index >= len))
+            {
                 throw new ArgumentOutOfRangeException(nameof(index));
+            }
 
             int count = 0;
             Run theOne = null;
@@ -2567,13 +2680,17 @@ namespace DXPlus
             {
                 // Correct the index
                 foreach (XElement e in Xml.ElementsBeforeSelf())
+                {
                     count -= HelperFunctions.GetSize(e);
+                }
 
                 count -= HelperFunctions.GetSize(Xml);
 
                 // We have found the element, now find the run it belongs to.
                 while ((Xml.Name.LocalName != "r") && (Xml.Name.LocalName != "pPr"))
+                {
                     Xml = Xml.Parent;
+                }
 
                 theOne = new Run(Document, Xml, count);
             }
@@ -2631,7 +2748,7 @@ namespace DXPlus
             string image_uri_string = p.img.pr.TargetUri.OriginalString;
 
             // Search for a relationship with a TargetUri that points at this Image.
-            var Id = packagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image")
+            string Id = packagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image")
                 .Where(r => r.TargetUri.OriginalString == image_uri_string)
                 .Select(r => r.Id)
                 .SingleOrDefault();
@@ -2651,7 +2768,7 @@ namespace DXPlus
             string image_uri_string = h.Uri.OriginalString;
 
             // Search for a relationship with a TargetUri that points at this Image.
-            var Id = packagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink")
+            string Id = packagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink")
                 .Where(r => r.TargetUri.OriginalString == image_uri_string)
                 .Select(r => r.Id)
                 .SingleOrDefault();
@@ -2701,11 +2818,15 @@ namespace DXPlus
 
             XElement splitLeft = new XElement(edit.Name, edit.Attributes(), run.Xml.ElementsBeforeSelf(), splitRun[0]);
             if (GetElementTextLength(splitLeft) == 0)
+            {
                 splitLeft = null;
+            }
 
             XElement splitRight = new XElement(edit.Name, edit.Attributes(), splitRun[1], run.Xml.ElementsAfterSelf());
             if (GetElementTextLength(splitRight) == 0)
+            {
                 splitRight = null;
+            }
 
             return new[] { splitLeft, splitRight };
         }

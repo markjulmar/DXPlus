@@ -1,11 +1,11 @@
 ﻿namespace DXPlus
 {
-  public enum SectionBreakType
-  {
-    DefaultNextPage,
-    EvenPage,
-    OddPage,
-    Continuous
-  }
+    public enum SectionBreakType
+    {
+        DefaultNextPage,
+        EvenPage,
+        OddPage,
+        Continuous
+    }
 
 }

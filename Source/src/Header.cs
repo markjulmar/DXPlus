@@ -47,7 +47,7 @@ namespace DXPlus
 
         internal Header(DocX document, XElement xml, PackagePart mainPart) : base(document, xml)
         {
-            this.packagePart = mainPart;
+            packagePart = mainPart;
         }
 
         public IEnumerable<Image> Images => packagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image")

@@ -2,42 +2,44 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.IO.Compression;
 using System.IO.Packaging;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Xml.Linq;
 
-namespace DXPlus
+namespace DXPlus.Helpers
 {
     internal static class HelperFunctions
     {
         /// <summary>
         /// Checks whether 'toCheck' has all children that 'desired' has and values of 'val' attributes are the same
         /// </summary>
-        /// <param name="desired"></param>
-        /// <param name="toCheck"></param>
-        /// <param name="formatOptions">Matching options whether check if desired attributes are inder a, or a has exactly and only these attributes as b has.</param>
         internal static bool ContainsEveryChildOf(XElement desired, XElement toCheck, MatchFormattingOptions formatOptions)
         {
-            foreach (XElement e in desired.Elements())
+            if (desired == null)
+                throw new ArgumentNullException(nameof(desired));
+            if (toCheck == null) 
+                throw new ArgumentNullException(nameof(toCheck));
+
+            if (desired.Elements().Any(e => toCheck.Elements(e.Name)
+                .All(bElement => bElement.GetVal() != e.GetVal())))
             {
-                // If a formatting property has the same name and 'val' attribute's value, its considered to be equivalent.
-                if (!toCheck.Elements(e.Name).Any(bElement => bElement.GetVal() == e.GetVal()))
-                {
-                    return false;
-                }
+                return false;
             }
 
-            // If the formatting has to be exact, no additionaly formatting must exist.
+            // If the formatting has to be exact, no additional formatting must exist.
             return formatOptions != MatchFormattingOptions.ExactMatch
                 || desired.Elements().Count() == toCheck.Elements().Count();
         }
 
-        internal static void CreateRelsPackagePart(DocX Document, Uri uri)
+        internal static void CreateRelsPackagePart(DocX document, Uri uri)
         {
-            PackagePart pp = Document.package.CreatePart(uri, DocxContentType.Relationships, CompressionOption.Maximum);
+            if (document == null)
+                throw new ArgumentNullException(nameof(document));
+            if (uri == null)
+                throw new ArgumentNullException(nameof(uri));
+
+            PackagePart pp = document.package.CreatePart(uri, DocxContentType.Relationships, CompressionOption.Maximum);
             using TextWriter tw = new StreamWriter(pp.GetStream());
             XDocument d = new XDocument(
                 new XDeclaration("1.0", "UTF-8", "yes"),
@@ -47,9 +49,12 @@ namespace DXPlus
             d.Save(tw);
         }
 
-        internal static int GetSize(XElement Xml)
+        internal static int GetSize(XElement xml)
         {
-            switch (Xml.Name.LocalName)
+            if (xml == null) 
+                throw new ArgumentNullException(nameof(xml));
+
+            switch (xml.Name.LocalName)
             {
                 case "tab":
                 case "br":
@@ -59,22 +64,28 @@ namespace DXPlus
 
                 case "t":
                 case "delText":
-                    return Xml.Value.Length;
+                    return xml.Value.Length;
 
                 default:
                     return 0;
             }
         }
 
-        internal static string GetText(XElement e) => GetTextRecursive(e).ToString();
-
-        internal static StringBuilder GetTextRecursive(XElement Xml, StringBuilder sb = null)
+        internal static string GetText(XElement e)
         {
-            (sb ??= new StringBuilder()).Append(ToText(Xml));
+            return GetTextRecursive(e).ToString();
+        }
 
-            if (Xml.HasElements)
+        internal static StringBuilder GetTextRecursive(XElement xml, StringBuilder sb = null)
+        {
+            if (xml == null)
+                throw new ArgumentNullException(nameof(xml));
+            
+            (sb ??= new StringBuilder()).Append(ToText(xml));
+
+            if (xml.HasElements)
             {
-                foreach (XElement e in Xml.Elements())
+                foreach (var e in xml.Elements())
                 {
                     GetTextRecursive(e, sb);
                 }
@@ -83,76 +94,76 @@ namespace DXPlus
             return sb;
         }
 
-        internal static List<FormattedText> GetFormattedText(XElement e)
+        internal static List<FormattedText> GetFormattedText(XElement xml)
         {
-            List<FormattedText> alist = new List<FormattedText>();
-            GetFormattedTextRecursive(e, ref alist);
-            return alist;
+           
+            var list = new List<FormattedText>();
+            GetFormattedTextRecursive(xml, ref list);
+            return list;
         }
 
-        internal static void GetFormattedTextRecursive(XElement Xml, ref List<FormattedText> alist)
+        internal static void GetFormattedTextRecursive(XElement xml, ref List<FormattedText> list)
         {
-            FormattedText ft = ToFormattedText(Xml);
+            if (xml == null)
+                throw new ArgumentNullException(nameof(xml));
+
+            var ft = ToFormattedText(xml);
             FormattedText last = null;
 
             if (ft != null)
             {
-                if (alist.Count > 0)
-                    last = alist.Last();
+                if (list.Count > 0)
+                {
+                    last = list.Last();
+                }
 
                 if (last?.CompareTo(ft) == 0)
                 {
-                    last.text += ft.text;
+                    last.Text += ft.Text;
                 }
                 else
                 {
                     if (last != null)
                     {
-                        ft.index = last.index + last.text.Length;
+                        ft.Index = last.Index + last.Text.Length;
                     }
 
-                    alist.Add(ft);
+                    list.Add(ft);
                 }
             }
 
-            if (Xml.HasElements)
+            if (xml.HasElements)
             {
-                foreach (XElement e in Xml.Elements())
+                foreach (var e in xml.Elements())
                 {
-                    GetFormattedTextRecursive(e, ref alist);
+                    GetFormattedTextRecursive(e, ref list);
                 }
             }
         }
 
-        internal static FormattedText ToFormattedText(XElement e)
+        internal static FormattedText ToFormattedText(XElement xml)
         {
-            // The text representation of e.
-            string text = ToText(e);
+            if (xml == null)
+                throw new ArgumentNullException(nameof(xml));
+            
+            string text = ToText(xml);
             if (string.IsNullOrEmpty(text))
                 return null;
 
-            // e is a w:t element, it must exist inside a w:r element or a w:tabs, lets climb until we find it.
-            while (!e.Name.Equals(DocxNamespace.Main + "r") &&
-                   !e.Name.Equals(DocxNamespace.Main + "tabs"))
+            // xml is a w:t element, it must exist inside a w:r element or a w:tabs, lets climb until we find it.
+            while (!xml.Name.Equals(DocxNamespace.Main + "r") &&
+                   !xml.Name.Equals(DocxNamespace.Main + "tabs"))
             {
-                e = e.Parent;
+                xml = xml.Parent;
             }
 
-            // e is a w:r element, lets find the rPr element.
-            XElement rPr = e.Element(DocxNamespace.Main + "rPr");
-
-            FormattedText ft = new FormattedText
-            {
-                text = text,
-                index = 0,
-                formatting = null
+            // xml is a w:r element, lets find the rPr element.
+            var rPr = xml.Element(DocxNamespace.Main + "rPr");
+            return new FormattedText {
+                Text = text,
+                Index = 0,
+                Formatting = Formatting.Parse(rPr)
             };
-
-            // Return text with formatting.
-            if (rPr != null)
-                ft.formatting = Formatting.Parse(rPr);
-
-            return ft;
         }
 
         internal static string ToText(XElement e)
@@ -172,16 +183,11 @@ namespace DXPlus
                     {
                         if (e.Parent?.Name.LocalName == "r")
                         {
-                            XElement run = e.Parent;
-                            var rPr = run.Elements().FirstOrDefault(a => a.Name.LocalName == "rPr");
-                            if (rPr != null)
-                            {
-                                var caps = rPr.Elements().FirstOrDefault(a => a.Name.LocalName == "caps");
-                                if (caps != null)
-                                    return e.Value.ToUpper();
-                            }
+                            var caps = e.Parent.FirstLocalNameDescendant("rPr")?
+                                                       .FirstLocalNameDescendant("caps");
+                            if (caps != null)
+                                return e.Value.ToUpper();
                         }
-
                         return e.Value;
                     }
                 default:
@@ -206,13 +212,13 @@ namespace DXPlus
             {
                 settingsPart = package.CreatePart(DocxSections.SettingsUri, DocxContentType.Settings, CompressionOption.Maximum);
 
-                PackagePart mainDocumentPart = package.GetParts().Single(p =>
+                var mainDocumentPart = package.GetParts().Single(p =>
                        p.ContentType.Equals(DocxContentType.Document, StringComparison.CurrentCultureIgnoreCase)
                     || p.ContentType.Equals(DocxContentType.Template, StringComparison.CurrentCultureIgnoreCase));
 
                 mainDocumentPart.CreateRelationship(DocxSections.SettingsUri, TargetMode.Internal, $"{DocxNamespace.RelatedDoc.NamespaceName}/settings");
 
-                XDocument settings = XDocument.Parse
+                var settings = XDocument.Parse
                 (@"<?xml version='1.0' encoding='utf-8' standalone='yes'?>
                 <w:settings xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:r='http://schemas.openxmlformats.org/officeDocument/2006/relationships' xmlns:m='http://schemas.openxmlformats.org/officeDocument/2006/math' xmlns:v='urn:schemas-microsoft-com:vml' xmlns:w10='urn:schemas-microsoft-com:office:word' xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main' xmlns:sl='http://schemas.openxmlformats.org/schemaLibrary/2006/main'>
                   <w:zoom w:percent='100' />
@@ -253,8 +259,7 @@ namespace DXPlus
                 </w:settings>"
                 );
 
-                XElement themeFontLang = settings.Root.Element(DocxNamespace.Main + "themeFontLang");
-                themeFontLang.SetVal(CultureInfo.CurrentCulture);
+                settings.Root?.Element(DocxNamespace.Main + "themeFontLang")?.SetVal(CultureInfo.CurrentCulture);
 
                 // Save the settings document.
                 using TextWriter tw = new StreamWriter(settingsPart.GetStream());
@@ -270,16 +275,17 @@ namespace DXPlus
 
         internal static void CreateCustomPropertiesPart(DocX document)
         {
-            PackagePart customPropertiesPart = document.package.CreatePart(new Uri("/docProps/custom.xml", UriKind.Relative), "application/vnd.openxmlformats-officedocument.custom-properties+xml", CompressionOption.Maximum);
-
-            XDocument customPropDoc = new XDocument(new XDeclaration("1.0", "UTF-8", "yes"),
+            var customPropertiesPart = document.package.CreatePart(new Uri("/docProps/custom.xml", UriKind.Relative), "application/vnd.openxmlformats-officedocument.custom-properties+xml", CompressionOption.Maximum);
+            var customPropDoc = new XDocument(new XDeclaration("1.0", "UTF-8", "yes"),
                 new XElement(DocxNamespace.CustomPropertiesSchema + "Properties",
                     new XAttribute(XNamespace.Xmlns + "vt", DocxNamespace.CustomVTypesSchema)
                 )
             );
 
             using (TextWriter tw = new StreamWriter(customPropertiesPart.GetStream(FileMode.Create, FileAccess.Write)))
+            {
                 customPropDoc.Save(tw, SaveOptions.None);
+            }
 
             document.package.CreateRelationship(customPropertiesPart.Uri, TargetMode.Internal,
                 $"{DocxNamespace.RelatedDoc.NamespaceName}/custom-properties");
@@ -292,14 +298,16 @@ namespace DXPlus
         /// <param name="package"></param>
         internal static XDocument AddDefaultNumberingXml(Package package)
         {
-            PackagePart wordNumbering = package.CreatePart(new Uri("/word/numbering.xml", UriKind.Relative), "application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml", CompressionOption.Maximum);
+            var wordNumbering = package.CreatePart(new Uri("/word/numbering.xml", UriKind.Relative), "application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml", CompressionOption.Maximum);
             var numberingDoc = Resources.NumberingXml;
 
             // Save /word/numbering.xml
             using (TextWriter tw = new StreamWriter(wordNumbering.GetStream(FileMode.Create, FileAccess.Write)))
+            {
                 numberingDoc.Save(tw, SaveOptions.None);
+            }
 
-            PackagePart mainDocumentPart = package.GetParts().Single(p =>
+            var mainDocumentPart = package.GetParts().Single(p =>
                 p.ContentType.Equals(DocxContentType.Document, StringComparison.CurrentCultureIgnoreCase)
                 || p.ContentType.Equals(DocxContentType.Template, StringComparison.CurrentCultureIgnoreCase));
 
@@ -313,33 +321,38 @@ namespace DXPlus
         /// <param name="package"></param>
         internal static XDocument AddDefaultStylesXml(Package package)
         {
-            PackagePart word_styles = package.CreatePart(DocxSections.StylesUri, DocxContentType.Styles, CompressionOption.Maximum);
+            if (package == null)
+                throw new ArgumentNullException(nameof(package));
+            
+            var wordStyles = package.CreatePart(DocxSections.StylesUri, DocxContentType.Styles, CompressionOption.Maximum);
             var stylesDoc = Resources.DefaultStylesXml;
 
-            XElement lang = stylesDoc.Root.Element(DocxNamespace.Main + "docDefaults")
-                                     .Element(DocxNamespace.Main + "rPrDefault")
-                                     .Element(DocxNamespace.Main + "rPr")
+            var lang = stylesDoc.Root?.Element(DocxNamespace.Main + "docDefaults")?
+                                     .Element(DocxNamespace.Main + "rPrDefault")?
+                                     .Element(DocxNamespace.Main + "rPr")?
                                      .Element(DocxNamespace.Main + "lang");
-            lang.SetAttributeValue(DocxNamespace.Main + "val", CultureInfo.CurrentCulture);
+            lang?.SetAttributeValue(DocxNamespace.Main + "val", CultureInfo.CurrentCulture);
 
             // Save /word/styles.xml
-            using (TextWriter tw = new StreamWriter(word_styles.GetStream(FileMode.Create, FileAccess.Write)))
+            using (TextWriter tw = new StreamWriter(wordStyles.GetStream(FileMode.Create, FileAccess.Write)))
+            {
                 stylesDoc.Save(tw, SaveOptions.None);
+            }
 
-            PackagePart mainDocumentPart = package.GetParts().Single(p =>
+            var mainDocumentPart = package.GetParts().Single(p =>
                 p.ContentType.Equals(DocxContentType.Document, StringComparison.CurrentCultureIgnoreCase)
                 || p.ContentType.Equals(DocxContentType.Template, StringComparison.CurrentCultureIgnoreCase)
             );
 
-            mainDocumentPart.CreateRelationship(word_styles.Uri, TargetMode.Internal, $"{DocxNamespace.RelatedDoc.NamespaceName}/styles");
+            mainDocumentPart.CreateRelationship(wordStyles.Uri, TargetMode.Internal, $"{DocxNamespace.RelatedDoc.NamespaceName}/styles");
             return stylesDoc;
         }
 
         /// <summary>
         /// Creates an Edit either a ins or a del with the specified content and date
         /// </summary>
-        /// <param name="t">The type of this edit (ins or del)</param>
-        /// <param name="edit_time">The time stamp to use for this edit</param>
+        /// <param name="editType">The type of this edit (ins or del)</param>
+        /// <param name="editTime">The time stamp to use for this edit</param>
         /// <param name="content">The initial content of this edit</param>
         internal static XElement CreateEdit(EditType editType, DateTime editTime, object content)
         {
@@ -347,11 +360,9 @@ namespace DXPlus
             {
                 foreach (var e in iex)
                 {
-                    IEnumerable<XElement> ts = e.DescendantsAndSelf(DocxNamespace.Main + "t");
-
-                    for (int i = 0; i < ts.Count(); i++)
+                    var ts = e.DescendantsAndSelf(DocxNamespace.Main + "t").ToList();
+                    foreach (var text in ts)
                     {
-                        XElement text = ts.ElementAt(i);
                         text.ReplaceWith(new XElement(DocxNamespace.Main + "delText", text.Attributes(), text.Value));
                     }
                 }
@@ -364,19 +375,19 @@ namespace DXPlus
                     content);
         }
 
+        private const int DEFAULT_COL_WIDTH = 2310;
+
         internal static XElement CreateTable(int rowCount, int columnCount)
         {
             int[] columnWidths = new int[columnCount];
-            for (int i = 0; i < columnCount; i++)
-            {
-                columnWidths[i] = 2310;
-            }
+            Array.Fill(columnWidths, DEFAULT_COL_WIDTH);
+
             return CreateTable(rowCount, columnWidths);
         }
 
         internal static XElement CreateTable(int rowCount, int[] columnWidths)
         {
-            XElement newTable = new XElement(
+            var newTable = new XElement(
                 DocxNamespace.Main + "tbl",
                 new XElement
                 (
@@ -389,11 +400,10 @@ namespace DXPlus
 
             for (int i = 0; i < rowCount; i++)
             {
-                XElement row = new XElement(DocxNamespace.Main + "tr");
-
+                var row = new XElement(DocxNamespace.Main + "tr");
                 for (int j = 0; j < columnWidths.Length; j++)
                 {
-                    XElement cell = CreateTableCell();
+                    var cell = CreateTableCell();
                     row.Add(cell);
                 }
 
@@ -405,18 +415,23 @@ namespace DXPlus
         /// <summary>
         /// Create and return a cell of a table
         /// </summary>
-        internal static XElement CreateTableCell(double w = 2310) => new XElement(
-                DocxNamespace.Main + "tc",
+        internal static XElement CreateTableCell(double width = DEFAULT_COL_WIDTH)
+        {
+            return new XElement(DocxNamespace.Main + "tc",
                     new XElement(DocxNamespace.Main + "tcPr",
-                    new XElement(DocxNamespace.Main + "tcW",
-                            new XAttribute(DocxNamespace.Main + "w", w),
+                        new XElement(DocxNamespace.Main + "tcW",
+                            new XAttribute(DocxNamespace.Main + "w", width),
                             new XAttribute(DocxNamespace.Main + "type", "dxa"))),
                     new XElement(DocxNamespace.Main + "p",
-                        new XElement(DocxNamespace.Main + "pPr"))
+                    new XElement(DocxNamespace.Main + "pPr"))
             );
+        }
 
         internal static List CreateItemInList(List list, string listText, int level = 0, ListItemType listType = ListItemType.Numbered, int? startNumber = null, bool trackChanges = false, bool continueNumbering = false)
         {
+            if (list == null)
+                throw new ArgumentNullException(nameof(list));
+            
             if (list.NumId == 0)
             {
                 list.CreateNewNumberingNumId(listType, startNumber, continueNumbering);
@@ -434,7 +449,9 @@ namespace DXPlus
                 );
 
                 if (trackChanges)
+                {
                     newParagraphSection = CreateEdit(EditType.Ins, DateTime.Now, newParagraphSection);
+                }
 
                 if (startNumber == null)
                 {
@@ -451,25 +468,37 @@ namespace DXPlus
 
         internal static void RenumberIDs(DocX document)
         {
+            if (document == null)
+                throw new ArgumentNullException(nameof(document));
+            
             var trackerIDs = document.mainDoc.Descendants()
                     .Where(d => d.Name.LocalName == "ins" || d.Name.LocalName == "del")
                     .Select(d => d.Attribute(DocxNamespace.Main + "id"))
                     .ToList();
 
             for (int i = 0; i < trackerIDs.Count; i++)
+            {
                 trackerIDs[i].Value = i.ToString();
+            }
         }
 
         internal static Paragraph GetFirstParagraphAffectedByInsert(DocX document, int index)
         {
-            // This document contains no Paragraphs and insertion is at index 0
+            if (document == null)
+                throw new ArgumentNullException(nameof(document));
+
             if (document.paragraphLookup.Keys.Count == 0 && index == 0)
+            {
+                // This document contains no Paragraphs and insertion is at index 0
                 return null;
+            }
 
             foreach (int paragraphEndIndex in document.paragraphLookup.Keys)
             {
                 if (paragraphEndIndex >= index)
+                {
                     return document.paragraphLookup[paragraphEndIndex];
+                }
             }
 
             throw new ArgumentOutOfRangeException();
@@ -477,25 +506,24 @@ namespace DXPlus
 
         internal static List<XElement> FormatInput(string text, XElement rPr)
         {
-            List<XElement> newRuns = new List<XElement>();
-            XElement tabRun = new XElement(DocxNamespace.Main + "tab");
-            XElement breakRun = new XElement(DocxNamespace.Main + "br");
-
-            StringBuilder sb = new StringBuilder();
-
+            var newRuns = new List<XElement>();
             if (string.IsNullOrEmpty(text))
             {
                 return newRuns;
             }
 
-            foreach (char c in text)
+            var tabRun = new XElement(DocxNamespace.Main + "tab");
+            var breakRun = new XElement(DocxNamespace.Main + "br");
+            var sb = new StringBuilder();
+
+            foreach (var c in text)
             {
                 switch (c)
                 {
                     case '\t':
                         if (sb.Length > 0)
                         {
-                            XElement t = new XElement(DocxNamespace.Main + "t", sb.ToString());
+                            var t = new XElement(DocxNamespace.Main + "t", sb.ToString());
                             TextBlock.PreserveSpace(t);
                             newRuns.Add(new XElement(DocxNamespace.Main + "r", rPr, t));
                             sb = new StringBuilder();
@@ -507,7 +535,7 @@ namespace DXPlus
                     case '\n':
                         if (sb.Length > 0)
                         {
-                            XElement t = new XElement(DocxNamespace.Main + "t", sb.ToString());
+                            var t = new XElement(DocxNamespace.Main + "t", sb.ToString());
                             TextBlock.PreserveSpace(t);
                             newRuns.Add(new XElement(DocxNamespace.Main + "r", rPr, t));
                             sb = new StringBuilder();
@@ -523,7 +551,7 @@ namespace DXPlus
 
             if (sb.Length > 0)
             {
-                XElement t = new XElement(DocxNamespace.Main + "t", sb.ToString());
+                var t = new XElement(DocxNamespace.Main + "t", sb.ToString());
                 TextBlock.PreserveSpace(t);
                 newRuns.Add(new XElement(DocxNamespace.Main + "r", rPr, t));
             }
@@ -533,31 +561,30 @@ namespace DXPlus
 
         internal static XElement[] SplitParagraph(Paragraph p, int index)
         {
-            // In this case edit dosent really matter, you have a choice.
-            Run r = p.GetFirstRunEffectedByEdit(index, EditType.Ins);
-
+            if (p == null)
+                throw new ArgumentNullException(nameof(p));
+            
+            var r = p.GetFirstRunEffectedByEdit(index);
             XElement[] split;
             XElement before, after;
 
-            if (r.Xml.Parent.Name.LocalName == "ins")
+            switch (r.Xml.Parent?.Name.LocalName)
             {
-                split = p.SplitEdit(r.Xml.Parent, index, EditType.Ins);
-                before = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.Parent.ElementsBeforeSelf(), split[0]);
-                after = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.Parent.ElementsAfterSelf(), split[1]);
-            }
-            else if (r.Xml.Parent.Name.LocalName == "del")
-            {
-                split = p.SplitEdit(r.Xml.Parent, index, EditType.Del);
-
-                before = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.Parent.ElementsBeforeSelf(), split[0]);
-                after = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.Parent.ElementsAfterSelf(), split[1]);
-            }
-            else
-            {
-                split = Run.SplitRun(r, index);
-
-                before = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.ElementsBeforeSelf(), split[0]);
-                after = new XElement(p.Xml.Name, p.Xml.Attributes(), split[1], r.Xml.ElementsAfterSelf());
+                case "ins":
+                    split = p.SplitEdit(r.Xml.Parent, index, EditType.Ins);
+                    before = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.Parent.ElementsBeforeSelf(), split[0]);
+                    after = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.Parent.ElementsAfterSelf(), split[1]);
+                    break;
+                case "del":
+                    split = p.SplitEdit(r.Xml.Parent, index, EditType.Del);
+                    before = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.Parent.ElementsBeforeSelf(), split[0]);
+                    after = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.Parent.ElementsAfterSelf(), split[1]);
+                    break;
+                default:
+                    split = Run.SplitRun(r, index);
+                    before = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.ElementsBeforeSelf(), split[0]);
+                    after = new XElement(p.Xml.Name, p.Xml.Attributes(), split[1], r.Xml.ElementsAfterSelf());
+                    break;
             }
 
             if (!before.Elements().Any())
@@ -566,44 +593,45 @@ namespace DXPlus
             if (!after.Elements().Any())
                 after = null;
 
-            return new XElement[] { before, after };
+            return new[] { before, after };
         }
 
         internal static bool IsSameFile(Stream streamOne, Stream streamTwo)
         {
-            int file1byte, file2byte;
-
+            if (streamOne == null)
+                throw new ArgumentNullException(nameof(streamOne));
+            if (streamTwo == null)
+                throw new ArgumentNullException(nameof(streamTwo));
+            
             if (streamOne.Length != streamTwo.Length)
-            {
                 return false;
-            }
 
-            // Read and compare a byte from each file until either a
-            // non-matching set of bytes is found or until the end of
-            // file1 is reached.
+            int b1, b2;
             do
             {
                 // Read one byte from each file.
-                file1byte = streamOne.ReadByte();
-                file2byte = streamTwo.ReadByte();
+                b1 = streamOne.ReadByte();
+                b2 = streamTwo.ReadByte();
             }
-            while ((file1byte == file2byte) && (file1byte != -1));
-
-            // Return the success of the comparison. "file1byte" is
-            // equal to "file2byte" at this point only if the files are
-            // the same.
+            while (b1 == b2 && b1 != -1);
 
             streamOne.Position = 0;
             streamTwo.Position = 0;
-
-            return (file1byte - file2byte) == 0;
+           
+            return b1 == b2;
         }
 
         internal static byte[] ConcatByteArrays(byte[] array1, byte[] array2)
         {
+            if (array1 == null)
+                throw new ArgumentNullException(nameof(array1));
+            if (array2 == null)
+                throw new ArgumentNullException(nameof(array2));
+            
             byte[] result = new byte[array1.Length + array2.Length];
             Buffer.BlockCopy(array2, 0, result, 0, array2.Length);
             Buffer.BlockCopy(array1, 0, result, array2.Length, array1.Length);
+            
             return result;
         }
     }

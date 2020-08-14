@@ -1,6 +1,7 @@
 ﻿using System.Xml.Linq;
+using DXPlus.Helpers;
 
-namespace DXPlus
+namespace DXPlus.Charts
 {
     /// <summary>
     /// Specifies the kind of grouping for a column, line, or area chart.

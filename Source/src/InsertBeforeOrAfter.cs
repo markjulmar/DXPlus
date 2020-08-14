@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Xml.Linq;
+using DXPlus.Helpers;
 
 namespace DXPlus
 {
@@ -19,10 +20,16 @@ namespace DXPlus
                             new XElement(DocxNamespace.Main + "br",
                                 new XAttribute(DocxNamespace.Main + "type", "page"))));
 
-        public virtual void InsertPageBreakAfterSelf() => Xml.AddAfterSelf(PageBreak);
+        public virtual void InsertPageBreakAfterSelf()
+        {
+            Xml.AddAfterSelf(PageBreak);
+        }
 
-        public virtual void InsertPageBreakBeforeSelf() => Xml.AddBeforeSelf(PageBreak);
-        
+        public virtual void InsertPageBreakBeforeSelf()
+        {
+            Xml.AddBeforeSelf(PageBreak);
+        }
+
         public virtual Paragraph InsertParagraphAfterSelf(Paragraph p)
         {
             Xml.AddAfterSelf(p.Xml);
@@ -39,9 +46,15 @@ namespace DXPlus
             }
         }
 
-        public virtual Paragraph InsertParagraphAfterSelf(string text) => InsertParagraphAfterSelf(text, false, new Formatting());
+        public virtual Paragraph InsertParagraphAfterSelf(string text)
+        {
+            return InsertParagraphAfterSelf(text, false, new Formatting());
+        }
 
-        public virtual Paragraph InsertParagraphAfterSelf(string text, bool trackChanges) => InsertParagraphAfterSelf(text, trackChanges, new Formatting());
+        public virtual Paragraph InsertParagraphAfterSelf(string text, bool trackChanges)
+        {
+            return InsertParagraphAfterSelf(text, trackChanges, new Formatting());
+        }
 
         public virtual Paragraph InsertParagraphAfterSelf(string text, bool trackChanges, Formatting formatting)
         {
@@ -57,8 +70,16 @@ namespace DXPlus
             p.Xml = Xml.ElementsBeforeSelf().First();
             return p;
         }
-        public virtual Paragraph InsertParagraphBeforeSelf(string text) => InsertParagraphBeforeSelf(text, false, new Formatting());
-        public virtual Paragraph InsertParagraphBeforeSelf(string text, bool trackChanges) => InsertParagraphBeforeSelf(text, trackChanges, new Formatting());
+        public virtual Paragraph InsertParagraphBeforeSelf(string text)
+        {
+            return InsertParagraphBeforeSelf(text, false, new Formatting());
+        }
+
+        public virtual Paragraph InsertParagraphBeforeSelf(string text, bool trackChanges)
+        {
+            return InsertParagraphBeforeSelf(text, trackChanges, new Formatting());
+        }
+
         public virtual Paragraph InsertParagraphBeforeSelf(string text, bool trackChanges, Formatting formatting)
         {
             XElement newParagraph = CreateNewParagraph(text, trackChanges, formatting);
@@ -105,8 +126,10 @@ namespace DXPlus
                 new XElement(DocxNamespace.Main + "pPr"), HelperFunctions.FormatInput(text, formatting.Xml));
 
             if (trackChanges)
+            {
                 newParagraph = HelperFunctions.CreateEdit(EditType.Ins, DateTime.Now, newParagraph);
-            
+            }
+
             return newParagraph;
         }
     }
