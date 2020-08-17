@@ -1425,7 +1425,7 @@ namespace DXPlus
                         if (formatting.Script.HasValue) { finfmt.Script = formatting.Script; }
                         if (formatting.Size.HasValue) { finfmt.Size = formatting.Size; }
                         if (formatting.Spacing.HasValue) { finfmt.Spacing = formatting.Spacing; }
-                        if (formatting.StrikeThrough.HasValue) { finfmt.StrikeThrough = formatting.StrikeThrough; }
+                        if (formatting.Strikethrough.HasValue) { finfmt.Strikethrough = formatting.Strikethrough; }
                         if (formatting.UnderlineColor.HasValue) { finfmt.UnderlineColor = formatting.UnderlineColor; }
                         if (formatting.UnderlineStyle.HasValue) { finfmt.UnderlineStyle = formatting.UnderlineStyle; }
                     }
@@ -2251,11 +2251,11 @@ namespace DXPlus
         /// <summary>
         /// For use with Append() and AppendLine()
         /// </summary>
-        /// <param name="strikeThrough">The strike through style to used on the last appended text.</param>
+        /// <param name="strikethrough">The strike through style to used on the last appended text.</param>
         /// <returns>This Paragraph with the last appended text striked.</returns>
-        public Paragraph StrikeThrough(StrikeThrough strikeThrough)
+        public Paragraph StrikeThrough(Strikethrough strikethrough)
         {
-            string value = strikeThrough.GetEnumName();
+            string value = strikethrough.GetEnumName();
             ApplyTextFormattingProperty(DocxNamespace.Main + value, string.Empty, value);
 
             return this;
