@@ -38,7 +38,7 @@ namespace DXPlus
             styles = new List<XElement>();
 
             DocumentProperties = Xml.Descendants(DocxNamespace.Main + "fldSimple")
-                                    .Select(xml => new DocProperty(Document, xml))
+                                    .Select(el => new DocProperty(Document, el))
                                     .ToList();
 
             runs = Xml.Elements(DocxNamespace.Main + "r").ToList();
@@ -532,7 +532,7 @@ namespace DXPlus
         /// <returns>This Paragraph with the new text appened.</returns>
         public Paragraph Append(string text)
         {
-            List<XElement> newRuns = HelperFunctions.FormatInput(text, null);
+            var newRuns = HelperFunctions.FormatInput(text, null);
             Xml.Add(newRuns);
             runs = Xml.Elements(DocxNamespace.Main + "r").Reverse().Take(newRuns.Count).ToList();
 
@@ -541,13 +541,13 @@ namespace DXPlus
 
         public Paragraph AppendBookmark(string bookmarkName)
         {
-            XElement wBookmarkStart = new XElement(
+            var wBookmarkStart = new XElement(
                 DocxNamespace.Main + "bookmarkStart",
                 new XAttribute(DocxNamespace.Main + "id", 0),
                 new XAttribute(DocxNamespace.Main + "name", bookmarkName));
             Xml.Add(wBookmarkStart);
 
-            XElement wBookmarkEnd = new XElement(
+            var wBookmarkEnd = new XElement(
                 DocxNamespace.Main + "bookmarkEnd",
                 new XAttribute(DocxNamespace.Main + "id", 0),
                 new XAttribute(DocxNamespace.Main + "name", bookmarkName));
@@ -562,39 +562,9 @@ namespace DXPlus
         /// <param name="cp">The custom property to display.</param>
         /// <param name="trackChanges"></param>
         /// <param name="f">The formatting to use for this text.</param>
-        /// <example>
-        /// Create, add and display a custom property in a document.
-        /// <code>
-        /// // Load a document.
-        ///using (DocX document = DocX.Create("CustomProperty_Add.docx"))
-        ///{
-        ///    // Add a few Custom Properties to this document.
-        ///    document.AddCustomProperty(new CustomProperty("fname", "cathal"));
-        ///    document.AddCustomProperty(new CustomProperty("age", 24));
-        ///    document.AddCustomProperty(new CustomProperty("male", true));
-        ///    document.AddCustomProperty(new CustomProperty("newyear2012", new DateTime(2012, 1, 1)));
-        ///    document.AddCustomProperty(new CustomProperty("fav_num", 3.141592));
-        ///
-        ///    // Insert a new Paragraph and append a load of DocProperties.
-        ///    Paragraph p = document.InsertParagraph("fname: ")
-        ///        .AppendDocProperty(document.CustomProperties["fname"])
-        ///        .Append(", age: ")
-        ///        .AppendDocProperty(document.CustomProperties["age"])
-        ///        .Append(", male: ")
-        ///        .AppendDocProperty(document.CustomProperties["male"])
-        ///        .Append(", newyear2012: ")
-        ///        .AppendDocProperty(document.CustomProperties["newyear2012"])
-        ///        .Append(", fav_num: ")
-        ///        .AppendDocProperty(document.CustomProperties["fav_num"]);
-        ///
-        ///    // Save the changes to the document.
-        ///    document.Save();
-        ///}
-        /// </code>
-        /// </example>
-        public Paragraph AppendDocProperty(CustomProperty cp, bool trackChanges = false, Formatting f = null)
+        public Paragraph AppendDocumentProperty(CustomProperty cp, bool trackChanges = false, Formatting f = null)
         {
-            InsertDocProperty(cp, trackChanges, f);
+            InsertDocumentProperty(cp, trackChanges, f);
             return this;
         }
 
@@ -606,7 +576,7 @@ namespace DXPlus
         public Paragraph AppendEquation(string equation)
         {
             // Create equation element
-            XElement oMathPara =
+            var oMathPara =
                 new XElement(DocxNamespace.Math + "oMathPara",
                     new XElement(DocxNamespace.Math + "oMath",
                         new XElement(DocxNamespace.Main + "r",
@@ -911,7 +881,7 @@ namespace DXPlus
         /// For use with Append() and AppendLine()
         /// </summary>
         /// <param name="culture">The CultureInfo for text</param>
-        /// <returns>This Paragraph in curent culture</returns>
+        /// <returns>This Paragraph in current culture</returns>
         public Paragraph Culture(CultureInfo culture)
         {
             ApplyTextFormattingProperty(DocxNamespace.Main + "lang", string.Empty,
@@ -922,13 +892,8 @@ namespace DXPlus
         /// <summary>
         /// For use with Append() and AppendLine()
         /// </summary>
-        /// <returns>This Paragraph in curent culture</returns>
-        public Paragraph CurentCulture()
-        {
-            ApplyTextFormattingProperty(DocxNamespace.Main + "lang",
-                string.Empty, new XAttribute(DocxNamespace.Main + "val", CultureInfo.CurrentCulture.Name));
-            return this;
-        }
+        /// <returns>This Paragraph in current culture</returns>
+        public Paragraph Culture() => Culture(CultureInfo.CurrentCulture);
 
         /// <summary>
         /// Find all instances of a string in this paragraph and return their indexes in a List.
@@ -1112,57 +1077,21 @@ namespace DXPlus
         /// <param name="cp">The custom property to display.</param>
         /// <param name="trackChanges"></param>
         /// <param name="f">The formatting to use for this text.</param>
-        /// <example>
-        /// Create, add and display a custom property in a document.
-        /// <code>
-        /// // Load a document
-        /// using (DocX document = DocX.Create(@"Test.docx"))
-        /// {
-        ///     // Create a custom property.
-        ///     CustomProperty name = new CustomProperty("name", "Cathal Coffey");
-        ///
-        ///     // Add this custom property to this document.
-        ///     document.AddCustomProperty(name);
-        ///
-        ///     // Create a text formatting.
-        ///     Formatting f = new Formatting();
-        ///     f.Bold = true;
-        ///     f.Size = 14;
-        ///     f.StrikeThrough = StrickThrough.strike;
-        ///
-        ///     // Insert a new paragraph.
-        ///     Paragraph p = document.InsertParagraph("Author: ", false, f);
-        ///
-        ///     // Insert a field of type document property to display the custom property name and track this change.
-        ///     p.InsertDocProperty(name, true, f);
-        ///
-        ///     // Save all changes made to this document.
-        ///     document.Save();
-        /// }// Release this document from memory.
-        /// </code>
-        /// </example>
-        public DocProperty InsertDocProperty(CustomProperty cp, bool trackChanges = false, Formatting f = null)
+        public DocProperty InsertDocumentProperty(CustomProperty cp, bool trackChanges = false, Formatting f = null)
         {
-            XElement f_xml = null;
-            if (f != null)
-            {
-                f_xml = f.Xml;
-            }
+            var formattingXml = f?.Xml;
 
-            XElement e = new XElement
-            (
-                DocxNamespace.Main + "fldSimple",
-                new XAttribute(DocxNamespace.Main + "instr", string.Format(@"DOCPROPERTY {0} \* MERGEFORMAT", cp.Name)),
+            var e = new XElement(DocxNamespace.Main + "fldSimple",
+                new XAttribute(DocxNamespace.Main + "instr", $@"DOCPROPERTY {cp.Name} \* MERGEFORMAT"),
                     new XElement(DocxNamespace.Main + "r",
-                        new XElement(DocxNamespace.Main + "t", f_xml, cp.Value))
+                        new XElement(DocxNamespace.Main + "t", formattingXml, cp.Value))
             );
 
-            XElement xml = e;
+            var xml = e;
             if (trackChanges)
             {
                 DateTime now = DateTime.Now;
-                DateTime insert_datetime = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc);
-                e = HelperFunctions.CreateEdit(EditType.Ins, insert_datetime, e);
+                e = HelperFunctions.CreateEdit(EditType.Ins, new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc), e);
             }
 
             Xml.Add(e);
@@ -2587,57 +2516,58 @@ namespace DXPlus
             XElement rPr;
             if (runs.Count == 0)
             {
-                XElement pPr = Xml.Element(DocxNamespace.Main + "pPr");
+                var pPr = Xml.Element(DocxNamespace.Main + "pPr");
                 if (pPr == null)
                 {
-                    Xml.AddFirst(new XElement(DocxNamespace.Main + "pPr"));
-                    pPr = Xml.Element(DocxNamespace.Main + "pPr");
+                    pPr = new XElement(DocxNamespace.Main + "pPr");
+                    Xml.AddFirst(pPr);
                 }
 
                 rPr = pPr.Element(DocxNamespace.Main + "rPr");
                 if (rPr == null)
                 {
-                    pPr.AddFirst(new XElement(DocxNamespace.Main + "rPr"));
-                    rPr = pPr.Element(DocxNamespace.Main + "rPr");
+                    rPr = new XElement(DocxNamespace.Main + "rPr");
+                    pPr.AddFirst(rPr);
                 }
 
                 rPr.SetElementValue(textFormatPropName, value);
-                XElement last = rPr.Elements(textFormatPropName).Last();
-                if (content is XAttribute attribute)
+                var last = rPr.Elements(textFormatPropName).Last();
+                
+                if (content is XAttribute attr)
                 {
-                    if (last.Attribute(attribute.Name) == null)
+                    if (last.Attribute(attr.Name) == null)
                     {
                         last.Add(content);
                     }
                     else
                     {
-                        last.Attribute(attribute.Name).Value = attribute.Value;
+                        last.SetAttributeValue(attr.Name, attr.Value);
                     }
                 }
                 return;
             }
 
-            IEnumerable<object> properties = content as IEnumerable<object>;
+            var properties = content as IEnumerable<object>;
             bool isListOfAttributes = properties?.All(o => o is XAttribute) == true;
 
-            foreach (XElement run in runs)
+            foreach (var run in runs)
             {
                 rPr = run.Element(DocxNamespace.Main + "rPr");
                 if (rPr == null)
                 {
-                    run.AddFirst(new XElement(DocxNamespace.Main + "rPr"));
-                    rPr = run.Element(DocxNamespace.Main + "rPr");
+                    rPr = new XElement(DocxNamespace.Main + "rPr");
+                    run.AddFirst(rPr);
                 }
 
                 rPr.SetElementValue(textFormatPropName, value);
-                XElement last = rPr.Elements(textFormatPropName).Last();
+                var last = rPr.Elements(textFormatPropName).Last();
 
                 if (isListOfAttributes)
                 {
                     // List of attributes, as in the case when specifying a font family
                     foreach (XAttribute property in properties)
                     {
-                        XAttribute lastAttribute = last.Attribute(property.Name);
+                        var lastAttribute = last.Attribute(property.Name);
                         if (lastAttribute == null)
                         {
                             last.Add(property);
@@ -2656,7 +2586,7 @@ namespace DXPlus
                     }
                     else
                     {
-                        last.Attribute(attribute.Name).Value = attribute.Value;
+                        last.SetAttributeValue(attribute.Name, attribute.Value);
                     }
                 }
                 else if (content != null)
