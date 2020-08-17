@@ -155,7 +155,7 @@ namespace DXPlus
             {
                 var tcPr = Xml.GetOrCreateElement(DocxNamespace.Main + "tcPr");
                 var textDirection = tcPr.GetOrCreateElement(DocxNamespace.Main + "textDirection");
-                textDirection.SetVal(value.GetEnumName());
+                textDirection.SetAttributeValue(DocxNamespace.Main + "val", value.GetEnumName());
             }
         }
 
@@ -183,7 +183,7 @@ namespace DXPlus
             {
                 var tcPr = Xml.GetOrCreateElement(DocxNamespace.Main + "tcPr");
                 var vAlign = tcPr.GetOrCreateElement(DocxNamespace.Main + "vAlign");
-                vAlign.SetVal(value.GetEnumName());
+                vAlign.SetAttributeValue(DocxNamespace.Main + "val", value.GetEnumName());
             }
         }
 
@@ -283,7 +283,7 @@ namespace DXPlus
                 tcBorders.GetOrCreateElement(DocxNamespace.Main.NamespaceName + borderType.GetEnumName());
 
             // The val attribute is used for the style
-            tcBorderType.SetVal(border.Style.GetEnumName());
+            tcBorderType.SetAttributeValue(DocxNamespace.Main + "val", border.Style.GetEnumName());
 
             var size = border.Size switch
             {

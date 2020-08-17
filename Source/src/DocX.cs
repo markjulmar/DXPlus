@@ -519,7 +519,7 @@ namespace DXPlus
             // Save the custom properties
             using (TextWriter tw = new StreamWriter(customPropPart.GetStream(FileMode.Create, FileAccess.Write)))
             {
-                customPropDoc.Save(tw, SaveOptions.None);
+                customPropDoc.Save(tw, SaveOptions.OmitDuplicateNamespaces);
             }
 
             // Refresh all fields in this document which display this custom property.
@@ -994,15 +994,14 @@ namespace DXPlus
         /// </summary>
         public void InsertChart(Chart chart)
         {
-            int chartIndex = 1;
-
             // Create a new chart part uri.
             string chartPartUriPath;
+            int chartIndex = 0;
 
             do
             {
-                chartPartUriPath = $"/word/charts/chart{chartIndex}.xml";
                 chartIndex++;
+                chartPartUriPath = $"/word/charts/chart{chartIndex}.xml";
             } while (package.PartExists(new Uri(chartPartUriPath, UriKind.Relative)));
 
             // Create chart part.
@@ -1015,12 +1014,12 @@ namespace DXPlus
             // Save a chart info the chartPackagePart
             using (TextWriter tw = new StreamWriter(chartPackagePart.GetStream(FileMode.Create, FileAccess.Write)))
             {
-                chart.Xml.Save(tw);
+                chart.Xml.Save(tw, SaveOptions.OmitDuplicateNamespaces);
             }
 
             // Insert a new chart into a paragraph.
             Paragraph p = InsertParagraph();
-            XElement chartElement = new XElement(DocxNamespace.Main + "r",
+            var chartElement = new XElement(DocxNamespace.Main + "r",
                 new XElement(DocxNamespace.Main + "drawing",
                     new XElement(DocxNamespace.WordProcessingDrawing + "inline",
                         new XElement(DocxNamespace.WordProcessingDrawing + "extent",
@@ -1350,7 +1349,7 @@ namespace DXPlus
             // Save the main document
             using (TextWriter tw = new StreamWriter(packagePart.GetStream(FileMode.Create, FileAccess.Write)))
             {
-                mainDoc.Save(tw, SaveOptions.None);
+                mainDoc.Save(tw, SaveOptions.OmitDuplicateNamespaces);
             }
 
             // Create a settings object if necessary.
@@ -1375,7 +1374,7 @@ namespace DXPlus
                 {
                     Uri target = PackUriHelper.ResolvePartUri(packagePart.Uri, packagePart.GetRelationship(evenHeaderRef).TargetUri);
                     using TextWriter tw = new StreamWriter(package.GetPart(target).GetStream(FileMode.Create, FileAccess.Write));
-                    new XDocument(xdecl, Headers.Even.Xml).Save(tw, SaveOptions.None);
+                    new XDocument(xdecl, Headers.Even.Xml).Save(tw, SaveOptions.OmitDuplicateNamespaces);
                 }
 
                 string oddHeaderRef =
@@ -1390,7 +1389,7 @@ namespace DXPlus
                 {
                     Uri target = PackUriHelper.ResolvePartUri(packagePart.Uri, packagePart.GetRelationship(oddHeaderRef).TargetUri);
                     using TextWriter tw = new StreamWriter(package.GetPart(target).GetStream(FileMode.Create, FileAccess.Write));
-                    new XDocument(xdecl, Headers.Odd.Xml).Save(tw, SaveOptions.None);
+                    new XDocument(xdecl, Headers.Odd.Xml).Save(tw, SaveOptions.OmitDuplicateNamespaces);
                 }
 
                 string firstHeaderRef =
@@ -1405,7 +1404,7 @@ namespace DXPlus
                 {
                     Uri target = PackUriHelper.ResolvePartUri(packagePart.Uri, packagePart.GetRelationship(firstHeaderRef).TargetUri);
                     using TextWriter tw = new StreamWriter(package.GetPart(target).GetStream(FileMode.Create, FileAccess.Write));
-                    new XDocument(xdecl, Headers.First.Xml).Save(tw, SaveOptions.None);
+                    new XDocument(xdecl, Headers.First.Xml).Save(tw, SaveOptions.OmitDuplicateNamespaces);
                 }
 
                 string oddFooterRef =
@@ -1420,7 +1419,7 @@ namespace DXPlus
                 {
                     Uri target = PackUriHelper.ResolvePartUri(packagePart.Uri, packagePart.GetRelationship(oddFooterRef).TargetUri);
                     using TextWriter tw = new StreamWriter(package.GetPart(target).GetStream(FileMode.Create, FileAccess.Write));
-                    new XDocument(xdecl, Footers.Odd.Xml).Save(tw, SaveOptions.None);
+                    new XDocument(xdecl, Footers.Odd.Xml).Save(tw, SaveOptions.OmitDuplicateNamespaces);
                 }
 
                 string evenFooterRef =
@@ -1435,7 +1434,7 @@ namespace DXPlus
                 {
                     Uri target = PackUriHelper.ResolvePartUri(packagePart.Uri, packagePart.GetRelationship(evenFooterRef).TargetUri);
                     using TextWriter tw = new StreamWriter(package.GetPart(target).GetStream(FileMode.Create, FileAccess.Write));
-                    new XDocument(xdecl, Footers.Even.Xml).Save(tw, SaveOptions.None);
+                    new XDocument(xdecl, Footers.Even.Xml).Save(tw, SaveOptions.OmitDuplicateNamespaces);
                 }
 
                 string firstFooterRef =
@@ -1450,49 +1449,49 @@ namespace DXPlus
                 {
                     Uri target = PackUriHelper.ResolvePartUri(packagePart.Uri, packagePart.GetRelationship(firstFooterRef).TargetUri);
                     using TextWriter tw = new StreamWriter(package.GetPart(target).GetStream(FileMode.Create, FileAccess.Write));
-                    new XDocument(xdecl, Footers.First.Xml).Save(tw, SaveOptions.None);
+                    new XDocument(xdecl, Footers.First.Xml).Save(tw, SaveOptions.OmitDuplicateNamespaces);
                 }
 
                 // Save the settings document.
                 using (TextWriter tw = new StreamWriter(settingsPart.GetStream(FileMode.Create, FileAccess.Write)))
                 {
-                    settings.Save(tw, SaveOptions.None);
+                    settings.Save(tw, SaveOptions.OmitDuplicateNamespaces);
                 }
 
                 if (endnotesPart != null)
                 {
                     using TextWriter tw = new StreamWriter(endnotesPart.GetStream(FileMode.Create, FileAccess.Write));
-                    endnotes.Save(tw, SaveOptions.None);
+                    endnotes.Save(tw, SaveOptions.OmitDuplicateNamespaces);
                 }
 
                 if (footnotesPart != null)
                 {
                     using TextWriter tw = new StreamWriter(footnotesPart.GetStream(FileMode.Create, FileAccess.Write));
-                    footnotes.Save(tw, SaveOptions.None);
+                    footnotes.Save(tw, SaveOptions.OmitDuplicateNamespaces);
                 }
 
                 if (stylesPart != null)
                 {
                     using TextWriter tw = new StreamWriter(stylesPart.GetStream(FileMode.Create, FileAccess.Write));
-                    styles.Save(tw, SaveOptions.None);
+                    styles.Save(tw, SaveOptions.OmitDuplicateNamespaces);
                 }
 
                 if (stylesWithEffectsPart != null)
                 {
                     using TextWriter tw = new StreamWriter(stylesWithEffectsPart.GetStream(FileMode.Create, FileAccess.Write));
-                    stylesWithEffects.Save(tw, SaveOptions.None);
+                    stylesWithEffects.Save(tw, SaveOptions.OmitDuplicateNamespaces);
                 }
 
                 if (numberingPart != null)
                 {
                     using TextWriter tw = new StreamWriter(numberingPart.GetStream(FileMode.Create, FileAccess.Write));
-                    numbering.Save(tw, SaveOptions.None);
+                    numbering.Save(tw, SaveOptions.OmitDuplicateNamespaces);
                 }
 
                 if (fontTablePart != null)
                 {
                     using TextWriter tw = new StreamWriter(fontTablePart.GetStream(FileMode.Create, FileAccess.Write));
-                    fontTable.Save(tw, SaveOptions.None);
+                    fontTable.Save(tw, SaveOptions.OmitDuplicateNamespaces);
                 }
             }
 
@@ -1983,8 +1982,8 @@ namespace DXPlus
                 }
             }
 
-            string imgPartUriPath = string.Empty;
-            string extension = contentType.Substring(contentType.LastIndexOf("/") + 1);
+            string imgPartUriPath;
+            string extension = contentType.Substring(contentType.LastIndexOf("/", StringComparison.Ordinal) + 1);
 
             // Get a unique imgPartUriPath
             do
@@ -2605,7 +2604,7 @@ namespace DXPlus
 
             // Save the modified local custom styles.xml file.
             using TextWriter tw = new StreamWriter(local_pp.GetStream(FileMode.Create, FileAccess.Write));
-            local_custom_document.Save(tw, SaveOptions.None);
+            local_custom_document.Save(tw, SaveOptions.OmitDuplicateNamespaces);
         }
 
         private void MergeEndnotes(XDocument remote_mainDoc, XDocument remote_endnotes)

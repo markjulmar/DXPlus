@@ -64,12 +64,12 @@ namespace DXPlus.Charts
             ChartXml = CreateChartXml();
 
             // Create result plotarea element
-            XElement plotAreaXml = new XElement(DocxNamespace.Chart + "plotArea",
+            var plotAreaXml = new XElement(DocxNamespace.Chart + "plotArea",
                                         new XElement(DocxNamespace.Chart + "layout"),
                                             ChartXml);
 
             // Set labels
-            XElement dLblsXml = XElement.Parse(
+            var dLblsXml = XElement.Parse(
                 @"<c:dLbls xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
                     <c:showLegendKey val=""0""/>
                     <c:showVal val=""0""/>
@@ -81,17 +81,15 @@ namespace DXPlus.Charts
                 </c:dLbls>");
             ChartXml.Add(dLblsXml);
 
-            // if axes exists, create their
             if (IsAxisExist)
             {
                 CategoryAxis = new CategoryAxis("148921728");
                 ValueAxis = new ValueAxis("154227840");
 
-                XElement axIDcatXml = XElement.Parse($@"<c:axId val=""{CategoryAxis.Id}"" xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart""/>");
-                XElement axIDvalXml = XElement.Parse($@"<c:axId val=""{ValueAxis.Id}"" xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart""/>");
+                var axIDcatXml = XElement.Parse($@"<c:axId val=""{CategoryAxis.Id}"" xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart""/>");
+                var axIDvalXml = XElement.Parse($@"<c:axId val=""{ValueAxis.Id}"" xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart""/>");
 
-                // Sourceman: seems to be necessary to keep track of the order of elements as defined in the schema (Word 2013)
-                XElement insertPoint = ChartXml.Element(DocxNamespace.Chart + "gapWidth");
+                var insertPoint = ChartXml.Element(DocxNamespace.Chart + "gapWidth");
                 if (insertPoint != null)
                 {
                     insertPoint.AddAfterSelf(axIDvalXml);
@@ -139,7 +137,7 @@ namespace DXPlus.Charts
         /// <summary>
         /// Return maximum count of series
         /// </summary>
-        public virtual short MaxSeriesCount => Int16.MaxValue;
+        public virtual short MaxSeriesCount => short.MaxValue;
 
         /// <summary>
         /// Chart's series
@@ -148,9 +146,9 @@ namespace DXPlus.Charts
         {
             get
             {
-                List<Series> series = new List<Series>();
+                var series = new List<Series>();
                 int index = 1;
-                foreach (XElement element in ChartXml.Elements(DocxNamespace.Chart + "ser"))
+                foreach (var element in ChartXml.Elements(DocxNamespace.Chart + "ser"))
                 {
                     element.Add(new XElement(DocxNamespace.Chart + "idx"), index++.ToString());
                     series.Add(new Series(element));
@@ -197,7 +195,7 @@ namespace DXPlus.Charts
         protected XElement ChartXml { get; }
 
         /// <summary>
-        /// Add standart legend to the chart.
+        /// Add standard legend to the chart.
         /// </summary>
         public void AddLegend()
         {

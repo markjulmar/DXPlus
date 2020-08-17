@@ -10,7 +10,7 @@ namespace DXPlus.Charts
     /// </summary>
     public enum BarDirection
     {
-        [XmlAttribute("Col")]
+        [XmlAttribute("col")]
         Column,
         Bar
     }
@@ -20,10 +20,10 @@ namespace DXPlus.Charts
     /// </summary>
     public enum BarGrouping
     {
-        Clustered,
         PercentStacked,
-        Stacked,
-        Standard
+        Clustered,
+        Standard,
+        Stacked
     }
 
     /// <summary>

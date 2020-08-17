@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Xml.Linq;
@@ -48,22 +49,21 @@ namespace DXPlus.Helpers
 
         public static XAttribute GetValAttr(this XElement el)
         {
-            return el?.Attribute(DocxNamespace.Main + "val");
+            if (el == null)
+                return null;
+
+            var valAttr = el.Attribute("val");
+            return valAttr ?? el.Attribute(DocxNamespace.Main + "val");
         }
 
         public static string GetVal(this XElement el, string defaultValue = "")
         {
-            return el?.AttributeValue(DocxNamespace.Main + "val", defaultValue);
+            return GetValAttr(el)?.Value ?? defaultValue;
         }
 
-        public static void SetVal(this XElement el, object value)
+        public static int AttributeValueNum(this XElement el, XName name, int defaultValue = -1)
         {
-            if (el == null)
-                throw new ArgumentNullException(nameof(el));
-
-            value ??= "";
-
-            el.SetAttributeValue(DocxNamespace.Main + "val", value.ToString());
+            return int.TryParse(el.AttributeValue(name), out var result) ? result : defaultValue;
         }
 
         public static string AttributeValue(this XElement el, XName name, string defaultValue = "")

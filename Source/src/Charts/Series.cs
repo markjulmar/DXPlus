@@ -18,31 +18,31 @@ namespace DXPlus.Charts
         public Series(string name)
         {
             Xml = XElement.Parse(
-                $@"<ser xmlns=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
-                    <tx>
-                    <strRef>
-                        <f></f>
-                        <strCache>
-                        <pt idx=""0"">
-                            <v>{name}</v>
-                        </pt>
-                        </strCache>
-                    </strRef>
-                    </tx>
-                    <invertIfNegative>0</invertIfNegative>
-                    <cat>
-                    <strRef>
-                        <f></f>
-                        <strCache />
-                    </strRef>
-                    </cat>
-                    <val>
-                    <numRef>
-                        <f></f>
-                        <numCache />
-                    </numRef>
-                    </val>
-                </ser>");
+                 $@"<c:ser xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
+                        <c:tx>
+                            <c:strRef>
+                                <c:f></c:f>
+                                <c:strCache>
+                                    <c:pt idx=""0"">
+                                        <c:v>{name}</c:v>
+                                    </c:pt>
+                                </c:strCache>
+                            </c:strRef>
+                        </c:tx>
+                        <c:invertIfNegative>0</c:invertIfNegative>
+                        <c:cat>
+                            <c:strRef>
+                                <c:f></c:f>
+                                <c:strCache />
+                            </c:strRef>
+                        </c:cat>
+                        <c:val>
+                            <c:numRef>
+                                <c:f></c:f>
+                                <c:numCache />
+                            </c:numRef>
+                        </c:val>
+                    </c:ser>");
 
             LoadCache();
         }

@@ -59,8 +59,8 @@ namespace DXPlus
                 throw new ArgumentException($"{nameof(PreserveSpace)} can only work with elements of type 't' or 'delText'", nameof(e));
             }
 
-            // Check if this w:t contains a space atribute
-            XAttribute space = e.Attributes().SingleOrDefault(a => a.Name.Equals(XNamespace.Xml + "space"));
+            // Check if this w:t contains a space attribute
+            var space = e.Attributes().SingleOrDefault(a => a.Name.Equals(XNamespace.Xml + "space"));
 
             // This w:t's text begins or ends with whitespace
             if (e.Value.StartsWith(" ") || e.Value.EndsWith(" "))
@@ -83,9 +83,7 @@ namespace DXPlus
         internal static XElement[] SplitText(TextBlock t, int index)
         {
             if (index < t.StartIndex || index > t.EndIndex)
-            {
                 throw new ArgumentOutOfRangeException(nameof(index));
-            }
 
             XElement splitLeft = null, splitRight = null;
 
@@ -125,7 +123,7 @@ namespace DXPlus
                 }
             }
 
-            return new XElement[] { splitLeft, splitRight };
+            return new[] { splitLeft, splitRight };
         }
     }
 }

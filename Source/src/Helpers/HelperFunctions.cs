@@ -259,7 +259,7 @@ namespace DXPlus.Helpers
                 </w:settings>"
                 );
 
-                settings.Root?.Element(DocxNamespace.Main + "themeFontLang")?.SetVal(CultureInfo.CurrentCulture);
+                settings.Root?.Element(DocxNamespace.Main + "themeFontLang")?.SetAttributeValue(DocxNamespace.Main + "val", CultureInfo.CurrentCulture);
 
                 // Save the settings document.
                 using TextWriter tw = new StreamWriter(settingsPart.GetStream());
@@ -284,7 +284,7 @@ namespace DXPlus.Helpers
 
             using (TextWriter tw = new StreamWriter(customPropertiesPart.GetStream(FileMode.Create, FileAccess.Write)))
             {
-                customPropDoc.Save(tw, SaveOptions.None);
+                customPropDoc.Save(tw, SaveOptions.OmitDuplicateNamespaces);
             }
 
             document.package.CreateRelationship(customPropertiesPart.Uri, TargetMode.Internal,
@@ -304,7 +304,7 @@ namespace DXPlus.Helpers
             // Save /word/numbering.xml
             using (TextWriter tw = new StreamWriter(wordNumbering.GetStream(FileMode.Create, FileAccess.Write)))
             {
-                numberingDoc.Save(tw, SaveOptions.None);
+                numberingDoc.Save(tw, SaveOptions.OmitDuplicateNamespaces);
             }
 
             var mainDocumentPart = package.GetParts().Single(p =>
@@ -336,7 +336,7 @@ namespace DXPlus.Helpers
             // Save /word/styles.xml
             using (TextWriter tw = new StreamWriter(wordStyles.GetStream(FileMode.Create, FileAccess.Write)))
             {
-                stylesDoc.Save(tw, SaveOptions.None);
+                stylesDoc.Save(tw, SaveOptions.OmitDuplicateNamespaces);
             }
 
             var mainDocumentPart = package.GetParts().Single(p =>

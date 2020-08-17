@@ -16,6 +16,7 @@ namespace TestDXPlus
         {
             Setup("docs");
 
+            /*
             HelloWorld();
             HighlightWords();
             HelloWorldAdvancedFormatting();
@@ -29,7 +30,9 @@ namespace TestDXPlus
             Equations();
             Bookmarks();
             BookmarksReplaceTextOfBookmarkKeepingFormat();
+            */
             BarChart();
+            /*
             PieChart();
             LineChart();
             Chart3D();
@@ -42,8 +45,8 @@ namespace TestDXPlus
             DocumentHeading();
             LargeTable();
             ProgrammaticallyManipulateImbeddedImage();
-
             CountNumberOfParagraphs();
+            */
         }
 
         private static void CountNumberOfParagraphs()

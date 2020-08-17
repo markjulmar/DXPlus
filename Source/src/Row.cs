@@ -159,7 +159,7 @@ namespace DXPlus
             }
 
             // Set the val attribute to the number of merged cells.
-            startGridSpan.SetVal(gridSpanSum + endIndex - startIndex + 1);
+            startGridSpan.SetAttributeValue(DocxNamespace.Main + "val", gridSpanSum + endIndex - startIndex + 1);
 
             // Reset the cell cache
             cellsCache = null;

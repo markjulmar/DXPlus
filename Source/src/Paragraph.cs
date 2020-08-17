@@ -75,7 +75,7 @@ namespace DXPlus
                     }
                     else
                     {
-                        jc.SetVal(alignment.GetEnumName());
+                        jc.SetAttributeValue(DocxNamespace.Main + "val", alignment.GetEnumName());
                     }
                 }
                 else

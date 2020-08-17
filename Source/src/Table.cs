@@ -472,7 +472,7 @@ namespace DXPlus
             // Set the border style
             var tblBorders = TblPr.GetOrCreateElement(DocxNamespace.Main + "tblBorders");
             var tblBorderType = tblBorders.GetOrCreateElement(DocxNamespace.Main + borderType.GetEnumName());
-            tblBorderType.SetVal(border.Style.GetEnumName());
+            tblBorderType.SetAttributeValue(DocxNamespace.Main + "val", border.Style.GetEnumName());
 
             // .. and the style
             if (border.Style != BorderStyle.Empty)
