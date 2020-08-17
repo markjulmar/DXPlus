@@ -39,7 +39,7 @@ namespace DXPlus.Helpers
             if (uri == null)
                 throw new ArgumentNullException(nameof(uri));
 
-            PackagePart pp = document.package.CreatePart(uri, DocxContentType.Relationships, CompressionOption.Maximum);
+            PackagePart pp = document.Package.CreatePart(uri, DocxContentType.Relationships, CompressionOption.Maximum);
             using TextWriter tw = new StreamWriter(pp.GetStream());
             XDocument d = new XDocument(
                 new XDeclaration("1.0", "UTF-8", "yes"),
@@ -275,7 +275,7 @@ namespace DXPlus.Helpers
 
         internal static void CreateCustomPropertiesPart(DocX document)
         {
-            var customPropertiesPart = document.package.CreatePart(new Uri("/docProps/custom.xml", UriKind.Relative), "application/vnd.openxmlformats-officedocument.custom-properties+xml", CompressionOption.Maximum);
+            var customPropertiesPart = document.Package.CreatePart(new Uri("/docProps/custom.xml", UriKind.Relative), "application/vnd.openxmlformats-officedocument.custom-properties+xml", CompressionOption.Maximum);
             var customPropDoc = new XDocument(new XDeclaration("1.0", "UTF-8", "yes"),
                 new XElement(DocxNamespace.CustomPropertiesSchema + "Properties",
                     new XAttribute(XNamespace.Xmlns + "vt", DocxNamespace.CustomVTypesSchema)
@@ -287,7 +287,7 @@ namespace DXPlus.Helpers
                 customPropDoc.Save(tw, SaveOptions.OmitDuplicateNamespaces);
             }
 
-            document.package.CreateRelationship(customPropertiesPart.Uri, TargetMode.Internal,
+            document.Package.CreateRelationship(customPropertiesPart.Uri, TargetMode.Internal,
                 $"{DocxNamespace.RelatedDoc.NamespaceName}/custom-properties");
         }
 
@@ -487,21 +487,17 @@ namespace DXPlus.Helpers
             if (document == null)
                 throw new ArgumentNullException(nameof(document));
 
+            // If the insertion position is first (0) and there are no paragraphs, then return null.
             if (document.paragraphLookup.Keys.Count == 0 && index == 0)
-            {
-                // This document contains no Paragraphs and insertion is at index 0
                 return null;
-            }
 
-            foreach (int paragraphEndIndex in document.paragraphLookup.Keys)
+            // Find the paragraph that contains the index
+            foreach (var paragraphEndIndex in document.paragraphLookup.Keys.Where(paragraphEndIndex => paragraphEndIndex >= index))
             {
-                if (paragraphEndIndex >= index)
-                {
-                    return document.paragraphLookup[paragraphEndIndex];
-                }
+                return document.paragraphLookup[paragraphEndIndex];
             }
 
-            throw new ArgumentOutOfRangeException();
+            throw new ArgumentOutOfRangeException(nameof(index));
         }
 
         internal static List<XElement> FormatInput(string text, XElement rPr)

@@ -18,51 +18,46 @@ namespace DXPlus
     /// </summary>
     public sealed class DocX : Container, IDisposable
     {
-        internal string filename;               // The filename that this document was loaded from; can be null;
-        internal Stream stream;                 // The stream that this document was loaded from; can be null.
+        private string filename;               // The filename that this document was loaded from; can be null;
+        private Stream stream;                 // The stream that this document was loaded from; can be null.
+        private MemoryStream memoryStream;     // The in-memory document (with changes)
 
-        // Bits of the Word document
-        internal Package package;
+        /// <summary>
+        /// The ZIP package holding this DocX structure
+        /// </summary>
+        internal Package Package { get; set; }
 
-        internal XDocument fontTable;
-        internal PackagePart fontTablePart;
-        internal XDocument footnotes;
-        internal PackagePart footnotesPart;
+        /// <summary>
+        /// XML documents representing loaded sections of the DOCX file.
+        /// These have possible unsaved edits
+        /// </summary>
+        private XDocument fontTable;
+        private XDocument footnotes;
         internal XDocument mainDoc;
-        internal MemoryStream memoryStream;
         internal XDocument numbering;
-        internal PackagePart numberingPart;
-        internal XDocument endnotes;
-        internal PackagePart endnotesPart;
+        private XDocument endnotes;
         internal XDocument settings;
-        internal PackagePart settingsPart;
         internal XDocument styles;
-        internal PackagePart stylesPart;
-        internal XDocument stylesWithEffects;
-        internal PackagePart stylesWithEffectsPart;
+        private XDocument stylesWithEffects;
 
-        // A lookup for the Paragraphs in this document.
+        /// <summary>
+        /// Package sections in the above Package object. These are specific read/write points in the ZIP file
+        /// </summary>
+        private PackagePart fontTablePart;
+        private PackagePart footnotesPart;
+        private PackagePart numberingPart;
+        private PackagePart endnotesPart;
+        private PackagePart settingsPart;
+        private PackagePart stylesPart;
+        private PackagePart stylesWithEffectsPart;
+
+        // A lookup for the Paragraphs in this document
         internal Dictionary<int, Paragraph> paragraphLookup = new Dictionary<int, Paragraph>();
 
-        // Keys in the XML Word format
-        private const string Text_Body = "body";
-
-        private const string Text_Bottom = "bottom";
-        private const string Text_DocumentProtection = "documentProtection";
-        private const string Text_Left = "left";
-        private const string Text_PageMargins = "pgMar";
-        private const string Text_PageSize = "pgSz";
-        private const string Text_PageSizeHeight = "h";
-        private const string Text_PageSizeWidth = "w";
-        private const string Text_Right = "right";
-        private const string Text_SectionProperties = "sectPr";
-        private const string Text_Top = "top";
-
+        /// <summary>
+        /// Default constructor
+        /// </summary>
         internal DocX() : base(null, null)
-        {
-        }
-
-        internal DocX(DocX document, XElement xml) : base(document, xml)
         {
         }
 
@@ -78,9 +73,9 @@ namespace DXPlus
         {
             get
             {
-                if (package.PartExists(DocxSections.DocPropsCoreUri))
+                if (Package.PartExists(DocxSections.DocPropsCoreUri))
                 {
-                    PackagePart docProps_Core = package.GetPart(DocxSections.DocPropsCoreUri);
+                    PackagePart docProps_Core = Package.GetPart(DocxSections.DocPropsCoreUri);
                     XDocument corePropDoc;
                     using (TextReader tr = new StreamReader(docProps_Core.GetStream(FileMode.Open, FileAccess.Read)))
                     {
@@ -118,9 +113,9 @@ namespace DXPlus
         {
             get
             {
-                if (package.PartExists(DocxSections.DocPropsCustom))
+                if (Package.PartExists(DocxSections.DocPropsCustom))
                 {
-                    PackagePart docProps_custom = package.GetPart(DocxSections.DocPropsCustom);
+                    PackagePart docProps_custom = Package.GetPart(DocxSections.DocPropsCustom);
                     XDocument customPropDoc;
                     using (TextReader tr = new StreamReader(docProps_custom.GetStream(FileMode.Open, FileAccess.Read)))
                     {
@@ -142,7 +137,7 @@ namespace DXPlus
             }
         }
 
-        private XElement SectPr => mainDoc.Root.Element(DocxNamespace.Main + Text_Body).GetOrCreateElement(DocxNamespace.Main + Text_SectionProperties);
+        private XElement SectPr => mainDoc.Root.Element(DocxNamespace.Main + "body").GetOrCreateElement(DocxNamespace.Main + "sectPr");
 
         /// <summary>
         /// Should the Document use an independent Header and Footer for the first page?
@@ -263,15 +258,15 @@ namespace DXPlus
         /// <summary>
         /// Returns true if any editing restrictions are imposed on this document.
         /// </summary>
-        public bool IsProtected => settings.Descendants(DocxNamespace.Main + Text_DocumentProtection).Any();
+        public bool IsProtected => settings.Descendants(DocxNamespace.Main + "documentProtection").Any();
 
         /// <summary>
         /// Bottom margin value in points. 1pt = 1/72 of an inch. Word internally writes docx using units = 1/20th of a point.
         /// </summary>
         public float MarginBottom
         {
-            get => GetMarginAttribute(DocxNamespace.Main + Text_Bottom);
-            set => SetMarginAttribute(DocxNamespace.Main + Text_Bottom, value);
+            get => GetMarginAttribute(DocxNamespace.Main + "bottom");
+            set => SetMarginAttribute(DocxNamespace.Main + "bottom", value);
         }
 
         /// <summary>
@@ -279,8 +274,8 @@ namespace DXPlus
         /// </summary>
         public float MarginLeft
         {
-            get => GetMarginAttribute(DocxNamespace.Main + Text_Left);
-            set => SetMarginAttribute(DocxNamespace.Main + Text_Left, value);
+            get => GetMarginAttribute(DocxNamespace.Main + "left");
+            set => SetMarginAttribute(DocxNamespace.Main + "left", value);
         }
 
         /// <summary>
@@ -288,8 +283,8 @@ namespace DXPlus
         /// </summary>
         public float MarginRight
         {
-            get => GetMarginAttribute(DocxNamespace.Main + Text_Right);
-            set => SetMarginAttribute(DocxNamespace.Main + Text_Right, value);
+            get => GetMarginAttribute(DocxNamespace.Main + "right");
+            set => SetMarginAttribute(DocxNamespace.Main + "right", value);
         }
 
         /// <summary>
@@ -297,8 +292,8 @@ namespace DXPlus
         /// </summary>
         public float MarginTop
         {
-            get => GetMarginAttribute(DocxNamespace.Main + Text_Top);
-            set => SetMarginAttribute(DocxNamespace.Main + Text_Top, value);
+            get => GetMarginAttribute(DocxNamespace.Main + "top");
+            set => SetMarginAttribute(DocxNamespace.Main + "top", value);
         }
 
         /// <summary>
@@ -308,10 +303,10 @@ namespace DXPlus
         {
             get
             {
-                XElement pgSz = SectPr?.Element(DocxNamespace.Main + Text_PageSize);
+                XElement pgSz = SectPr?.Element(DocxNamespace.Main + "pgSz");
                 if (pgSz != null)
                 {
-                    XAttribute w = pgSz.Attribute(DocxNamespace.Main + Text_PageSizeHeight);
+                    XAttribute w = pgSz.Attribute(DocxNamespace.Main + "h");
                     if (w != null && float.TryParse(w.Value, out float f))
                     {
                         return (int)(f / 20.0f);
@@ -321,8 +316,8 @@ namespace DXPlus
                 return 15840.0f / 20.0f;
             }
 
-            set => SectPr.GetOrCreateElement(DocxNamespace.Main + Text_PageSize)
-                         .SetAttributeValue(DocxNamespace.Main + Text_PageSizeHeight, value * 20);
+            set => SectPr.GetOrCreateElement(DocxNamespace.Main + "pgSz")
+                         .SetAttributeValue(DocxNamespace.Main + "h", value * 20);
         }
 
         public PageLayout PageLayout => new PageLayout(this, SectPr);
@@ -334,10 +329,10 @@ namespace DXPlus
         {
             get
             {
-                XElement pgSz = SectPr.Element(DocxNamespace.Main + Text_PageSize);
+                XElement pgSz = SectPr.Element(DocxNamespace.Main + "pgSz");
                 if (pgSz != null)
                 {
-                    XAttribute w = pgSz.Attribute(DocxNamespace.Main + Text_PageSizeWidth);
+                    XAttribute w = pgSz.Attribute(DocxNamespace.Main + "w");
                     if (w != null && float.TryParse(w.Value, out float f))
                     {
                         return (int)(f / 20.0f);
@@ -347,8 +342,8 @@ namespace DXPlus
                 return 12240.0f / 20.0f;
             }
 
-            set => SectPr.Element(DocxNamespace.Main + Text_PageSize)?
-                      .SetAttributeValue(DocxNamespace.Main + Text_PageSizeWidth, value * 20);
+            set => SectPr.Element(DocxNamespace.Main + "pgSz")?
+                      .SetAttributeValue(DocxNamespace.Main + "w", value * 20);
         }
 
         /// <summary>
@@ -394,7 +389,7 @@ namespace DXPlus
             Package package = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite);
 
             DocX document = PostLoad(ref package);
-            document.package = package;
+            document.Package = package;
             document.memoryStream = ms;
             document.stream = stream;
             return document;
@@ -424,7 +419,7 @@ namespace DXPlus
             Package package = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite);
 
             DocX document = PostLoad(ref package);
-            document.package = package;
+            document.Package = package;
             document.filename = filename;
             document.memoryStream = ms;
 
@@ -442,13 +437,13 @@ namespace DXPlus
             string propertyLocalName = propertyName.Contains(":") ? propertyName.Split(new[] { ':' })[1] : propertyName;
 
             // If this document does not contain a coreFilePropertyPart create one.)
-            if (!package.PartExists(DocxSections.DocPropsCoreUri))
+            if (!Package.PartExists(DocxSections.DocPropsCoreUri))
             {
                 throw new Exception("Core properties part doesn't exist.");
             }
 
             XDocument corePropDoc;
-            PackagePart corePropPart = package.GetPart(DocxSections.DocPropsCoreUri);
+            PackagePart corePropPart = Package.GetPart(DocxSections.DocPropsCoreUri);
             using (TextReader tr = new StreamReader(corePropPart.GetStream(FileMode.Open, FileAccess.Read)))
             {
                 corePropDoc = XDocument.Load(tr);
@@ -480,13 +475,13 @@ namespace DXPlus
         public void AddCustomProperty(CustomProperty cp)
         {
             // If this document does not contain a customFilePropertyPart create one.
-            if (!package.PartExists(DocxSections.DocPropsCustom))
+            if (!Package.PartExists(DocxSections.DocPropsCustom))
             {
                 HelperFunctions.CreateCustomPropertiesPart(this);
             }
 
             XDocument customPropDoc;
-            PackagePart customPropPart = package.GetPart(DocxSections.DocPropsCustom);
+            PackagePart customPropPart = Package.GetPart(DocxSections.DocPropsCustom);
             using (TextReader tr = new StreamReader(customPropPart.GetStream(FileMode.Open, FileAccess.Read)))
             {
                 customPropDoc = XDocument.Load(tr, LoadOptions.PreserveWhitespace);
@@ -604,7 +599,7 @@ namespace DXPlus
 
             if (editRestrictions != EditRestrictions.None)
             {
-                XElement documentProtection = new XElement(DocxNamespace.Main + Text_DocumentProtection);
+                XElement documentProtection = new XElement(DocxNamespace.Main + "documentProtection");
                 documentProtection.Add(new XAttribute(DocxNamespace.Main + "edit", editRestrictions.GetEnumName()));
                 documentProtection.Add(new XAttribute(DocxNamespace.Main + "enforcement", 1));
                 settings.Root.AddFirst(documentProtection);
@@ -793,11 +788,11 @@ namespace DXPlus
                             break;
 
                         case "/_rels/.rels":
-                            if (!package.PartExists(packagePart.Uri))
+                            if (!Package.PartExists(packagePart.Uri))
                             {
-                                package.CreatePart(packagePart.Uri, packagePart.ContentType, packagePart.CompressionOption);
+                                Package.CreatePart(packagePart.Uri, packagePart.ContentType, packagePart.CompressionOption);
                             }
-                            PackagePart globalRelsPart = package.GetPart(packagePart.Uri);
+                            PackagePart globalRelsPart = Package.GetPart(packagePart.Uri);
                             using (StreamReader tr = new StreamReader(packagePart.GetStream(FileMode.Open, FileAccess.Read), Encoding.UTF8))
                             {
                                 using StreamWriter tw = new StreamWriter(globalRelsPart.GetStream(FileMode.Create, FileAccess.Write), Encoding.UTF8);
@@ -809,16 +804,16 @@ namespace DXPlus
                             break;
 
                         default:
-                            if (!package.PartExists(packagePart.Uri))
+                            if (!Package.PartExists(packagePart.Uri))
                             {
-                                package.CreatePart(packagePart.Uri, packagePart.ContentType, packagePart.CompressionOption);
+                                Package.CreatePart(packagePart.Uri, packagePart.ContentType, packagePart.CompressionOption);
                             }
                             Encoding packagePartEncoding = Encoding.Default;
                             if (packagePart.Uri.ToString().EndsWith(".xml") || packagePart.Uri.ToString().EndsWith(".rels"))
                             {
                                 packagePartEncoding = Encoding.UTF8;
                             }
-                            PackagePart nativePart = package.GetPart(packagePart.Uri);
+                            PackagePart nativePart = Package.GetPart(packagePart.Uri);
                             using (StreamReader tr = new StreamReader(packagePart.GetStream(FileMode.Open, FileAccess.Read), packagePartEncoding))
                             {
                                 using StreamWriter tw = new StreamWriter(nativePart.GetStream(FileMode.Create, FileAccess.Write), tr.CurrentEncoding);
@@ -830,11 +825,11 @@ namespace DXPlus
                 if (documentPart != null)
                 {
                     string mainContentType = documentPart.ContentType.Replace("template.main", "document.main");
-                    if (package.PartExists(documentPart.Uri))
+                    if (Package.PartExists(documentPart.Uri))
                     {
-                        package.DeletePart(documentPart.Uri);
+                        Package.DeletePart(documentPart.Uri);
                     }
-                    PackagePart documentNewPart = package.CreatePart(
+                    PackagePart documentNewPart = Package.CreatePart(
                       documentPart.Uri, mainContentType, documentPart.CompressionOption);
                     using (XmlWriter xw = XmlWriter.Create(documentNewPart.GetStream(FileMode.Create, FileAccess.Write)))
                     {
@@ -849,7 +844,7 @@ namespace DXPlus
                     mainDoc = documentDoc;
 
                     PopulateDocument(this, templatePackage);
-                    settingsPart = HelperFunctions.CreateOrGetSettingsPart(package);
+                    settingsPart = HelperFunctions.CreateOrGetSettingsPart(Package);
                 }
                 if (!includeContent)
                 {
@@ -861,14 +856,14 @@ namespace DXPlus
             }
             finally
             {
-                package.Flush();
-                PackagePart documentRelsPart = package.GetPart(new Uri("/word/_rels/document.xml.rels", UriKind.Relative));
+                Package.Flush();
+                PackagePart documentRelsPart = Package.GetPart(new Uri("/word/_rels/document.xml.rels", UriKind.Relative));
                 using (TextReader tr = new StreamReader(documentRelsPart.GetStream(FileMode.Open, FileAccess.Read)))
                 {
                     tr.Read();
                 }
                 templatePackage.Close();
-                PopulateDocument(Document, package);
+                PopulateDocument(Document, Package);
             }
         }
 
@@ -938,9 +933,9 @@ namespace DXPlus
         /// </summary>
         public void Dispose()
         {
-            (package as IDisposable)?.Dispose();
+            (Package as IDisposable)?.Dispose();
 
-            package = null;
+            Package = null;
         }
 
         /// <summary>
@@ -951,7 +946,7 @@ namespace DXPlus
         {
             if (IsProtected)
             {
-                XElement documentProtection = settings.Descendants(DocxNamespace.Main + Text_DocumentProtection).FirstOrDefault();
+                XElement documentProtection = settings.Descendants(DocxNamespace.Main + "documentProtection").FirstOrDefault();
                 string editValue = documentProtection.Attribute(DocxNamespace.Main + "edit").Value;
                 return Enum.Parse<EditRestrictions>(editValue, ignoreCase: true);
             }
@@ -968,7 +963,7 @@ namespace DXPlus
 
             foreach (Paragraph para in allParas)
             {
-                XElement sectionInPara = para.Xml.Descendants().FirstOrDefault(s => s.Name.LocalName == Text_SectionProperties);
+                XElement sectionInPara = para.Xml.Descendants().FirstOrDefault(s => s.Name.LocalName == "sectPr");
 
                 if (sectionInPara == null)
                 {
@@ -1002,10 +997,10 @@ namespace DXPlus
             {
                 chartIndex++;
                 chartPartUriPath = $"/word/charts/chart{chartIndex}.xml";
-            } while (package.PartExists(new Uri(chartPartUriPath, UriKind.Relative)));
+            } while (Package.PartExists(new Uri(chartPartUriPath, UriKind.Relative)));
 
             // Create chart part.
-            PackagePart chartPackagePart = package.CreatePart(new Uri(chartPartUriPath, UriKind.Relative), "application/vnd.openxmlformats-officedocument.drawingml.chart+xml", CompressionOption.Normal);
+            PackagePart chartPackagePart = Package.CreatePart(new Uri(chartPartUriPath, UriKind.Relative), "application/vnd.openxmlformats-officedocument.drawingml.chart+xml", CompressionOption.Normal);
 
             // Create a new chart relationship
             string relID = GetNextFreeRelationshipID();
@@ -1087,10 +1082,10 @@ namespace DXPlus
             remote_mainDoc.Descendants(DocxNamespace.Main + "footerReference").Remove();
 
             // Get the body of the remote document.
-            XElement remote_body = remote_mainDoc.Root.Element(DocxNamespace.Main + Text_Body);
+            XElement remote_body = remote_mainDoc.Root.Element(DocxNamespace.Main + "body");
 
             // Every file that is missing from the local document will have to be copied, every file that already exists will have to be merged.
-            PackagePartCollection ppc = otherDoc.package.GetParts();
+            PackagePartCollection ppc = otherDoc.Package.GetParts();
 
             List<string> ignoreContentTypes = new List<string>
             {
@@ -1125,9 +1120,9 @@ namespace DXPlus
                 }
 
                 // If this external PackagePart already exits then we must merge them.
-                if (package.PartExists(remote_pp.Uri))
+                if (Package.PartExists(remote_pp.Uri))
                 {
-                    PackagePart local_pp = package.GetPart(remote_pp.Uri);
+                    PackagePart local_pp = Package.GetPart(remote_pp.Uri);
                     switch (remote_pp.ContentType)
                     {
                         case "application/vnd.openxmlformats-officedocument.custom-properties+xml":
@@ -1276,7 +1271,7 @@ namespace DXPlus
             }
 
             // Add the remote documents contents to this document.
-            XElement local_body = mainDoc.Root.Element(DocxNamespace.Main + Text_Body);
+            XElement local_body = mainDoc.Root.Element(DocxNamespace.Main + "body");
             if (append)
             {
                 local_body.Add(remote_body.Elements());
@@ -1335,7 +1330,7 @@ namespace DXPlus
         public void RemoveProtection()
         {
             settings
-.Descendants(DocxNamespace.Main + Text_DocumentProtection)
+.Descendants(DocxNamespace.Main + "documentProtection")
 .Remove();
         }
 
@@ -1359,7 +1354,7 @@ namespace DXPlus
                 settings = XDocument.Load(tr);
             }
 
-            XElement sectPr = mainDoc.Root.Element(DocxNamespace.Main + Text_Body).Descendants(DocxNamespace.Main + Text_SectionProperties).FirstOrDefault();
+            XElement sectPr = mainDoc.Root.Element(DocxNamespace.Main + "body").Descendants(DocxNamespace.Main + "sectPr").FirstOrDefault();
             if (sectPr != null)
             {
                 string evenHeaderRef =
@@ -1373,7 +1368,7 @@ namespace DXPlus
                 if (evenHeaderRef != null)
                 {
                     Uri target = PackUriHelper.ResolvePartUri(packagePart.Uri, packagePart.GetRelationship(evenHeaderRef).TargetUri);
-                    using TextWriter tw = new StreamWriter(package.GetPart(target).GetStream(FileMode.Create, FileAccess.Write));
+                    using TextWriter tw = new StreamWriter(Package.GetPart(target).GetStream(FileMode.Create, FileAccess.Write));
                     new XDocument(xdecl, Headers.Even.Xml).Save(tw, SaveOptions.OmitDuplicateNamespaces);
                 }
 
@@ -1388,7 +1383,7 @@ namespace DXPlus
                 if (oddHeaderRef != null)
                 {
                     Uri target = PackUriHelper.ResolvePartUri(packagePart.Uri, packagePart.GetRelationship(oddHeaderRef).TargetUri);
-                    using TextWriter tw = new StreamWriter(package.GetPart(target).GetStream(FileMode.Create, FileAccess.Write));
+                    using TextWriter tw = new StreamWriter(Package.GetPart(target).GetStream(FileMode.Create, FileAccess.Write));
                     new XDocument(xdecl, Headers.Odd.Xml).Save(tw, SaveOptions.OmitDuplicateNamespaces);
                 }
 
@@ -1403,7 +1398,7 @@ namespace DXPlus
                 if (firstHeaderRef != null)
                 {
                     Uri target = PackUriHelper.ResolvePartUri(packagePart.Uri, packagePart.GetRelationship(firstHeaderRef).TargetUri);
-                    using TextWriter tw = new StreamWriter(package.GetPart(target).GetStream(FileMode.Create, FileAccess.Write));
+                    using TextWriter tw = new StreamWriter(Package.GetPart(target).GetStream(FileMode.Create, FileAccess.Write));
                     new XDocument(xdecl, Headers.First.Xml).Save(tw, SaveOptions.OmitDuplicateNamespaces);
                 }
 
@@ -1418,7 +1413,7 @@ namespace DXPlus
                 if (oddFooterRef != null)
                 {
                     Uri target = PackUriHelper.ResolvePartUri(packagePart.Uri, packagePart.GetRelationship(oddFooterRef).TargetUri);
-                    using TextWriter tw = new StreamWriter(package.GetPart(target).GetStream(FileMode.Create, FileAccess.Write));
+                    using TextWriter tw = new StreamWriter(Package.GetPart(target).GetStream(FileMode.Create, FileAccess.Write));
                     new XDocument(xdecl, Footers.Odd.Xml).Save(tw, SaveOptions.OmitDuplicateNamespaces);
                 }
 
@@ -1433,7 +1428,7 @@ namespace DXPlus
                 if (evenFooterRef != null)
                 {
                     Uri target = PackUriHelper.ResolvePartUri(packagePart.Uri, packagePart.GetRelationship(evenFooterRef).TargetUri);
-                    using TextWriter tw = new StreamWriter(package.GetPart(target).GetStream(FileMode.Create, FileAccess.Write));
+                    using TextWriter tw = new StreamWriter(Package.GetPart(target).GetStream(FileMode.Create, FileAccess.Write));
                     new XDocument(xdecl, Footers.Even.Xml).Save(tw, SaveOptions.OmitDuplicateNamespaces);
                 }
 
@@ -1448,7 +1443,7 @@ namespace DXPlus
                 if (firstFooterRef != null)
                 {
                     Uri target = PackUriHelper.ResolvePartUri(packagePart.Uri, packagePart.GetRelationship(firstFooterRef).TargetUri);
-                    using TextWriter tw = new StreamWriter(package.GetPart(target).GetStream(FileMode.Create, FileAccess.Write));
+                    using TextWriter tw = new StreamWriter(Package.GetPart(target).GetStream(FileMode.Create, FileAccess.Write));
                     new XDocument(xdecl, Footers.First.Xml).Save(tw, SaveOptions.OmitDuplicateNamespaces);
                 }
 
@@ -1496,7 +1491,7 @@ namespace DXPlus
             }
 
             // Close the package and commit changes to the memory stream.
-            package.Close();
+            Package.Close();
 
             // Save back to the file or stream
             if (filename != null)
@@ -1516,7 +1511,7 @@ namespace DXPlus
             }
 
             // Reopen the package.
-            package = Package.Open(memoryStream, FileMode.Open, FileAccess.ReadWrite);
+            Package = Package.Open(memoryStream, FileMode.Open, FileAccess.ReadWrite);
             LoadDocumentParts();
         }
 
@@ -1583,7 +1578,7 @@ namespace DXPlus
 
         internal static DocX PostLoad(ref Package package)
         {
-            DocX document = new DocX { package = package };
+            DocX document = new DocX { Package = package };
             document.Document = document;
             document.LoadDocumentParts();
             return document;
@@ -1611,7 +1606,7 @@ namespace DXPlus
                 }
             }
 
-            IEnumerable<PackagePart> headerParts = from headerPart in document.package.GetParts()
+            IEnumerable<PackagePart> headerParts = from headerPart in document.Package.GetParts()
                                                    where (Regex.IsMatch(headerPart.Uri.ToString(), @"/word/header\d?.xml"))
                                                    select headerPart;
             foreach (PackagePart pp in headerParts)
@@ -1638,7 +1633,7 @@ namespace DXPlus
                 header.Save(tw);
             }
 
-            IEnumerable<PackagePart> footerParts = from footerPart in document.package.GetParts()
+            IEnumerable<PackagePart> footerParts = from footerPart in document.Package.GetParts()
                                                    where (Regex.IsMatch(footerPart.Uri.ToString(), @"/word/footer\d?.xml"))
                                                    select footerPart;
             foreach (PackagePart pp in footerParts)
@@ -1665,7 +1660,7 @@ namespace DXPlus
                 footer.Save(tw);
             }
 
-            PopulateDocument(document, document.package);
+            PopulateDocument(document, document.Package);
         }
 
         /// <summary>
@@ -1813,7 +1808,7 @@ namespace DXPlus
             {
                 string header_uri = string.Format("/word/{0}{1}.xml", reference, i);
 
-                PackagePart headerPart = package.CreatePart(new Uri(header_uri, UriKind.Relative), string.Format("application/vnd.openxmlformats-officedocument.wordprocessingml.{0}+xml", reference), CompressionOption.Normal);
+                PackagePart headerPart = Package.CreatePart(new Uri(header_uri, UriKind.Relative), string.Format("application/vnd.openxmlformats-officedocument.wordprocessingml.{0}+xml", reference), CompressionOption.Normal);
                 PackageRelationship headerRelationship = packagePart.CreateRelationship(headerPart.Uri, TargetMode.Internal, string.Format("http://schemas.openxmlformats.org/officeDocument/2006/relationships/{0}", reference));
 
                 XDocument header;
@@ -1860,15 +1855,15 @@ namespace DXPlus
         internal void AddHyperlinkStyleIfNotPresent()
         {
             // If the document contains no /word/styles.xml create one and associate it
-            if (!package.PartExists(DocxSections.StylesUri))
+            if (!Package.PartExists(DocxSections.StylesUri))
             {
-                HelperFunctions.AddDefaultStylesXml(package);
+                HelperFunctions.AddDefaultStylesXml(Package);
             }
 
             // Ensure we are looking at the correct one.
             if (stylesPart == null)
             {
-                stylesPart = package.GetPart(DocxSections.StylesUri);
+                stylesPart = Package.GetPart(DocxSections.StylesUri);
             }
 
             // Load the styles.xml into memory.
@@ -1921,12 +1916,12 @@ namespace DXPlus
             // Get all image parts in word\document.xml
 
             PackageRelationshipCollection relationshipsByImages = packagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image");
-            List<PackagePart> imageParts = relationshipsByImages.Select(ir => package.GetParts()
+            List<PackagePart> imageParts = relationshipsByImages.Select(ir => Package.GetParts()
                         .FirstOrDefault(p => p.Uri.ToString().EndsWith(ir.TargetUri.ToString())))
                         .Where(e => e != null)
                         .ToList();
 
-            foreach (PackagePart relsPart in package.GetParts().Where(part => part.Uri.ToString().Contains("/word/")
+            foreach (PackagePart relsPart in Package.GetParts().Where(part => part.Uri.ToString().Contains("/word/")
                         && part.ContentType.Equals("application/vnd.openxmlformats-package.relationships+xml")))
             {
                 XDocument relsPartContent;
@@ -1955,7 +1950,7 @@ namespace DXPlus
                                 imagePartUri = "/" + imagePartUri;
                             }
 
-                            PackagePart imagePart = package.GetPart(new Uri(imagePartUri, UriKind.Relative));
+                            PackagePart imagePart = Package.GetPart(new Uri(imagePartUri, UriKind.Relative));
                             imageParts.Add(imagePart);
                         }
                     }
@@ -1989,9 +1984,9 @@ namespace DXPlus
             do
             {
                 imgPartUriPath = $"/word/media/{Guid.NewGuid()}.{extension}";
-            } while (package.PartExists(new Uri(imgPartUriPath, UriKind.Relative)));
+            } while (Package.PartExists(new Uri(imgPartUriPath, UriKind.Relative)));
 
-            PackagePart img = package.CreatePart(new Uri(imgPartUriPath, UriKind.Relative), contentType, CompressionOption.Normal);
+            PackagePart img = Package.CreatePart(new Uri(imgPartUriPath, UriKind.Relative), contentType, CompressionOption.Normal);
 
             // Create a new image relationship
             PackageRelationship rel = packagePart.CreateRelationship(img.Uri, TargetMode.Internal, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image");
@@ -2024,14 +2019,14 @@ namespace DXPlus
             Uri wordStylesUri = new Uri("/word/styles.xml", UriKind.Relative);
 
             // If the internal document contains no /word/styles.xml create one.
-            if (!package.PartExists(wordStylesUri))
+            if (!Package.PartExists(wordStylesUri))
             {
-                HelperFunctions.AddDefaultStylesXml(package);
+                HelperFunctions.AddDefaultStylesXml(Package);
             }
 
             // Load the styles.xml into memory.
             XDocument wordStyles;
-            using (TextReader tr = new StreamReader(package.GetPart(wordStylesUri).GetStream()))
+            using (TextReader tr = new StreamReader(Package.GetPart(wordStylesUri).GetStream()))
             {
                 wordStyles = XDocument.Load(tr);
             }
@@ -2059,7 +2054,7 @@ namespace DXPlus
                         new XElement
                         (
                             DocxNamespace.Main + "rPr",
-                            new XElement(DocxNamespace.Main + "ind", new XAttribute(DocxNamespace.Main + Text_Left, "720")),
+                            new XElement(DocxNamespace.Main + "ind", new XAttribute(DocxNamespace.Main + "left", "720")),
                             new XElement
                             (
                                 DocxNamespace.Main + "contextualSpacing"
@@ -2069,7 +2064,7 @@ namespace DXPlus
                 wordStyles.Element(DocxNamespace.Main + "styles").Add(style);
 
                 // Save the styles document.
-                using TextWriter tw = new StreamWriter(package.GetPart(wordStylesUri).GetStream());
+                using TextWriter tw = new StreamWriter(Package.GetPart(wordStylesUri).GetStream());
                 wordStyles.Save(tw);
             }
 
@@ -2096,15 +2091,15 @@ namespace DXPlus
                     header_uri = new Uri("/word/" + header_uri.OriginalString, UriKind.Relative);
                 }
 
-                if (package.PartExists(header_uri))
+                if (Package.PartExists(header_uri))
                 {
                     // Delete the Part
-                    package.DeletePart(header_uri);
+                    Package.DeletePart(header_uri);
 
                     // Get all references to this Relationship in the document.
                     IEnumerable<XElement> query =
                     (
-                        from e in mainDoc.Descendants(DocxNamespace.Main + Text_Body).Descendants()
+                        from e in mainDoc.Descendants(DocxNamespace.Main + "body").Descendants()
                         where (e.Name.LocalName == string.Format("{0}Reference", reference)) && (e.Attribute(DocxNamespace.RelatedDoc + "id").Value == header_relationship.Id)
                         select e
                     );
@@ -2116,7 +2111,7 @@ namespace DXPlus
                     }
 
                     // Delete the Relationship.
-                    package.DeleteRelationship(header_relationship.Id);
+                    Package.DeleteRelationship(header_relationship.Id);
                 }
             }
         }
@@ -2160,7 +2155,7 @@ namespace DXPlus
 
         internal void LoadDocumentParts()
         {
-            packagePart = package.GetParts().Single(p =>
+            packagePart = Package.GetParts().Single(p =>
                 p.ContentType.Equals(DocxContentType.Document, StringComparison.CurrentCultureIgnoreCase) ||
                 p.ContentType.Equals(DocxContentType.Template, StringComparison.CurrentCultureIgnoreCase));
 
@@ -2169,15 +2164,16 @@ namespace DXPlus
                 mainDoc = XDocument.Load(tr, LoadOptions.PreserveWhitespace);
             }
 
-            PopulateDocument(this, package);
+            PopulateDocument(this, Package);
 
             using (TextReader tr = new StreamReader(settingsPart.GetStream()))
             {
                 settings = XDocument.Load(tr);
             }
 
+            // Load all the paragraphs
             paragraphLookup.Clear();
-            foreach (Paragraph paragraph in Paragraphs)
+            foreach (var paragraph in Paragraphs)
             {
                 if (!paragraphLookup.ContainsKey(paragraph.endIndex))
                 {
@@ -2188,7 +2184,7 @@ namespace DXPlus
 
         private static void PopulateDocument(DocX document, Package package)
         {
-            Headers headers = new Headers
+            var headers = new Headers
             {
                 Odd = document.GetHeaderByType("default"),
                 Even = document.GetHeaderByType("even"),
@@ -2202,7 +2198,7 @@ namespace DXPlus
                 First = document.GetFooterByType("first")
             };
 
-            document.Xml = document.mainDoc.Root.Element(DocxNamespace.Main + Text_Body);
+            document.Xml = document.mainDoc.Root.Element(DocxNamespace.Main + "body");
             document.Headers = headers;
             document.Footers = footers;
             document.settingsPart = HelperFunctions.CreateOrGetSettingsPart(package);
@@ -2275,7 +2271,7 @@ namespace DXPlus
 
         private PackagePart ClonePackagePart(PackagePart pp)
         {
-            PackagePart new_pp = package.CreatePart(pp.Uri, pp.ContentType, CompressionOption.Normal);
+            PackagePart new_pp = Package.CreatePart(pp.Uri, pp.ContentType, CompressionOption.Normal);
 
             using (Stream s_read = pp.GetStream())
             {
@@ -2354,7 +2350,7 @@ namespace DXPlus
             string reference = (!isHeader) ? "footerReference" : "headerReference";
 
             // Get the Id of the [default, even or first] [Header or Footer]
-            string Id = mainDoc.Descendants(DocxNamespace.Main + Text_Body).Descendants()
+            string Id = mainDoc.Descendants(DocxNamespace.Main + "body").Descendants()
                 .Where(e => (e.Name.LocalName == reference) && (e.Attribute(DocxNamespace.Main + "type").Value == type))
                 .Select(e => e.Attribute(DocxNamespace.RelatedDoc + "id").Value)
                 .LastOrDefault();
@@ -2371,7 +2367,7 @@ namespace DXPlus
                 }
 
                 // Get the Part and open a stream to get the Xml file.
-                PackagePart part = package.GetPart(partUri);
+                PackagePart part = Package.GetPart(partUri);
 
                 using TextReader tr = new StreamReader(part.GetStream());
                 XDocument doc = XDocument.Load(tr);
@@ -2388,7 +2384,7 @@ namespace DXPlus
 
         private float GetMarginAttribute(XName name)
         {
-            XElement pgMar = SectPr.Element(DocxNamespace.Main + Text_PageMargins);
+            XElement pgMar = SectPr.Element(DocxNamespace.Main + "pgMar");
             XAttribute top = pgMar?.Attribute(name);
             if (top != null && float.TryParse(top.Value, out float f))
             {
@@ -2439,7 +2435,7 @@ namespace DXPlus
 
             string remote_Id = remote_rel.Id;
             string remote_hash = ComputeMD5HashString(remote_pp.GetStream());
-            IEnumerable<PackagePart> image_parts = package.GetParts().Where(pp => pp.ContentType.Equals(contentType));
+            IEnumerable<PackagePart> image_parts = Package.GetParts().Where(pp => pp.ContentType.Equals(contentType));
 
             bool found = false;
             foreach (PackagePart part in image_parts)
@@ -2492,7 +2488,7 @@ namespace DXPlus
                     new_uri = "/" + new_uri;
                 }
 
-                PackagePart new_pp = package.CreatePart(new Uri(new_uri, UriKind.Relative), remote_pp.ContentType, CompressionOption.Normal);
+                PackagePart new_pp = Package.CreatePart(new Uri(new_uri, UriKind.Relative), remote_pp.ContentType, CompressionOption.Normal);
 
                 using (Stream s_read = remote_pp.GetStream())
                 {
@@ -2898,11 +2894,11 @@ namespace DXPlus
 
         private void SetMarginAttribute(XName xName, float value)
         {
-            XElement body = mainDoc.Root.Element(DocxNamespace.Main + Text_Body);
-            XElement sectPr = body.Element(DocxNamespace.Main + Text_SectionProperties);
+            XElement body = mainDoc.Root.Element(DocxNamespace.Main + "body");
+            XElement sectPr = body.Element(DocxNamespace.Main + "sectPr");
             if (sectPr != null)
             {
-                XElement pgMar = sectPr.Element(DocxNamespace.Main + Text_PageMargins);
+                XElement pgMar = sectPr.Element(DocxNamespace.Main + "pgMar");
                 if (pgMar != null)
                 {
                     XAttribute top = pgMar.Attribute(xName);

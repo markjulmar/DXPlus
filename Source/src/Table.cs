@@ -194,7 +194,7 @@ namespace DXPlus
 
                 if (Document.styles == null)
                 {
-                    var wordStyles = Document.package.GetPart(new Uri("/word/styles.xml", UriKind.Relative));
+                    var wordStyles = Document.Package.GetPart(new Uri("/word/styles.xml", UriKind.Relative));
                     using TextReader tr = new StreamReader(wordStyles.GetStream());
                     Document.styles = XDocument.Load(tr);
                 }

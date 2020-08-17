@@ -636,7 +636,7 @@ namespace DXPlus
             Uri rels_path = new Uri("/word/_rels/" + path + ".rels", UriKind.Relative);
 
             // Check to see if the rels file exists and create it if not.
-            if (!Document.package.PartExists(rels_path))
+            if (!Document.Package.PartExists(rels_path))
             {
                 HelperFunctions.CreateRelsPackagePart(Document, rels_path);
             }
@@ -789,7 +789,7 @@ namespace DXPlus
             Uri rels_path = new Uri("/word/_rels/" + path + ".rels", UriKind.Relative);
 
             // Check to see if the rels file exists and create it if not.
-            if (!Document.package.PartExists(rels_path))
+            if (!Document.Package.PartExists(rels_path))
             {
                 HelperFunctions.CreateRelsPackagePart(Document, rels_path);
             }
@@ -934,24 +934,23 @@ namespace DXPlus
         /// Find all instances of a string in this paragraph and return their indexes in a List.
         /// </summary>
         /// <param name="text">The string to find</param>
-        /// <param name="options">The options to use when finding a string match.</param>
+        /// <param name="ignoreCase">True to ignore case in the search</param>
         /// <returns>A list of indexes.</returns>
-        public IEnumerable<int> FindAll(string text, RegexOptions options)
+        public IEnumerable<int> FindAll(string text, bool ignoreCase)
         {
-            MatchCollection mc = Regex.Matches(Text, Regex.Escape(text), options);
-            return mc.Cast<Match>().Select(m => m.Index);
+            MatchCollection mc = Regex.Matches(Text, Regex.Escape(text), ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
+            return mc.Select(m => m.Index);
         }
 
         /// <summary>
         ///  Find all unique instances of the given Regex Pattern
         /// </summary>
-        /// <param name="pattern"></param>
-        /// <param name="options"></param>
-        /// <returns></returns>
-        public IEnumerable<(int index, string text)> FindPattern(string pattern, RegexOptions options)
+        /// <param name="regex">Regex to match</param>
+        /// <returns>Index and matched text</returns>
+        public IEnumerable<(int index, string text)> FindPattern(Regex regex)
         {
-            MatchCollection mc = Regex.Matches(Text, pattern, options);
-            return mc.Cast<Match>().Select(m => (index: m.Index, text: m.Value));
+            MatchCollection mc = regex.Matches(Text);
+            return mc.Select(m => (index: m.Index, text: m.Value));
         }
 
         /// <summary>
@@ -1087,17 +1086,24 @@ namespace DXPlus
             return this;
         }
 
-        public void InsertAtBookmark(string toInsert, string bookmarkName)
+        /// <summary>
+        /// Insert a text block at a bookmark
+        /// </summary>
+        /// <param name="bookmarkName">Bookmark name</param>
+        /// <param name="toInsert">Text to insert</param>
+        public bool InsertAtBookmark(string bookmarkName, string toInsert)
         {
-            XElement bookmark = Xml.Descendants(DocxNamespace.Main + "bookmarkStart")
-                                .SingleOrDefault(x => x.Attribute(DocxNamespace.Main + "name").Value == bookmarkName);
+            var bookmark = Xml.Descendants(DocxNamespace.Main + "bookmarkStart")
+                    .SingleOrDefault(x => x.AttributeValue(DocxNamespace.Main + "name") == bookmarkName);
             if (bookmark != null)
             {
-                List<XElement> run = HelperFunctions.FormatInput(toInsert, null);
+                var run = HelperFunctions.FormatInput(toInsert, null);
                 bookmark.AddBeforeSelf(run);
-                runs = Xml.Elements(DocxNamespace.Main + "r").ToList();
                 HelperFunctions.RenumberIDs(Document);
+                return true;
             }
+
+            return false;
         }
 
         /// <summary>
@@ -1177,7 +1183,7 @@ namespace DXPlus
             Uri rels_path = new Uri(string.Format("/word/_rels/{0}.rels", path), UriKind.Relative);
 
             // Check to see if the rels file exists and create it if not.
-            if (!Document.package.PartExists(rels_path))
+            if (!Document.Package.PartExists(rels_path))
             {
                 HelperFunctions.CreateRelsPackagePart(Document, rels_path);
             }
@@ -1387,7 +1393,7 @@ namespace DXPlus
             Uri rels_path = new Uri("/word/_rels/" + path + ".rels", UriKind.Relative);
 
             // Check to see if the rels file exists and create it if not.
-            if (!Document.package.PartExists(rels_path))
+            if (!Document.Package.PartExists(rels_path))
             {
                 HelperFunctions.CreateRelsPackagePart(Document, rels_path);
             }
@@ -2453,7 +2459,12 @@ namespace DXPlus
             return this;
         }
 
-        public bool ValidateBookmark(string bookmarkName)
+        /// <summary>
+        /// Validate that a bookmark exists
+        /// </summary>
+        /// <param name="bookmarkName">Bookmark name</param>
+        /// <returns></returns>
+        public bool BookmarkExists(string bookmarkName)
         {
             return GetBookmarks().Any(b => b.Name.Equals(bookmarkName));
         }
@@ -2467,7 +2478,7 @@ namespace DXPlus
         /// <param name="descr">The description of this Picture.</param>
         internal static Picture CreatePicture(DocX document, string id, string name, string descr)
         {
-            PackagePart part = document.package.GetPart(document.packagePart.GetRelationship(id).TargetUri);
+            PackagePart part = document.Package.GetPart(document.packagePart.GetRelationship(id).TargetUri);
 
             int newDocPrId = 1;
             List<string> existingIds = new List<string>();

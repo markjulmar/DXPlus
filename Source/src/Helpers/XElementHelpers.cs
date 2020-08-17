@@ -10,7 +10,7 @@ namespace DXPlus.Helpers
 {
     internal static class XElementHelpers
     {
-        public static XElement GetOrCreateElement(this XElement el, XName name, string defaultValue = "")
+        public static XElement GetOrCreateElement(this XContainer el, XName name, string defaultValue = "")
         {
             if (el == null)
                 throw new ArgumentNullException(nameof(el));

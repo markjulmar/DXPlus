@@ -19,7 +19,7 @@ namespace DXPlus
             string end = pr.TargetUri.OriginalString;
             string full = start + "/" + end;
 
-            return document.package.GetPart(new Uri(full, UriKind.Relative)).GetStream(mode, access);
+            return document.Package.GetPart(new Uri(full, UriKind.Relative)).GetStream(mode, access);
         }
 
         /// <summary>

@@ -16,7 +16,7 @@ namespace TestDXPlus
         {
             Setup("docs");
 
-            //HelloWorld();
+            HelloWorld();
             //HighlightWords();
             //HelloWorldAdvancedFormatting();
             //HelloWorldProtectedDocument();
@@ -29,10 +29,10 @@ namespace TestDXPlus
             //Equations();
             //Bookmarks();
             //BookmarksReplaceTextOfBookmarkKeepingFormat();
-            BarChart();
-            PieChart();
-            LineChart();
-            Chart3D();
+            //BarChart();
+            //PieChart();
+            //LineChart();
+            //Chart3D();
             //DocumentMargins();
             //CreateTableWithTextDirection();
             //AddToc();
@@ -195,7 +195,7 @@ namespace TestDXPlus
             Paragraph paragraph2 = document.InsertParagraph("This is a paragraph which contains a ")
                 .AppendBookmark("secondBookmark").Append("bookmark");
 
-            paragraph2.InsertAtBookmark("handy ", "secondBookmark");
+            paragraph2.InsertAtBookmark("secondBookmark", "handy ");
 
             document.Save();
         }
@@ -458,9 +458,7 @@ namespace TestDXPlus
         {
             Enter();
 
-            const string fileName = "HelloWorld.docx";
-
-            DocX document = DocX.Create(fileName);
+            DocX document = DocX.Create("HelloWorld.docx");
             Paragraph p = document.InsertParagraph();
 
             // Append some text and add formatting.
@@ -469,6 +467,9 @@ namespace TestDXPlus
                 .FontSize(32)
                 .Color(Color.Blue)
                 .Bold();
+
+            p.AppendLine();
+            p.AppendLine("This is some normal text.");
 
             document.Save();
         }

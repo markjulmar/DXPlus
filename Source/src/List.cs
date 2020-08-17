@@ -240,9 +240,9 @@ namespace DXPlus
             Uri numberingUri = new Uri("/word/numbering.xml", UriKind.Relative);
 
             // If the internal document contains no /word/numbering.xml create one.
-            if (!Document.package.PartExists(numberingUri))
+            if (!Document.Package.PartExists(numberingUri))
             {
-                Document.numbering = HelperFunctions.AddDefaultNumberingXml(Document.package);
+                Document.numbering = HelperFunctions.AddDefaultNumberingXml(Document.Package);
             }
         }
     }
