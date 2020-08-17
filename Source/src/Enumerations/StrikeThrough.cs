@@ -2,7 +2,7 @@
 
 namespace DXPlus
 {
-    public enum StrikeThrough
+    public enum Strikethrough
     {
         None,
         Strike,

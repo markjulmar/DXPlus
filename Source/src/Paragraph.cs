@@ -923,35 +923,16 @@ namespace DXPlus
         /// </summary>
         /// <param name="fontFamily">The font to use for the appended text.</param>
         /// <returns>This Paragraph with the last appended text's font changed.</returns>
-        /// <example>
-        /// Append text to this Paragraph and then change its font.
-        /// <code>
-        /// // Create a document.
-        /// using (DocX document = DocX.Create(@"Test.docx"))
-        /// {
-        ///     // Insert a new Paragraph.
-        ///     Paragraph p = document.InsertParagraph();
-        ///
-        ///     p.Append("I am ")
-        ///     .Append("Times new roman").Font(new FontFamily("Times new roman"))
-        ///     .Append(" I am not");
-        ///
-        ///     // Save this document.
-        ///     document.Save();
-        /// }// Release this document from memory.
-        /// </code>
-        /// </example>
         public Paragraph Font(FontFamily fontFamily)
         {
-            ApplyTextFormattingProperty
-            (
+            ApplyTextFormattingProperty(
                 DocxNamespace.Main + "rFonts",
                 string.Empty,
                 new[]
                 {
                     new XAttribute(DocxNamespace.Main + "ascii", fontFamily.Name),
-                    new XAttribute(DocxNamespace.Main + "hAnsi", fontFamily.Name), // Added by Maurits Elbers to support non-standard characters. See http://docx.codeplex.com/Thread/View.aspx?ThreadId=70097&ANCHOR#Post453865
-                    new XAttribute(DocxNamespace.Main + "cs", fontFamily.Name),    // Added by Maurits Elbers to support non-standard characters. See http://docx.codeplex.com/Thread/View.aspx?ThreadId=70097&ANCHOR#Post453865
+                    new XAttribute(DocxNamespace.Main + "hAnsi", fontFamily.Name),
+                    new XAttribute(DocxNamespace.Main + "cs", fontFamily.Name)
                 }
             );
 
@@ -959,39 +940,15 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// For use with Append() and AppendLine()
+        /// Set the font size for the appended text in this paragraph
         /// </summary>
         /// <param name="fontSize">The font size to use for the appended text.</param>
-        /// <returns>This Paragraph with the last appended text resized.</returns>
-        /// <example>
-        /// Append text to this Paragraph and then resize it.
-        /// <code>
-        /// // Create a document.
-        /// using (DocX document = DocX.Create(@"Test.docx"))
-        /// {
-        ///     // Insert a new Paragraph.
-        ///     Paragraph p = document.InsertParagraph();
-        ///
-        ///     p.Append("I am ")
-        ///     .Append("Big").FontSize(20)
-        ///     .Append(" I am not");
-        ///
-        ///     // Save this document.
-        ///     document.Save();
-        /// }// Release this document from memory.
-        /// </code>
-        /// </example>
+        /// <returns>Paragraph with the last appended text resized.</returns>
         public Paragraph FontSize(double fontSize)
         {
-            if (fontSize < 0 || fontSize > 1639)
-            {
-                throw new ArgumentException("Size", "Value must be in the range 0 - 1638");
-            }
-
-            if (fontSize - (int)fontSize != 0)
-            {
-                throw new ArgumentException("Size", "Value must be either a whole or half number, examples: 32, 32.5");
-            }
+            // [0-1638] rounded to nearest half.
+            fontSize = Math.Min(Math.Max(0, fontSize), 1638.0);
+            fontSize = Math.Round(fontSize * 2, MidpointRounding.AwayFromZero) / 2;
 
             ApplyTextFormattingProperty(DocxNamespace.Main + "sz", string.Empty, new XAttribute(DocxNamespace.Main + "val", fontSize * 2));
             ApplyTextFormattingProperty(DocxNamespace.Main + "szCs", string.Empty, new XAttribute(DocxNamespace.Main + "val", fontSize * 2));
@@ -999,6 +956,10 @@ namespace DXPlus
             return this;
         }
 
+        /// <summary>
+        /// Retrieve all the bookmarks in this paragraph
+        /// </summary>
+        /// <returns>Enumerable of bookmark objects</returns>
         public IEnumerable<Bookmark> GetBookmarks()
         {
             return Xml.Descendants(DocxNamespace.Main + "bookmarkStart")

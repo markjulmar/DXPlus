@@ -24,7 +24,7 @@ namespace DXPlus
         public Formatting()
         {
             CapsStyle = DXPlus.CapsStyle.None;
-            StrikeThrough = DXPlus.StrikeThrough.None;
+            Strikethrough = DXPlus.Strikethrough.None;
             Script = DXPlus.Script.None;
             Highlight = DXPlus.Highlight.None;
             UnderlineStyle = DXPlus.UnderlineStyle.None;
@@ -59,7 +59,7 @@ namespace DXPlus
                 Script = Script,
                 size = size,
                 spacing = spacing,
-                StrikeThrough = StrikeThrough,
+                Strikethrough = Strikethrough,
                 UnderlineColor = UnderlineColor,
                 UnderlineStyle = UnderlineStyle
             };
@@ -212,9 +212,9 @@ namespace DXPlus
                     rPr.Element(DocxNamespace.Main + "u").Add(new XAttribute(DocxNamespace.Main + "color", UnderlineColor.Value.ToHex()));
                 }
 
-                if (StrikeThrough.HasValue && StrikeThrough != DXPlus.StrikeThrough.None)
+                if (Strikethrough.HasValue && Strikethrough != DXPlus.Strikethrough.None)
                 {
-                    rPr.Add(new XElement(DocxNamespace.Main + StrikeThrough.GetEnumName()));
+                    rPr.Add(new XElement(DocxNamespace.Main + Strikethrough.GetEnumName()));
                 }
 
                 if (Script.HasValue && Script != DXPlus.Script.None)
@@ -273,16 +273,14 @@ namespace DXPlus
         public bool? Italic { get; set; }
 
         /// <summary>
-        /// This formatting will apply StrickThrough.
+        /// This formatting will apply Strike-through.
         /// </summary>
-        public StrikeThrough? StrikeThrough { get; set; }
+        public Strikethrough? Strikethrough { get; set; }
 
         /// <summary>
         /// The script that this formatting should be, normal, superscript or subscript.
         /// </summary>
         public Script? Script { get; set; }
-
-        private const double MAX_SIZE = 1639;
 
         /// <summary>
         /// The Size of this text, must be between 0 and 1638.
@@ -295,12 +293,9 @@ namespace DXPlus
             {
                 if (value != null)
                 {
-                    // Always round to nearest half
-                    value = Math.Round(value.Value * 2, MidpointRounding.AwayFromZero) / 2;
-                    if (value < 0 || value > MAX_SIZE)
-                    {
-                        throw new ArgumentException($"Value must be in the range [0-{MAX_SIZE}]", nameof(Size));
-                    }
+                    // [0-1638] rounded to nearest half.
+                    double fontSize = Math.Min(Math.Max(0, value.Value), 1638.0);
+                    value = Math.Round(fontSize * 2, MidpointRounding.AwayFromZero) / 2;
                 }
 
                 size = value;
@@ -451,7 +446,7 @@ namespace DXPlus
         {
             Formatting other = (Formatting)obj;
             return other.Hidden != Hidden || other.Bold != Bold || other.Italic != Italic
-                || other.StrikeThrough != StrikeThrough || other.Script != Script
+                || other.Strikethrough != Strikethrough || other.Script != Script
                 || other.Highlight != Highlight || other.size != size
                 || other.FontColor != FontColor || other.UnderlineColor != UnderlineColor
                 || other.UnderlineStyle != UnderlineStyle || other.Misc != Misc
