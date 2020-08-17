@@ -24,7 +24,7 @@ namespace DXPlus.Charts
         public Grouping Grouping
         {
             get => ChartXml.Element(DocxNamespace.Chart + "grouping").GetEnumValue<Grouping>();
-            set => ChartXml.Element(DocxNamespace.Chart + "grouping").SetEnumValue(value);
+            set => ChartXml.GetOrCreateElement(DocxNamespace.Chart + "grouping").SetEnumValue(value);
         }
 
         protected override XElement CreateChartXml()

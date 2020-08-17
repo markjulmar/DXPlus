@@ -8,14 +8,10 @@ namespace DXPlus.Charts
     /// </summary>
     public abstract class Axis
     {
-        protected Axis()
-        {
-        }
-
-        protected Axis(XElement xml)
-        {
-            Xml = xml;
-        }
+        /// <summary>
+        /// Axis xml element
+        /// </summary>
+        internal XElement Xml { get; set; }
 
         /// <summary>
         /// ID of this Axis
@@ -30,10 +26,5 @@ namespace DXPlus.Charts
             get => Xml.Element(DocxNamespace.Chart + "delete")?.GetVal() == "0";
             set => Xml.GetOrCreateElement(DocxNamespace.Chart + "delete").SetValue(value ? "1" : "0");
         }
-
-        /// <summary>
-        /// Axis xml element
-        /// </summary>
-        internal XElement Xml { get; set; }
     }
 }

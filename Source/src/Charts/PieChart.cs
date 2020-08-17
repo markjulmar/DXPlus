@@ -7,14 +7,19 @@ namespace DXPlus.Charts
     /// </summary>
     public class PieChart : Chart
     {
-        public override bool IsAxisExist => false;
+        /// <summary>
+        /// Chart has an axis?
+        /// </summary>
+        public override bool HasAxis => false;
+
+        /// <summary>
+        /// Return maximum count of series
+        /// </summary>
         public override short MaxSeriesCount => 1;
 
-        protected override XElement CreateChartXml()
-        {
-            return XElement.Parse(
-                @"<c:pieChart xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
-                  </c:pieChart>");
-        }
+        /// <summary>
+        /// Method which creates the current chart XML
+        /// </summary>
+        protected override XElement CreateChartXml() => new XElement(DocxNamespace.Chart + "pieChart");
     }
 }

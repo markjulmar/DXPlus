@@ -28,10 +28,5 @@ namespace DXPlus.Charts
                 <c:noMultiLvlLbl val=""0""/>
               </c:catAx>");
         }
-
-        internal CategoryAxis(XElement xml)
-                    : base(xml)
-        {
-        }
     }
 }

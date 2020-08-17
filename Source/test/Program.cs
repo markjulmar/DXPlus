@@ -16,37 +16,33 @@ namespace TestDXPlus
         {
             Setup("docs");
 
-            /*
-            HelloWorld();
-            HighlightWords();
-            HelloWorldAdvancedFormatting();
-            HelloWorldProtectedDocument();
-            HelloWorldAddPictureToWord();
-            RightToLeft();
-            Indentation();
-            HeadersAndFooters();
-            HyperlinksInDocument();
-            AddList();
-            Equations();
-            Bookmarks();
-            BookmarksReplaceTextOfBookmarkKeepingFormat();
-            */
+            //HelloWorld();
+            //HighlightWords();
+            //HelloWorldAdvancedFormatting();
+            //HelloWorldProtectedDocument();
+            //HelloWorldAddPictureToWord();
+            //RightToLeft();
+            //Indentation();
+            //HeadersAndFooters();
+            //HyperlinksInDocument();
+            //AddList();
+            //Equations();
+            //Bookmarks();
+            //BookmarksReplaceTextOfBookmarkKeepingFormat();
             BarChart();
-            /*
             PieChart();
             LineChart();
             Chart3D();
-            DocumentMargins();
-            CreateTableWithTextDirection();
-            AddToc();
-            AddTocByReference();
-            TablesDocument();
-            DocumentsWithListsFontChange();
-            DocumentHeading();
-            LargeTable();
-            ProgrammaticallyManipulateImbeddedImage();
-            CountNumberOfParagraphs();
-            */
+            //DocumentMargins();
+            //CreateTableWithTextDirection();
+            //AddToc();
+            //AddTocByReference();
+            //TablesDocument();
+            //DocumentsWithListsFontChange();
+            //DocumentHeading();
+            //LargeTable();
+            //ProgrammaticallyManipulateImbeddedImage();
+            //CountNumberOfParagraphs();
         }
 
         private static void CountNumberOfParagraphs()
@@ -172,11 +168,11 @@ namespace TestDXPlus
             List<ChartData> company2 = ChartData.CreateCompanyList2();
 
             // Create and add series
-            Series series1 = new Series("Microsoft") { Color = Color.GreenYellow };
+            Series series1 = new Series("Microsoft") { Color = Color.DarkBlue };
             series1.Bind(company1, nameof(ChartData.Month), nameof(ChartData.Money));
             chart.AddSeries(series1);
 
-            Series series2 = new Series("Apple");
+            Series series2 = new Series("Apple") { Color = Color.FromArgb(1, 0xff, 0, 0xff)};
             series2.Bind(company2, nameof(ChartData.Month), nameof(ChartData.Money));
             chart.AddSeries(series2);
 

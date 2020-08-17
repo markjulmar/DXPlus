@@ -14,16 +14,12 @@ namespace DXPlus.Charts
     {
         [XmlAttribute("t")]
         Top,
-
         [XmlAttribute("b")]
         Bottom,
-
         [XmlAttribute("l")]
         Left,
-
         [XmlAttribute("r")]
         Right,
-
         [XmlAttribute("tr")]
         TopRight
     }
@@ -81,7 +77,7 @@ namespace DXPlus.Charts
                 </c:dLbls>");
             ChartXml.Add(dLblsXml);
 
-            if (IsAxisExist)
+            if (HasAxis)
             {
                 CategoryAxis = new CategoryAxis("148921728");
                 ValueAxis = new ValueAxis("154227840");
@@ -110,7 +106,7 @@ namespace DXPlus.Charts
         }
 
         /// <summary>
-        /// Represents the category axis
+        /// The category axis
         /// </summary>
         public CategoryAxis CategoryAxis { get; }
 
@@ -124,9 +120,9 @@ namespace DXPlus.Charts
         }
 
         /// <summary>
-        /// Represents existing the axis
+        /// Chart has an axis?
         /// </summary>
-        public virtual bool IsAxisExist => true;
+        public virtual bool HasAxis => true;
 
         /// <summary>
         /// Chart's legend.
@@ -150,7 +146,7 @@ namespace DXPlus.Charts
                 int index = 1;
                 foreach (var element in ChartXml.Elements(DocxNamespace.Chart + "ser"))
                 {
-                    element.Add(new XElement(DocxNamespace.Chart + "idx"), index++.ToString());
+                    element.Add(new XElement(DocxNamespace.Chart + "idx"), index++);
                     series.Add(new Series(element));
                 }
                 return series;
@@ -187,20 +183,29 @@ namespace DXPlus.Charts
         }
 
         /// <summary>
-        /// The xml representation of this chart
+        /// The XML representation of this chart
         /// </summary>
         public XDocument Xml { get; }
 
+        /// <summary>
+        /// The root XML node of the chart (c:chart)
+        /// </summary>
         protected XElement ChartRootXml { get; }
+
+        /// <summary>
+        /// The root XML node of the specific chart (bar, pie, etc.)
+        /// </summary>
         protected XElement ChartXml { get; }
+
+        /// <summary>
+        /// True if this chart has a legend
+        /// </summary>
+        public bool HasLegend => Legend != null;
 
         /// <summary>
         /// Add standard legend to the chart.
         /// </summary>
-        public void AddLegend()
-        {
-            AddLegend(ChartLegendPosition.Right, false);
-        }
+        public void AddLegend() => AddLegend(ChartLegendPosition.Right, false);
 
         /// <summary>
         /// Add a legend with parameters to the chart.
@@ -208,12 +213,22 @@ namespace DXPlus.Charts
         public void AddLegend(ChartLegendPosition position, bool overlay)
         {
             if (Legend != null)
-            {
                 RemoveLegend();
-            }
 
             Legend = new ChartLegend(position, overlay);
-            ChartRootXml.Element(DocxNamespace.Chart + "plotArea").AddAfterSelf(Legend.Xml);
+            ChartRootXml.GetOrCreateElement(DocxNamespace.Chart + "plotArea").AddAfterSelf(Legend.Xml);
+        }
+
+        /// <summary>
+        /// Remove the legend from the chart.
+        /// </summary>
+        public void RemoveLegend()
+        {
+            if (HasLegend)
+            {
+                Legend.Xml.Remove();
+                Legend = null;
+            }
         }
 
         /// <summary>
@@ -231,15 +246,6 @@ namespace DXPlus.Charts
             series.Xml.AddFirst(new XElement(DocxNamespace.Chart + "idx", new XAttribute("val", (serCount + 1).ToString())));
 
             ChartXml.Add(series.Xml);
-        }
-
-        /// <summary>
-        /// Remove the legend from the chart.
-        /// </summary>
-        public void RemoveLegend()
-        {
-            Legend.Xml.Remove();
-            Legend = null;
         }
 
         /// <summary>

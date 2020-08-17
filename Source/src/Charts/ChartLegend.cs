@@ -15,6 +15,11 @@ namespace DXPlus.Charts
         /// </summary>
         internal XElement Xml { get; }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="position"></param>
+        /// <param name="overlay"></param>
         internal ChartLegend(ChartLegendPosition position, bool overlay)
         {
             Xml = new XElement(DocxNamespace.Chart + "legend",
@@ -28,7 +33,7 @@ namespace DXPlus.Charts
         public bool Overlay
         {
             get => Xml.Element(DocxNamespace.Chart + "overlay").GetVal() == "1";
-            set => Xml.Element(DocxNamespace.Chart + "overlay").Attribute("val").Value = value ? "1" : "0";
+            set => Xml.GetOrCreateElement(DocxNamespace.Chart + "overlay").SetAttributeValue("val", value ? "1" : "0");
         }
 
         /// <summary>
@@ -37,7 +42,7 @@ namespace DXPlus.Charts
         public ChartLegendPosition Position
         {
             get => Xml.Element(DocxNamespace.Chart + "legendPos").GetEnumValue<ChartLegendPosition>();
-            set => Xml.Element(DocxNamespace.Chart + "legendPos").SetEnumValue(value);
+            set => Xml.GetOrCreateElement(DocxNamespace.Chart + "legendPos").SetEnumValue(value);
         }
     }
 }

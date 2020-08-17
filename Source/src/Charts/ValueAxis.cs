@@ -27,10 +27,5 @@ namespace DXPlus.Charts
                 <c:crossBetween val=""between""/>
               </c:valAx>");
         }
-
-        internal ValueAxis(XElement xml)
-                    : base(xml)
-        {
-        }
     }
 }
