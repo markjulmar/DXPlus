@@ -19,7 +19,7 @@ namespace DXPlus
         internal Row(Table table, XElement xml) : base(table.Document, xml)
         {
             Table = table;
-            packagePart = table.packagePart;
+            PackagePart = table.PackagePart;
         }
 
         /// <summary>
@@ -91,7 +91,7 @@ namespace DXPlus
 
         public override ReadOnlyCollection<Paragraph> Paragraphs
             => Xml.Descendants(DocxNamespace.Main + "p")
-                    .Select(p => new Paragraph(Document, p, 0) { packagePart = Table.packagePart })
+                    .Select(p => new Paragraph(Document, p, 0) { PackagePart = Table.PackagePart })
                     .ToList()
                     .AsReadOnly();
 

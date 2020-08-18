@@ -37,16 +37,16 @@ namespace DXPlus
 
             set
             {
-                XElement rPr = new XElement(DocxNamespace.Main + "rPr",
-                        new XElement(DocxNamespace.Main + "rStyle",
-                            new XAttribute(DocxNamespace.Main + "val", "Hyperlink")));
+                var rPr = new XElement(DocxNamespace.Main + "rPr",
+                                new XElement(DocxNamespace.Main + "rStyle",
+                                    new XAttribute(DocxNamespace.Main + "val", "Hyperlink")));
 
                 // Format and add the new text.
-                List<XElement> newRuns = HelperFunctions.FormatInput(value, rPr);
+                var newRuns = HelperFunctions.FormatInput(value, rPr);
                 if (type == 0)
                 {
                     // Get all the runs in this Text.
-                    List<XElement> runs = Xml.LocalNameElements("r").ToList();
+                    var runs = Xml.LocalNameElements("r").ToList();
                     for (int i = 0; i < runs.Count; i++)
                     {
                         runs.Remove();
@@ -56,12 +56,12 @@ namespace DXPlus
                 }
                 else
                 {
-                    XElement separate = XElement.Parse(@"
+                    var separate = XElement.Parse(@"
                     <w:r xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'>
                         <w:fldChar w:fldCharType='separate'/>
                     </w:r>");
 
-                    XElement end = XElement.Parse(@"
+                    var end = XElement.Parse(@"
                     <w:r xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'>
                         <w:fldChar w:fldCharType='end' />
                     </w:r>");
@@ -79,16 +79,9 @@ namespace DXPlus
         /// </summary>
         public Uri Uri
         {
-            get
-            {
-                if (type == 0 && !string.IsNullOrEmpty(Id))
-                {
-                    PackageRelationship r = packagePart.GetRelationship(Id);
-                    return r.TargetUri;
-                }
-
-                return uri;
-            }
+            get => type == 0 && !string.IsNullOrEmpty(Id) 
+                ? PackagePart.GetRelationship(Id).TargetUri 
+                : uri;
 
             set
             {
@@ -98,16 +91,15 @@ namespace DXPlus
                 {
                     if (!string.IsNullOrEmpty(Id))
                     {
-                        PackageRelationship r = packagePart.GetRelationship(Id);
+                        var r = PackagePart.GetRelationship(Id);
 
                         // Get all of the information about this relationship.
-                        TargetMode r_tm = r.TargetMode;
-                        string r_rt = r.RelationshipType;
-                        string r_id = r.Id;
+                        var targetMode = r.TargetMode;
+                        string relationshipType = r.RelationshipType;
+                        string id = r.Id;
 
-                        // Delete the relationship
-                        packagePart.DeleteRelationship(r_id);
-                        packagePart.CreateRelationship(value, r_tm, r_rt, r_id);
+                        PackagePart.DeleteRelationship(id);
+                        PackagePart.CreateRelationship(value, targetMode, relationshipType, id);
                     }
                 }
                 else
@@ -117,12 +109,12 @@ namespace DXPlus
             }
         }
 
-        internal Hyperlink(DocX document, XElement data, Uri uri) : base(document, data)
+        internal Hyperlink(DocX document, XElement data, PackagePart packagePart) : base(document, data)
         {
             type = 0;
             Id = data.AttributeValue(DocxNamespace.RelatedDoc + "id");
             text = HelperFunctions.GetTextRecursive(data).ToString();
-            Uri = uri;
+            PackagePart = packagePart;
         }
 
         internal Hyperlink(DocX document, XElement instrText, List<XElement> runs) : base(document, null)
@@ -131,8 +123,8 @@ namespace DXPlus
             this.instrText = instrText;
             this.runs = runs;
 
-            int start = instrText.Value.IndexOf("HYPERLINK \"") + "HYPERLINK \"".Length;
-            int end = instrText.Value.IndexOf("\"", start);
+            int start = instrText.Value.IndexOf("HYPERLINK \"", StringComparison.Ordinal) + "HYPERLINK \"".Length;
+            int end = instrText.Value.IndexOf("\"", start, StringComparison.Ordinal);
             if (start != -1 && end != -1)
             {
                 Uri = new Uri(instrText.Value[start..end], UriKind.Absolute);

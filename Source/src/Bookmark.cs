@@ -77,8 +77,8 @@ namespace DXPlus
         {
             var run = HelperFunctions.FormatInput(text, null);
             bookmark.AddAfterSelf(run);
-            Paragraph.runs = Paragraph.Xml.Elements(DocxNamespace.Main + "r").ToList();
-            HelperFunctions.RenumberIDs(Paragraph.Document);
+            Paragraph.Runs = Paragraph.Xml.Elements(DocxNamespace.Main + "r").ToList();
+            HelperFunctions.RenumberIds(Paragraph.Document);
         }
     }
 }

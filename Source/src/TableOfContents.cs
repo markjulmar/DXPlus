@@ -17,10 +17,10 @@ namespace DXPlus
 
         private TableOfContents(DocX document, XElement xml, string headerStyle) : base(document, xml)
         {
-            if (!document.settings.Descendants(DocxNamespace.Main + "updateFields").Any())
+            if (!document.settingsDoc.Descendants(DocxNamespace.Main + "updateFields").Any())
             {
                 // Tell Word to update the document ToC the next time this document is loaded.
-                document.settings.Root.Add(new XElement(DocxNamespace.Main + "updateFields",
+                document.settingsDoc.Root.Add(new XElement(DocxNamespace.Main + "updateFields",
                                            new XAttribute(DocxNamespace.Main + "val", true)));
             }
 
@@ -78,7 +78,7 @@ namespace DXPlus
                 {
                     XmlReader reader = XmlReader.Create(new StringReader(string.Format(style.template, style.headerStyle, style.name)));
                     XElement xml = XElement.Load(reader);
-                    document.styles.Root.Add(xml);
+                    document.stylesDoc.Root.Add(xml);
                 }
             }
         }

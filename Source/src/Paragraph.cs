@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Drawing;
 using System.Globalization;
-using System.IO;
 using System.IO.Packaging;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -16,32 +16,41 @@ namespace DXPlus
     /// </summary>
     public class Paragraph : InsertBeforeOrAfter
     {
-        internal List<XElement> runs;
-        internal List<XElement> styles;
-        private Alignment alignment;            // This paragraphs text alignment
-        private Direction direction;
-        internal readonly int startIndex;
-        internal readonly int endIndex;
-        private float indentationAfter;
-        private float indentationBefore;
-        private float indentationFirstLine;
-        private float indentationHanging;
-        private int? indentLevel;
-        private XElement paragraphNumberProperties;
+        /// <summary>
+        /// Text runs (r) that make up this paragraph
+        /// </summary>
+        internal List<XElement> Runs { get; set; }
 
-        internal Paragraph(DocX document, XElement xml, int startIndex, ContainerType parent = ContainerType.None)
+        /// <summary>
+        /// Styles in this paragraph
+        /// </summary>
+        internal List<XElement> Styles { get; set; }
+
+        /// <summary>
+        /// Starting index for this paragraph
+        /// </summary>
+        internal int StartIndex { get; }
+
+        /// <summary>
+        /// End index for this paragraph
+        /// </summary>
+        internal int EndIndex { get; }
+
+        /// <summary>
+        /// Constructor for the paragraph
+        /// </summary>
+        /// <param name="document">Document owner</param>
+        /// <param name="xml">XML for the paragraph</param>
+        /// <param name="startIndex">Starting position in the doc</param>
+        /// <param name="parentContainerType">Container parent type</param>
+        internal Paragraph(DocX document, XElement xml, int startIndex, ContainerType parentContainerType = ContainerType.None)
             : base(document, xml)
         {
-            ParentContainer = parent;
-            this.startIndex = startIndex;
-            endIndex = startIndex + GetElementTextLength(Xml);
-            styles = new List<XElement>();
-
-            DocumentProperties = Xml.Descendants(DocxNamespace.Main + "fldSimple")
-                                    .Select(el => new DocProperty(Document, el))
-                                    .ToList();
-
-            runs = Xml.Elements(DocxNamespace.Main + "r").ToList();
+            ParentContainerType = parentContainerType;
+            StartIndex = startIndex;
+            EndIndex = startIndex + GetElementTextLength(Xml);
+            Styles = new List<XElement>();
+            Runs = Xml.Elements(DocxNamespace.Main + "r").ToList();
         }
 
         /// <summary>
@@ -51,8 +60,8 @@ namespace DXPlus
         {
             get
             {
-                XElement jc = ParaProperties().Element(DocxNamespace.Main + "jc");
-                if (jc != null && jc.TryGetEnumValue<Alignment>(out Alignment result))
+                var jc = ParaElement().Element(DocxNamespace.Main + "jc");
+                if (jc != null && jc.TryGetEnumValue(out Alignment result))
                 {
                     return result;
                 }
@@ -61,21 +70,19 @@ namespace DXPlus
 
             set
             {
-                alignment = value;
+                var pPr = ParaElement();
+                var jc = pPr.Element(DocxNamespace.Main + "jc");
 
-                XElement pPr = ParaProperties();
-                XElement jc = pPr.Element(DocxNamespace.Main + "jc");
-
-                if (alignment != Alignment.Left)
+                if (value != Alignment.Left)
                 {
                     if (jc == null)
                     {
                         pPr.Add(new XElement(DocxNamespace.Main + "jc",
-                                    new XAttribute(DocxNamespace.Main + "val", alignment.GetEnumName())));
+                                    new XAttribute(DocxNamespace.Main + "val", value.GetEnumName())));
                     }
                     else
                     {
-                        jc.SetAttributeValue(DocxNamespace.Main + "val", alignment.GetEnumName());
+                        jc.SetAttributeValue(DocxNamespace.Main + "val", value.GetEnumName());
                     }
                 }
                 else
@@ -90,21 +97,14 @@ namespace DXPlus
         /// </summary>
         public Direction Direction
         {
-            get
-            {
-                XElement pPr = ParaProperties();
-                XElement bidi = pPr.Element(DocxNamespace.Main + "bidi");
-                return bidi == null ? Direction.LeftToRight : Direction.RightToLeft;
-            }
+            get => ParaElement().Element(DocxNamespace.Main + "bidi") == null ? Direction.LeftToRight : Direction.RightToLeft;
 
             set
             {
-                direction = value;
+                var pPr = ParaElement();
+                var bidi = pPr.Element(DocxNamespace.Main + "bidi");
 
-                XElement pPr = ParaProperties();
-                XElement bidi = pPr.Element(DocxNamespace.Main + "bidi");
-
-                if (direction == Direction.RightToLeft)
+                if (value == Direction.RightToLeft)
                 {
                     if (bidi == null)
                     {
@@ -119,9 +119,12 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Returns a list of field type DocProperty in this document.
+        /// Returns a list of DocProperty elements in this document.
         /// </summary>
-        public List<DocProperty> DocumentProperties { get; }
+        public ReadOnlyCollection<DocProperty> DocumentProperties =>
+            Xml.Descendants(DocxNamespace.Main + "fldSimple")
+                .Select(el => new DocProperty(Document, el))
+                .ToList().AsReadOnly();
 
         ///<summary>
         /// Returns table following the paragraph. Null if the following element isn't table.
@@ -131,9 +134,7 @@ namespace DXPlus
         /// <summary>
         /// Add a heading
         /// </summary>
-        /// <param name="paragraph"></param>
         /// <param name="headingType"></param>
-        /// <returns></returns>
         public Paragraph Heading(HeadingType headingType)
         {
             StyleName = headingType.GetEnumName();
@@ -147,43 +148,40 @@ namespace DXPlus
         {
             get
             {
-                List<Hyperlink> hyperlinks = new List<Hyperlink>();
+                var hyperlinks = new List<Hyperlink>();
 
-                foreach (XElement he in Xml.Descendants().Where(h => h.Name.LocalName == "hyperlink" || h.Name.LocalName == "instrText").ToList())
+                foreach (var he in Xml.Descendants().Where(h => h.Name.LocalName == "hyperlink" || h.Name.LocalName == "instrText").ToList())
                 {
                     if (he.Name.LocalName == "hyperlink")
                     {
-                        hyperlinks.Add(new Hyperlink(Document, he, uri: null)
-                        {
-                            packagePart = packagePart
-                        });
+                        hyperlinks.Add(new Hyperlink(Document, he, PackagePart));
                     }
                     else
                     {
                         // Find the parent run, no matter how deeply nested we are.
-                        XElement e = he;
-                        while (e.Name.LocalName != "r")
+                        var e = he;
+                        while (e != null && e.Name.LocalName != "r")
                         {
                             e = e.Parent;
                         }
 
+                        if (e == null)
+                            throw new Exception("Failed to locate the parent in a run.");
+
                         // Take every element until we reach w:fldCharType="end"
-                        List<XElement> hyperlink_runs = new List<XElement>();
-                        foreach (XElement r in e.ElementsAfterSelf(DocxNamespace.Main + "r"))
+                        var hyperLinkRuns = new List<XElement>();
+                        foreach (var run in e.ElementsAfterSelf(DocxNamespace.Main + "r"))
                         {
                             // Add this run to the list.
-                            hyperlink_runs.Add(r);
+                            hyperLinkRuns.Add(run);
 
-                            XElement fldChar = r.Descendants(DocxNamespace.Main + "fldChar").SingleOrDefault();
+                            var fldChar = run.Descendants(DocxNamespace.Main + "fldChar").SingleOrDefault();
                             if (fldChar != null)
                             {
-                                XAttribute fldCharType = fldChar.Attribute(DocxNamespace.Main + "fldCharType");
+                                var fldCharType = fldChar.Attribute(DocxNamespace.Main + "fldCharType");
                                 if (fldCharType?.Value.Equals("end", StringComparison.CurrentCultureIgnoreCase) == true)
                                 {
-                                    hyperlinks.Add(new Hyperlink(Document, he, hyperlink_runs)
-                                    {
-                                        packagePart = packagePart
-                                    });
+                                    hyperlinks.Add(new Hyperlink(Document, he, hyperLinkRuns) { PackagePart = PackagePart });
                                     break;
                                 }
                             }
@@ -196,233 +194,155 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Set the after indentation in cm for this Paragraph.
+        /// Set the left indentation in cm for this Paragraph.
         /// </summary>
-        public float IndentationAfter
+        public double IndentationLeft
         {
             get
             {
-                XElement ind = GetOrCreate_pPr_ind();
-                XAttribute right = ind.Attribute(DocxNamespace.Main + "right");
-                return right != null ? float.Parse(right.Value) : 0.0f;
+                var ind = ParaIndentationElement();
+                var left = ind.Attribute(DocxNamespace.Main + "left");
+                return left != null ? double.Parse(left.Value) / 20.0 : 0;
             }
 
             set
             {
-                if (IndentationAfter != value)
-                {
-                    indentationAfter = value;
-
-                    XElement ind = GetOrCreate_pPr_ind();
-
-                    string indentation = (indentationAfter / 0.1 * 57).ToString();
-
-                    XAttribute right = ind.Attribute(DocxNamespace.Main + "right");
-                    if (right != null)
-                    {
-                        right.Value = indentation;
-                    }
-                    else
-                    {
-                        ind.Add(new XAttribute(DocxNamespace.Main + "right", indentation));
-                    }
-                }
+                var ind = ParaIndentationElement();
+                ind.SetAttributeValue(DocxNamespace.Main + "left", value * 20.0);
             }
         }
 
         /// <summary>
-        /// Set the before indentation in cm for this Paragraph.
+        /// Set the right indentation in cm for this Paragraph.
         /// </summary>
-        public float IndentationBefore
+        public double IndentationRight
         {
             get
             {
-                XElement ind = GetOrCreate_pPr_ind();
-                XAttribute left = ind.Attribute(DocxNamespace.Main + "left");
-                return left != null ? float.Parse(left.Value) / (57 * 10) : 0.0f;
+                var ind = ParaIndentationElement();
+                var right = ind.Attribute(DocxNamespace.Main + "right");
+                return right != null ? double.Parse(right.Value)/20.0 : 0;
             }
 
             set
             {
-                if (IndentationBefore != value)
-                {
-                    indentationBefore = value;
-
-                    XElement ind = GetOrCreate_pPr_ind();
-
-                    string indentation = (indentationBefore / 0.1 * 57).ToString();
-
-                    XAttribute left = ind.Attribute(DocxNamespace.Main + "left");
-                    if (left != null)
-                    {
-                        left.Value = indentation;
-                    }
-                    else
-                    {
-                        ind.Add(new XAttribute(DocxNamespace.Main + "left", indentation));
-                    }
-                }
+                var ind = ParaIndentationElement();
+                ind.SetAttributeValue(DocxNamespace.Main + "right", value * 20.0);
             }
         }
 
         /// <summary>
         /// Get or set the indentation of the first line of this Paragraph.
         /// </summary>
-        public float IndentationFirstLine
+        public double IndentationFirstLine
         {
             get
             {
-                XElement ind = GetOrCreate_pPr_ind();
-                XAttribute firstLine = ind.Attribute(DocxNamespace.Main + "firstLine");
-
-                return firstLine != null ? float.Parse(firstLine.Value) : 0.0f;
+                var ind = ParaIndentationElement();
+                var firstLine = ind.Attribute(DocxNamespace.Main + "firstLine");
+                return firstLine != null ? double.Parse(firstLine.Value)/20.0 : 0;
             }
 
             set
             {
-                if (IndentationFirstLine != value)
-                {
-                    indentationFirstLine = value;
-                    XElement ind = GetOrCreate_pPr_ind();
+                var ind = ParaIndentationElement();
 
-                    // Paragraph can either be firstLine or hanging (Remove hanging).
-                    XAttribute hanging = ind.Attribute(DocxNamespace.Main + "hanging");
-                    hanging?.Remove();
-
-                    string indentation = ((indentationFirstLine / 0.1) * 57).ToString();
-                    XAttribute firstLine = ind.Attribute(DocxNamespace.Main + "firstLine");
-                    if (firstLine != null)
-                    {
-                        firstLine.Value = indentation;
-                    }
-                    else
-                    {
-                        ind.Add(new XAttribute(DocxNamespace.Main + "firstLine", indentation));
-                    }
-                }
+                // Remove any hanging indentation and set the firstLine indent.
+                ind.Attribute(DocxNamespace.Main + "hanging")?.Remove();
+                ind.SetAttributeValue(DocxNamespace.Main + "firstLine", value * 20f);
             }
         }
 
         /// <summary>
         /// Get or set the indentation of all but the first line of this Paragraph.
         /// </summary>
-        public float IndentationHanging
+        public double IndentationHanging
         {
             get
             {
-                XElement ind = GetOrCreate_pPr_ind();
-                XAttribute hanging = ind.Attribute(DocxNamespace.Main + "hanging");
-                return hanging != null ? float.Parse(hanging.Value) / (57 * 10) : 0.0f;
+                var ind = ParaIndentationElement();
+                var hanging = ind.Attribute(DocxNamespace.Main + "hanging");
+                return hanging != null ? double.Parse(hanging.Value) / 20.0 : 0;
             }
 
             set
             {
-                if (IndentationHanging != value)
-                {
-                    indentationHanging = value;
-                    XElement ind = GetOrCreate_pPr_ind();
+                var ind = ParaIndentationElement();
 
-                    // Paragraph can either be firstLine or hanging (Remove firstLine).
-                    XAttribute firstLine = ind.Attribute(DocxNamespace.Main + "firstLine");
-                    firstLine?.Remove();
-
-                    string indentation = (indentationHanging / 0.1 * 57).ToString();
-                    XAttribute hanging = ind.Attribute(DocxNamespace.Main + "hanging");
-                    if (hanging != null)
-                    {
-                        hanging.Value = indentation;
-                    }
-                    else
-                    {
-                        ind.Add(new XAttribute(DocxNamespace.Main + "hanging", indentation));
-                    }
-                }
+                // Remove any firstLine indent and set hanging.
+                ind.Attribute(DocxNamespace.Main + "firstLine")?.Remove();
+                ind.SetAttributeValue(DocxNamespace.Main + "hanging", value * 20);
             }
         }
 
         /// <summary>
         /// If this element is a list item, get the indentation level of the list item.
         /// </summary>
-        public int? IndentLevel => !IsListItem
-                    ? null
-                    : (int?)(indentLevel ??= int.Parse(ParagraphNumberProperties.FirstLocalNameDescendant("ilvl").GetVal()));
-
-        public bool ShouldKeepWithNext
+        public int? IndentLevel
         {
             get
             {
-                XElement pPr = ParaProperties();
-                XElement keepWithNextE = pPr.Element(DocxNamespace.Main + "keepNext");
-                return keepWithNextE != null;
+                if (IsListItem)
+                {
+                    string value = ParagraphNumberProperties.FirstLocalNameDescendant("ilvl").GetVal();
+                    if (value != null && int.TryParse(value, out int result))
+                        return result;
+                }
+
+                return null;
             }
         }
+
+        /// <summary>
+        /// True to keep with the next element on the page.
+        /// </summary>
+        public bool ShouldKeepWithNext => ParaElement().Element(DocxNamespace.Main + "keepNext") != null;
 
         /// <summary>
         /// Determine if this paragraph is a list element.
         /// </summary>
         public bool IsListItem => ParagraphNumberProperties != null;
 
-        public float LineSpacing
+        /// <summary>
+        /// Get or set the paragraph line spacing
+        /// </summary>
+        public double LineSpacing
         {
             get
             {
-                XElement pPr = ParaProperties();
-                XElement spacing = pPr.Element(DocxNamespace.Main + "spacing");
-
-                if (spacing != null)
-                {
-                    XAttribute line = spacing.Attribute(DocxNamespace.Main + "line");
-                    if (line != null && float.TryParse(line.Value, out float f))
-                    {
-                        return f / 20.0f;
-                    }
-                }
-
-                return 1.1f * 20.0f;
+                var spacing = ParaElement().Element(DocxNamespace.Main + "spacing");
+                var line = spacing?.Attribute(DocxNamespace.Main + "line");
+                return line != null && double.TryParse(line.Value, out double value) ? value / 20.0 : 12;
             }
 
             set => Spacing(value);
         }
 
-        public float LineSpacingAfter
+        /// <summary>
+        /// Get or set the line spacing before this paragraph
+        /// </summary>
+        public double LineSpacingAfter
         {
             get
             {
-                XElement pPr = ParaProperties();
-                XElement spacing = pPr.Element(DocxNamespace.Main + "spacing");
-
-                if (spacing != null)
-                {
-                    XAttribute line = spacing.Attribute(DocxNamespace.Main + "after");
-                    if (line != null && float.TryParse(line.Value, out float f))
-                    {
-                        return f / 20.0f;
-                    }
-                }
-
-                return 10.0f;
+                var spacing = ParaElement().Element(DocxNamespace.Main + "spacing");
+                var line = spacing?.Attribute(DocxNamespace.Main + "after");
+                return line != null && double.TryParse(line.Value, out double value) ? value / 20.0 : 0;
             }
 
             set => SpacingAfter(value);
         }
 
-        public float LineSpacingBefore
+        /// <summary>
+        /// Get or set the line spacing before this paragraph
+        /// </summary>
+        public double LineSpacingBefore
         {
             get
             {
-                XElement pPr = ParaProperties();
-                XElement spacing = pPr.Element(DocxNamespace.Main + "spacing");
-
-                if (spacing != null)
-                {
-                    XAttribute line = spacing.Attribute(DocxNamespace.Main + "before");
-                    if (line != null && float.TryParse(line.Value, out float f))
-                    {
-                        return f / 20.0f;
-                    }
-                }
-
-                return 0.0f;
+                var spacing = ParaElement().Element(DocxNamespace.Main + "spacing");
+                var line = spacing?.Attribute(DocxNamespace.Main + "before");
+                return line != null && double.TryParse(line.Value, out double value) ? value / 20.0 : 0;
             }
 
             set => SpacingBefore(value);
@@ -433,10 +353,7 @@ namespace DXPlus
         /// </summary>
         public ListItemType ListItemType { get; set; }
 
-        /// <summary>
-        /// Gets the formatted text value of this Paragraph.
-        /// </summary>
-        public List<FormattedText> MagicText => HelperFunctions.GetFormattedText(Xml);
+        private XElement paragraphNumberProperties;
 
         /// <summary>
         /// Fetch the paragraph number properties for a list element.
@@ -447,7 +364,7 @@ namespace DXPlus
             {
                 if (paragraphNumberProperties == null)
                 {
-                    XElement node = Xml.FirstLocalNameDescendant("numPr");
+                    var node = Xml.FirstLocalNameDescendant("numPr");
                     paragraphNumberProperties = node.FirstLocalNameDescendant("numId").GetVal() == "0" ? null : node;
                 }
 
@@ -455,7 +372,10 @@ namespace DXPlus
             }
         }
 
-        public ContainerType ParentContainer { get; set; }
+        /// <summary>
+        /// Parent container type
+        /// </summary>
+        public ContainerType ParentContainerType { get; set; }
 
         /// <summary>
         /// Returns a list of all Pictures in a Paragraph.
@@ -464,13 +384,13 @@ namespace DXPlus
                     from p in Xml.LocalNameDescendants("drawing")
                     let id = p.FirstLocalNameDescendant("blip").AttributeValue(DocxNamespace.RelatedDoc + "embed")
                     where id != null
-                    let img = new Image(Document, packagePart.GetRelationship(id))
+                    let img = new Image(Document, PackagePart.GetRelationship(id))
                     select new Picture(Document, p, img)
                 ).Union(
                     from p in Xml.LocalNameDescendants("pict")
                     let id = p.FirstLocalNameDescendant("imagedata").AttributeValue(DocxNamespace.RelatedDoc + "id")
                     where id != null
-                    let img = new Image(Document, packagePart.GetRelationship(id))
+                    let img = new Image(Document, PackagePart.GetRelationship(id))
                     select new Picture(Document, p, img)
                 ).ToList();
 
@@ -481,31 +401,17 @@ namespace DXPlus
         {
             get
             {
-                XElement element = ParaProperties();
-                XElement styleElement = element.Element(DocxNamespace.Main + "pStyle");
-                if (styleElement != null)
-                {
-                    XAttribute attr = styleElement.Attribute(DocxNamespace.Main + "val");
-                    if (attr != null && !string.IsNullOrEmpty(attr.Value))
-                    {
-                        return attr.Value;
-                    }
-                }
-                return "Normal";
+                var styleElement = ParaElement().Element(DocxNamespace.Main + "pStyle");
+                var attr = styleElement?.Attribute(DocxNamespace.Main + "val");
+                return attr != null && !string.IsNullOrEmpty(attr.Value) ? attr.Value : "Normal";
             }
             set
             {
                 if (string.IsNullOrEmpty(value))
-                {
                     value = "Normal";
-                }
-                XElement element = ParaProperties();
-                XElement styleElement = element.Element(DocxNamespace.Main + "pStyle");
-                if (styleElement == null)
-                {
-                    element.Add(new XElement(DocxNamespace.Main + "pStyle"));
-                    styleElement = element.Element(DocxNamespace.Main + "pStyle");
-                }
+
+                var pPr = ParaElement();
+                var styleElement = pPr.GetOrCreateElement(DocxNamespace.Main + "pStyle");
                 styleElement.SetAttributeValue(DocxNamespace.Main + "val", value);
             }
         }
@@ -529,42 +435,31 @@ namespace DXPlus
         /// Append text to this Paragraph.
         /// </summary>
         /// <param name="text">The text to append.</param>
-        /// <returns>This Paragraph with the new text appened.</returns>
+        /// <returns>This Paragraph with the new text appended.</returns>
         public Paragraph Append(string text)
         {
             var newRuns = HelperFunctions.FormatInput(text, null);
             Xml.Add(newRuns);
-            runs = Xml.Elements(DocxNamespace.Main + "r").Reverse().Take(newRuns.Count).ToList();
-
-            return this;
-        }
-
-        public Paragraph AppendBookmark(string bookmarkName)
-        {
-            var wBookmarkStart = new XElement(
-                DocxNamespace.Main + "bookmarkStart",
-                new XAttribute(DocxNamespace.Main + "id", 0),
-                new XAttribute(DocxNamespace.Main + "name", bookmarkName));
-            Xml.Add(wBookmarkStart);
-
-            var wBookmarkEnd = new XElement(
-                DocxNamespace.Main + "bookmarkEnd",
-                new XAttribute(DocxNamespace.Main + "id", 0),
-                new XAttribute(DocxNamespace.Main + "name", bookmarkName));
-            Xml.Add(wBookmarkEnd);
+            Runs = Xml.Elements(DocxNamespace.Main + "r").Reverse().Take(newRuns.Count).ToList();
 
             return this;
         }
 
         /// <summary>
-        /// Append a field of type document property, this field will display the custom property cp, at the end of this paragraph.
+        /// Appends a new bookmark to the paragraph
         /// </summary>
-        /// <param name="cp">The custom property to display.</param>
-        /// <param name="trackChanges"></param>
-        /// <param name="f">The formatting to use for this text.</param>
-        public Paragraph AppendDocumentProperty(CustomProperty cp, bool trackChanges = false, Formatting f = null)
+        /// <param name="bookmarkName">Bookmark name</param>
+        /// <returns>This paragraph</returns>
+        public Paragraph AppendBookmark(string bookmarkName)
         {
-            InsertDocumentProperty(cp, trackChanges, f);
+            Xml.Add(new XElement(DocxNamespace.Main + "bookmarkStart",
+                        new XAttribute(DocxNamespace.Main + "id", 0),
+                        new XAttribute(DocxNamespace.Main + "name", bookmarkName)));
+
+            Xml.Add(new XElement(DocxNamespace.Main + "bookmarkEnd",
+                        new XAttribute(DocxNamespace.Main + "id", 0),
+                        new XAttribute(DocxNamespace.Main + "name", bookmarkName)));
+
             return this;
         }
 
@@ -576,11 +471,10 @@ namespace DXPlus
         public Paragraph AppendEquation(string equation)
         {
             // Create equation element
-            var oMathPara =
-                new XElement(DocxNamespace.Math + "oMathPara",
+            var oMathPara = new XElement(DocxNamespace.Math + "oMathPara",
                     new XElement(DocxNamespace.Math + "oMath",
                         new XElement(DocxNamespace.Main + "r",
-                            new Formatting() { FontFamily = new FontFamily("Cambria Math") }.Xml,
+                            new Formatting { FontFamily = new FontFamily("Cambria Math") }.Xml,
                             new XElement(DocxNamespace.Math + "t", equation)
                         )
                     )
@@ -588,7 +482,7 @@ namespace DXPlus
 
             // Add equation element into paragraph xml and update runs collection
             Xml.Add(oMathPara);
-            runs = Xml.Elements(DocxNamespace.Math + "oMathPara").ToList();
+            Runs = Xml.Elements(DocxNamespace.Math + "oMathPara").ToList();
 
             // Return paragraph with equation
             return this;
@@ -601,78 +495,58 @@ namespace DXPlus
         /// <returns>The Paragraph with the hyperlink appended.</returns>
         public Paragraph AppendHyperlink(Hyperlink h)
         {
-            // Convert the path of this mainPart to its equilivant rels file path.
-            string path = packagePart.Uri.OriginalString.Replace("/word/", "");
-            Uri rels_path = new Uri("/word/_rels/" + path + ".rels", UriKind.Relative);
+            // Convert the path of this mainPart to its equivalent rels file path.
+            string path = PackagePart.Uri.OriginalString.Replace("/word/", "");
+            Uri relationshipPath = new Uri("/word/_rels/" + path + ".rels", UriKind.Relative);
 
             // Check to see if the rels file exists and create it if not.
-            if (!Document.Package.PartExists(rels_path))
+            if (!Document.Package.PartExists(relationshipPath))
             {
-                HelperFunctions.CreateRelsPackagePart(Document, rels_path);
+                HelperFunctions.CreateRelsPackagePart(Document, relationshipPath);
             }
 
             // Check to see if a rel for this Hyperlink exists, create it if not.
-            string Id = GetOrGenerateRel(h);
-
+            string id = GetOrCreateRelationship(h);
             Xml.Add(h.Xml);
-            Xml.Elements().Last().SetAttributeValue(DocxNamespace.RelatedDoc + "id", Id);
+            Xml.Elements().Last().SetAttributeValue(DocxNamespace.RelatedDoc + "id", id);
 
-            runs = Xml.Elements().Last().Elements(DocxNamespace.Main + "r").ToList();
+            Runs = Xml.Elements().Last().Elements(DocxNamespace.Main + "r").ToList();
 
             return this;
         }
 
         /// <summary>
-        /// Append text on a new line to this Paragraph.
-        /// </summary>
-        /// <param name="text">The text to append.</param>
-        /// <returns>This Paragraph with the new text appened.</returns>
-        /// <example>
-        /// Add a new Paragraph to this document and then append a new line with some text to it.
-        /// <code>
-        /// // Load a document.
-        /// using (DocX document = DocX.Create(@"Test.docx"))
-        /// {
-        ///     // Insert a new Paragraph and Append a new line with some text to it.
-        ///     Paragraph p = document.InsertParagraph().AppendLine("Hello World!!!");
-        ///
-        ///     // Save this document.
-        ///     document.Save();
-        /// }
-        /// </code>
-        /// </example>
-        public Paragraph AppendLine(string text)
-        {
-            return Append("\n" + text);
-        }
-
-        /// <summary>
         /// Append a new line to this Paragraph.
         /// </summary>
-        /// <returns>This Paragraph with a new line appeneded.</returns>
+        /// <returns>This Paragraph with a new line appended.</returns>
         public Paragraph AppendLine()
         {
             return Append("\n");
         }
 
         /// <summary>
+        /// Append text on a new line to this Paragraph.
+        /// </summary>
+        /// <param name="text">The text to append.</param>
+        /// <returns>This Paragraph with the new text appended.</returns>
+        public Paragraph AppendLine(string text)
+        {
+            return Append("\n" + text);
+        }
+
+        /// <summary>
         /// Append a PageCount place holder onto the end of a Paragraph.
         /// </summary>
-        /// <param name="pnf">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
-        public void AppendPageCount(PageNumberFormat pnf)
+        /// <param name="pageNumberFormat">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
+        public void AppendPageCount(PageNumberFormat pageNumberFormat)
         {
-            XElement fldSimple = new XElement(DocxNamespace.Main + "fldSimple");
+            var fldSimple = new XElement(DocxNamespace.Main + "fldSimple");
 
-            if (pnf == PageNumberFormat.Normal)
-            {
-                fldSimple.Add(new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES   \* MERGEFORMAT "));
-            }
-            else
-            {
-                fldSimple.Add(new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES  \* ROMAN  \* MERGEFORMAT "));
-            }
+            fldSimple.Add(pageNumberFormat == PageNumberFormat.Normal
+                ? new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES   \* MERGEFORMAT ")
+                : new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES  \* ROMAN  \* MERGEFORMAT "));
 
-            XElement content = XElement.Parse
+            var content = XElement.Parse
             (
              @"<w:r w:rsidR='001D0226' xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
                    <w:rPr>
@@ -689,51 +563,16 @@ namespace DXPlus
         /// <summary>
         /// Append a PageNumber place holder onto the end of a Paragraph.
         /// </summary>
-        /// <param name="pnf">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
-        /// <example>
-        /// <code>
-        /// // Create a new document.
-        /// using (DocX document = DocX.Create(@"Test.docx"))
-        /// {
-        ///     // Add Headers to the document.
-        ///     document.AddHeaders();
-        ///
-        ///     // Get the default Header.
-        ///     Header header = document.Headers.odd;
-        ///
-        ///     // Insert a Paragraph into the Header.
-        ///     Paragraph p0 = header.InsertParagraph();
-        ///
-        ///     // Appemd place holders for PageNumber and PageCount into the Header.
-        ///     // Word will replace these with the correct value for each Page.
-        ///     p0.Append("Page (");
-        ///     p0.AppendPageNumber(PageNumberFormat.normal);
-        ///     p0.Append(" of ");
-        ///     p0.AppendPageCount(PageNumberFormat.normal);
-        ///     p0.Append(")");
-        ///
-        ///     // Save the document.
-        ///     document.Save();
-        /// }
-        /// </code>
-        /// </example>
-        /// <seealso cref="AppendPageCount"/>
-        /// <seealso cref="InsertPageNumber"/>
-        /// <seealso cref="InsertPageCount"/>
-        public void AppendPageNumber(PageNumberFormat pnf)
+        /// <param name="pageNumberFormat">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
+        public void AppendPageNumber(PageNumberFormat pageNumberFormat)
         {
-            XElement fldSimple = new XElement(DocxNamespace.Main + "fldSimple");
+            var fldSimple = new XElement(DocxNamespace.Main + "fldSimple");
 
-            if (pnf == PageNumberFormat.Normal)
-            {
-                fldSimple.Add(new XAttribute(DocxNamespace.Main + "instr", @" PAGE   \* MERGEFORMAT "));
-            }
-            else
-            {
-                fldSimple.Add(new XAttribute(DocxNamespace.Main + "instr", @" PAGE  \* ROMAN  \* MERGEFORMAT "));
-            }
+            fldSimple.Add(pageNumberFormat == PageNumberFormat.Normal
+                ? new XAttribute(DocxNamespace.Main + "instr", @" PAGE   \* MERGEFORMAT ")
+                : new XAttribute(DocxNamespace.Main + "instr", @" PAGE  \* ROMAN  \* MERGEFORMAT "));
 
-            XElement content = XElement.Parse
+            var content = XElement.Parse
             (
              @"<w:r w:rsidR='001D0226' xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
                    <w:rPr>
@@ -754,33 +593,33 @@ namespace DXPlus
         /// <returns>The Paragraph with the Picture now appended.</returns>
         public Paragraph AppendPicture(Picture p)
         {
-            // Convert the path of this mainPart to its equilivant rels file path.
-            string path = packagePart.Uri.OriginalString.Replace("/word/", "");
-            Uri rels_path = new Uri("/word/_rels/" + path + ".rels", UriKind.Relative);
+            // Convert the path of this mainPart to its equivalent rels file path.
+            string path = PackagePart.Uri.OriginalString.Replace("/word/", "");
+            Uri relationshipPath = new Uri("/word/_rels/" + path + ".rels", UriKind.Relative);
 
             // Check to see if the rels file exists and create it if not.
-            if (!Document.Package.PartExists(rels_path))
+            if (!Document.Package.PartExists(relationshipPath))
             {
-                HelperFunctions.CreateRelsPackagePart(Document, rels_path);
+                HelperFunctions.CreateRelsPackagePart(Document, relationshipPath);
             }
 
             // Check to see if a rel for this Picture exists, create it if not.
-            string Id = GetOrGenerateRel(p);
+            string id = GetOrCreateRelationship(p);
 
-            // Add the Picture Xml to the end of the Paragragraph Xml.
+            // Add the Picture Xml to the end of the paragragraph Xml.
             Xml.Add(p.Xml);
 
             // Extract the attribute id from the Pictures Xml.
-            XAttribute a_id = Xml.Elements().Last().Descendants()
+            XAttribute attributeId = Xml.Elements().Last().Descendants()
                             .Where(e => e.Name.LocalName.Equals("blip"))
                             .Select(e => e.Attribute(DocxNamespace.RelatedDoc + "embed"))
                             .Single();
 
             // Set its value to the Pictures relationships id.
-            a_id.SetValue(Id);
+            attributeId.SetValue(id);
 
             // For formatting such as .Bold()
-            runs = Xml.Elements(DocxNamespace.Main + "r").Reverse()
+            Runs = Xml.Elements(DocxNamespace.Main + "r").Reverse()
                       .Take(p.Xml.Elements(DocxNamespace.Main + "r")
                       .Count()).ToList();
 
@@ -788,27 +627,9 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// For use with Append() and AppendLine()
+        /// Append text to this Paragraph and then make it bold.
         /// </summary>
         /// <returns>This Paragraph with the last appended text bold.</returns>
-        /// <example>
-        /// Append text to this Paragraph and then make it bold.
-        /// <code>
-        /// // Create a document.
-        /// using (DocX document = DocX.Create(@"Test.docx"))
-        /// {
-        ///     // Insert a new Paragraph.
-        ///     Paragraph p = document.InsertParagraph();
-        ///
-        ///     p.Append("I am ")
-        ///     .Append("Bold").Bold()
-        ///     .Append(" I am not");
-        ///
-        ///     // Save this document.
-        ///     document.Save();
-        /// }// Release this document from memory.
-        /// </code>
-        /// </example>
         public Paragraph Bold()
         {
             ApplyTextFormattingProperty(DocxNamespace.Main + "b", string.Empty, null);
@@ -816,69 +637,34 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// For use with Append() and AppendLine()
+        /// Append text to this Paragraph and then set it to full caps.
         /// </summary>
         /// <param name="capsStyle">The caps style to apply to the last appended text.</param>
         /// <returns>This Paragraph with the last appended text's caps style changed.</returns>
-        /// <example>
-        /// Append text to this Paragraph and then set it to full caps.
-        /// <code>
-        /// // Create a document.
-        /// using (DocX document = DocX.Create(@"Test.docx"))
-        /// {
-        ///     // Insert a new Paragraph.
-        ///     Paragraph p = document.InsertParagraph();
-        ///
-        ///     p.Append("I am ")
-        ///     .Append("Capitalized").CapsStyle(CapsStyle.caps)
-        ///     .Append(" I am not");
-        ///
-        ///     // Save this document.
-        ///     document.Save();
-        /// }// Release this document from memory.
-        /// </code>
-        /// </example>
         public Paragraph CapsStyle(CapsStyle capsStyle)
         {
             if (capsStyle != DXPlus.CapsStyle.None)
             {
-                ApplyTextFormattingProperty(DocxNamespace.Main + capsStyle.ToString(), string.Empty, null);
+                ApplyTextFormattingProperty(DocxNamespace.Main + capsStyle.GetEnumName(), string.Empty, null);
             }
 
             return this;
         }
 
         /// <summary>
-        /// For use with Append() and AppendLine()
-        /// </summary>
-        /// <param name="c">A color to use on the appended text.</param>
-        /// <returns>This Paragraph with the last appended text colored.</returns>
-        /// <example>
         /// Append text to this Paragraph and then color it.
-        /// <code>
-        /// // Create a document.
-        /// using (DocX document = DocX.Create(@"Test.docx"))
-        /// {
-        ///     // Insert a new Paragraph.
-        ///     Paragraph p = document.InsertParagraph();
-        ///
-        ///     p.Append("I am ")
-        ///     .Append("Blue").Color(Color.Blue)
-        ///     .Append(" I am not");
-        ///
-        ///     // Save this document.
-        ///     document.Save();
-        /// }// Release this document from memory.
-        /// </code>
-        /// </example>
-        public Paragraph Color(Color c)
+        /// </summary>
+        /// <param name="color">A color to use on the appended text.</param>
+        /// <returns>This Paragraph with the last appended text colored.</returns>
+        public Paragraph Color(Color color)
         {
-            ApplyTextFormattingProperty(DocxNamespace.Main + "color", string.Empty, new XAttribute(DocxNamespace.Main + "val", c.ToHex()));
+            ApplyTextFormattingProperty(DocxNamespace.Main + "color", string.Empty, 
+                new XAttribute(DocxNamespace.Main + "val", color.ToHex()));
             return this;
         }
 
         /// <summary>
-        /// For use with Append() and AppendLine()
+        /// Set the culture of the preceding text
         /// </summary>
         /// <param name="culture">The CultureInfo for text</param>
         /// <returns>This Paragraph in current culture</returns>
@@ -890,7 +676,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// For use with Append() and AppendLine()
+        /// Set the culture of the preceding text
         /// </summary>
         /// <returns>This Paragraph in current culture</returns>
         public Paragraph Culture() => Culture(CultureInfo.CurrentCulture);
@@ -903,7 +689,7 @@ namespace DXPlus
         /// <returns>A list of indexes.</returns>
         public IEnumerable<int> FindAll(string text, bool ignoreCase)
         {
-            MatchCollection mc = Regex.Matches(Text, Regex.Escape(text), ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
+            var mc = Regex.Matches(Text, Regex.Escape(text), ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
             return mc.Select(m => m.Index);
         }
 
@@ -914,12 +700,12 @@ namespace DXPlus
         /// <returns>Index and matched text</returns>
         public IEnumerable<(int index, string text)> FindPattern(Regex regex)
         {
-            MatchCollection mc = regex.Matches(Text);
+            var mc = regex.Matches(Text);
             return mc.Select(m => (index: m.Index, text: m.Value));
         }
 
         /// <summary>
-        /// For use with Append() and AppendLine()
+        /// Set the font for the preceding text.
         /// </summary>
         /// <param name="fontFamily">The font to use for the appended text.</param>
         /// <returns>This Paragraph with the last appended text's font changed.</returns>
@@ -928,8 +714,7 @@ namespace DXPlus
             ApplyTextFormattingProperty(
                 DocxNamespace.Main + "rFonts",
                 string.Empty,
-                new[]
-                {
+                new[] {
                     new XAttribute(DocxNamespace.Main + "ascii", fontFamily.Name),
                     new XAttribute(DocxNamespace.Main + "hAnsi", fontFamily.Name),
                     new XAttribute(DocxNamespace.Main + "cs", fontFamily.Name)
@@ -968,31 +753,12 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// For use with Append() and AppendLine()
+        /// Append text to this Paragraph and then hide it.
         /// </summary>
         /// <returns>This Paragraph with the last appended text hidden.</returns>
-        /// <example>
-        /// Append text to this Paragraph and then hide it.
-        /// <code>
-        /// // Create a document.
-        /// using (DocX document = DocX.Create(@"Test.docx"))
-        /// {
-        ///     // Insert a new Paragraph.
-        ///     Paragraph p = document.InsertParagraph();
-        ///
-        ///     p.Append("I am ")
-        ///     .Append("hidden").Hide()
-        ///     .Append(" I am not");
-        ///
-        ///     // Save this document.
-        ///     document.Save();
-        /// }// Release this document from memory.
-        /// </code>
-        /// </example>
         public Paragraph Hide()
         {
             ApplyTextFormattingProperty(DocxNamespace.Main + "vanish", string.Empty, null);
-
             return this;
         }
 
@@ -1025,7 +791,7 @@ namespace DXPlus
             {
                 var run = HelperFunctions.FormatInput(toInsert, null);
                 bookmark.AddBeforeSelf(run);
-                HelperFunctions.RenumberIDs(Document);
+                HelperFunctions.RenumberIds(Document);
                 return true;
             }
 
@@ -1037,10 +803,10 @@ namespace DXPlus
         /// </summary>
         /// <param name="cp">The custom property to display.</param>
         /// <param name="trackChanges"></param>
-        /// <param name="f">The formatting to use for this text.</param>
-        public DocProperty InsertDocumentProperty(CustomProperty cp, bool trackChanges = false, Formatting f = null)
+        /// <param name="formatting">The formatting to use for this text.</param>
+        public DocProperty AddDocumentProperty(CustomProperty cp, bool trackChanges = false, Formatting formatting = null)
         {
-            var formattingXml = f?.Xml;
+            var formattingXml = formatting?.Xml;
 
             var e = new XElement(DocxNamespace.Main + "fldSimple",
                 new XAttribute(DocxNamespace.Main + "instr", $@"DOCPROPERTY {cp.Name} \* MERGEFORMAT"),
@@ -1051,7 +817,7 @@ namespace DXPlus
             var xml = e;
             if (trackChanges)
             {
-                DateTime now = DateTime.Now;
+                DateTime now = DateTime.Now.ToUniversalTime();
                 e = HelperFunctions.CreateEdit(EditType.Ins, new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc), e);
             }
 
@@ -1068,63 +834,57 @@ namespace DXPlus
         /// <returns>The Paragraph with the Hyperlink inserted at the specified index.</returns>
         public Paragraph InsertHyperlink(Hyperlink h, int index = 0)
         {
-            // Convert the path of this mainPart to its equilivant rels file path.
-            string path = packagePart.Uri.OriginalString.Replace("/word/", "");
-            Uri rels_path = new Uri(string.Format("/word/_rels/{0}.rels", path), UriKind.Relative);
+            // Convert the path of this mainPart to its equivalent rels file path.
+            string path = PackagePart.Uri.OriginalString.Replace("/word/", "");
+            Uri relationshipPath = new Uri($"/word/_rels/{path}.rels", UriKind.Relative);
 
             // Check to see if the rels file exists and create it if not.
-            if (!Document.Package.PartExists(rels_path))
+            if (!Document.Package.PartExists(relationshipPath))
             {
-                HelperFunctions.CreateRelsPackagePart(Document, rels_path);
+                HelperFunctions.CreateRelsPackagePart(Document, relationshipPath);
             }
 
             // Check to see if a rel for this Picture exists, create it if not.
-            string Id = GetOrGenerateRel(h);
+            string id = GetOrCreateRelationship(h);
 
-            XElement h_xml;
+            XElement hyperlinkElement;
             if (index == 0)
             {
                 // Add this hyperlink as the last element.
                 Xml.AddFirst(h.Xml);
 
                 // Extract the picture back out of the DOM.
-                h_xml = (XElement)Xml.FirstNode;
+                hyperlinkElement = (XElement) Xml.FirstNode;
             }
             else
             {
                 // Get the first run effected by this Insert
                 Run run = GetFirstRunEffectedByEdit(index);
-
                 if (run == null)
                 {
                     // Add this hyperlink as the last element.
                     Xml.Add(h.Xml);
 
                     // Extract the picture back out of the DOM.
-                    h_xml = (XElement)Xml.LastNode;
+                    hyperlinkElement = (XElement)Xml.LastNode;
                 }
                 else
                 {
                     // Split this run at the point you want to insert
-                    XElement[] splitRun = Run.SplitRun(run, index);
+                    var splitRun = Run.SplitRun(run, index);
 
-                    // Replace the origional run.
-                    run.Xml.ReplaceWith
-                    (
-                        splitRun[0],
-                        h.Xml,
-                        splitRun[1]
-                    );
+                    // Replace the original run.
+                    run.Xml.ReplaceWith(splitRun[0], h.Xml, splitRun[1]);
 
                     // Get the first run effected by this Insert
                     run = GetFirstRunEffectedByEdit(index);
 
                     // The picture has to be the next element, extract it back out of the DOM.
-                    h_xml = (XElement)run.Xml.NextNode;
+                    hyperlinkElement = (XElement) run.Xml.NextNode;
                 }
             }
 
-            h_xml.SetAttributeValue(DocxNamespace.RelatedDoc + "id", Id);
+            hyperlinkElement.SetAttributeValue(DocxNamespace.RelatedDoc + "id", id);
 
             return this;
         }
@@ -1136,47 +896,15 @@ namespace DXPlus
         /// </summary>
         /// <param name="pnf">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
         /// <param name="index">The text index to insert this PageCount place holder at.</param>
-        /// <example>
-        /// <code>
-        /// // Create a new document.
-        /// using (DocX document = DocX.Create(@"Test.docx"))
-        /// {
-        ///     // Add Headers to the document.
-        ///     document.AddHeaders();
-        ///
-        ///     // Get the default Header.
-        ///     Header header = document.Headers.odd;
-        ///
-        ///     // Insert a Paragraph into the Header.
-        ///     Paragraph p0 = header.InsertParagraph("Page ( of )");
-        ///
-        ///     // Insert place holders for PageNumber and PageCount into the Header.
-        ///     // Word will replace these with the correct value for each Page.
-        ///     p0.InsertPageNumber(PageNumberFormat.normal, 6);
-        ///     p0.InsertPageCount(PageNumberFormat.normal, 11);
-        ///
-        ///     // Save the document.
-        ///     document.Save();
-        /// }
-        /// </code>
-        /// </example>
-        /// <seealso cref="AppendPageCount"/>
-        /// <seealso cref="AppendPageNumber"/>
-        /// <seealso cref="InsertPageNumber"/>
         public void InsertPageCount(PageNumberFormat pnf, int index = 0)
         {
-            XElement fldSimple = new XElement(DocxNamespace.Main + "fldSimple");
+            var fldSimple = new XElement(DocxNamespace.Main + "fldSimple");
 
-            if (pnf == PageNumberFormat.Normal)
-            {
-                fldSimple.Add(new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES   \* MERGEFORMAT "));
-            }
-            else
-            {
-                fldSimple.Add(new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES  \* ROMAN  \* MERGEFORMAT "));
-            }
+            fldSimple.Add(pnf == PageNumberFormat.Normal
+                ? new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES   \* MERGEFORMAT ")
+                : new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES  \* ROMAN  \* MERGEFORMAT "));
 
-            XElement content = XElement.Parse(
+            var content = XElement.Parse(
              @"<w:r w:rsidR='001D0226' xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
                    <w:rPr>
                        <w:noProof />
@@ -1193,8 +921,8 @@ namespace DXPlus
             }
             else
             {
-                Run r = GetFirstRunEffectedByEdit(index, EditType.Ins);
-                XElement[] splitEdit = SplitEdit(r.Xml, index, EditType.Ins);
+                Run r = GetFirstRunEffectedByEdit(index);
+                var splitEdit = SplitEdit(r.Xml, index, EditType.Ins);
                 r.Xml.ReplaceWith(splitEdit[0], fldSimple, splitEdit[1]);
             }
         }
@@ -1206,47 +934,15 @@ namespace DXPlus
         /// </summary>
         /// <param name="pnf">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
         /// <param name="index">The text index to insert this PageNumber place holder at.</param>
-        /// <example>
-        /// <code>
-        /// // Create a new document.
-        /// using (DocX document = DocX.Create(@"Test.docx"))
-        /// {
-        ///     // Add Headers to the document.
-        ///     document.AddHeaders();
-        ///
-        ///     // Get the default Header.
-        ///     Header header = document.Headers.odd;
-        ///
-        ///     // Insert a Paragraph into the Header.
-        ///     Paragraph p0 = header.InsertParagraph("Page ( of )");
-        ///
-        ///     // Insert place holders for PageNumber and PageCount into the Header.
-        ///     // Word will replace these with the correct value for each Page.
-        ///     p0.InsertPageNumber(PageNumberFormat.normal, 6);
-        ///     p0.InsertPageCount(PageNumberFormat.normal, 11);
-        ///
-        ///     // Save the document.
-        ///     document.Save();
-        /// }
-        /// </code>
-        /// </example>
-        /// <seealso cref="AppendPageCount"/>
-        /// <seealso cref="AppendPageNumber"/>
-        /// <seealso cref="InsertPageCount"/>
         public void InsertPageNumber(PageNumberFormat pnf, int index = 0)
         {
-            XElement fldSimple = new XElement(DocxNamespace.Main + "fldSimple");
+            var fldSimple = new XElement(DocxNamespace.Main + "fldSimple");
 
-            if (pnf == PageNumberFormat.Normal)
-            {
-                fldSimple.Add(new XAttribute(DocxNamespace.Main + "instr", @" PAGE   \* MERGEFORMAT "));
-            }
-            else
-            {
-                fldSimple.Add(new XAttribute(DocxNamespace.Main + "instr", @" PAGE  \* ROMAN  \* MERGEFORMAT "));
-            }
+            fldSimple.Add(pnf == PageNumberFormat.Normal
+                ? new XAttribute(DocxNamespace.Main + "instr", @" PAGE   \* MERGEFORMAT ")
+                : new XAttribute(DocxNamespace.Main + "instr", @" PAGE  \* ROMAN  \* MERGEFORMAT "));
 
-            XElement content = XElement.Parse(
+            var content = XElement.Parse(
              @"<w:r w:rsidR='001D0226' xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
                    <w:rPr>
                        <w:noProof />
@@ -1263,8 +959,8 @@ namespace DXPlus
             }
             else
             {
-                Run r = GetFirstRunEffectedByEdit(index, EditType.Ins);
-                XElement[] splitEdit = SplitEdit(r.Xml, index, EditType.Ins);
+                Run r = GetFirstRunEffectedByEdit(index);
+                var splitEdit = SplitEdit(r.Xml, index, EditType.Ins);
                 r.Xml.ReplaceWith(splitEdit[0], fldSimple, splitEdit[1]);
             }
         }
@@ -1278,90 +974,80 @@ namespace DXPlus
         /// <returns>The modified Paragraph.</returns>
         public Paragraph InsertPicture(Picture p, int index = 0)
         {
-            // Convert the path of this mainPart to its equilivant rels file path.
-            string path = packagePart.Uri.OriginalString.Replace("/word/", "");
-            Uri rels_path = new Uri("/word/_rels/" + path + ".rels", UriKind.Relative);
+            // Convert the path of this mainPart to its equivalent rels file path.
+            string path = PackagePart.Uri.OriginalString.Replace("/word/", "");
+            Uri relationshipPath = new Uri("/word/_rels/" + path + ".rels", UriKind.Relative);
 
             // Check to see if the rels file exists and create it if not.
-            if (!Document.Package.PartExists(rels_path))
+            if (!Document.Package.PartExists(relationshipPath))
             {
-                HelperFunctions.CreateRelsPackagePart(Document, rels_path);
+                HelperFunctions.CreateRelsPackagePart(Document, relationshipPath);
             }
 
             // Check to see if a rel for this Picture exists, create it if not.
-            string Id = GetOrGenerateRel(p);
+            string id = GetOrCreateRelationship(p);
 
-            XElement p_xml;
+            XElement pictureElement;
             if (index == 0)
             {
                 // Add this hyperlink as the last element.
                 Xml.AddFirst(p.Xml);
 
                 // Extract the picture back out of the DOM.
-                p_xml = (XElement)Xml.FirstNode;
+                pictureElement = (XElement)Xml.FirstNode;
             }
             else
             {
                 // Get the first run effected by this Insert
                 Run run = GetFirstRunEffectedByEdit(index);
-
                 if (run == null)
                 {
                     // Add this picture as the last element.
                     Xml.Add(p.Xml);
 
                     // Extract the picture back out of the DOM.
-                    p_xml = (XElement)Xml.LastNode;
+                    pictureElement = (XElement)Xml.LastNode;
                 }
                 else
                 {
                     // Split this run at the point you want to insert
                     XElement[] splitRun = Run.SplitRun(run, index);
 
-                    // Replace the origional run.
-                    run.Xml.ReplaceWith
-                    (
-                        splitRun[0],
-                        p.Xml,
-                        splitRun[1]
-                    );
+                    // Replace the original run.
+                    run.Xml.ReplaceWith(splitRun[0], p.Xml, splitRun[1]);
 
                     // Get the first run effected by this Insert
                     run = GetFirstRunEffectedByEdit(index);
 
                     // The picture has to be the next element, extract it back out of the DOM.
-                    p_xml = (XElement)run.Xml.NextNode;
+                    pictureElement = (XElement)run.Xml.NextNode;
                 }
             }
             // Extract the attribute id from the Pictures Xml.
-            XAttribute a_id = p_xml.LocalNameDescendants("blip")
+            XAttribute attributeId = pictureElement.LocalNameDescendants("blip")
                     .Select(e => e.Attribute(DocxNamespace.RelatedDoc + "embed"))
                     .Single();
 
             // Set its value to the Pictures relationships id.
-            a_id.SetValue(Id);
+            attributeId.SetValue(id);
 
             return this;
         }
 
         /// <summary>
-        /// Inserts a sstring into a Paragraph at a specified index position.
+        /// Inserts a string into a Paragraph with the specified formatting.
         /// </summary>
         public void InsertText(string value, Formatting formatting = null)
         {
             if (formatting == null)
-            {
                 formatting = new Formatting();
-            }
 
-            List<XElement> newRuns = HelperFunctions.FormatInput(value, formatting.Xml);
-            Xml.Add(newRuns);
-
-            HelperFunctions.RenumberIDs(Document);
+            Xml.Add(HelperFunctions.FormatInput(value, formatting.Xml));
+            HelperFunctions.RenumberIds(Document);
         }
 
         /// <summary>
-        /// Inserts a string into a Paragraph at a specified index position.
+        /// Inserts a string into a Paragraph with the specified formatting at the given index.
         /// </summary>
         /// <param name="index">The index position of the insertion.</param>
         /// <param name="value">The System.String to insert.</param>
@@ -1370,150 +1056,134 @@ namespace DXPlus
         public void InsertText(int index, string value, bool trackChanges = false, Formatting formatting = null)
         {
             // Timestamp to mark the start of insert
-            DateTime now = DateTime.Now;
-            DateTime insert_datetime = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc);
+            DateTime now = DateTime.Now.ToUniversalTime();
+            DateTime insertDate = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc);
 
             // Get the first run effected by this Insert
-            Run run = GetFirstRunEffectedByEdit(index);
+            var run = GetFirstRunEffectedByEdit(index);
             if (run == null)
             {
-                object insert;
-                if (formatting != null) //not sure how to get original formatting here when run == null
-                {
-                    insert = HelperFunctions.FormatInput(value, formatting.Xml);
-                }
-                else
-                {
-                    insert = HelperFunctions.FormatInput(value, null);
-                }
+                object insert = HelperFunctions.FormatInput(value, formatting?.Xml);
 
                 if (trackChanges)
-                {
-                    insert = HelperFunctions.CreateEdit(EditType.Ins, insert_datetime, insert);
-                }
+                    insert = HelperFunctions.CreateEdit(EditType.Ins, insertDate, insert);
 
                 Xml.Add(insert);
             }
             else
             {
                 object newRuns;
-                XElement rprel = run.Xml.Element(DocxNamespace.Main + "rPr");
+                var rPr = run.Xml.GetRunProps();
                 if (formatting != null)
                 {
-                    Formatting oldfmt = null;
-                    if (rprel != null)
+                    Formatting oldFormat = null;
+                    if (rPr != null)
                     {
-                        oldfmt = Formatting.Parse(rprel);
+                        oldFormat = Formatting.Parse(rPr);
                     }
 
-                    Formatting finfmt;
-                    if (oldfmt != null)
+                    // Create the formatting - it's a mix of the original formatting + the passed formatting info.
+                    Formatting newFormat;
+                    if (oldFormat != null)
                     {
-                        finfmt = oldfmt.Clone();
-                        if (formatting.Bold.HasValue) { finfmt.Bold = formatting.Bold; }
-                        if (formatting.CapsStyle.HasValue) { finfmt.CapsStyle = formatting.CapsStyle; }
-                        if (formatting.FontColor.HasValue) { finfmt.FontColor = formatting.FontColor; }
-                        finfmt.FontFamily = formatting.FontFamily;
-                        if (formatting.Hidden.HasValue) { finfmt.Hidden = formatting.Hidden; }
-                        if (formatting.Highlight.HasValue) { finfmt.Highlight = formatting.Highlight; }
-                        if (formatting.Italic.HasValue) { finfmt.Italic = formatting.Italic; }
-                        if (formatting.Kerning.HasValue) { finfmt.Kerning = formatting.Kerning; }
-                        finfmt.Language = formatting.Language;
-                        if (formatting.Misc.HasValue) { finfmt.Misc = formatting.Misc; }
-                        if (formatting.PercentageScale.HasValue) { finfmt.PercentageScale = formatting.PercentageScale; }
-                        if (formatting.Position.HasValue) { finfmt.Position = formatting.Position; }
-                        if (formatting.Script.HasValue) { finfmt.Script = formatting.Script; }
-                        if (formatting.Size.HasValue) { finfmt.Size = formatting.Size; }
-                        if (formatting.Spacing.HasValue) { finfmt.Spacing = formatting.Spacing; }
-                        if (formatting.Strikethrough.HasValue) { finfmt.Strikethrough = formatting.Strikethrough; }
-                        if (formatting.UnderlineColor.HasValue) { finfmt.UnderlineColor = formatting.UnderlineColor; }
-                        if (formatting.UnderlineStyle.HasValue) { finfmt.UnderlineStyle = formatting.UnderlineStyle; }
+                        newFormat = oldFormat.Clone();
+
+                        if (formatting.Bold.HasValue)
+                            newFormat.Bold = formatting.Bold;
+                        if (formatting.CapsStyle.HasValue)
+                            newFormat.CapsStyle = formatting.CapsStyle;
+                        if (formatting.FontColor.HasValue)
+                            newFormat.FontColor = formatting.FontColor;
+                        newFormat.FontFamily = formatting.FontFamily;
+                        if (formatting.Hidden.HasValue)
+                            newFormat.Hidden = formatting.Hidden;
+                        if (formatting.Highlight.HasValue)
+                            newFormat.Highlight = formatting.Highlight;
+                        if (formatting.Italic.HasValue)
+                            newFormat.Italic = formatting.Italic;
+                        if (formatting.Kerning.HasValue)
+                            newFormat.Kerning = formatting.Kerning;
+                        newFormat.Language = formatting.Language;
+                        if (formatting.Misc.HasValue)
+                            newFormat.Misc = formatting.Misc;
+                        if (formatting.PercentageScale.HasValue)
+                            newFormat.PercentageScale = formatting.PercentageScale;
+                        if (formatting.Position.HasValue)
+                            newFormat.Position = formatting.Position;
+                        if (formatting.Script.HasValue)
+                            newFormat.Script = formatting.Script;
+                        if (formatting.Size.HasValue)
+                            newFormat.Size = formatting.Size;
+                        if (formatting.Spacing.HasValue)
+                            newFormat.Spacing = formatting.Spacing;
+                        if (formatting.Strikethrough.HasValue)
+                            newFormat.Strikethrough = formatting.Strikethrough;
+                        if (formatting.UnderlineColor.HasValue)
+                            newFormat.UnderlineColor = formatting.UnderlineColor;
+                        if (formatting.UnderlineStyle.HasValue)
+                            newFormat.UnderlineStyle = formatting.UnderlineStyle;
                     }
                     else
                     {
-                        finfmt = formatting;
+                        newFormat = formatting;
                     }
 
-                    newRuns = HelperFunctions.FormatInput(value, finfmt.Xml);
+                    newRuns = HelperFunctions.FormatInput(value, newFormat.Xml);
                 }
                 else
                 {
-                    newRuns = HelperFunctions.FormatInput(value, rprel);
+                    newRuns = HelperFunctions.FormatInput(value, rPr);
                 }
 
                 // The parent of this Run
-                XElement parentElement = run.Xml.Parent;
+                var parentElement = run.Xml.Parent;
                 object insert = newRuns;
 
                 switch (parentElement.Name.LocalName)
                 {
                     case "ins":
                         // The datetime that this ins was created
-                        DateTime parent_ins_date = DateTime.Parse(parentElement.Attribute(DocxNamespace.Main + "date").Value);
+                        var parentInsertDate = DateTime.Parse(parentElement.Attribute(DocxNamespace.Main + "date").Value);
                         // Special case: You want to track changes, and the first Run effected by this insert
                         // has a datetime stamp equal to now.
-                        if (trackChanges && parent_ins_date.CompareTo(insert_datetime) == 0)
-                        {
-                            // Inserting into a non edit and this special case, is the same procedure.
+                        if (trackChanges && parentInsertDate.CompareTo(insertDate) == 0)
                             goto default;
-                        }
+
                         goto case "del";
 
                     case "del":
                         if (trackChanges)
-                        {
-                            insert = HelperFunctions.CreateEdit(EditType.Ins, insert_datetime, newRuns);
-                        }
+                            insert = HelperFunctions.CreateEdit(EditType.Ins, insertDate, newRuns);
 
                         // Split this Edit at the point you want to insert
-                        XElement[] splitEdit = SplitEdit(parentElement, index, EditType.Ins);
+                        var splitEdit = SplitEdit(parentElement, index, EditType.Ins);
 
-                        // Replace the origional run
+                        // Replace the original run
                         parentElement.ReplaceWith(splitEdit[0], insert, splitEdit[1]);
                         break;
 
                     default:
                         if (trackChanges && !parentElement.Name.LocalName.Equals("ins"))
                         {
-                            _ = HelperFunctions.CreateEdit(EditType.Ins, insert_datetime, newRuns);
+                            _ = HelperFunctions.CreateEdit(EditType.Ins, insertDate, newRuns);
                         }
                         else
                         {
                             // Split this run at the point you want to insert
-                            XElement[] splitRun = Run.SplitRun(run, index);
-
-                            // Replace the origional run
+                            var splitRun = Run.SplitRun(run, index);
                             run.Xml.ReplaceWith(splitRun[0], insert, splitRun[1]);
                         }
                         break;
                 }
             }
 
-            HelperFunctions.RenumberIDs(Document);
+            HelperFunctions.RenumberIds(Document);
         }
 
         /// <summary>
-        /// For use with Append() and AppendLine()
+        /// Append text to this Paragraph and then make it italic.
         /// </summary>
         /// <returns>This Paragraph with the last appended text italic.</returns>
-        /// <example>
-        /// Append text to this Paragraph and then make it italic.
-        /// <code>
-        /// // Create a document.
-        /// using (DocX document = DocX.Create(@"Test.docx"))
-        /// {
-        ///     // Insert a new Paragraph.
-        ///     Paragraph p = document.InsertParagraph();
-        ///
-        ///     p.Append("I am ")
-        ///     .Append("Italic").Italic()
-        ///     .Append(" I am not");
-        ///
-        ///     // Save this document.
-        ///     document.Save();
-        /// }// Release this document from memory.
-        /// </code>
-        /// </example>
         public Paragraph Italic()
         {
             ApplyTextFormattingProperty(DocxNamespace.Main + "i", string.Empty, null);
@@ -1525,15 +1195,15 @@ namespace DXPlus
         /// </summary>
         public Paragraph KeepLinesTogether(bool keepTogether = true)
         {
-            XElement pPr = ParaProperties();
-            XElement keepLinesE = pPr.Element(DocxNamespace.Main + "keepLines");
-            if (keepLinesE == null && keepTogether)
+            var pPr = ParaElement();
+            var keepLinesElement = pPr.Element(DocxNamespace.Main + "keepLines");
+            if (keepLinesElement == null && keepTogether)
             {
                 pPr.Add(new XElement(DocxNamespace.Main + "keepLines"));
             }
-            if (!keepTogether && keepLinesE != null)
+            else if (!keepTogether)
             {
-                keepLinesE.Remove();
+                keepLinesElement?.Remove();
             }
             return this;
         }
@@ -1544,32 +1214,37 @@ namespace DXPlus
         /// <param name="keepWithNext"></param>
         public Paragraph KeepWithNext(bool keepWithNext = true)
         {
-            XElement pPr = ParaProperties();
-            XElement keepWithNextE = pPr.Element(DocxNamespace.Main + "keepNext");
-            if (keepWithNextE == null && keepWithNext)
+            var pPr = ParaElement();
+            var keepWithNextElement = pPr.Element(DocxNamespace.Main + "keepNext");
+            if (keepWithNextElement == null && keepWithNext)
             {
                 pPr.Add(new XElement(DocxNamespace.Main + "keepNext"));
             }
-            if (!keepWithNext && keepWithNextE != null)
+            else if (!keepWithNext)
             {
-                keepWithNextE.Remove();
+                keepWithNextElement?.Remove();
             }
             return this;
         }
 
+        /// <summary>
+        /// Set the kerning value for the paragraph
+        /// </summary>
+        /// <param name="kerning"></param>
+        /// <returns></returns>
         public Paragraph Kerning(int kerning)
         {
-            if (!new int?[] { 8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72 }.Contains(kerning))
-            {
-                throw new ArgumentOutOfRangeException("Kerning", "Value must be one of the following: 8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48 or 72");
-            }
+            int[] validValues = {8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72};
+
+            if (!validValues.Contains(kerning))
+                throw new ArgumentOutOfRangeException(nameof(kerning), "Value must be one of the following: " + string.Join(',', validValues.Select(i => i.ToString())));
 
             ApplyTextFormattingProperty(DocxNamespace.Main + "kern", string.Empty, new XAttribute(DocxNamespace.Main + "val", kerning * 2));
             return this;
         }
 
         /// <summary>
-        /// For use with Append() and AppendLine()
+        /// Set one of the misc. properties
         /// </summary>
         /// <param name="misc">The miscellaneous property to set.</param>
         /// <returns>This Paragraph with the last appended text changed by a miscellaneous property.</returns>
@@ -1585,37 +1260,39 @@ namespace DXPlus
                     ApplyTextFormattingProperty(DocxNamespace.Main + "shadow", string.Empty, null);
                     break;
 
-                case DXPlus.Misc.Engrave:
-                    ApplyTextFormattingProperty(DocxNamespace.Main + "imprint", string.Empty, null);
-                    break;
-
                 default:
-                    ApplyTextFormattingProperty(DocxNamespace.Main + misc.ToString(), string.Empty, null);
+                    ApplyTextFormattingProperty(DocxNamespace.Main + misc.GetEnumName(), string.Empty, null);
                     break;
             }
 
             return this;
         }
 
+        /// <summary>
+        /// Set the percentage scale for the paragraph
+        /// </summary>
+        /// <param name="percentageScale"></param>
+        /// <returns>Paragraph</returns>
         public Paragraph PercentageScale(int percentageScale)
         {
-            if (!(new int?[] { 200, 150, 100, 90, 80, 66, 50, 33 }).Contains(percentageScale))
-            {
-                throw new ArgumentOutOfRangeException("PercentageScale", "Value must be one of the following: 200, 150, 100, 90, 80, 66, 50 or 33");
-            }
+            int[] validValues = {200, 150, 100, 90, 80, 66, 50, 33};
+
+            if (!validValues.Contains(percentageScale))
+                throw new ArgumentOutOfRangeException(nameof(percentageScale), "Value must be one of the following: " + string.Join(',', validValues.Select(i => i.ToString())));
 
             ApplyTextFormattingProperty(DocxNamespace.Main + "w", string.Empty, new XAttribute(DocxNamespace.Main + "val", percentageScale));
 
             return this;
         }
 
+        /// <summary>
+        /// Set the vertical position of the paragraph in half-points
+        /// </summary>
+        /// <param name="position"></param>
+        /// <returns>Paragraph</returns>
         public Paragraph Position(double position)
         {
-            if (!(position > -1585 && position < 1585))
-            {
-                throw new ArgumentOutOfRangeException("Position", "Value must be in the range -1585 - 1585");
-            }
-
+            position = Math.Min(Math.Max(-1585.0, position), 1585.0);
             ApplyTextFormattingProperty(DocxNamespace.Main + "position", string.Empty, new XAttribute(DocxNamespace.Main + "val", position * 2));
 
             return this;
@@ -1629,14 +1306,14 @@ namespace DXPlus
         {
             if (trackChanges)
             {
-                DateTime now = DateTime.Now.ToUniversalTime();
+                var now = DateTime.Now.ToUniversalTime();
 
-                List<XElement> elements = Xml.Elements().ToList();
-                List<XElement> temp = new List<XElement>();
+                var elements = Xml.Elements().ToList();
+                var temp = new List<XElement>();
+                
                 for (int i = 0; i < elements.Count; i++)
                 {
-                    XElement e = elements[i];
-
+                    var e = elements[i];
                     if (e.Name.LocalName != "del")
                     {
                         temp.Add(e);
@@ -1657,7 +1334,7 @@ namespace DXPlus
             else
             {
                 // If this is the only Paragraph in the Cell then we cannot remove it.
-                if (Xml.Parent.Name.LocalName == "tc" && Xml.Parent.Elements(DocxNamespace.Main + "p").Count() == 1)
+                if (Xml.Parent?.Name.LocalName == "tc" && Xml.Parent.Elements(DocxNamespace.Main + "p").Count() == 1)
                 {
                     Xml.Value = string.Empty;
                 }
@@ -1677,54 +1354,22 @@ namespace DXPlus
         /// <param name="index">The index of the hyperlink to be removed.</param>
         public void RemoveHyperlink(int index)
         {
-            // Dosen't make sense to remove a Hyperlink at a negative index.
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-
-            // Need somewhere to store the count.
             int count = 0;
-            bool found = false;
-            RemoveHyperlinkRecursive(Xml, index, ref count, ref found);
-
-            // If !found then the user tried to remove a hyperlink at an index greater than the last.
-            if (!found)
-            {
+            if (index < 0 || !RemoveHyperlinkRecursive(Xml, index, ref count))
                 throw new ArgumentOutOfRangeException(nameof(index));
-            }
         }
 
         /// <summary>
         /// Removes characters from a DXPlus.DocX.Paragraph.
         /// </summary>
-        /// <example>
-        /// <code>
-        /// // Create a document using a relative filename.
-        /// using (DocX document = DocX.Load(@"C:\Example\Test.docx"))
-        /// {
-        ///     // Iterate through the paragraphs
-        ///     foreach (Paragraph p in document.Paragraphs)
-        ///     {
-        ///         // Remove the first two characters from every paragraph
-        ///         p.RemoveText(0, 2, false);
-        ///     }
-        ///
-        ///     // Save all changes made to this document.
-        ///     document.Save();
-        /// }// Release this document from memory.
-        /// </code>
-        /// </example>
-        /// <seealso cref="Paragraph.InsertText(int, string, bool, Formatting)"/>
-        /// <seealso cref="Paragraph.InsertText(string, Formatting)"/>
         /// <param name="index">The position to begin deleting characters.</param>
         /// <param name="count">The number of characters to delete</param>
         /// <param name="trackChanges">Track changes</param>
         public void RemoveText(int index, int count, bool trackChanges = false)
         {
             // Timestamp to mark the start of insert
-            DateTime now = DateTime.Now;
-            DateTime remove_datetime = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc);
+            DateTime now = DateTime.Now.ToUniversalTime();
+            DateTime removeDate = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc);
 
             // The number of characters processed so far
             int processed = 0;
@@ -1732,35 +1377,28 @@ namespace DXPlus
             do
             {
                 // Get the first run effected by this Remove
-                Run run = GetFirstRunEffectedByEdit(index, EditType.Del);
+                var run = GetFirstRunEffectedByEdit(index, EditType.Del);
 
                 // The parent of this Run
-                XElement parentElement = run.Xml.Parent;
-                switch (parentElement.Name.LocalName)
+                var parentElement = run.Xml.Parent;
+                switch (parentElement?.Name.LocalName)
                 {
                     case "ins":
                         {
-                            XElement[] splitEditBefore = SplitEdit(parentElement, index, EditType.Del);
-                            int min = Math.Min(count - processed, run.Xml.ElementsAfterSelf().Sum(e => GetElementTextLength(e)));
-                            XElement[] splitEditAfter = SplitEdit(parentElement, index + min, EditType.Del);
-
-                            XElement temp = SplitEdit(splitEditBefore[1], index + min, EditType.Del)[0];
-                            object middle = HelperFunctions.CreateEdit(EditType.Del, remove_datetime, temp.Elements());
-                            processed += GetElementTextLength(middle as XElement);
+                            var splitEditBefore = SplitEdit(parentElement, index, EditType.Del);
+                            int min = Math.Min(count - processed, run.Xml.ElementsAfterSelf().Sum(GetElementTextLength));
+                            var splitEditAfter = SplitEdit(parentElement, index + min, EditType.Del);
+                            var temp = SplitEdit(splitEditBefore[1], index + min, EditType.Del)[0];
+                            object middle = HelperFunctions.CreateEdit(EditType.Del, removeDate, temp.Elements());
+                            processed += GetElementTextLength((XElement) middle);
 
                             if (!trackChanges)
                             {
                                 middle = null;
                             }
 
-                            parentElement.ReplaceWith
-                            (
-                                splitEditBefore[0],
-                                middle,
-                                splitEditAfter[1]
-                            );
-
-                            processed += GetElementTextLength(middle as XElement);
+                            parentElement.ReplaceWith(splitEditBefore[0], middle, splitEditAfter[1]);
+                            processed += GetElementTextLength((XElement) middle);
                         }
                         break;
 
@@ -1776,18 +1414,16 @@ namespace DXPlus
                         }
                         break;
 
-
                     default:
                         {
-                            XElement[] splitRunBefore = Run.SplitRun(run, index, EditType.Del);
+                            var splitRunBefore = Run.SplitRun(run, index, EditType.Del);
                             int min = Math.Min(index + (count - processed), run.EndIndex);
-                            XElement[] splitRunAfter = Run.SplitRun(run, min, EditType.Del);
+                            var splitRunAfter = Run.SplitRun(run, min, EditType.Del);
 
-                            object middle = HelperFunctions.CreateEdit(EditType.Del, remove_datetime, new List<XElement>()
-                            {
+                            object middle = HelperFunctions.CreateEdit(EditType.Del, removeDate, new List<XElement> {
                                 Run.SplitRun(new Run(Document, splitRunBefore[1], run.StartIndex + GetElementTextLength(splitRunBefore[0])), min, EditType.Del)[0]
                             });
-                            processed += GetElementTextLength(middle as XElement);
+                            processed += GetElementTextLength((XElement) middle);
 
                             if (!trackChanges)
                             {
@@ -1800,46 +1436,25 @@ namespace DXPlus
                 }
 
                 // If after this remove the parent element is empty, remove it.
-                if (GetElementTextLength(parentElement) == 0)
+                if (GetElementTextLength(parentElement) == 0 
+                    && parentElement?.Parent != null && parentElement.Parent.Name.LocalName != "tc")
                 {
-                    if (parentElement.Parent != null && parentElement.Parent.Name.LocalName != "tc")
+                    // Need to make sure there is no drawing element within the parent element.
+                    // Picture elements contain no text length but they are still content.
+                    if (!parentElement.Descendants(DocxNamespace.Main + "drawing").Any())
                     {
-                        // Need to make sure there is no drawing element within the parent element.
-                        // Picture elements contain no text length but they are still content.
-                        if (!parentElement.Descendants(DocxNamespace.Main + "drawing").Any())
-                        {
-                            parentElement.Remove();
-                        }
+                        parentElement.Remove();
                     }
                 }
             }
             while (processed < count);
 
-            HelperFunctions.RenumberIDs(Document);
+            HelperFunctions.RenumberIds(Document);
         }
 
         /// <summary>
         /// Removes characters from a DXPlus.DocX.Paragraph.
         /// </summary>
-        /// <example>
-        /// <code>
-        /// // Create a document using a relative filename.
-        /// using (DocX document = DocX.Load(@"C:\Example\Test.docx"))
-        /// {
-        ///     // Iterate through the paragraphs
-        ///     foreach (Paragraph p in document.Paragraphs)
-        ///     {
-        ///         // Remove all but the first 2 characters from this Paragraph.
-        ///         p.RemoveText(2, false);
-        ///     }
-        ///
-        ///     // Save all changes made to this document.
-        ///     document.Save();
-        /// }// Release this document from memory.
-        /// </code>
-        /// </example>
-        /// <seealso cref="Paragraph.InsertText(int, string, bool, Formatting)"/>
-        /// <seealso cref="Paragraph.InsertText(string, Formatting)"/>
         /// <param name="index">The position to begin deleting characters.</param>
         /// <param name="trackChanges">Track changes</param>
         public void RemoveText(int index, bool trackChanges = false)
@@ -1862,10 +1477,10 @@ namespace DXPlus
         public void ReplaceText(string oldValue, string newValue, bool trackChanges = false, RegexOptions options = RegexOptions.None, Formatting newFormatting = null, Formatting matchFormatting = null, MatchFormattingOptions fo = MatchFormattingOptions.SubsetMatch, bool escapeRegEx = true, bool useRegExSubstitutions = false)
         {
             string tText = Text;
-            MatchCollection mc = Regex.Matches(tText, escapeRegEx ? Regex.Escape(oldValue) : oldValue, options);
+            var mc = Regex.Matches(tText, escapeRegEx ? Regex.Escape(oldValue) : oldValue, options);
 
             // Loop through the matches in reverse order
-            foreach (Match m in mc.Cast<Match>().Reverse())
+            foreach (var m in mc.Reverse())
             {
                 // Assume the formatting matches until proven otherwise.
                 bool formattingMatch = true;
@@ -1879,15 +1494,10 @@ namespace DXPlus
                     do
                     {
                         // Get the next run effected
-                        Run run = GetFirstRunEffectedByEdit(m.Index + processed);
+                        var run = GetFirstRunEffectedByEdit(m.Index + processed);
 
                         // Get this runs properties
-                        XElement rPr = run.Xml.Element(DocxNamespace.Main + "rPr");
-
-                        if (rPr == null)
-                        {
-                            rPr = new Formatting().Xml;
-                        }
+                        var rPr = run.Xml.GetRunProps(false) ?? new Formatting().Xml;
 
                         // Make sure that every formatting element in f.xml is also in this run,
                         // if this is not true, then their formatting does not match.
@@ -1906,33 +1516,28 @@ namespace DXPlus
                 if (formattingMatch)
                 {
                     string repl = newValue;
-
-                    //perform RegEx substitutions. Only named groups are not supported. Everything else is supported. However character escapes are not covered.
                     if (useRegExSubstitutions && !string.IsNullOrEmpty(repl))
                     {
                         repl = repl.Replace("$&", m.Value);
                         if (m.Groups.Count > 0)
                         {
-                            int lastcap = 0;
+                            int lastCaptureIndex = 0;
                             for (int k = 0; k < m.Groups.Count; k++)
                             {
-                                Group g = m.Groups[k];
-                                if ((g == null) || (g.Value == ""))
-                                {
+                                var g = m.Groups[k];
+                                if (g.Value.Length == 0)
                                     continue;
-                                }
 
-                                repl = repl.Replace("$" + k.ToString(), g.Value);
-                                lastcap = k;
-                                //cannot get named groups ATM
+                                repl = repl.Replace("$" + k, g.Value);
+                                lastCaptureIndex = k;
                             }
-                            repl = repl.Replace("$+", m.Groups[lastcap].Value);
+                            repl = repl.Replace("$+", m.Groups[lastCaptureIndex].Value);
                         }
                         if (m.Index > 0)
                         {
                             repl = repl.Replace("$`", tText.Substring(0, m.Index));
                         }
-                        if ((m.Index + m.Length) < tText.Length)
+                        if (m.Index + m.Length < tText.Length)
                         {
                             repl = repl.Replace("$'", tText.Substring(m.Index + m.Length));
                         }
@@ -1964,10 +1569,10 @@ namespace DXPlus
         /// <param name="fo"></param>
         public void ReplaceText(string findPattern, Func<string, string> regexMatchHandler, bool trackChanges = false, RegexOptions options = RegexOptions.None, Formatting newFormatting = null, Formatting matchFormatting = null, MatchFormattingOptions fo = MatchFormattingOptions.SubsetMatch)
         {
-            MatchCollection matchCollection = Regex.Matches(Text, findPattern, options);
+            var matchCollection = Regex.Matches(Text, findPattern, options);
 
             // Loop through the matches in reverse order
-            foreach (Match match in matchCollection.Cast<Match>().Reverse())
+            foreach (var match in matchCollection.Reverse())
             {
                 // Assume the formatting matches until proven otherwise.
                 bool formattingMatch = true;
@@ -1981,20 +1586,10 @@ namespace DXPlus
                     do
                     {
                         // Get the next run effected
-                        Run run = GetFirstRunEffectedByEdit(match.Index + processed);
+                        var run = GetFirstRunEffectedByEdit(match.Index + processed);
 
                         // Get this runs properties
-                        XElement rPr = run.Xml.Element(DocxNamespace.Main + "rPr");
-
-                        if (rPr == null)
-                        {
-                            rPr = new Formatting().Xml;
-                        }
-
-                        /*
-                         * Make sure that every formatting element in f.xml is also in this run,
-                         * if this is not true, then their formatting does not match.
-                         */
+                        var rPr = run.Xml.GetRunProps(false) ?? new Formatting().Xml;
                         if (!HelperFunctions.ContainsEveryChildOf(matchFormatting.Xml, rPr, fo))
                         {
                             formattingMatch = false;
@@ -2017,137 +1612,58 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// For use with Append() and AppendLine()
+        /// Append text to this Paragraph and then set it to superscript.
         /// </summary>
         /// <param name="script">The script style to apply to the last appended text.</param>
         /// <returns>This Paragraph with the last appended text's script style changed.</returns>
-        /// <example>
-        /// Append text to this Paragraph and then set it to superscript.
-        /// <code>
-        /// // Create a document.
-        /// using (DocX document = DocX.Create(@"Test.docx"))
-        /// {
-        ///     // Insert a new Paragraph.
-        ///     Paragraph p = document.InsertParagraph();
-        ///
-        ///     p.Append("I am ")
-        ///     .Append("superscript").Script(Script.superscript)
-        ///     .Append(" I am not");
-        ///
-        ///     // Save this document.
-        ///     document.Save();
-        /// }// Release this document from memory.
-        /// </code>
-        /// </example>
         public Paragraph Script(Script script)
         {
-            switch (script)
+            if (script != DXPlus.Script.None)
             {
-                case DXPlus.Script.None:
-                    break;
-
-                default:
-                    {
-                        ApplyTextFormattingProperty(DocxNamespace.Main + "vertAlign", string.Empty, new XAttribute(DocxNamespace.Main + "val", script.ToString()));
-                        break;
-                    }
+                ApplyTextFormattingProperty(DocxNamespace.Main + "vertAlign", string.Empty,
+                    new XAttribute(DocxNamespace.Main + "val", script.GetEnumName()));
             }
 
             return this;
         }
 
         /// <summary>
-        /// Set the linespacing for this paragraph manually.
+        /// Set the line spacing for this paragraph manually.
         /// </summary>
         /// <param name="spacingType">The type of spacing to be set, can be either Before, After or Line (Standard line spacing).</param>
-        /// <param name="spacingFloat">A float value of the amount of spacing. Equals the value that van be set in Word using the "Line and Paragraph spacing" button.</param>
-        public void SetLineSpacing(LineSpacingType spacingType, float spacingFloat)
+        /// <param name="spacing">A float value of the amount of spacing. Equals the value that van be set in Word using the "Line and Paragraph spacing" button.</param>
+        public void SetLineSpacing(LineSpacingType spacingType, double spacing)
         {
-            spacingFloat = spacingFloat * 240;
-            int spacingValue = (int)spacingFloat;
-
-            XElement pPr = ParaProperties();
-            XElement spacing = pPr.Element(DocxNamespace.Main + "spacing");
-            if (spacing == null)
-            {
-                pPr.Add(new XElement(DocxNamespace.Main + "spacing"));
-                spacing = pPr.Element(DocxNamespace.Main + "spacing");
-            }
-
-            string spacingTypeAttribute = "";
-            switch (spacingType)
-            {
-                case LineSpacingType.Line:
-                    {
-                        spacingTypeAttribute = "line";
-                        break;
-                    }
-                case LineSpacingType.Before:
-                    {
-                        spacingTypeAttribute = "before";
-                        break;
-                    }
-                case LineSpacingType.After:
-                    {
-                        spacingTypeAttribute = "after";
-                        break;
-                    }
-            }
-
-            spacing.SetAttributeValue(DocxNamespace.Main + spacingTypeAttribute, spacingValue);
+            var pPr = ParaElement();
+            var spacingElement = pPr.GetOrCreateElement(DocxNamespace.Main + "spacing");
+            spacingElement.SetAttributeValue(DocxNamespace.Main + spacingType.GetEnumName(), spacing * 20.0);
         }
 
         /// <summary>
-        /// Set the linespacing for this paragraph using the Auto value.
+        /// Set the line spacing for this paragraph using the Auto value.
         /// </summary>
         /// <param name="spacingType">The type of spacing to be set automatically. Using Auto will set both Before and After. None will remove any linespacing.</param>
         public void SetLineSpacing(LineSpacingTypeAuto spacingType)
         {
-            int spacingValue = 100;
-
-            XElement pPr = ParaProperties();
-            XElement spacing = pPr.Element(DocxNamespace.Main + "spacing");
+            var pPr = ParaElement();
+            var spacing = pPr.GetOrCreateElement(DocxNamespace.Main + "spacing");
 
             if (spacingType.Equals(LineSpacingTypeAuto.None))
             {
-                if (spacing != null)
-                {
-                    spacing.Remove();
-                }
+                spacing?.Remove();
             }
             else
             {
-                if (spacing == null)
+                const int spacingValue = 14 * 20; // 14pt space
+               
+                if (spacingType == LineSpacingTypeAuto.Auto)
                 {
-                    pPr.Add(new XElement(DocxNamespace.Main + "spacing"));
-                    spacing = pPr.Element(DocxNamespace.Main + "spacing");
+                    spacing.SetAttributeValue(DocxNamespace.Main + "after", spacingValue);
+                    spacing.SetAttributeValue(DocxNamespace.Main + "afterAutospacing", 1);
                 }
 
-                string spacingTypeAttribute = "";
-                string autoSpacingTypeAttribute = "";
-                switch (spacingType)
-                {
-                    case LineSpacingTypeAuto.AutoBefore:
-                        {
-                            spacingTypeAttribute = "before";
-                            autoSpacingTypeAttribute = "beforeAutospacing";
-                            break;
-                        }
-                    case LineSpacingTypeAuto.AutoAfter:
-                        {
-                            spacingTypeAttribute = "after";
-                            autoSpacingTypeAttribute = "afterAutospacing";
-                            break;
-                        }
-                    case LineSpacingTypeAuto.Auto:
-                        {
-                            spacingTypeAttribute = "before";
-                            autoSpacingTypeAttribute = "beforeAutospacing";
-                            spacing.SetAttributeValue(DocxNamespace.Main + "after", spacingValue);
-                            spacing.SetAttributeValue(DocxNamespace.Main + "afterAutospacing", 1);
-                            break;
-                        }
-                }
+                string spacingTypeAttribute = spacingType == LineSpacingTypeAuto.AutoAfter ? "after" : "before";
+                string autoSpacingTypeAttribute = spacingTypeAttribute + "Autospacing";
 
                 spacing.SetAttributeValue(DocxNamespace.Main + autoSpacingTypeAttribute, 1);
                 spacing.SetAttributeValue(DocxNamespace.Main + spacingTypeAttribute, spacingValue);
@@ -2156,94 +1672,30 @@ namespace DXPlus
 
         public Paragraph Spacing(double spacing)
         {
-            spacing *= 20;
-
-            if (spacing - (int)spacing == 0)
-            {
-                if (!(spacing > -1585 && spacing < 1585))
-                {
-                    throw new ArgumentException("Spacing", "Value must be in the range: -1584 - 1584");
-                }
-            }
-            else
-            {
-                throw new ArgumentException("Spacing", "Value must be either a whole or acurate to one decimal, examples: 32, 32.1, 32.2, 32.9");
-            }
-
-            ApplyTextFormattingProperty(DocxNamespace.Main + "spacing", string.Empty, new XAttribute(DocxNamespace.Main + "val", spacing));
+            spacing *= 20.0; // spacing is in 20ths of a pt
+            spacing = Math.Round(Math.Min(Math.Max(0, spacing), 1584.0), 1);
+            
+            ApplyTextFormattingProperty(DocxNamespace.Main + "spacing", string.Empty, new XAttribute(DocxNamespace.Main + "line", spacing));
 
             return this;
         }
 
-        public Paragraph SpacingAfter(double spacingAfter)
+        public Paragraph SpacingAfter(double spacing)
         {
-            spacingAfter *= 20;
+            spacing *= 20.0; // spacing is in 20ths of a pt
+            spacing = Math.Round(Math.Min(Math.Max(0, spacing), 1584.0), 1);
 
-            XElement pPr = ParaProperties();
-            XElement spacing = pPr.Element(DocxNamespace.Main + "spacing");
-            if (spacingAfter > 0)
-            {
-                if (spacing == null)
-                {
-                    spacing = new XElement(DocxNamespace.Main + "spacing");
-                    pPr.Add(spacing);
-                }
-                XAttribute attr = spacing.Attribute(DocxNamespace.Main + "after");
-                if (attr == null)
-                {
-                    spacing.SetAttributeValue(DocxNamespace.Main + "after", spacingAfter);
-                }
-                else
-                {
-                    attr.SetValue(spacingAfter);
-                }
-            }
-            if (Math.Abs(spacingAfter) < 0.1f && spacing != null)
-            {
-                XAttribute attr = spacing.Attribute(DocxNamespace.Main + "after");
-                attr.Remove();
-                if (!spacing.HasAttributes)
-                {
-                    spacing.Remove();
-                }
-            }
-            //ApplyTextFormattingProperty(DocxNamespace.Main + "after", DocxNamespace.w.NamespaceName), string.Empty, new XAttribute(DocxNamespace.Main + "val", DocxNamespace.w.NamespaceName), spacingAfter));
+            ApplyTextFormattingProperty(DocxNamespace.Main + "spacing", string.Empty, new XAttribute(DocxNamespace.Main + "after", spacing));
 
             return this;
         }
 
-        public Paragraph SpacingBefore(double spacingBefore)
+        public Paragraph SpacingBefore(double spacing)
         {
-            spacingBefore *= 20;
+            spacing *= 20.0; // spacing is in 20ths of a pt
+            spacing = Math.Round(Math.Min(Math.Max(0, spacing), 1584.0), 1);
 
-            XElement pPr = ParaProperties();
-            XElement spacing = pPr.Element(DocxNamespace.Main + "spacing");
-            if (spacingBefore > 0)
-            {
-                if (spacing == null)
-                {
-                    spacing = new XElement(DocxNamespace.Main + "spacing");
-                    pPr.Add(spacing);
-                }
-                XAttribute attr = spacing.Attribute(DocxNamespace.Main + "before");
-                if (attr == null)
-                {
-                    spacing.SetAttributeValue(DocxNamespace.Main + "before", spacingBefore);
-                }
-                else
-                {
-                    attr.SetValue(spacingBefore);
-                }
-            }
-            if (Math.Abs(spacingBefore) < 0.1f && spacing != null)
-            {
-                XAttribute attr = spacing.Attribute(DocxNamespace.Main + "before");
-                attr.Remove();
-                if (!spacing.HasAttributes)
-                {
-                    spacing.Remove();
-                }
-            }
+            ApplyTextFormattingProperty(DocxNamespace.Main + "spacing", string.Empty, new XAttribute(DocxNamespace.Main + "before", spacing));
 
             return this;
         }
@@ -2251,11 +1703,11 @@ namespace DXPlus
         /// <summary>
         /// For use with Append() and AppendLine()
         /// </summary>
-        /// <param name="strikethrough">The strike through style to used on the last appended text.</param>
+        /// <param name="strike">The strike through style to used on the last appended text.</param>
         /// <returns>This Paragraph with the last appended text striked.</returns>
-        public Paragraph StrikeThrough(Strikethrough strikethrough)
+        public Paragraph StrikeThrough(Strikethrough strike)
         {
-            string value = strikethrough.GetEnumName();
+            string value = strike.GetEnumName();
             ApplyTextFormattingProperty(DocxNamespace.Main + value, string.Empty, value);
 
             return this;
@@ -2272,44 +1724,20 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// For use with Append() and AppendLine()
+        /// Append text to this Paragraph and then underline it using a color.
         /// </summary>
         /// <param name="underlineColor">The underline color to use, if no underline is set, a single line will be used.</param>
         /// <returns>This Paragraph with the last appended text underlined in a color.</returns>
-        /// <example>
-        /// Append text to this Paragraph and then underline it using a color.
-        /// <code>
-        /// // Create a document.
-        /// using (DocX document = DocX.Create(@"Test.docx"))
-        /// {
-        ///     // Insert a new Paragraph.
-        ///     Paragraph p = document.InsertParagraph();
-        ///
-        ///     p.Append("I am ")
-        ///     .Append("color underlined").UnderlineStyle(UnderlineStyle.dotted).UnderlineColor(Color.Orange)
-        ///     .Append(" I am not");
-        ///
-        ///     // Save this document.
-        ///     document.Save();
-        /// }// Release this document from memory.
-        /// </code>
-        /// </example>
         public Paragraph UnderlineColor(Color underlineColor)
         {
-            foreach (XElement run in runs)
+            foreach (var run in Runs)
             {
-                XElement rPr = run.Element(DocxNamespace.Main + "rPr");
-                if (rPr == null)
-                {
-                    run.AddFirst(new XElement(DocxNamespace.Main + "rPr"));
-                    rPr = run.Element(DocxNamespace.Main + "rPr");
-                }
-
-                XElement u = rPr.Element(DocxNamespace.Main + "u");
+                var rPr = run.GetRunProps();
+                var u = rPr.Element(DocxNamespace.Main + "u");
                 if (u == null)
                 {
                     rPr.SetElementValue(DocxNamespace.Main + "u", string.Empty);
-                    u = rPr.Element(DocxNamespace.Main + "u");
+                    u = rPr.GetOrCreateElement(DocxNamespace.Main + "u");
                     u.SetAttributeValue(DocxNamespace.Main + "val", "single");
                 }
 
@@ -2320,32 +1748,14 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// For use with Append() and AppendLine()
+        /// Append text to this Paragraph and then underline it.
         /// </summary>
         /// <param name="underlineStyle">The underline style to use for the appended text.</param>
         /// <returns>This Paragraph with the last appended text underlined.</returns>
-        /// <example>
-        /// Append text to this Paragraph and then underline it.
-        /// <code>
-        /// // Create a document.
-        /// using (DocX document = DocX.Create(@"Test.docx"))
-        /// {
-        ///     // Insert a new Paragraph.
-        ///     Paragraph p = document.InsertParagraph();
-        ///
-        ///     p.Append("I am ")
-        ///     .Append("Underlined").UnderlineStyle(UnderlineStyle.doubleLine)
-        ///     .Append(" I am not");
-        ///
-        ///     // Save this document.
-        ///     document.Save();
-        /// }// Release this document from memory.
-        /// </code>
-        /// </example>
         public Paragraph UnderlineStyle(UnderlineStyle underlineStyle)
         {
-            string value = underlineStyle.GetEnumName();
-            ApplyTextFormattingProperty(DocxNamespace.Main + "u", string.Empty, new XAttribute(DocxNamespace.Main + "val", value));
+            ApplyTextFormattingProperty(DocxNamespace.Main + "u", string.Empty, 
+                new XAttribute(DocxNamespace.Main + "val", underlineStyle.GetEnumName()));
             return this;
         }
 
@@ -2365,21 +1775,18 @@ namespace DXPlus
         /// <param name="document"></param>
         /// <param name="id">A unique id that identifies an Image embedded in this document.</param>
         /// <param name="name">The name of this Picture.</param>
-        /// <param name="descr">The description of this Picture.</param>
-        internal static Picture CreatePicture(DocX document, string id, string name, string descr)
+        /// <param name="description">The description of this Picture.</param>
+        internal static Picture CreatePicture(DocX document, string id, string name, string description)
         {
-            PackagePart part = document.Package.GetPart(document.packagePart.GetRelationship(id).TargetUri);
+            var part = document.Package.GetPart(document.PackagePart.GetRelationship(id).TargetUri);
 
             int newDocPrId = 1;
-            List<string> existingIds = new List<string>();
-            foreach (XElement bookmarkId in document.Xml.Descendants(DocxNamespace.Main + "bookmarkStart"))
-            {
-                XAttribute idAtt = bookmarkId.Attributes().FirstOrDefault(x => x.Name.LocalName == "id");
-                if (idAtt != null)
-                {
-                    existingIds.Add(idAtt.Value);
-                }
-            }
+            var existingIds = (
+                from bookmarkId in document.Xml.Descendants(DocxNamespace.Main + "bookmarkStart") 
+                select bookmarkId.Attributes().FirstOrDefault(x => x.Name.LocalName == "id") into idAtt 
+                where idAtt != null 
+                select idAtt.Value
+            ).ToList();
 
             while (existingIds.Contains(newDocPrId.ToString()))
             {
@@ -2388,22 +1795,20 @@ namespace DXPlus
 
             int cx, cy;
 
-            using (Stream partStream = part.GetStream())
-            using (System.Drawing.Image img = System.Drawing.Image.FromStream(partStream))
+            using (var partStream = part.GetStream())
+            using (var img = System.Drawing.Image.FromStream(partStream))
             {
                 cx = img.Width * 9526;
                 cy = img.Height * 9526;
             }
 
-            XElement e = new XElement(DocxNamespace.Main + "drawing");
-
-            XElement xml = XElement.Parse
-                 (string.Format(@"<w:r xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
+            var xml = XElement.Parse(
+                $@"<w:r xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
                     <w:drawing xmlns = ""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
                         <wp:inline distT=""0"" distB=""0"" distL=""0"" distR=""0"" xmlns:wp=""http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"">
-                            <wp:extent cx=""{0}"" cy=""{1}"" />
+                            <wp:extent cx=""{cx}"" cy=""{cy}"" />
                             <wp:effectExtent l=""0"" t=""0"" r=""0"" b=""0"" />
-                            <wp:docPr id=""{5}"" name=""{3}"" descr=""{4}"" />
+                            <wp:docPr id=""{newDocPrId.ToString()}"" name=""{name}"" descr=""{description}"" />
                             <wp:cNvGraphicFramePr>
                                 <a:graphicFrameLocks xmlns:a=""http://schemas.openxmlformats.org/drawingml/2006/main"" noChangeAspect=""1"" />
                             </wp:cNvGraphicFramePr>
@@ -2411,11 +1816,11 @@ namespace DXPlus
                                 <a:graphicData uri=""http://schemas.openxmlformats.org/drawingml/2006/picture"">
                                     <pic:pic xmlns:pic=""http://schemas.openxmlformats.org/drawingml/2006/picture"">
                                         <pic:nvPicPr>
-                                        <pic:cNvPr id=""0"" name=""{3}"" />
+                                        <pic:cNvPr id=""0"" name=""{name}"" />
                                             <pic:cNvPicPr />
                                         </pic:nvPicPr>
                                         <pic:blipFill>
-                                            <a:blip r:embed=""{2}"" xmlns:r=""http://schemas.openxmlformats.org/officeDocument/2006/relationships""/>
+                                            <a:blip r:embed=""{id}"" xmlns:r=""http://schemas.openxmlformats.org/officeDocument/2006/relationships""/>
                                             <a:stretch>
                                                 <a:fillRect />
                                             </a:stretch>
@@ -2423,7 +1828,7 @@ namespace DXPlus
                                         <pic:spPr>
                                             <a:xfrm>
                                                 <a:off x=""0"" y=""0"" />
-                                                <a:ext cx=""{0}"" cy=""{1}"" />
+                                                <a:ext cx=""{cx}"" cy=""{cy}"" />
                                             </a:xfrm>
                                             <a:prstGeom prst=""rect"">
                                                 <a:avLst />
@@ -2434,190 +1839,176 @@ namespace DXPlus
                             </a:graphic>
                         </wp:inline>
                     </w:drawing></w:r>
-                    ", cx, cy, id, name, descr, newDocPrId.ToString()));
+                    ");
 
-            return new Picture(document, xml, new Image(document, document.packagePart.GetRelationship(id)));
+            return new Picture(document, xml, new Image(document, document.PackagePart.GetRelationship(id)));
         }
 
-        internal static int GetElementTextLength(XElement run)
+        /// <summary>
+        /// Retrieve the text length of the passed element
+        /// </summary>
+        /// <param name="textElement"></param>
+        /// <returns></returns>
+        internal static int GetElementTextLength(XElement textElement)
         {
             int count = 0;
-            if (run == null)
+            if (textElement != null)
             {
-                return count;
-            }
-
-            foreach (XElement d in run.Descendants())
-            {
-                switch (d.Name.LocalName)
+                foreach (var el in textElement.Descendants())
                 {
-                    case "tab":
-                        if (d.Parent.Name.LocalName != "tabs")
-                        {
-                            goto case "br";
-                        }
+                    switch (el.Name.LocalName)
+                    {
+                        case "tab":
+                            if (el.Parent?.Name.LocalName != "tabs")
+                                goto case "br";
+                            break;
 
-                        break;
+                        case "br":
+                            count++;
+                            break;
 
-                    case "br":
-                        count++;
-                        break;
-
-                    case "t":
-                    case "delText":
-                        count += d.Value.Length;
-                        break;
+                        case "t":
+                        case "delText":
+                            count += el.Value.Length;
+                            break;
+                    }
                 }
             }
             return count;
         }
 
-        internal void ApplyTextFormattingProperty(XName textFormatPropName, string value, object content)
+        /// <summary>
+        /// Sets a specific text property with a value and child content
+        /// </summary>
+        /// <param name="propertyName">Text property name</param>
+        /// <param name="value">Value (can be empty string)</param>
+        /// <param name="content">Child content</param>
+        internal void ApplyTextFormattingProperty(XName propertyName, string value, object content)
         {
-            XElement rPr;
-            if (runs.Count == 0)
+            if (Runs.Count == 0)
             {
-                var pPr = Xml.Element(DocxNamespace.Main + "pPr");
-                if (pPr == null)
-                {
-                    pPr = new XElement(DocxNamespace.Main + "pPr");
-                    Xml.AddFirst(pPr);
-                }
-
-                rPr = pPr.Element(DocxNamespace.Main + "rPr");
-                if (rPr == null)
-                {
-                    rPr = new XElement(DocxNamespace.Main + "rPr");
-                    pPr.AddFirst(rPr);
-                }
-
-                rPr.SetElementValue(textFormatPropName, value);
-                var last = rPr.Elements(textFormatPropName).Last();
+                var pPr = ParaElement();
+                var rPr = pPr.GetRunProps();
+                rPr.SetElementValue(propertyName, value);
                 
                 if (content is XAttribute attr)
                 {
+                    var last = rPr.Elements(propertyName).Last();
                     if (last.Attribute(attr.Name) == null)
-                    {
                         last.Add(content);
-                    }
                     else
-                    {
                         last.SetAttributeValue(attr.Name, attr.Value);
-                    }
                 }
-                return;
             }
-
-            var properties = content as IEnumerable<object>;
-            bool isListOfAttributes = properties?.All(o => o is XAttribute) == true;
-
-            foreach (var run in runs)
+            else
             {
-                rPr = run.Element(DocxNamespace.Main + "rPr");
-                if (rPr == null)
+                foreach (var run in Runs)
                 {
-                    rPr = new XElement(DocxNamespace.Main + "rPr");
-                    run.AddFirst(rPr);
-                }
+                    var rPr = run.GetRunProps();
+                    rPr.SetElementValue(propertyName, value);
+                    var last = rPr.Elements(propertyName).Last();
 
-                rPr.SetElementValue(textFormatPropName, value);
-                var last = rPr.Elements(textFormatPropName).Last();
-
-                if (isListOfAttributes)
-                {
-                    // List of attributes, as in the case when specifying a font family
-                    foreach (XAttribute property in properties)
+                    switch (content)
                     {
-                        var lastAttribute = last.Attribute(property.Name);
-                        if (lastAttribute == null)
+                        case IEnumerable<object> properties:
                         {
-                            last.Add(property);
+                            foreach (var property in properties.Cast<XAttribute>())
+                            {
+                                var lastAttribute = last.Attribute(property.Name);
+                                if (lastAttribute == null)
+                                    last.Add(property);
+                                else
+                                    lastAttribute.Value = property.Value;
+                            }
+
+                            break;
                         }
-                        else
-                        {
-                            lastAttribute.Value = property.Value;
-                        }
-                    }
-                }
-                else if (content is XAttribute attribute)
-                {
-                    if (last.Attribute(attribute.Name) == null)
-                    {
-                        last.Add(content);
-                    }
-                    else
-                    {
-                        last.SetAttributeValue(attribute.Name, attribute.Value);
-                    }
-                }
-                else if (content != null)
-                {
-                    throw new NotSupportedException($"Unsupported content type {content.GetType().Name}: '{content}' for text formatting.");
-                }
-            }
-        }
-
-        internal Run GetFirstRunEffectedByEdit(int index, EditType type = EditType.Ins)
-        {
-            int len = HelperFunctions.GetText(Xml).Length;
-            if (index < 0 || (type == EditType.Ins && index > len) || (type == EditType.Del && index >= len))
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-
-            int count = 0;
-            Run theOne = null;
-
-            GetFirstRunEffectedByEditRecursive(Xml, index, ref count, ref theOne, type);
-
-            return theOne;
-        }
-
-        internal void GetFirstRunEffectedByEditRecursive(XElement Xml, int index, ref int count, ref Run theOne, EditType type)
-        {
-            count += HelperFunctions.GetSize(Xml);
-
-            // If the EditType is deletion then we must return the next blah
-            if (count > 0 && ((type == EditType.Del && count > index) || (type == EditType.Ins && count >= index)))
-            {
-                // Correct the index
-                foreach (XElement e in Xml.ElementsBeforeSelf())
-                {
-                    count -= HelperFunctions.GetSize(e);
-                }
-
-                count -= HelperFunctions.GetSize(Xml);
-
-                // We have found the element, now find the run it belongs to.
-                while ((Xml.Name.LocalName != "r") && (Xml.Name.LocalName != "pPr"))
-                {
-                    Xml = Xml.Parent;
-                }
-
-                theOne = new Run(Document, Xml, count);
-            }
-            else if (Xml.HasElements)
-            {
-                foreach (XElement e in Xml.Elements())
-                {
-                    if (theOne == null)
-                    {
-                        GetFirstRunEffectedByEditRecursive(e, index, ref count, ref theOne, type);
+                        case XAttribute attribute when last.Attribute(attribute.Name) == null:
+                            last.Add(content);
+                            break;
+                        case XAttribute attribute:
+                            last.SetAttributeValue(attribute.Name, attribute.Value);
+                            break;
+                        default:
+                            if (content != null)
+                                throw new NotSupportedException($"Unsupported content type {content.GetType().Name}: '{content}' for text formatting.");
+                            break;
                     }
                 }
             }
         }
 
         /// <summary>
-        /// If the pPr element doesent exist it is created, either way it is returned by this function.
+        /// Walk all the text runs in the paragraph and find the one containing a specific index.
+        /// </summary>
+        /// <param name="index">Index to look for</param>
+        /// <param name="editType">Type of edit being performed (insert or delete)</param>
+        /// <returns>Run containing index</returns>
+        internal Run GetFirstRunEffectedByEdit(int index, EditType editType = EditType.Ins)
+        {
+            int len = HelperFunctions.GetText(Xml).Length;
+            if (index < 0 || editType == EditType.Ins && index > len || editType == EditType.Del && index >= len)
+                throw new ArgumentOutOfRangeException(nameof(index));
+
+            int count = 0;
+            Run theOne = null;
+            GetFirstRunEffectedByEditRecursive(Xml, index, ref count, ref theOne, editType);
+
+            return theOne;
+        }
+
+        /// <summary>
+        /// Recursive method to identify a text run from a starting element and index.
+        /// </summary>
+        /// <param name="el">Element to search</param>
+        /// <param name="index">Index to look for</param>
+        /// <param name="count">Total searched</param>
+        /// <param name="theOne">The located text run</param>
+        /// <param name="editType">Type of edit being performed (insert or delete)</param>
+        private void GetFirstRunEffectedByEditRecursive(XElement el, int index, ref int count, ref Run theOne, EditType editType)
+        {
+            count += HelperFunctions.GetSize(el);
+
+            // If the EditType is deletion then we must return the next blah
+            if (count > 0 && ((editType == EditType.Del && count > index) || (editType == EditType.Ins && count >= index)))
+            {
+                // Correct the index
+                count = el.ElementsBeforeSelf().Aggregate(count, (current, e) => current - HelperFunctions.GetSize(e));
+                count -= HelperFunctions.GetSize(el);
+
+                // We have found the element, now find the run it belongs to.
+                while (el != null && el.Name.LocalName != "r" && el.Name.LocalName != "pPr")
+                {
+                    el = el.Parent;
+                }
+
+                if (el == null)
+                    throw new Exception($"Failed to locate index #{index} in paragraph.");
+
+                theOne = new Run(Document, el, count);
+            }
+            else if (el.HasElements)
+            {
+                foreach (var e in el.Elements())
+                {
+                    if (theOne == null)
+                    {
+                        GetFirstRunEffectedByEditRecursive(e, index, ref count, ref theOne, editType);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// If the pPr element doesn't exist it is created, either way it is returned by this function.
         /// </summary>
         /// <returns>The pPr element for this Paragraph.</returns>
-        internal XElement ParaProperties()
+        internal XElement ParaElement()
         {
             // Get the element.
-            XElement pPr = Xml.Element(DocxNamespace.Main + "pPr");
+            var pPr = Xml.Element(DocxNamespace.Main + "pPr");
 
-            // If it dosen't exist, create it.
+            // If it doesn't exist, create it.
             if (pPr == null)
             {
                 Xml.AddFirst(new XElement(DocxNamespace.Main + "pPr"));
@@ -2629,14 +2020,14 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// If the ind element doesent exist it is created, either way it is returned by this function.
+        /// If the pPr/ind element doesn't exist it is created, either way it is returned by this function.
         /// </summary>
         /// <returns>The ind element for this Paragraphs pPr.</returns>
-        internal XElement GetOrCreate_pPr_ind()
+        internal XElement ParaIndentationElement()
         {
             // Get the element.
-            XElement pPr = ParaProperties();
-            XElement ind = pPr.Element(DocxNamespace.Main + "ind");
+            var pPr = ParaElement();
+            var ind = pPr.Element(DocxNamespace.Main + "ind");
             if (ind == null)
             {
                 pPr.Add(new XElement(DocxNamespace.Main + "ind"));
@@ -2645,86 +2036,108 @@ namespace DXPlus
             return ind;
         }
 
-        internal string GetOrGenerateRel(Picture p)
+        /// <summary>
+        /// Get or create a relationship link to a picture
+        /// </summary>
+        /// <param name="picture">Picture</param>
+        /// <returns>Relationship id</returns>
+        internal string GetOrCreateRelationship(Picture picture)
         {
-            string image_uri_string = p.img.pr.TargetUri.OriginalString;
+            string uri = picture.img.pr.TargetUri.OriginalString;
 
             // Search for a relationship with a TargetUri that points at this Image.
-            string Id = packagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image")
-                .Where(r => r.TargetUri.OriginalString == image_uri_string)
+            string id = PackagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image")
+                .Where(r => r.TargetUri.OriginalString == uri)
                 .Select(r => r.Id)
                 .SingleOrDefault();
 
-            // If such a relation dosen't exist, create one.
-            if (Id == null)
+            if (id == null)
             {
                 // Check to see if a relationship for this Picture exists and create it if not.
-                PackageRelationship pr = packagePart.CreateRelationship(p.img.pr.TargetUri, TargetMode.Internal, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image");
-                Id = pr.Id;
+                var pr = PackagePart.CreateRelationship(picture.img.pr.TargetUri, 
+                    TargetMode.Internal, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image");
+                id = pr.Id;
             }
-            return Id;
+            
+            return id;
         }
 
-        internal string GetOrGenerateRel(Hyperlink h)
+        /// <summary>
+        /// Get or create a relationship link to a hyperlink
+        /// </summary>
+        /// <param name="hyperlink">Hyperlink</param>
+        /// <returns>Relationship id</returns>
+        internal string GetOrCreateRelationship(Hyperlink hyperlink)
         {
-            string image_uri_string = h.Uri.OriginalString;
+            string uri = hyperlink.Uri.OriginalString;
 
             // Search for a relationship with a TargetUri that points at this Image.
-            string Id = packagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink")
-                .Where(r => r.TargetUri.OriginalString == image_uri_string)
+            string id = PackagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink")
+                .Where(r => r.TargetUri.OriginalString == uri)
                 .Select(r => r.Id)
                 .SingleOrDefault();
 
-            // If such a relation dosen't exist, create one.
-            if (Id == null)
+            if (id == null)
             {
-                // Check to see if a relationship for this Picture exists and create it if not.
-                PackageRelationship pr = packagePart.CreateRelationship(h.Uri, TargetMode.External, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink");
-                Id = pr.Id;
+                // Check to see if a relationship for this Hyperlink exists and create it if not.
+                var pr = PackagePart.CreateRelationship(hyperlink.Uri, TargetMode.External,
+                    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink");
+                id = pr.Id;
             }
-            return Id;
+
+            return id;
         }
 
-        internal void RemoveHyperlinkRecursive(XElement xml, int index, ref int count, ref bool found)
+        /// <summary>
+        /// Removes a specific hyperlink by index through a recursive search
+        /// </summary>
+        /// <param name="element">Element to search</param>
+        /// <param name="index">Index to look for</param>
+        /// <param name="count"># of hyperlinks found so far</param>
+        /// <returns>True when hyperlink is removed</returns>
+        internal bool RemoveHyperlinkRecursive(XElement element, int index, ref int count)
         {
-            if (xml.Name.LocalName.Equals("hyperlink", StringComparison.CurrentCultureIgnoreCase))
+            if (element.Name.LocalName.Equals("hyperlink", StringComparison.CurrentCultureIgnoreCase))
             {
-                // This is the hyperlink to be removed.
+                // Count the number of hyperlinks we've found so far. When we hit the 
+                // index, that's the one we want to remove.
                 if (count == index)
                 {
-                    found = true;
-                    xml.Remove();
+                    element.Remove();
+                    return true;
                 }
-                else
-                {
-                    count++;
-                }
+                count++;
             }
 
-            if (xml.HasElements)
+            foreach (var e in element.Elements())
             {
-                foreach (XElement e in xml.Elements())
-                {
-                    if (!found)
-                    {
-                        RemoveHyperlinkRecursive(e, index, ref count, ref found);
-                    }
-                }
+                if (RemoveHyperlinkRecursive(e, index, ref count))
+                    return true;
             }
+            
+            return false;
         }
 
-        internal XElement[] SplitEdit(XElement edit, int index, EditType type)
+        /// <summary>
+        /// Splits an XElement based on index
+        /// </summary>
+        /// <param name="element">Element to split</param>
+        /// <param name="index">Index to split on</param>
+        /// <param name="type">Type of edit being performed (insert/delete)</param>
+        /// <returns>Split XElement array</returns>
+        internal XElement[] SplitEdit(XElement element, int index, EditType type)
         {
-            Run run = GetFirstRunEffectedByEdit(index, type);
-            XElement[] splitRun = Run.SplitRun(run, index, type);
+            // Find the run containing the index
+            var run = GetFirstRunEffectedByEdit(index, type);
+            var splitRun = Run.SplitRun(run, index, type);
 
-            XElement splitLeft = new XElement(edit.Name, edit.Attributes(), run.Xml.ElementsBeforeSelf(), splitRun[0]);
+            var splitLeft = new XElement(element.Name, element.Attributes(), run.Xml.ElementsBeforeSelf(), splitRun[0]);
             if (GetElementTextLength(splitLeft) == 0)
             {
                 splitLeft = null;
             }
 
-            XElement splitRight = new XElement(edit.Name, edit.Attributes(), splitRun[1], run.Xml.ElementsAfterSelf());
+            var splitRight = new XElement(element.Name, element.Attributes(), splitRun[1], run.Xml.ElementsAfterSelf());
             if (GetElementTextLength(splitRight) == 0)
             {
                 splitRight = null;
@@ -2732,5 +2145,6 @@ namespace DXPlus
 
             return new[] { splitLeft, splitRight };
         }
+
     }
 }

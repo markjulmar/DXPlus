@@ -17,32 +17,32 @@ namespace TestDXPlus
             Setup("docs");
 
             HelloWorld();
-            //HighlightWords();
-            //HelloWorldAdvancedFormatting();
-            //HelloWorldProtectedDocument();
-            //HelloWorldAddPictureToWord();
-            //RightToLeft();
-            //Indentation();
-            //HeadersAndFooters();
-            //HyperlinksInDocument();
-            //AddList();
-            //Equations();
-            //Bookmarks();
-            //BookmarksReplaceTextOfBookmarkKeepingFormat();
-            //BarChart();
-            //PieChart();
-            //LineChart();
-            //Chart3D();
-            //DocumentMargins();
-            //CreateTableWithTextDirection();
-            //AddToc();
-            //AddTocByReference();
-            //TablesDocument();
-            //DocumentsWithListsFontChange();
-            //DocumentHeading();
-            //LargeTable();
-            //ProgrammaticallyManipulateImbeddedImage();
-            //CountNumberOfParagraphs();
+            HighlightWords();
+            HelloWorldAdvancedFormatting();
+            HelloWorldProtectedDocument();
+            HelloWorldAddPictureToWord();
+            RightToLeft();
+            Indentation();
+            HeadersAndFooters();
+            HyperlinksInDocument();
+            AddList();
+            Equations();
+            Bookmarks();
+            BookmarksReplaceTextOfBookmarkKeepingFormat();
+            BarChart();
+            PieChart();
+            LineChart();
+            Chart3D();
+            DocumentMargins();
+            CreateTableWithTextDirection();
+            AddToc();
+            AddTocByReference();
+            TablesDocument();
+            DocumentsWithListsFontChange();
+            DocumentHeading();
+            LargeTable();
+            ProgrammaticallyManipulateImbeddedImage();
+            CountNumberOfParagraphs();
         }
 
         private static void CountNumberOfParagraphs()
@@ -51,7 +51,7 @@ namespace TestDXPlus
 
             DocX doc = DocX.Load(Path.Combine("..", "Input.docx"));
 
-            foreach (Paragraph p in doc.Paragraphs)
+            foreach (Paragraph p in doc.Paragraphs.Where(p => !string.IsNullOrEmpty(p.Text)))
             {
                 Console.WriteLine(p.Text);
             }
@@ -288,18 +288,17 @@ namespace TestDXPlus
             DocX document = DocX.Create("DocumentMargins.docx");
 
             // Create a float var that contains doc Margins properties.
-            float leftMargin = document.MarginLeft;
-            float rightMargin = document.MarginRight;
-            float topMargin = document.MarginTop;
-            float bottomMargin = document.MarginBottom;
+            double leftMargin = document.MarginLeft;
+            double rightMargin = document.MarginRight;
+            double topMargin = document.MarginTop;
+            double bottomMargin = document.MarginBottom;
 
             Console.WriteLine($"Current margins: L={leftMargin}, R={rightMargin}, T={topMargin}, B={bottomMargin}");
 
-            // Modify using your own vars.
-            leftMargin = 95F;
-            rightMargin = 45F;
-            topMargin = 50F;
-            bottomMargin = 180F;
+            leftMargin = 95;
+            rightMargin = 45;
+            topMargin = 50;
+            bottomMargin = 180;
 
             // Or simply work the margins by setting the property directly. 
             document.MarginLeft = leftMargin;
@@ -666,8 +665,8 @@ namespace TestDXPlus
             DocX doc = DocX.Create("LargeTables.docx");
             Table table = doc.InsertTable(1, 18);
 
-            float wholeWidth = doc.PageWidth - doc.MarginLeft - doc.MarginRight;
-            float colWidth = wholeWidth / table.ColumnCount;
+            double wholeWidth = doc.PageWidth - doc.MarginLeft - doc.MarginRight;
+            double colWidth = wholeWidth / table.ColumnCount;
             table.AutoFit = AutoFit.Contents;
             Row row = table.Rows[0];
             List<Cell> cells = row.Cells.ToList();

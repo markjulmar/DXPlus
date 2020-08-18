@@ -37,7 +37,7 @@ namespace DXPlus
 
             if (this is Paragraph owner)
             {
-                return new Paragraph(Document, newlyInserted, owner.endIndex);
+                return new Paragraph(Document, newlyInserted, owner.EndIndex);
             }
             else
             {
@@ -93,7 +93,7 @@ namespace DXPlus
             Xml.AddAfterSelf(newTable);
             XElement newlyInserted = Xml.ElementsAfterSelf().First();
 
-            return new Table(Document, newlyInserted) { packagePart = packagePart };
+            return new Table(Document, newlyInserted) { PackagePart = PackagePart };
         }
 
         public virtual Table InsertTableAfterSelf(Table t)
@@ -101,7 +101,7 @@ namespace DXPlus
             Xml.AddAfterSelf(t.Xml);
             XElement newlyInserted = Xml.ElementsAfterSelf().First();
 
-            return new Table(Document, newlyInserted) { packagePart = packagePart }; //return new table, dont affect parameter table
+            return new Table(Document, newlyInserted) { PackagePart = PackagePart }; //return new table, dont affect parameter table
         }
 
         public virtual Table InsertTableBeforeSelf(int rowCount, int columnCount)
@@ -110,14 +110,14 @@ namespace DXPlus
             Xml.AddBeforeSelf(newTable);
             XElement newlyInserted = Xml.ElementsBeforeSelf().Last();
 
-            return new Table(Document, newlyInserted) { packagePart = packagePart };
+            return new Table(Document, newlyInserted) { PackagePart = PackagePart };
         }
 
         public virtual Table InsertTableBeforeSelf(Table t)
         {
             Xml.AddBeforeSelf(t.Xml);
             XElement newlyInserted = Xml.ElementsBeforeSelf().Last();
-            return new Table(Document, newlyInserted) { packagePart = packagePart }; //return new table, dont affect parameter table
+            return new Table(Document, newlyInserted) { PackagePart = PackagePart }; //return new table, dont affect parameter table
         }
 
         private static XElement CreateNewParagraph(string text, bool trackChanges, Formatting formatting)

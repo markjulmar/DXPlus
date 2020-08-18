@@ -74,7 +74,7 @@ namespace DXPlus
 
             XElement splitLeft = new XElement(run.Xml.Name,
                                         run.Xml.Attributes(),
-                                        run.Xml.Element(DocxNamespace.Main + "rPr"),
+                                        run.Xml.GetRunProps(false),
                                         text.Xml.ElementsBeforeSelf().Where(n => n.Name.LocalName != "rPr"),
                                         splitText[0]);
 
@@ -85,7 +85,7 @@ namespace DXPlus
 
             XElement splitRight = new XElement(run.Xml.Name,
                                         run.Xml.Attributes(),
-                                        run.Xml.Element(DocxNamespace.Main + "rPr"),
+                                        run.Xml.GetRunProps(false),
                                         splitText[1],
                                         text.Xml.ElementsAfterSelf().Where(n => n.Name.LocalName != "rPr"));
 

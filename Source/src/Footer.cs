@@ -43,9 +43,11 @@ namespace DXPlus
             }
         }
 
+        public string Id { get; set; }
+
         internal Footer(DocX document, XElement xml, PackagePart mainPart) : base(document, xml)
         {
-            packagePart = mainPart;
+            PackagePart = mainPart;
         }
     }
 }

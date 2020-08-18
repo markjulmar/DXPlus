@@ -20,7 +20,7 @@ namespace DXPlus
             : base(row.Document, xml)
         {
             Row = row;
-            packagePart = row.packagePart;
+            PackagePart = row.PackagePart;
         }
 
         /// <summary>
@@ -96,18 +96,6 @@ namespace DXPlus
             set => SetMargin("top", value);
         }
 
-        public override ReadOnlyCollection<Paragraph> Paragraphs
-        {
-            get
-            {
-                var paragraphs = base.Paragraphs;
-                foreach (var p in paragraphs) 
-                    p.packagePart = Row.Table.packagePart;
-
-                return paragraphs;
-            }
-        }
-
         public Color Shading
         {
             get
@@ -143,7 +131,7 @@ namespace DXPlus
                     .Element(DocxNamespace.Main + "textDirection")?
                     .GetValAttr();
 
-                if (val == null || !val.TryGetEnumValue(out TextDirection result))
+                if (!val.TryGetEnumValue(out TextDirection result))
                 {
                     val?.Remove();
                     return TextDirection.LeftToRightTopToBottom;
@@ -170,7 +158,7 @@ namespace DXPlus
                     .Element(DocxNamespace.Main + "vAlign")?
                     .GetValAttr();
 
-                if (val == null || !val.TryGetEnumValue(out VerticalAlignment result))
+                if (!val.TryGetEnumValue(out VerticalAlignment result))
                 {
                     val?.Remove();
                     return VerticalAlignment.Center;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Xml.Linq;
+using DXPlus.Helpers;
 
 namespace DXPlus
 {
@@ -46,40 +47,6 @@ namespace DXPlus
         /// </summary>
         public string Value { get; }
 
-        /// <summary>
-        /// If a text element or delText element, starts or ends with a space,
-        /// it must have the attribute space, otherwise it must not have it.
-        /// </summary>
-        /// <param name="e">The (t or delText) element check</param>
-        public static void PreserveSpace(XElement e)
-        {
-            if (!e.Name.Equals(DocxNamespace.Main + "t")
-             && !e.Name.Equals(DocxNamespace.Main + "delText"))
-            {
-                throw new ArgumentException($"{nameof(PreserveSpace)} can only work with elements of type 't' or 'delText'", nameof(e));
-            }
-
-            // Check if this w:t contains a space attribute
-            var space = e.Attributes().SingleOrDefault(a => a.Name.Equals(XNamespace.Xml + "space"));
-
-            // This w:t's text begins or ends with whitespace
-            if (e.Value.StartsWith(" ") || e.Value.EndsWith(" "))
-            {
-                // If this w:t contains no space attribute, add one.
-                if (space == null)
-                {
-                    e.Add(new XAttribute(XNamespace.Xml + "space", "preserve"));
-                }
-            }
-
-            // This w:t's text does not begin or end with a space
-            else
-            {
-                // If this w:r contains a space attribute, remove it.
-                space?.Remove();
-            }
-        }
-
         internal static XElement[] SplitText(TextBlock t, int index)
         {
             if (index < t.StartIndex || index > t.EndIndex)
@@ -97,7 +64,7 @@ namespace DXPlus
                 }
                 else
                 {
-                    PreserveSpace(splitLeft);
+                    splitLeft.PreserveSpace();
                 }
 
                 // The original text element, now containing only the text after the index point.
@@ -108,7 +75,7 @@ namespace DXPlus
                 }
                 else
                 {
-                    PreserveSpace(splitRight);
+                    splitRight.PreserveSpace();
                 }
             }
             else

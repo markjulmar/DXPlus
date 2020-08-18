@@ -94,6 +94,7 @@ namespace DXPlus.Charts
             {
                 var colorElement = Xml.Element(DocxNamespace.Chart + "spPr");
                 colorElement?.Remove();
+                
                 colorElement = new XElement(
                     DocxNamespace.Chart + "spPr",
                     new XElement(DocxNamespace.DrawingMain + "solidFill",

@@ -45,12 +45,14 @@ namespace DXPlus
             }
         }
 
+        public string Id { get; set; }
+
         internal Header(DocX document, XElement xml, PackagePart mainPart) : base(document, xml)
         {
-            packagePart = mainPart;
+            PackagePart = mainPart;
         }
 
-        public IEnumerable<Image> Images => packagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image")
+        public IEnumerable<Image> Images => PackagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image")
                                   .Select(i => new Image(Document, i));
     }
 }

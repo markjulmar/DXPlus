@@ -28,7 +28,7 @@ namespace DXPlus
         public ListItemType? ListType { get; private set; }
 
         /// <summary>
-        /// The numId used to reference the list settings in the numbering.xml
+        /// The numId used to reference the list settings in the numberingDoc.xml
         /// </summary>
         public int NumId { get; private set; }
 
@@ -52,10 +52,10 @@ namespace DXPlus
             var lastItem = listToReturn.Items.LastOrDefault();
             if (lastItem != null)
             {
-                lastItem.packagePart = packagePart;
+                lastItem.PackagePart = PackagePart;
             }
 
-            listToReturn.packagePart = packagePart;
+            listToReturn.PackagePart = PackagePart;
 
             return listToReturn;
         }
@@ -122,9 +122,8 @@ namespace DXPlus
 
         internal void CreateNewNumberingNumId(ListItemType listType = ListItemType.Numbered, int? startNumber = null, bool continueNumbering = false)
         {
-            ValidateDocXNumberingPartExists();
-            if (Document.numbering.Root == null)
-                throw new InvalidOperationException("Numbering section did not instantiate properly.");
+            if (Document.numberingDoc.Root == null)
+                throw new InvalidOperationException("Numbering section not available.");
 
             ListType = listType;
 
@@ -136,18 +135,18 @@ namespace DXPlus
                 ListItemType.Numbered => Resources.DefaultDecimalNumberingXml,
                 _ => throw new InvalidOperationException($"Unable to deal with ListItemType: {listType}."),
             };
-            
+
             var abstractNumTemplate = listTemplate.FirstLocalNameDescendant("abstractNum");
             abstractNumTemplate.SetAttributeValue(DocxNamespace.Main + "abstractNumId", abstractNumId);
 
             var abstractNumXml = GetAbstractNumXml(abstractNumId, numId, startNumber, continueNumbering);
-            var abstractNumNode = Document.numbering.Root.Descendants().LastOrDefault(xElement => xElement.Name.LocalName == "abstractNum");
-            var numXml = Document.numbering.Root.Descendants().LastOrDefault(xElement => xElement.Name.LocalName == "num");
+            var abstractNumNode = Document.numberingDoc.Root.Descendants().LastOrDefault(xElement => xElement.Name.LocalName == "abstractNum");
+            var numXml = Document.numberingDoc.Root.Descendants().LastOrDefault(xElement => xElement.Name.LocalName == "num");
 
             if (abstractNumNode == null || numXml == null)
             {
-                Document.numbering.Root.Add(abstractNumTemplate);
-                Document.numbering.Root.Add(abstractNumXml);
+                Document.numberingDoc.Root.Add(abstractNumTemplate);
+                Document.numberingDoc.Root.Add(abstractNumXml);
             }
             else
             {
@@ -165,10 +164,10 @@ namespace DXPlus
         /// <returns>XElement representing the requested abstractNum</returns>
         internal XElement GetAbstractNum(int numId)
         {
-            var num = Document.numbering.LocalNameDescendants("num")
+            var num = Document.numberingDoc.LocalNameDescendants("num")
                                                 .First(e => int.Parse(e.AttributeValue(DocxNamespace.Main + "numId")) == numId);
             var abstractNumId = num.FirstLocalNameDescendant("abstractNumId").Value;
-            return Document.numbering.LocalNameDescendants("abstractNum")
+            return Document.numberingDoc.LocalNameDescendants("abstractNum")
                                      .First(e => e.AttributeValue("abstractNumId") == abstractNumId);
         }
 
@@ -192,9 +191,9 @@ namespace DXPlus
         /// </returns>
         private int GetMaxAbstractNumId()
         {
-            if (Document.numbering != null)
+            if (Document.numberingDoc != null)
             {
-                var numlist = Document.numbering.LocalNameDescendants("abstractNum").ToList();
+                var numlist = Document.numberingDoc.LocalNameDescendants("abstractNum").ToList();
                 if (numlist.Count > 0)
                 {
                     return numlist.Attributes(DocxNamespace.Main + "abstractNumId")
@@ -215,9 +214,9 @@ namespace DXPlus
         /// </returns>
         private int GetMaxNumId()
         {
-            if (Document.numbering != null)
+            if (Document.numberingDoc != null)
             {
-                var numlist = Document.numbering.LocalNameDescendants("num").ToList();
+                var numlist = Document.numberingDoc.LocalNameDescendants("num").ToList();
                 if (numlist.Count > 0)
                 {
                     return numlist.Attributes(DocxNamespace.Main + "numId")
@@ -233,17 +232,6 @@ namespace DXPlus
             var abstractNum = GetAbstractNum(NumId);
             var level = abstractNum.LocalNameDescendants("lvl").First(el => el.AttributeValueNum(DocxNamespace.Main + "ilvl") == iLevel);
             level.FirstLocalNameDescendant("start").SetAttributeValue(DocxNamespace.Main + "val", start);
-        }
-
-        private void ValidateDocXNumberingPartExists()
-        {
-            Uri numberingUri = new Uri("/word/numbering.xml", UriKind.Relative);
-
-            // If the internal document contains no /word/numbering.xml create one.
-            if (!Document.Package.PartExists(numberingUri))
-            {
-                Document.numbering = HelperFunctions.AddDefaultNumberingXml(Document.Package);
-            }
         }
     }
 }

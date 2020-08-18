@@ -30,7 +30,7 @@ namespace DXPlus
         internal Table(DocX document, XElement xml) : base(document, xml)
         {
             autoFit = AutoFit.ColumnWidth;
-            packagePart = document.packagePart;
+            PackagePart = document.PackagePart;
 
             var style = TblPr?.Element(DocxNamespace.Main + "tblStyle");
             if (style != null)
@@ -192,15 +192,15 @@ namespace DXPlus
                         break;
                 }
 
-                if (Document.styles == null)
+                if (Document.stylesDoc == null)
                 {
                     var wordStyles = Document.Package.GetPart(new Uri("/word/styles.xml", UriKind.Relative));
                     using TextReader tr = new StreamReader(wordStyles.GetStream());
-                    Document.styles = XDocument.Load(tr);
+                    Document.stylesDoc = XDocument.Load(tr);
                 }
 
                 var tableStyle = (
-                    from e in Document.styles.Descendants()
+                    from e in Document.stylesDoc.Descendants()
                     let styleId = e.Attribute(DocxNamespace.Main + "styleId")
                     where (styleId != null && styleId.Value == val.Value)
                     select e
@@ -216,7 +216,7 @@ namespace DXPlus
                         select e
                     ).First();
 
-                    Document.styles.Element(DocxNamespace.Main + "styles")?.Add(styleElement);
+                    Document.stylesDoc.Element(DocxNamespace.Main + "styles")?.Add(styleElement);
                 }
             }
         }

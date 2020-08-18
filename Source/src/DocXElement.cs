@@ -12,18 +12,18 @@ namespace DXPlus
         /// <summary>
         /// The section in the Package this element is represented by
         /// </summary>
-        internal PackagePart packagePart;
+        internal PackagePart PackagePart { get; set; }
 
         /// <summary>
         /// This is the actual Xml that gives this element substance.
         /// </summary>
-        internal XElement Xml;
+        public XElement Xml { get; set; }
 
         /// <summary>
         /// This is a reference to the DocX object that this element belongs to.
         /// Every DocX element is connected to a document.
         /// </summary>
-        internal DocX Document;
+        public DocX Document { get; set; }
 
         /// <summary>
         /// Store both the document and xml so that they can be accessed by derived types.

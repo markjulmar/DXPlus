@@ -42,8 +42,7 @@ namespace DXPlus
         /// </summary>
         public Formatting Clone()
         {
-            return new Formatting
-            {
+            return new Formatting {
                 Bold = Bold,
                 CapsStyle = CapsStyle,
                 FontColor = FontColor,
@@ -70,10 +69,10 @@ namespace DXPlus
             if (rPr == null)
                 return null;
 
-            Formatting formatting = new Formatting();
+            var formatting = new Formatting();
 
             // Build up the Formatting object.
-            foreach (XElement option in rPr.Elements())
+            foreach (var option in rPr.Elements())
             {
                 switch (option.Name.LocalName)
                 {
@@ -142,7 +141,7 @@ namespace DXPlus
         {
             get
             {
-                XElement rPr = new XElement(DocxNamespace.Main + "rPr");
+                var rPr = new XElement(DocxNamespace.Main + "rPr");
 
                 if (Language != null)
                 {

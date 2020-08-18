@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Xml.Linq;
+using DXPlus.Helpers;
 
 namespace DXPlus
 {
@@ -69,12 +70,12 @@ namespace DXPlus
                 return;
             
             // The val attribute is the border style
-            XAttribute val = borderDetails.Attribute(DocxNamespace.Main + "val");
+            var val = borderDetails.Attribute(DocxNamespace.Main + "val");
             if (val != null)
             {
-                if (Enum.TryParse(val.Value, ignoreCase: true, out BorderStyle result))
+                if (val.TryGetEnumValue<BorderStyle>(out var bs))
                 {
-                    Style = result;
+                    Style = bs;
                 }
                 else
                 {
@@ -83,7 +84,7 @@ namespace DXPlus
             }
 
             // The sz attribute is used for the border size
-            XAttribute sz = borderDetails.Attribute(DocxNamespace.Main + "sz");
+            var sz = borderDetails.Attribute(DocxNamespace.Main + "sz");
             if (sz != null)
             {
                 if (int.TryParse(sz.Value, out int result))
@@ -109,7 +110,7 @@ namespace DXPlus
             }
 
             // The space attribute is used for the border spacing
-            XAttribute space = borderDetails.Attribute(DocxNamespace.Main + "space");
+            var space = borderDetails.Attribute(DocxNamespace.Main + "space");
             if (space != null)
             {
                 if (int.TryParse(space.Value, out int result))
@@ -123,7 +124,7 @@ namespace DXPlus
             }
 
             // The color attribute is used for the border color
-            XAttribute color = borderDetails.Attribute(DocxNamespace.Main + "color");
+            var color = borderDetails.Attribute(DocxNamespace.Main + "color");
             if (color != null)
             {
                 try

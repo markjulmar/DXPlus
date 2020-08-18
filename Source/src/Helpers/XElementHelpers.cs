@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Xml.Linq;
@@ -10,6 +9,60 @@ namespace DXPlus.Helpers
 {
     internal static class XElementHelpers
     {
+        /// <summary>
+        /// Get the rPr element from a parent, or create it if it doesn't exist.
+        /// </summary>
+        /// <param name="owner"></param>
+        /// <param name="create">True to create it if it doesn't exist</param>
+        /// <returns></returns>
+        internal static XElement GetRunProps(this XElement owner, bool create = true)
+        {
+            var rPr = owner.Element(DocxNamespace.Main + "rPr");
+            if (rPr == null && create)
+            {
+                rPr = new XElement(DocxNamespace.Main + "rPr");
+                owner.AddFirst(rPr);
+            }
+
+            return rPr;
+        }
+
+        /// <summary>
+        /// If a text element or delText element, starts or ends with a space,
+        /// it must have the attribute space, otherwise it must not have it.
+        /// </summary>
+        /// <param name="e">The (t or delText) element check</param>
+        public static XElement PreserveSpace(this XElement e)
+        {
+            if (!e.Name.Equals(DocxNamespace.Main + "t")
+                && !e.Name.Equals(DocxNamespace.Main + "delText"))
+            {
+                throw new ArgumentException($"{nameof(PreserveSpace)} can only work with elements of type 't' or 'delText'", nameof(e));
+            }
+
+            // Check if this w:t contains a space attribute
+            var space = e.Attributes().SingleOrDefault(a => a.Name.Equals(XNamespace.Xml + "space"));
+
+            // This w:t's text begins or ends with whitespace
+            if (e.Value.StartsWith(" ") || e.Value.EndsWith(" "))
+            {
+                // If this w:t contains no space attribute, add one.
+                if (space == null)
+                {
+                    e.Add(new XAttribute(XNamespace.Xml + "space", "preserve"));
+                }
+            }
+
+            // This w:t's text does not begin or end with a space
+            else
+            {
+                // If this w:r contains a space attribute, remove it.
+                space?.Remove();
+            }
+
+            return e;
+        }
+
         public static XElement GetOrCreateElement(this XContainer el, XName name, string defaultValue = "")
         {
             if (el == null)
@@ -172,22 +225,27 @@ namespace DXPlus.Helpers
             element.SetAttributeValue("val", GetEnumName(value));
         }
 
+        /// <summary>
+        /// Convert an attribute to an enumeration
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="attr"></param>
+        /// <param name="result"></param>
+        /// <returns></returns>
         internal static bool TryGetEnumValue<T>(this XAttribute attr, out T result)
         {
-            if (attr == null || string.IsNullOrWhiteSpace(attr.Value))
+            if (attr != null && !string.IsNullOrWhiteSpace(attr.Value))
             {
-                throw new ArgumentNullException(nameof(attr));
-            }
-
-            string value = attr.Value;
-            foreach (T e in Enum.GetValues(typeof(T)))
-            {
-                FieldInfo fi = typeof(T).GetField(e.ToString());
-                string name = fi.GetCustomAttribute<XmlAttributeAttribute>()?.AttributeName ?? e.ToString();
-                if (String.Compare(name, value, StringComparison.OrdinalIgnoreCase) == 0)
+                string value = attr.Value;
+                foreach (T e in Enum.GetValues(typeof(T)))
                 {
-                    result = e;
-                    return true;
+                    FieldInfo fi = typeof(T).GetField(e.ToString());
+                    string name = fi.GetCustomAttribute<XmlAttributeAttribute>()?.AttributeName ?? e.ToString();
+                    if (string.Compare(name, value, StringComparison.OrdinalIgnoreCase) == 0)
+                    {
+                        result = e;
+                        return true;
+                    }
                 }
             }
 
@@ -195,22 +253,30 @@ namespace DXPlus.Helpers
             return false;
         }
 
+        /// <summary>
+        /// Convert the val() attribute of an Element to an enumeration
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="element"></param>
+        /// <param name="result"></param>
+        /// <returns></returns>
         internal static bool TryGetEnumValue<T>(this XElement element, out T result)
         {
-            if (element == null)
+            if (element != null)
             {
-                throw new ArgumentNullException(nameof(element));
-            }
-
-            string value = element.GetVal();
-            foreach (T e in Enum.GetValues(typeof(T)))
-            {
-                FieldInfo fi = typeof(T).GetField(e.ToString());
-                string name = fi.GetCustomAttribute<XmlAttributeAttribute>()?.AttributeName ?? e.ToString();
-                if (String.Compare(name, value, StringComparison.OrdinalIgnoreCase) == 0)
+                string value = element.GetVal();
+                if (!string.IsNullOrWhiteSpace(value))
                 {
-                    result = e;
-                    return true;
+                    foreach (T e in Enum.GetValues(typeof(T)))
+                    {
+                        FieldInfo fi = typeof(T).GetField(e.ToString());
+                        string name = fi.GetCustomAttribute<XmlAttributeAttribute>()?.AttributeName ?? e.ToString();
+                        if (string.Compare(name, value, StringComparison.OrdinalIgnoreCase) == 0)
+                        {
+                            result = e;
+                            return true;
+                        }
+                    }
                 }
             }
 

@@ -14,7 +14,7 @@ namespace DXPlus
         internal static XNamespace DrawingMain = "http://schemas.openxmlformats.org/drawingml/2006/main";
         internal static XNamespace Chart = "http://schemas.openxmlformats.org/drawingml/2006/chart";
         internal static XNamespace VML = "urn:schemas-microsoft-com:vml";
-        internal static XNamespace Numbering = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering";
+        internal static XNamespace Numbering = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numberingDoc";
         internal static XNamespace RelatedDoc = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
     }
 
