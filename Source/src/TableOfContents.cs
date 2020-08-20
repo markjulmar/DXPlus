@@ -29,18 +29,11 @@ namespace DXPlus
 
         internal static TableOfContents CreateTableOfContents(DocX document, string title, TableOfContentsSwitches switches, string headerStyle = null, int lastIncludeLevel = 3, int? rightTabPos = null)
         {
-            XmlReader reader = XmlReader.Create(
-                new StringReader(
-                    string.Format(Resources.TocXmlBase,
+            XElement tocBase = Resources.TocXmlBase(
                                     headerStyle ?? HeaderStyle,
-                                    title,
-                                    rightTabPos ?? RightTabPos,
-                                    BuildSwitchString(switches, lastIncludeLevel)
-                    )
-                )
-            );
-
-            return new TableOfContents(document, XElement.Load(reader), headerStyle);
+                                    title, rightTabPos ?? RightTabPos,
+                                    BuildSwitchString(switches, lastIncludeLevel));
+            return new TableOfContents(document, tocBase, headerStyle);
         }
 
         private static string BuildSwitchString(TableOfContentsSwitches switches, int lastIncludeLevel)
@@ -62,7 +55,7 @@ namespace DXPlus
 
         private void EnsureTocStylesArePresent(DocX document, string headerStyle)
         {
-            (string headerStyle, string applyTo, string template, string name)[] availableStyles = new (string headerStyle, string applyTo, string template, string name)[]
+            (string headerStyle, string applyTo, Func<string, string, XElement> template, string name)[] availableStyles = new (string headerStyle, string applyTo, Func<string, string, XElement> template, string name)[]
             {
                 (headerStyle, "paragraph", Resources.TocHeadingStyleBase, headerStyle ?? HeaderStyle),
                 ("TOC1", "paragraph", Resources.TocElementStyleBase, "toc 1"),
@@ -72,12 +65,11 @@ namespace DXPlus
                 ("Hyperlink", "character", Resources.TocHyperLinkStyleBase, "")
             };
 
-            foreach ((string headerStyle, string applyTo, string template, string name) style in availableStyles)
+            foreach (var style in availableStyles)
             {
                 if (!document.HasStyle(style.headerStyle, style.applyTo))
                 {
-                    XmlReader reader = XmlReader.Create(new StringReader(string.Format(style.template, style.headerStyle, style.name)));
-                    XElement xml = XElement.Load(reader);
+                    XElement xml = style.template.Invoke(style.headerStyle, style.name);
                     document.stylesDoc.Root.Add(xml);
                 }
             }

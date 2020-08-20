@@ -13,8 +13,10 @@ namespace DXPlus
 
             set
             {
+                var rsid = Document.EditingSessionId;
+
                 XElement e = XElement.Parse
-                (@"<w:sdt xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'>
+                ($@"<w:sdt xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'>
                     <w:sdtPr>
                       <w:id w:val='157571950' />
                       <w:docPartObj>
@@ -23,7 +25,7 @@ namespace DXPlus
                       </w:docPartObj>
                     </w:sdtPr>
                     <w:sdtContent>
-                      <w:p w:rsidR='008D2BFB' w:rsidRDefault='008D2BFB'>
+                      <w:p w:rsidR='{rsid}' w:rsidRDefault='{rsid}'>
                         <w:pPr>
                           <w:pStyle w:val='Header' />
                           <w:jc w:val='center' />

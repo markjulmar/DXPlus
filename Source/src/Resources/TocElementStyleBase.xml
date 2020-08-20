@@ -1,5 +1,5 @@
-﻿<w:style w:type='paragraph' w:styleId='{0}' xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'>
-  <w:name w:val='{1}' />
+﻿<w:style w:type='paragraph' w:styleId='{headerStyle}' xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'>
+  <w:name w:val='{name}' />
   <w:basedOn w:val='Normal' />
   <w:next w:val='Normal' />
   <w:autoRedefine />

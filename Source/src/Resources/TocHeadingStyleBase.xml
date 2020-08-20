@@ -1,4 +1,4 @@
-﻿<w:style w:type='paragraph' w:styleId='{1}' xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'>
+﻿<w:style w:type='paragraph' w:styleId='{name}' xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'>
   <w:name w:val='TOC Heading'/>
   <w:basedOn w:val='Heading1'/>
   <w:next w:val='Normal'/>

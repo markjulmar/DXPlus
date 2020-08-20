@@ -14,6 +14,7 @@
     <None Remove="Resources\TocHeadingStyleBase.xml" />
     <None Remove="Resources\TocHyperLinkStyleBase.xml" />
     <None Remove="Resources\TocXmlBase.xml" />
+    <None Remove="Resources\settings.xml" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\numbering.xml.gz" />
@@ -25,6 +26,7 @@
     <EmbeddedResource Include="Resources\TocHeadingStyleBase.xml" />
     <EmbeddedResource Include="Resources\TocXmlBase.xml" />
     <EmbeddedResource Include="Resources\TocHyperLinkStyleBase.xml" />
+    <EmbeddedResource Include="Resources\settings.xml" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.IO.Packaging" Version="4.7.0" />

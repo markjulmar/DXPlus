@@ -51,6 +51,7 @@ namespace DXPlus
 		private PackagePart settingsPart;
 		private PackagePart stylesPart;
 		private PackagePart stylesWithEffectsPart;
+		private string editingSession;
 
 		// A lookup for the Paragraphs in this document
 		internal Dictionary<int, Paragraph> paragraphLookup = new Dictionary<int, Paragraph>();
@@ -63,9 +64,14 @@ namespace DXPlus
 		}
 
 		/// <summary>
-		/// Retrieve all bookmarks
+		/// Editing session id for this session.
 		/// </summary>
-		public BookmarkCollection Bookmarks => new BookmarkCollection(Paragraphs.SelectMany(p => p.GetBookmarks()));
+        public string EditingSessionId => editingSession ??= HelperFunctions.GenLongHexNumber();
+
+        /// <summary>
+        /// Retrieve all bookmarks
+        /// </summary>
+        public BookmarkCollection Bookmarks => new BookmarkCollection(Paragraphs.SelectMany(p => p.GetBookmarks()));
 
 		///<summary>
 		/// Returns the list of document core properties with corresponding values.
@@ -324,6 +330,10 @@ namespace DXPlus
 			var document = Load(ms);
 			document.filename = filename;
 			document.stream = null;
+
+			// Grab the editing ID we generated.
+			document.editingSession = document.Xml.Element(DocxNamespace.Main + "sectPr")
+												  .AttributeValue(DocxNamespace.Main + "rsidR");
 
 			return document;
 		}
@@ -1498,20 +1508,26 @@ namespace DXPlus
 				CompressionOption.Normal);
 			package.CreateRelationship(mainDocumentPart.Uri, TargetMode.Internal, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument");
 
+			// Generate an id for this editing session.
+			var rsid = HelperFunctions.GenLongHexNumber();
+
 			// Load the document part into a XDocument object
 			var mainDoc = XDocument.Parse(
-			@"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
+			$@"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
 			   <w:document xmlns:ve=""http://schemas.openxmlformats.org/markup-compatibility/2006"" xmlns:o=""urn:schemas-microsoft-com:office:office"" xmlns:r=""http://schemas.openxmlformats.org/officeDocument/2006/relationships"" xmlns:m=""http://schemas.openxmlformats.org/officeDocument/2006/math"" xmlns:v=""urn:schemas-microsoft-com:vml"" xmlns:wp=""http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"" xmlns:w10=""urn:schemas-microsoft-com:office:word"" xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"" xmlns:wne=""http://schemas.microsoft.com/office/word/2006/wordml"" xmlns:a=""http://schemas.openxmlformats.org/drawingml/2006/main"" xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
 			   <w:body>
-				<w:sectPr w:rsidR=""003E25F4"" w:rsidSect=""00FC3028"">
-					<w:pgSz w:w=""11906"" w:h=""16838""/>
-					<w:pgMar w:top=""1440"" w:right=""1440"" w:bottom=""1440"" w:left=""1440"" w:header=""708"" w:footer=""708"" w:gutter=""0""/>
-					<w:cols w:space=""708""/>
+				<w:sectPr w:rsidR=""{rsid}"" w:rsidSect=""{rsid}"">
+					<w:pgSz w:h=""15840"" w:w=""12240""/>
+					<w:pgMar w:top=""1440"" w:right=""1440"" w:bottom=""1440"" w:left=""1440"" w:header=""720"" w:footer=""720"" w:gutter=""0""/>
+					<w:cols w:space=""720""/>
 					<w:docGrid w:linePitch=""360""/>
 				</w:sectPr>
 			   </w:body>
 			   </w:document>"
 			);
+
+			// Add the settings.xml
+			HelperFunctions.AddDefaultSettingsPart(package, rsid);
 
 			// Add the default styles
 			HelperFunctions.AddDefaultStylesXml(package);
@@ -1730,6 +1746,8 @@ namespace DXPlus
 			// Delete header/footer
 			DeleteHeadersOrFooters(addHeader);
 
+			var rsid = EditingSessionId;
+
 			int index = 1;
 			foreach (var headerType in new[] { "default", "even", "first" })
 			{
@@ -1741,7 +1759,7 @@ namespace DXPlus
 				var header = XDocument.Parse(
 					$@"<?xml version=""1.0"" encoding=""utf-16"" standalone=""yes""?>
 				   <w:{element} xmlns:ve=""http://schemas.openxmlformats.org/markup-compatibility/2006"" xmlns:o=""urn:schemas-microsoft-com:office:office"" xmlns:r=""http://schemas.openxmlformats.org/officeDocument/2006/relationships"" xmlns:m=""http://schemas.openxmlformats.org/officeDocument/2006/math"" xmlns:v=""urn:schemas-microsoft-com:vml"" xmlns:wp=""http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"" xmlns:w10=""urn:schemas-microsoft-com:office:word"" xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"" xmlns:wne=""http://schemas.microsoft.com/office/word/2006/wordml"">
-					 <w:p w:rsidR=""009D472B"" w:rsidRDefault=""009D472B"">
+					 <w:p w:rsidR=""{rsid}"" w:rsidRDefault=""{rsid}"">
 					   <w:pPr>
 						 <w:pStyle w:val=""{reference}"" />
 					   </w:pPr>
@@ -1845,7 +1863,7 @@ namespace DXPlus
 				p.ContentType.Equals(DocxContentType.Document, StringComparison.CurrentCultureIgnoreCase) ||
 				p.ContentType.Equals(DocxContentType.Template, StringComparison.CurrentCultureIgnoreCase));
 
-			settingsPart = HelperFunctions.CreateOrGetSettingsPart(Package);
+			settingsPart = Package.GetPart(DocxSections.SettingsUri);
 
 			// Load all the optional sections
 			foreach (var rel in PackagePart.GetRelationships())
@@ -1934,7 +1952,7 @@ namespace DXPlus
 			if (numberingPart == null)
 			{
 				numberingPart = Package.CreatePart(new Uri("/word/numbering.xml", UriKind.Relative), "application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml", CompressionOption.Maximum);
-				numberingDoc = Resources.NumberingXml;
+				numberingDoc = Resources.NumberingXml();
 				numberingPart.Save(numberingDoc);
 				PackagePart.CreateRelationship(numberingPart.Uri, TargetMode.Internal, $"{DocxNamespace.RelatedDoc.NamespaceName}/numbering");
 			}

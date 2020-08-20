@@ -573,25 +573,21 @@ namespace DXPlus
             Xml.Add(newParagraphSection);
         }
 
-        public Paragraph InsertParagraph() => InsertParagraph(string.Empty, false, new Formatting());
+        public Paragraph InsertParagraph() => InsertParagraph(string.Empty);
 
-        public Paragraph InsertParagraph(string text) => InsertParagraph(text, false, new Formatting());
+        public Paragraph InsertParagraph(string text) => InsertParagraph(text, false);
 
-        public Paragraph InsertParagraph(string text, bool trackChanges) => InsertParagraph(text, trackChanges, new Formatting());
+        public Paragraph InsertParagraph(string text, bool trackChanges) => InsertParagraph(text, trackChanges, null);
 
-        public Paragraph InsertParagraph(int index, string text, bool trackChanges) => InsertParagraph(index, text, trackChanges, new Formatting());
-
+        public Paragraph InsertParagraph(int index, string text, bool trackChanges) => InsertParagraph(index, text, trackChanges, null);
         
         public Paragraph InsertParagraph(string text, bool trackChanges, Formatting formatting)
         {
             if (text == null)
                 throw new ArgumentNullException(nameof(text));
-            if (formatting == null)
-                throw new ArgumentNullException(nameof(formatting));
 
             var newParagraph = new XElement(DocxNamespace.Main + "p",
-                                        new XElement(DocxNamespace.Main + "pPr"),
-                                            HelperFunctions.FormatInput(text, formatting.Xml));
+                                            HelperFunctions.FormatInput(text, formatting?.Xml));
 
             if (trackChanges)
             {

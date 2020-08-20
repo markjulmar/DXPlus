@@ -546,9 +546,10 @@ namespace DXPlus
                 ? new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES   \* MERGEFORMAT ")
                 : new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES  \* ROMAN  \* MERGEFORMAT "));
 
-            var content = XElement.Parse
-            (
-             @"<w:r w:rsidR='001D0226' xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
+            var rsid = Document.EditingSessionId;
+
+            var content = XElement.Parse(
+             $@"<w:r w:rsidR='{rsid}' xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
                    <w:rPr>
                        <w:noProof />
                    </w:rPr>
@@ -572,9 +573,10 @@ namespace DXPlus
                 ? new XAttribute(DocxNamespace.Main + "instr", @" PAGE   \* MERGEFORMAT ")
                 : new XAttribute(DocxNamespace.Main + "instr", @" PAGE  \* ROMAN  \* MERGEFORMAT "));
 
-            var content = XElement.Parse
-            (
-             @"<w:r w:rsidR='001D0226' xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
+            var rsid = Document.EditingSessionId;
+
+            var content = XElement.Parse(
+             $@"<w:r w:rsidR='{rsid}' xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
                    <w:rPr>
                        <w:noProof />
                    </w:rPr>
@@ -904,8 +906,9 @@ namespace DXPlus
                 ? new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES   \* MERGEFORMAT ")
                 : new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES  \* ROMAN  \* MERGEFORMAT "));
 
+            var rsid = Document.EditingSessionId;
             var content = XElement.Parse(
-             @"<w:r w:rsidR='001D0226' xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
+             $@"<w:r w:rsidR='{rsid}' xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
                    <w:rPr>
                        <w:noProof />
                    </w:rPr>
@@ -942,8 +945,9 @@ namespace DXPlus
                 ? new XAttribute(DocxNamespace.Main + "instr", @" PAGE   \* MERGEFORMAT ")
                 : new XAttribute(DocxNamespace.Main + "instr", @" PAGE  \* ROMAN  \* MERGEFORMAT "));
 
+            var rsid = Document.EditingSessionId;
             var content = XElement.Parse(
-             @"<w:r w:rsidR='001D0226' xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
+             $@"<w:r w:rsidR='{rsid}' xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
                    <w:rPr>
                        <w:noProof />
                    </w:rPr>

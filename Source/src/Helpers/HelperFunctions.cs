@@ -209,6 +209,11 @@ namespace DXPlus.Helpers
             };
         }
 
+        /// <summary>
+        /// Turn a Word (w:t) element into text.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
         internal static string ToText(XElement e)
         {
             switch (e.Name.LocalName)
@@ -227,7 +232,7 @@ namespace DXPlus.Helpers
                         if (e.Parent?.Name.LocalName == "r")
                         {
                             var caps = e.Parent.FirstLocalNameDescendant("rPr")?
-                                                       .FirstLocalNameDescendant("caps");
+                                               .FirstLocalNameDescendant("caps");
                             if (caps != null)
                                 return e.Value.ToUpper();
                         }
@@ -238,6 +243,11 @@ namespace DXPlus.Helpers
             }
         }
 
+        /// <summary>
+        /// Clone an XElement into a new object
+        /// </summary>
+        /// <param name="element"></param>
+        /// <returns></returns>
         internal static XElement CloneElement(XElement element)
         {
             return new XElement(
@@ -247,73 +257,37 @@ namespace DXPlus.Helpers
             );
         }
 
-        internal static PackagePart CreateOrGetSettingsPart(Package package)
+        /// <summary>
+        /// Create the /word/settings.xml document
+        /// </summary>
+        /// <param name="package">Package owner</param>
+        /// <param name="rsid">Initial document revision id</param>
+        internal static void AddDefaultSettingsPart(Package package, string rsid)
         {
-            PackagePart settingsPart;
+            if (package is null)
+                throw new ArgumentNullException(nameof(package));
+            if (string.IsNullOrEmpty(rsid))
+                throw new ArgumentException($"'{nameof(rsid)}' cannot be null or empty", nameof(rsid));
+            if (package.PartExists(DocxSections.SettingsUri))
+                throw new InvalidOperationException("Settings.xml section already exists.");
 
-            if (!package.PartExists(DocxSections.SettingsUri))
-            {
-                settingsPart = package.CreatePart(DocxSections.SettingsUri, DocxContentType.Settings, CompressionOption.Maximum);
+            // Add the settings package part and document
+            var settingsPart = package.CreatePart(DocxSections.SettingsUri, DocxContentType.Settings, CompressionOption.Maximum);
+            var settings = Resources.SettingsXml(rsid);
 
-                var mainDocumentPart = package.GetParts().Single(p =>
-                       p.ContentType.Equals(DocxContentType.Document, StringComparison.CurrentCultureIgnoreCase)
-                    || p.ContentType.Equals(DocxContentType.Template, StringComparison.CurrentCultureIgnoreCase));
+            // Set the correct language
+            settings.Root.Element(DocxNamespace.Main + "themeFontLang")
+                         .SetAttributeValue(DocxNamespace.Main + "val", CultureInfo.CurrentCulture);
 
-                mainDocumentPart.CreateRelationship(DocxSections.SettingsUri, TargetMode.Internal, $"{DocxNamespace.RelatedDoc.NamespaceName}/settings");
+            // Save the settings document.
+            settingsPart.Save(settings);
 
-                var settings = XDocument.Parse
-                (@"<?xml version='1.0' encoding='utf-8' standalone='yes'?>
-                <w:settings xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:r='http://schemas.openxmlformats.org/officeDocument/2006/relationships' xmlns:m='http://schemas.openxmlformats.org/officeDocument/2006/math' xmlns:v='urn:schemas-microsoft-com:vml' xmlns:w10='urn:schemas-microsoft-com:office:word' xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main' xmlns:sl='http://schemas.openxmlformats.org/schemaLibrary/2006/main'>
-                  <w:zoom w:percent='100' />
-                  <w:defaultTabStop w:val='720' />
-                  <w:characterSpacingControl w:val='doNotCompress' />
-                  <w:compat />
-                  <w:rsids>
-                    <w:rsidRoot w:val='00217F62' />
-                    <w:rsid w:val='001915A3' />
-                    <w:rsid w:val='00217F62' />
-                    <w:rsid w:val='00A906D8' />
-                    <w:rsid w:val='00AB5A74' />
-                    <w:rsid w:val='00F071AE' />
-                  </w:rsids>
-                  <m:mathPr>
-                    <m:mathFont m:val='Cambria Math' />
-                    <m:brkBin m:val='before' />
-                    <m:brkBinSub m:val='--' />
-                    <m:smallFrac m:val='off' />
-                    <m:dispDef />
-                    <m:lMargin m:val='0' />
-                    <m:rMargin m:val='0' />
-                    <m:defJc m:val='centerGroup' />
-                    <m:wrapIndent m:val='1440' />
-                    <m:intLim m:val='subSup' />
-                    <m:naryLim m:val='undOvr' />
-                  </m:mathPr>
-                  <w:themeFontLang w:val='en-IE' w:bidi='ar-SA' />
-                  <w:clrSchemeMapping w:bg1='light1' w:t1='dark1' w:bg2='light2' w:t2='dark2' w:accent1='accent1' w:accent2='accent2' w:accent3='accent3' w:accent4='accent4' w:accent5='accent5' w:accent6='accent6' w:hyperlink='hyperlink' w:followedHyperlink='followedHyperlink' />
-                  <w:shapeDefaults>
-                    <o:shapedefaults v:ext='edit' spidmax='2050' />
-                    <o:shapelayout v:ext='edit'>
-                      <o:idmap v:ext='edit' data='1' />
-                    </o:shapelayout>
-                  </w:shapeDefaults>
-                  <w:decimalSymbol w:val='.' />
-                  <w:listSeparator w:val=',' />
-                </w:settings>"
-                );
+            // Add the relationship to the main doc
+            var mainDocumentPart = package.GetParts().Single(p =>
+                    p.ContentType.Equals(DocxContentType.Document, StringComparison.CurrentCultureIgnoreCase)
+                 || p.ContentType.Equals(DocxContentType.Template, StringComparison.CurrentCultureIgnoreCase));
 
-                settings.Root?.Element(DocxNamespace.Main + "themeFontLang")?.SetAttributeValue(DocxNamespace.Main + "val", CultureInfo.CurrentCulture);
-
-                // Save the settings document.
-                using TextWriter tw = new StreamWriter(settingsPart.GetStream());
-                settings.Save(tw);
-            }
-            else
-            {
-                settingsPart = package.GetPart(DocxSections.SettingsUri);
-            }
-
-            return settingsPart;
+            mainDocumentPart.CreateRelationship(DocxSections.SettingsUri, TargetMode.Internal, $"{DocxNamespace.RelatedDoc.NamespaceName}/settings");
         }
 
         /// <summary>
@@ -327,8 +301,8 @@ namespace DXPlus.Helpers
             if (package.PartExists(DocxSections.StylesUri))
                 throw new InvalidOperationException("Root style collection already exists.");
 
-            var wordStyles = package.CreatePart(DocxSections.StylesUri, DocxContentType.Styles, CompressionOption.Maximum);
-            var stylesDoc = Resources.DefaultStylesXml;
+            var stylesPart = package.CreatePart(DocxSections.StylesUri, DocxContentType.Styles, CompressionOption.Maximum);
+            var stylesDoc = Resources.DefaultStylesXml();
 
             // Set the run default language to be the current culture.
             stylesDoc.Root.Element(DocxNamespace.Main + "docDefaults")
@@ -338,14 +312,14 @@ namespace DXPlus.Helpers
                           .SetAttributeValue(DocxNamespace.Main + "val", CultureInfo.CurrentCulture);
 
             // Save /word/styles.xml
-            wordStyles.Save(stylesDoc);
+            stylesPart.Save(stylesDoc);
 
+            // Add the relationship to the main doc
             var mainDocumentPart = package.GetParts().Single(p =>
-                p.ContentType.Equals(DocxContentType.Document, StringComparison.CurrentCultureIgnoreCase)
-                || p.ContentType.Equals(DocxContentType.Template, StringComparison.CurrentCultureIgnoreCase)
-            );
+                    p.ContentType.Equals(DocxContentType.Document, StringComparison.CurrentCultureIgnoreCase)
+                 || p.ContentType.Equals(DocxContentType.Template, StringComparison.CurrentCultureIgnoreCase));
 
-            mainDocumentPart.CreateRelationship(wordStyles.Uri, TargetMode.Internal, $"{DocxNamespace.RelatedDoc.NamespaceName}/styles");
+            mainDocumentPart.CreateRelationship(stylesPart.Uri, TargetMode.Internal, $"{DocxNamespace.RelatedDoc.NamespaceName}/styles");
             return stylesDoc;
         }
 
@@ -499,6 +473,13 @@ namespace DXPlus.Helpers
             }
 
             throw new ArgumentOutOfRangeException(nameof(index));
+        }
+
+        internal static string GenLongHexNumber()
+        {
+            var data = new byte[3];
+            new Random().NextBytes(data);
+            return "00" + BitConverter.ToString(data).Replace("-", "");
         }
 
         internal static List<XElement> FormatInput(string text, XElement rPr)

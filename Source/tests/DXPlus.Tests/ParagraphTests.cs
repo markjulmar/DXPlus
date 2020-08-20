@@ -89,5 +89,27 @@ namespace DXPlus.Tests
             Assert.Equal("link", doc.Hyperlinks[0].Text);
             Assert.Equal(microsoftUrl, doc.Hyperlinks[0].Uri);
         }
+
+        [Fact]
+        public void CheckHeaders()
+        {
+            using var doc = DocX.Create(Filename);
+            doc.InsertParagraph("Test");
+            doc.InsertSectionPageBreak();
+            doc.InsertParagraph("Second page.");
+
+            Assert.NotNull(doc.Headers);
+            Assert.Null(doc.Headers.Even);
+            Assert.Null(doc.Headers.Odd);
+            Assert.Null(doc.Headers.First);
+
+            doc.AddHeaders();
+            Assert.NotNull(doc.Headers.Even);
+            Assert.NotNull(doc.Headers.Odd);
+            Assert.NotNull(doc.Headers.First);
+
+            doc.Headers.First.InsertParagraph("This is the first page header");
+            doc.SaveAs(@"/users/mark/Desktop/test.docx");
+        }
     }
 }

@@ -17,17 +17,17 @@
   <w:sdtContent>
     <w:p>
       <w:pPr>
-        <w:pStyle w:val='{0}'/>
+        <w:pStyle w:val='{headerStyle}'/>
       </w:pPr>
       <w:r>
-        <w:t>{1}</w:t>
+        <w:t>{title}</w:t>
       </w:r>
     </w:p>
     <w:p>
       <w:pPr>
         <w:pStyle w:val='TOC1'/>
         <w:tabs>
-          <w:tab w:val='right' w:leader='dot' w:pos='{2}'/>
+          <w:tab w:val='right' w:leader='dot' w:pos='{rightTabPos}'/>
         </w:tabs>
         <w:rPr>
           <w:noProof/>
@@ -37,7 +37,7 @@
         <w:fldChar w:fldCharType='begin' w:dirty='true'/>
       </w:r>
       <w:r>
-        <w:instrText xml:space='preserve'> {3} </w:instrText>
+        <w:instrText xml:space='preserve'> {switches} </w:instrText>
       </w:r>
       <w:r>
         <w:fldChar w:fldCharType='separate'/>

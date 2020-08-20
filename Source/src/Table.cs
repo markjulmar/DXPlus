@@ -208,7 +208,7 @@ namespace DXPlus
 
                 if (tableStyle == null)
                 {
-                    var externalStyleDoc = Resources.DefaultTableStyles;
+                    var externalStyleDoc = Resources.DefaultTableStyles();
                     var styleElement = (
                         from e in externalStyleDoc.Descendants()
                         let styleId = e.Attribute(DocxNamespace.Main + "styleId")

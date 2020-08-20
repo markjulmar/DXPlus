@@ -131,8 +131,8 @@ namespace DXPlus
             int abstractNumId = GetMaxAbstractNumId() + 1;
             var listTemplate = listType switch
             {
-                ListItemType.Bulleted => Resources.DefaultBulletNumberingXml,
-                ListItemType.Numbered => Resources.DefaultDecimalNumberingXml,
+                ListItemType.Bulleted => Resources.DefaultBulletNumberingXml(),
+                ListItemType.Numbered => Resources.DefaultDecimalNumberingXml(),
                 _ => throw new InvalidOperationException($"Unable to deal with ListItemType: {listType}."),
             };
 
