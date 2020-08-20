@@ -66,12 +66,12 @@ namespace DXPlus
 		/// <summary>
 		/// Editing session id for this session.
 		/// </summary>
-        public string EditingSessionId => editingSession ??= HelperFunctions.GenLongHexNumber();
+		public string EditingSessionId => editingSession ??= HelperFunctions.GenLongHexNumber();
 
-        /// <summary>
-        /// Retrieve all bookmarks
-        /// </summary>
-        public BookmarkCollection Bookmarks => new BookmarkCollection(Paragraphs.SelectMany(p => p.GetBookmarks()));
+		/// <summary>
+		/// Retrieve all bookmarks
+		/// </summary>
+		public BookmarkCollection Bookmarks => new BookmarkCollection(Paragraphs.SelectMany(p => p.GetBookmarks()));
 
 		///<summary>
 		/// Returns the list of document core properties with corresponding values.
@@ -1576,11 +1576,11 @@ namespace DXPlus
 					if (firstRun != null)
 					{
 						e.Add(new XElement(firstRun.Name,
-                                firstRun.Attributes(),
-                                rPr,
+								firstRun.Attributes(),
+								rPr,
 								new XElement(DocxNamespace.Main + "t", value).PreserveSpace()
-                            )
-                        );
+							)
+						);
 					}
 				}
 			}
@@ -1601,11 +1601,11 @@ namespace DXPlus
 							if (firstRun != null)
 							{
 								e.Add(new XElement(firstRun.Name, 
-                                        firstRun.Attributes(), 
-                                        firstRun.GetRunProps(false), 
+										firstRun.Attributes(), 
+										firstRun.GetRunProps(false), 
 										new XElement(DocxNamespace.Main + "t", value).PreserveSpace()
-                                    )
-                                );
+									)
+								);
 							}
 						}
 					}
@@ -1723,11 +1723,11 @@ namespace DXPlus
 						e.RemoveNodes();
 
 						e.Add(new XElement(firstRun.Name, 
-                                firstRun.Attributes(), 
-                                rPr, 
+								firstRun.Attributes(), 
+								rPr, 
 								new XElement(DocxNamespace.Main + "t", value).PreserveSpace()
-                            )
-                        );
+							)
+						);
 					}
 				}
 			}

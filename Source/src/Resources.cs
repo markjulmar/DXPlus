@@ -21,11 +21,11 @@ namespace DXPlus
         public static XElement TocHyperLinkStyleBase(string headerStyle, string name)
                 => GetElement("DXPlus.Resources.TocHyperLinkStyleBase.xml");
 
-        public static XDocument NumberingXml() => GetDocument("DXPlus.Resources.numbering.xml.gz");
-        public static XDocument DefaultStylesXml() => GetDocument("DXPlus.Resources.default_styles.xml.gz");
-        public static XDocument DefaultBulletNumberingXml() => GetDocument("DXPlus.Resources.numbering.default_bullet_abstract.xml.gz");
-        public static XDocument DefaultDecimalNumberingXml() => GetDocument("DXPlus.Resources.numbering.default_decimal_abstract.xml.gz");
-        public static XDocument DefaultTableStyles() => GetDocument("DXPlus.Resources.styles.xml.gz");
+        public static XDocument NumberingXml() => GetDocument("DXPlus.Resources.numbering.xml");
+        public static XDocument DefaultStylesXml() => GetDocument("DXPlus.Resources.default_styles.xml");
+        public static XDocument DefaultBulletNumberingXml() => GetDocument("DXPlus.Resources.numbering.default_bullet_abstract.xml");
+        public static XDocument DefaultDecimalNumberingXml() => GetDocument("DXPlus.Resources.numbering.default_decimal_abstract.xml");
+        public static XDocument DefaultTableStyles() => GetDocument("DXPlus.Resources.styles.xml");
         public static XDocument SettingsXml(string rsid) => GetDocument("DXPlus.Resources.settings.xml", new { rsid });
 
         static XDocument GetDocument(string resourceName, object tokens = null) => XDocument.Parse(GetText(resourceName, tokens));

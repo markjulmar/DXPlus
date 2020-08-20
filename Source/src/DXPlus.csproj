@@ -5,7 +5,12 @@
     <RootNamespace>DXPlus</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Resources\default_styles.xml" />
+    <None Remove="Resources\numbering.default_bullet_abstract.xml" />
+    <None Remove="Resources\numbering.default_decimal_abstract.xml" />
+    <None Remove="Resources\numbering.xml" />
     <None Remove="Resources\numbering.xml.gz" />
+    <None Remove="Resources\styles.xml" />
     <None Remove="Resources\styles.xml.gz" />
     <None Remove="Resources\default_styles.xml.gz" />
     <None Remove="Resources\numbering.default_decimal_abstract.xml.gz" />
@@ -17,7 +22,12 @@
     <None Remove="Resources\settings.xml" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Resources\default_styles.xml" />
+    <EmbeddedResource Include="Resources\numbering.default_bullet_abstract.xml" />
+    <EmbeddedResource Include="Resources\numbering.default_decimal_abstract.xml" />
+    <EmbeddedResource Include="Resources\numbering.xml" />
     <EmbeddedResource Include="Resources\numbering.xml.gz" />
+    <EmbeddedResource Include="Resources\styles.xml" />
     <EmbeddedResource Include="Resources\styles.xml.gz" />
     <EmbeddedResource Include="Resources\default_styles.xml.gz" />
     <EmbeddedResource Include="Resources\numbering.default_decimal_abstract.xml.gz" />

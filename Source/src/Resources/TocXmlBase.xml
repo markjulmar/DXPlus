@@ -1,5 +1,13 @@
 ﻿<w:sdt xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'>
   <w:sdtPr>
+    <w:rPr>
+      <w:rFonts w:asciiTheme="minorHAnsi" w:cstheme="minorBidi" w:eastAsiaTheme="minorHAnsi" w:hAnsiTheme="minorHAnsi"/>
+      <w:b w:val="0"/>
+      <w:bCs w:val="0"/>
+      <w:color w:val="auto"/>
+      <w:sz w:val="24"/>
+      <w:szCs w:val="24"/>
+    </w:rPr>
     <w:docPartObj>
       <w:docPartGallery w:val='Table of Contents'/>
       <w:docPartUnique/>
@@ -30,16 +38,29 @@
           <w:tab w:val='right' w:leader='dot' w:pos='{rightTabPos}'/>
         </w:tabs>
         <w:rPr>
+          <w:rFonts w:cstheme="minorBidi" w:eastAsiaTheme="minorEastAsia"/>
+          <w:b w:val="0"/>
+          <w:bCs w:val="0"/>
+          <w:i w:val="0"/>
+          <w:iCs w:val="0"/>
           <w:noProof/>
         </w:rPr>
       </w:pPr>
       <w:r>
+        <w:rPr>
+          <w:b w:val="0"/>
+          <w:bCs w:val="0"/>
+        </w:rPr>
         <w:fldChar w:fldCharType='begin' w:dirty='true'/>
       </w:r>
       <w:r>
-        <w:instrText xml:space='preserve'> {switches} </w:instrText>
+        <w:instrText xml:space='preserve'>{switches} </w:instrText>
       </w:r>
       <w:r>
+        <w:rPr>
+          <w:b w:val="0"/>
+          <w:bCs w:val="0"/>
+        </w:rPr>
         <w:fldChar w:fldCharType='separate'/>
       </w:r>
     </w:p>
