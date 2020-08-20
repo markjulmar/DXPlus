@@ -17,32 +17,32 @@ namespace TestDXPlus
             Setup("docs");
 
             HelloWorld();
-            //HighlightWords();
-            //HelloWorldAdvancedFormatting();
-            //HelloWorldProtectedDocument();
-            //HelloWorldAddPictureToWord();
-            //RightToLeft();
-            //Indentation();
-            //HeadersAndFooters();
-            //HyperlinksInDocument();
-            //AddList();
-            //Equations();
-            //Bookmarks();
-            //BookmarksReplaceTextOfBookmarkKeepingFormat();
-            //BarChart();
-            //PieChart();
-            //LineChart();
-            //Chart3D();
-            //DocumentMargins();
-            //CreateTableWithTextDirection();
-            //AddToc();
-            //AddTocByReference();
-            //TablesDocument();
-            //DocumentsWithListsFontChange();
-            //DocumentHeading();
-            //LargeTable();
-            //ProgrammaticallyManipulateImbeddedImage();
-            //CountNumberOfParagraphs();
+            HighlightWords();
+            HelloWorldAdvancedFormatting();
+            HelloWorldProtectedDocument();
+            HelloWorldAddPictureToWord();
+            RightToLeft();
+            Indentation();
+            HeadersAndFooters();
+            HyperlinksInDocument();
+            AddList();
+            Equations();
+            Bookmarks();
+            BookmarksReplaceTextOfBookmarkKeepingFormat();
+            BarChart();
+            PieChart();
+            LineChart();
+            Chart3D();
+            DocumentMargins();
+            CreateTableWithTextDirection();
+            AddToc();
+            AddTocByReference();
+            TablesDocument();
+            DocumentsWithListsFontChange();
+            DocumentHeading();
+            LargeTable();
+            ProgrammaticallyManipulateImbeddedImage();
+            CountNumberOfParagraphs();
         }
 
         private static void CountNumberOfParagraphs()

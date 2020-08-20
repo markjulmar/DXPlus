@@ -5,9 +5,8 @@
     <RootNamespace>DXPlus</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="Resources\default_styles.xml" />
-    <None Remove="Resources\numbering.default_bullet_abstract.xml" />
-    <None Remove="Resources\numbering.default_decimal_abstract.xml" />
+    <None Remove="Resources\numbering.bullets.xml" />
+    <None Remove="Resources\numbering.decimal.xml" />
     <None Remove="Resources\numbering.xml" />
     <None Remove="Resources\numbering.xml.gz" />
     <None Remove="Resources\styles.xml" />
@@ -15,6 +14,7 @@
     <None Remove="Resources\default_styles.xml.gz" />
     <None Remove="Resources\numbering.default_decimal_abstract.xml.gz" />
     <None Remove="Resources\numbering.default_bullet_abstract.xml.gz" />
+    <None Remove="Resources\table_styles.xml" />
     <None Remove="Resources\TocElementStyleBase.xml" />
     <None Remove="Resources\TocHeadingStyleBase.xml" />
     <None Remove="Resources\TocHyperLinkStyleBase.xml" />
@@ -22,16 +22,11 @@
     <None Remove="Resources\settings.xml" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\default_styles.xml" />
-    <EmbeddedResource Include="Resources\numbering.default_bullet_abstract.xml" />
-    <EmbeddedResource Include="Resources\numbering.default_decimal_abstract.xml" />
-    <EmbeddedResource Include="Resources\numbering.xml" />
-    <EmbeddedResource Include="Resources\numbering.xml.gz" />
     <EmbeddedResource Include="Resources\styles.xml" />
-    <EmbeddedResource Include="Resources\styles.xml.gz" />
-    <EmbeddedResource Include="Resources\default_styles.xml.gz" />
-    <EmbeddedResource Include="Resources\numbering.default_decimal_abstract.xml.gz" />
-    <EmbeddedResource Include="Resources\numbering.default_bullet_abstract.xml.gz" />
+    <EmbeddedResource Include="Resources\numbering.bullets.xml" />
+    <EmbeddedResource Include="Resources\numbering.decimal.xml" />
+    <EmbeddedResource Include="Resources\numbering.xml" />
+    <EmbeddedResource Include="Resources\table_styles.xml" />
     <EmbeddedResource Include="Resources\TocElementStyleBase.xml" />
     <EmbeddedResource Include="Resources\TocHeadingStyleBase.xml" />
     <EmbeddedResource Include="Resources\TocXmlBase.xml" />
