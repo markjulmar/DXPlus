@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Data;
 using System.Drawing;
 using System.Globalization;
 using System.IO.Packaging;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using DXPlus.Helpers;
@@ -142,58 +144,6 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Returns a list of Hyperlinks in this Paragraph.
-        /// </summary>
-        public List<Hyperlink> Hyperlinks
-        {
-            get
-            {
-                var hyperlinks = new List<Hyperlink>();
-
-                foreach (var he in Xml.Descendants().Where(h => h.Name.LocalName == "hyperlink" || h.Name.LocalName == "instrText").ToList())
-                {
-                    if (he.Name.LocalName == "hyperlink")
-                    {
-                        hyperlinks.Add(new Hyperlink(Document, he, PackagePart));
-                    }
-                    else
-                    {
-                        // Find the parent run, no matter how deeply nested we are.
-                        var e = he;
-                        while (e != null && e.Name.LocalName != "r")
-                        {
-                            e = e.Parent;
-                        }
-
-                        if (e == null)
-                            throw new Exception("Failed to locate the parent in a run.");
-
-                        // Take every element until we reach w:fldCharType="end"
-                        var hyperLinkRuns = new List<XElement>();
-                        foreach (var run in e.ElementsAfterSelf(DocxNamespace.Main + "r"))
-                        {
-                            // Add this run to the list.
-                            hyperLinkRuns.Add(run);
-
-                            var fldChar = run.Descendants(DocxNamespace.Main + "fldChar").SingleOrDefault();
-                            if (fldChar != null)
-                            {
-                                var fldCharType = fldChar.Attribute(DocxNamespace.Main + "fldCharType");
-                                if (fldCharType?.Value.Equals("end", StringComparison.CurrentCultureIgnoreCase) == true)
-                                {
-                                    hyperlinks.Add(new Hyperlink(Document, he, hyperLinkRuns) { PackagePart = PackagePart });
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                return hyperlinks;
-            }
-        }
-
-        /// <summary>
         /// Set the left indentation in cm for this Paragraph.
         /// </summary>
         public double IndentationLeft
@@ -276,32 +226,9 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// If this element is a list item, get the indentation level of the list item.
-        /// </summary>
-        public int? IndentLevel
-        {
-            get
-            {
-                if (IsListItem)
-                {
-                    string value = ParagraphNumberProperties.FirstLocalNameDescendant("ilvl").GetVal();
-                    if (value != null && int.TryParse(value, out int result))
-                        return result;
-                }
-
-                return null;
-            }
-        }
-
-        /// <summary>
         /// True to keep with the next element on the page.
         /// </summary>
         public bool ShouldKeepWithNext => ParaElement().Element(DocxNamespace.Main + "keepNext") != null;
-
-        /// <summary>
-        /// Determine if this paragraph is a list element.
-        /// </summary>
-        public bool IsListItem => ParagraphNumberProperties != null;
 
         /// <summary>
         /// Get or set the paragraph line spacing
@@ -346,30 +273,6 @@ namespace DXPlus
             }
 
             set => SpacingBefore(value);
-        }
-
-        /// <summary>
-        /// Determine if the list element is a numbered list of bulleted list element
-        /// </summary>
-        public ListItemType ListItemType { get; set; }
-
-        private XElement paragraphNumberProperties;
-
-        /// <summary>
-        /// Fetch the paragraph number properties for a list element.
-        /// </summary>
-        public XElement ParagraphNumberProperties
-        {
-            get
-            {
-                if (paragraphNumberProperties == null)
-                {
-                    var node = Xml.FirstLocalNameDescendant("numPr");
-                    paragraphNumberProperties = node.FirstLocalNameDescendant("numId").GetVal() == "0" ? null : node;
-                }
-
-                return paragraphNumberProperties;
-            }
         }
 
         /// <summary>
@@ -489,27 +392,75 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Append a hyperlink to a Paragraph.
+        /// This function inserts a hyperlink into a Paragraph at a specified character index.
         /// </summary>
-        /// <param name="h">The hyperlink to append.</param>
-        /// <returns>The Paragraph with the hyperlink appended.</returns>
-        public Paragraph AppendHyperlink(Hyperlink h)
+        /// <param name="hyperlink">The hyperlink to insert.</param>
+        /// <param name="charIndex">The character index in the owning paragraph to insert at.</param>
+        /// <returns>The Paragraph with the Hyperlink inserted at the specified index.</returns>
+        public Paragraph InsertHyperlink(Hyperlink hyperlink, int charIndex = 0)
         {
-            // Convert the path of this mainPart to its equivalent rels file path.
-            string path = PackagePart.Uri.OriginalString.Replace("/word/", "");
-            Uri relationshipPath = new Uri("/word/_rels/" + path + ".rels", UriKind.Relative);
+            // Set the package and document relationship.
+            hyperlink.Document = Document;
+            hyperlink.PackagePart = PackagePart;
 
             // Check to see if the rels file exists and create it if not.
-            if (!Document.Package.PartExists(relationshipPath))
-            {
-                HelperFunctions.CreateRelsPackagePart(Document, relationshipPath);
-            }
+            _ = HelperFunctions.EnsureRelsPathExists(this);
 
             // Check to see if a rel for this Hyperlink exists, create it if not.
-            string id = GetOrCreateRelationship(h);
-            Xml.Add(h.Xml);
-            Xml.Elements().Last().SetAttributeValue(DocxNamespace.RelatedDoc + "id", id);
+            _ = hyperlink.GetOrCreateRelationship();
 
+            if (charIndex == 0)
+            {
+                // Add this hyperlink as the last element.
+                Xml.AddFirst(hyperlink.Xml);
+            }
+            else
+            {
+                // Get the first run effected by this Insert
+                Run run = GetFirstRunEffectedByEdit(charIndex);
+                if (run == null)
+                {
+                    // Add this hyperlink as the last element.
+                    Xml.Add(hyperlink.Xml);
+                }
+                else
+                {
+                    // Split this run at the point you want to insert
+                    var splitRun = Run.SplitRun(run, charIndex);
+
+                    // Replace the original run.
+                    run.Xml.ReplaceWith(splitRun[0], hyperlink.Xml, splitRun[1]);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Returns a list of Hyperlinks in this Paragraph.
+        /// </summary>
+        public List<Hyperlink> Hyperlinks => Hyperlink.Enumerate(this).ToList();
+
+        /// <summary>
+        /// Append a hyperlink to a Paragraph.
+        /// </summary>
+        /// <param name="hyperlink">The hyperlink to append.</param>
+        /// <returns>The Paragraph with the hyperlink appended.</returns>
+        public Paragraph Append(Hyperlink hyperlink)
+        {
+            // Ensure the owner document has the hyperlink styles.
+            Document.AddHyperlinkStyleIfNotPresent();
+
+            // Set the document/package for the hyperlink to be owned by the document
+            hyperlink.Document = Document;
+            hyperlink.PackagePart = Document.PackagePart;
+
+            // Check to see if the rels file exists and create it if not.
+            _ = HelperFunctions.EnsureRelsPathExists(this);
+
+            // Check to see if a rel for this Hyperlink exists, create it if not.
+            _ = hyperlink.GetOrCreateRelationship();
+            Xml.Add(hyperlink.Xml);
             Runs = Xml.Elements().Last().Elements(DocxNamespace.Main + "r").ToList();
 
             return this;
@@ -546,7 +497,7 @@ namespace DXPlus
                 ? new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES   \* MERGEFORMAT ")
                 : new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES  \* ROMAN  \* MERGEFORMAT "));
 
-            var rsid = Document.EditingSessionId;
+            var rsid = Document.RevisionId;
 
             var content = XElement.Parse(
              $@"<w:r w:rsidR='{rsid}' xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
@@ -573,7 +524,7 @@ namespace DXPlus
                 ? new XAttribute(DocxNamespace.Main + "instr", @" PAGE   \* MERGEFORMAT ")
                 : new XAttribute(DocxNamespace.Main + "instr", @" PAGE  \* ROMAN  \* MERGEFORMAT "));
 
-            var rsid = Document.EditingSessionId;
+            var rsid = Document.RevisionId;
 
             var content = XElement.Parse(
              $@"<w:r w:rsidR='{rsid}' xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
@@ -595,24 +546,17 @@ namespace DXPlus
         /// <returns>The Paragraph with the Picture now appended.</returns>
         public Paragraph AppendPicture(Picture p)
         {
-            // Convert the path of this mainPart to its equivalent rels file path.
-            string path = PackagePart.Uri.OriginalString.Replace("/word/", "");
-            Uri relationshipPath = new Uri("/word/_rels/" + path + ".rels", UriKind.Relative);
-
             // Check to see if the rels file exists and create it if not.
-            if (!Document.Package.PartExists(relationshipPath))
-            {
-                HelperFunctions.CreateRelsPackagePart(Document, relationshipPath);
-            }
+            _ = HelperFunctions.EnsureRelsPathExists(this);
 
             // Check to see if a rel for this Picture exists, create it if not.
             string id = GetOrCreateRelationship(p);
 
-            // Add the Picture Xml to the end of the paragragraph Xml.
+            // Add the Picture Xml to the end of the paragraph Xml.
             Xml.Add(p.Xml);
 
             // Extract the attribute id from the Pictures Xml.
-            XAttribute attributeId = Xml.Elements().Last().Descendants()
+            var attributeId = Xml.Elements().Last().Descendants()
                             .Where(e => e.Name.LocalName.Equals("blip"))
                             .Select(e => e.Attribute(DocxNamespace.RelatedDoc + "embed"))
                             .Single();
@@ -829,69 +773,6 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// This function inserts a hyperlink into a Paragraph at a specified character index.
-        /// </summary>
-        /// <param name="h">The hyperlink to insert.</param>
-        /// <param name="index">The index to insert at.</param>
-        /// <returns>The Paragraph with the Hyperlink inserted at the specified index.</returns>
-        public Paragraph InsertHyperlink(Hyperlink h, int index = 0)
-        {
-            // Convert the path of this mainPart to its equivalent rels file path.
-            string path = PackagePart.Uri.OriginalString.Replace("/word/", "");
-            Uri relationshipPath = new Uri($"/word/_rels/{path}.rels", UriKind.Relative);
-
-            // Check to see if the rels file exists and create it if not.
-            if (!Document.Package.PartExists(relationshipPath))
-            {
-                HelperFunctions.CreateRelsPackagePart(Document, relationshipPath);
-            }
-
-            // Check to see if a rel for this Picture exists, create it if not.
-            string id = GetOrCreateRelationship(h);
-
-            XElement hyperlinkElement;
-            if (index == 0)
-            {
-                // Add this hyperlink as the last element.
-                Xml.AddFirst(h.Xml);
-
-                // Extract the picture back out of the DOM.
-                hyperlinkElement = (XElement) Xml.FirstNode;
-            }
-            else
-            {
-                // Get the first run effected by this Insert
-                Run run = GetFirstRunEffectedByEdit(index);
-                if (run == null)
-                {
-                    // Add this hyperlink as the last element.
-                    Xml.Add(h.Xml);
-
-                    // Extract the picture back out of the DOM.
-                    hyperlinkElement = (XElement)Xml.LastNode;
-                }
-                else
-                {
-                    // Split this run at the point you want to insert
-                    var splitRun = Run.SplitRun(run, index);
-
-                    // Replace the original run.
-                    run.Xml.ReplaceWith(splitRun[0], h.Xml, splitRun[1]);
-
-                    // Get the first run effected by this Insert
-                    run = GetFirstRunEffectedByEdit(index);
-
-                    // The picture has to be the next element, extract it back out of the DOM.
-                    hyperlinkElement = (XElement) run.Xml.NextNode;
-                }
-            }
-
-            hyperlinkElement.SetAttributeValue(DocxNamespace.RelatedDoc + "id", id);
-
-            return this;
-        }
-
-        /// <summary>
         /// Insert a PageCount place holder into a Paragraph.
         /// This place holder should only be inserted into a Header or Footer Paragraph.
         /// Word will not automatically update this field if it is inserted into a document level Paragraph.
@@ -906,7 +787,7 @@ namespace DXPlus
                 ? new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES   \* MERGEFORMAT ")
                 : new XAttribute(DocxNamespace.Main + "instr", @" NUMPAGES  \* ROMAN  \* MERGEFORMAT "));
 
-            var rsid = Document.EditingSessionId;
+            var rsid = Document.RevisionId;
             var content = XElement.Parse(
              $@"<w:r w:rsidR='{rsid}' xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
                    <w:rPr>
@@ -945,7 +826,7 @@ namespace DXPlus
                 ? new XAttribute(DocxNamespace.Main + "instr", @" PAGE   \* MERGEFORMAT ")
                 : new XAttribute(DocxNamespace.Main + "instr", @" PAGE  \* ROMAN  \* MERGEFORMAT "));
 
-            var rsid = Document.EditingSessionId;
+            var rsid = Document.RevisionId;
             var content = XElement.Parse(
              $@"<w:r w:rsidR='{rsid}' xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
                    <w:rPr>
@@ -973,29 +854,22 @@ namespace DXPlus
         /// Insert a Picture into a Paragraph at the given text index.
         /// If not index is provided defaults to 0.
         /// </summary>
-        /// <param name="p">The Picture to insert.</param>
+        /// <param name="picture">The Picture to insert.</param>
         /// <param name="index">The text index to insert at.</param>
         /// <returns>The modified Paragraph.</returns>
-        public Paragraph InsertPicture(Picture p, int index = 0)
+        public Paragraph InsertPicture(Picture picture, int index = 0)
         {
-            // Convert the path of this mainPart to its equivalent rels file path.
-            string path = PackagePart.Uri.OriginalString.Replace("/word/", "");
-            Uri relationshipPath = new Uri("/word/_rels/" + path + ".rels", UriKind.Relative);
-
             // Check to see if the rels file exists and create it if not.
-            if (!Document.Package.PartExists(relationshipPath))
-            {
-                HelperFunctions.CreateRelsPackagePart(Document, relationshipPath);
-            }
+            _ = HelperFunctions.EnsureRelsPathExists(this);
 
             // Check to see if a rel for this Picture exists, create it if not.
-            string id = GetOrCreateRelationship(p);
+            string id = GetOrCreateRelationship(picture);
 
             XElement pictureElement;
             if (index == 0)
             {
                 // Add this hyperlink as the last element.
-                Xml.AddFirst(p.Xml);
+                Xml.AddFirst(picture.Xml);
 
                 // Extract the picture back out of the DOM.
                 pictureElement = (XElement)Xml.FirstNode;
@@ -1007,7 +881,7 @@ namespace DXPlus
                 if (run == null)
                 {
                     // Add this picture as the last element.
-                    Xml.Add(p.Xml);
+                    Xml.Add(picture.Xml);
 
                     // Extract the picture back out of the DOM.
                     pictureElement = (XElement)Xml.LastNode;
@@ -1018,7 +892,7 @@ namespace DXPlus
                     XElement[] splitRun = Run.SplitRun(run, index);
 
                     // Replace the original run.
-                    run.Xml.ReplaceWith(splitRun[0], p.Xml, splitRun[1]);
+                    run.Xml.ReplaceWith(splitRun[0], picture.Xml, splitRun[1]);
 
                     // Get the first run effected by this Insert
                     run = GetFirstRunEffectedByEdit(index);
@@ -2047,7 +1921,7 @@ namespace DXPlus
         /// <returns>Relationship id</returns>
         internal string GetOrCreateRelationship(Picture picture)
         {
-            string uri = picture.img.pr.TargetUri.OriginalString;
+            string uri = picture.Image.packageRelationship.TargetUri.OriginalString;
 
             // Search for a relationship with a TargetUri that points at this Image.
             string id = PackagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image")
@@ -2058,7 +1932,7 @@ namespace DXPlus
             if (id == null)
             {
                 // Check to see if a relationship for this Picture exists and create it if not.
-                var pr = PackagePart.CreateRelationship(picture.img.pr.TargetUri, 
+                var pr = PackagePart.CreateRelationship(picture.Image.packageRelationship.TargetUri, 
                     TargetMode.Internal, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image");
                 id = pr.Id;
             }
@@ -2066,31 +1940,6 @@ namespace DXPlus
             return id;
         }
 
-        /// <summary>
-        /// Get or create a relationship link to a hyperlink
-        /// </summary>
-        /// <param name="hyperlink">Hyperlink</param>
-        /// <returns>Relationship id</returns>
-        internal string GetOrCreateRelationship(Hyperlink hyperlink)
-        {
-            string uri = hyperlink.Uri.OriginalString;
-
-            // Search for a relationship with a TargetUri that points at this Image.
-            string id = PackagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink")
-                .Where(r => r.TargetUri.OriginalString == uri)
-                .Select(r => r.Id)
-                .SingleOrDefault();
-
-            if (id == null)
-            {
-                // Check to see if a relationship for this Hyperlink exists and create it if not.
-                var pr = PackagePart.CreateRelationship(hyperlink.Uri, TargetMode.External,
-                    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink");
-                id = pr.Id;
-            }
-
-            return id;
-        }
 
         /// <summary>
         /// Removes a specific hyperlink by index through a recursive search

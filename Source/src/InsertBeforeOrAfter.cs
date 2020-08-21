@@ -11,6 +11,10 @@ namespace DXPlus
     /// </summary>
     public abstract class InsertBeforeOrAfter : DocXElement
     {
+        internal InsertBeforeOrAfter()
+        {
+        }
+
         internal InsertBeforeOrAfter(DocX document, XElement xml) : base(document, xml)
         {
         }

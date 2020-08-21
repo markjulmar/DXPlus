@@ -10,13 +10,13 @@ namespace DXPlus
     public class Image
     {
         private readonly DocX document;
-        internal PackageRelationship pr;
+        internal PackageRelationship packageRelationship;
 
         public Stream GetStream(FileMode mode, FileAccess access)
         {
-            string temp = pr.SourceUri.OriginalString;
+            string temp = packageRelationship.SourceUri.OriginalString;
             string start = temp.Remove(temp.LastIndexOf('/'));
-            string end = pr.TargetUri.OriginalString;
+            string end = packageRelationship.TargetUri.OriginalString;
             string full = start + "/" + end;
 
             return document.Package.GetPart(new Uri(full, UriKind.Relative)).GetStream(mode, access);
@@ -27,11 +27,11 @@ namespace DXPlus
         /// </summary>
         public string Id { get; }
 
-        internal Image(DocX document, PackageRelationship pr)
+        internal Image(DocX document, PackageRelationship packageRelationship)
         {
             this.document = document;
-            this.pr = pr;
-            Id = pr.Id;
+            this.packageRelationship = packageRelationship;
+            Id = packageRelationship.Id;
         }
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace DXPlus
 
         public Picture CreatePicture(int height, int width)
         {
-            Picture picture = Paragraph.CreatePicture(document, Id, string.Empty, string.Empty);
+            var picture = Paragraph.CreatePicture(document, Id, string.Empty, string.Empty);
             picture.Height = height;
             picture.Width = width;
             return picture;
@@ -53,6 +53,6 @@ namespace DXPlus
         ///<summary>
         /// Returns the name of the image file.
         ///</summary>
-        public string FileName => Path.GetFileName(pr.TargetUri.ToString());
+        public string FileName => Path.GetFileName(packageRelationship.TargetUri.ToString());
     }
 }

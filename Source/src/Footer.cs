@@ -11,7 +11,7 @@ namespace DXPlus
 
             set
             {
-                var rsid = Document.EditingSessionId;
+                var rsid = Document.RevisionId;
 
                 XElement e = XElement.Parse
                 ($@"<w:sdt xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'>

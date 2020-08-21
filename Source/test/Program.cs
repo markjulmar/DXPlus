@@ -82,23 +82,34 @@ namespace TestDXPlus
             Enter();
 
             DocX document = DocX.Create("Lists.docx");
-            List numberedList = document.CreateList()
-                                        .AddItem("First List Item.", 0, ListItemType.Numbered, 2)
-                                        .AddItem("First sub list item", 1)
+            List numberedList = new List(ListItemType.Numbered,3)
+                                        .AddItem("First List Item.")
+                                        .AddItem("First sub list item", level: 1)
                                         .AddItem("Second List Item.")
                                         .AddItem("Third list item.")
-                                        .AddItem("Nested item.", 1)
-                                        .AddItem("Second nested item.", 1);
+                                        .AddItem("Nested item.", level: 1)
+                                        .AddItem("Second nested item.", level: 1);
 
-            List bulletedList = document.CreateList()
-                                        .AddItem("First Bulleted Item.", 0, ListItemType.Bulleted)
+            List bulletedList = new List(ListItemType.Bulleted)
+                                        .AddItem("First Bulleted Item.")
                                         .AddItem("Second bullet item")
-                                        .AddItem("Sub bullet item", 1)
-                                        .AddItem("Second sub bullet item", 1)
+                                        .AddItem("Sub bullet item", level: 1)
+                                        .AddItem("Second sub bullet item", level: 1)
                                         .AddItem("Third bullet item");
 
             document.InsertList(numberedList);
             document.InsertList(bulletedList);
+
+
+            foreach (var list in document.Lists)
+            {
+                Console.WriteLine($"{list.ListType} List {list.NumId} starting at {list.StartNumber}");
+                foreach (var item in list.Items)
+                {
+                    Console.WriteLine($"\t{item.IndentLevel}> {item.Paragraph.Text}");
+                }
+            }
+
             document.Save();
         }
 
@@ -308,11 +319,11 @@ namespace TestDXPlus
 
             // created bulleted lists
 
-            List bulletedList = document.CreateList()
-                .AddItem("First Bulleted Item.", 0, ListItemType.Bulleted)
+            var bulletedList = new List(ListItemType.Bulleted)
+                .AddItem("First Bulleted Item.")
                 .AddItem("Second bullet item")
-                .AddItem("Sub bullet item", 1)
-                .AddItem("Second sub bullet item", 1)
+                .AddItem("Sub bullet item", level: 1)
+                .AddItem("Second sub bullet item", level: 1)
                 .AddItem("Third bullet item");
 
 
@@ -334,25 +345,26 @@ namespace TestDXPlus
                 const double fontSize = 15;
 
                 // created numbered lists 
-                List numberedList = document.CreateList()
-                    .AddItem("First List Item.", 0, ListItemType.Numbered, 1)
-                    .AddItem("First sub list item", 1)
+                List numberedList = new List(ListItemType.Numbered)
+                    .AddItem("First List Item.")
+                    .AddItem("First sub list item", level: 1)
                     .AddItem("Second List Item.")
                     .AddItem("Third list item.")
-                    .AddItem("Nested item.", 1)
-                    .AddItem("Second nested item.", 1);
+                    .AddItem("Nested item.", level: 1)
+                    .AddItem("Second nested item.", level: 1);
 
                 // created bulleted lists
-                List bulletedList = document.CreateList()
-                    .AddItem("First Bulleted Item.", 0, ListItemType.Bulleted)
+                List bulletedList = new List(ListItemType.Bulleted)
+                    .AddItem("First Bulleted Item.")
                     .AddItem("Second bullet item")
-                    .AddItem("Sub bullet item", 1)
-                    .AddItem("Second sub bullet item", 1)
+                    .AddItem("Sub bullet item", level: 1)
+                    .AddItem("Second sub bullet item", level: 1)
                     .AddItem("Third bullet item");
 
                 document.InsertList(bulletedList);
                 document.InsertList(numberedList, fontFamily, fontSize);
             }
+            
             document.Save();
         }
 
@@ -634,9 +646,17 @@ namespace TestDXPlus
                     .AppendLine("This line contains a ")
                     .Append("bold ").Bold().Append("word.")
                     .AppendLine()
-                    .AppendLine("And this line has a cool ")
-                    .AppendHyperlink(document.CreateHyperlink("link", new Uri("http://www.microsoft.com")))
+                    .AppendLine("And a ")
+                    .Append(new Hyperlink("link", new Uri("http://www.microsoft.com")))
                     .Append(".");
+
+            // Insert a hyperlink into the paragraph
+            string text = "A final paragraph - ";
+            var p = document.InsertParagraph(text)
+                .AppendLine("With a few lines of text to read.")
+                .AppendLine("And a final line.");
+
+            p.InsertHyperlink(new Hyperlink("second link", new Uri("http://docs.microsoft.com/")), text.Length);
 
             // Save this document.
             document.Save();

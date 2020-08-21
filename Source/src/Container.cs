@@ -50,11 +50,6 @@ namespace DXPlus
                         "tc" => ContainerType.Cell,
                         _ => ContainerType.None,
                     };
-
-                    if (p.IsListItem)
-                    {
-                        GetListItemType(p);
-                    }
                 }
 
                 return paragraphs.AsReadOnly();
@@ -135,45 +130,6 @@ namespace DXPlus
             }
         }
 
-        /// <summary>
-        /// Set the ListItemType property on the passed paragraph based on the List type identified.
-        /// Defaults to numbered if a list is found but the type is not specified
-        /// </summary>
-        /// <param name="p">Paragraph to check</param>
-        private void GetListItemType(Paragraph p)
-        {
-            // <w:p>
-            //   <w:pPr>
-            //     <w:numPr>
-            //       <w:ilvl w:val="0"/>
-            //       <w:numId w:val="5"/>
-            //     </w:numPr>
-            //   </w:pPr>
-            //</w:p>
-
-            string numberingLevel = p.ParagraphNumberProperties.FirstLocalNameDescendant("ilvl").GetVal();
-            string numberDefRef = p.ParagraphNumberProperties.FirstLocalNameDescendant("numId").GetVal();
-
-            // Find the number definition instance.
-            var numNode = Document.numberingDoc.LocalNameDescendants("num")?.FindByAttrVal(DocxNamespace.Main + "numId", numberDefRef);
-            if (numNode != null)
-            {
-                string abstractNumNodeValue = numNode.FirstLocalNameDescendant("abstractNumId").GetVal();
-
-                // Find the abstract numbering definition that defines the style of the numbering section.
-                var abstractNumNode = Document.numberingDoc.LocalNameDescendants("abstractNum")
-                                                   .FindByAttrVal(DocxNamespace.Main + "abstractNumId", abstractNumNodeValue);
-
-                // Get the numbering format.
-                var numberingFormat = abstractNumNode.LocalNameDescendants("lvl")
-                                            .FindByAttrVal(DocxNamespace.Main + "ilvl", numberingLevel)
-                                            .FirstLocalNameDescendant("numFmt");
-
-                p.ListItemType = numberingFormat.TryGetEnumValue<ListItemType>(out ListItemType result)
-                    ? result
-                    : ListItemType.Numbered;
-            }
-        }
 
         /// <summary>
         /// Get all paragraphs in the document recursively.
@@ -218,26 +174,36 @@ namespace DXPlus
             get
             {
                 var lists = new List<List>();
-                var list = Document.CreateListFromXml(Xml);
+                var list = new List();
 
                 foreach (var paragraph in Paragraphs)
                 {
-                    paragraph.PackagePart = PackagePart;
-                    if (paragraph.IsListItem)
+                    if (paragraph.IsListItem())
                     {
                         if (list.CanAddListItem(paragraph))
                         {
+                            if (list.Items.Count == 0)
+                            {
+                                list.ListType = paragraph.GetListItemType();
+                                list.StartNumber = NumberingHelpers.GetStartingNumber(Document, paragraph.GetListNumId(), paragraph.GetListLevel());
+                            }
+
                             list.AddItem(paragraph);
                         }
                         else
                         {
+                            list.Document = Document;
                             lists.Add(list);
-                            list = Document.CreateListFromXml(Xml);
+
+                            list = new List(paragraph.GetListItemType(), 
+                                NumberingHelpers.GetStartingNumber(Document, 
+                                    paragraph.GetListNumId(), paragraph.GetListLevel()));
                             list.AddItem(paragraph);
                         }
                     }
                 }
 
+                list.Document = Document;
                 lists.Add(list);
 
                 return lists;
@@ -645,39 +611,46 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Insert a List into this document. The List's source can be a completely different document.
+        /// Insert a List into this document.
+        /// The List's source can be a completely different document.
         /// </summary>
         /// <param name="list">The List to insert</param>
         /// <returns>The List now associated with this document.</returns>
         public List InsertList(List list)
         {
+            list.Document = Document;
+
             foreach (var item in list.Items)
             {
-                Xml.Add(item.Xml);
+                Xml.Add(item.Paragraph.Xml);
             }
 
             return list;
         }
 
         /// <summary>
-        /// Insert a List with a specific font size into this document. The List's source can be a completely different document.
+        /// Insert a List with a specific font size into this document.
+        /// The List's source can be a completely different document.
         /// </summary>
         /// <param name="list">The List to insert</param>
         /// <param name="fontSize">Font size</param>
         /// <returns>The List now associated with this document.</returns>
         public List InsertList(List list, double fontSize)
         {
+            list.Document = Document;
+
             foreach (var item in list.Items)
             {
-                item.FontSize(fontSize);
-                Xml.Add(item.Xml);
+                item.Paragraph.FontSize(fontSize);
+                Xml.Add(item.Paragraph.Xml);
             }
 
             return list;
         }
 
         /// <summary>
-        /// Insert a List with a specific font size/family into this document. The List's source can be a completely different document.
+        /// Insert a List with a specific font size/family into this document.
+        /// The List's source can be a completely different document.
         /// </summary>
         /// <param name="list">The List to insert</param>
         /// <param name="fontFamily">Font family</param>
@@ -685,11 +658,13 @@ namespace DXPlus
         /// <returns>The List now associated with this document.</returns>
         public List InsertList(List list, System.Drawing.FontFamily fontFamily, double fontSize)
         {
+            list.Document = Document;
+
             foreach (var item in list.Items)
             {
-                item.Font(fontFamily);
-                item.FontSize(fontSize);
-                Xml.Add(item.Xml);
+                item.Paragraph.Font(fontFamily);
+                item.Paragraph.FontSize(fontSize);
+                Xml.Add(item.Paragraph.Xml);
             }
 
             return list;
@@ -703,11 +678,13 @@ namespace DXPlus
         /// <returns>The List now associated with this document.</returns>
         public List InsertList(int index, List list)
         {
+            list.Document = Document;
+
             var p = HelperFunctions.GetFirstParagraphAffectedByInsert(Document, index);
 
             var split = HelperFunctions.SplitParagraph(p, index - p.StartIndex);
             var elements = new List<XElement> { split[0] };
-            elements.AddRange(list.Items.Select(i => new XElement(i.Xml)));
+            elements.AddRange(list.Items.Select(i => new XElement(i.Paragraph.Xml)));
             elements.Add(split[1]);
             p.Xml.ReplaceWith(elements.ToArray<object>());
 

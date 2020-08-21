@@ -82,7 +82,7 @@ namespace DXPlus.Tests
             doc.InsertParagraph("Test");
             doc.InsertParagraph()
                 .AppendLine("This line contains a ")
-                .AppendHyperlink(doc.CreateHyperlink("link", microsoftUrl))
+                .Append(new Hyperlink("link", microsoftUrl))
                 .Append(".");
 
             Assert.Single(doc.Hyperlinks);

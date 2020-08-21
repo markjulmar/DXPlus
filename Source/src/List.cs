@@ -7,105 +7,178 @@ using DXPlus.Helpers;
 namespace DXPlus
 {
     /// <summary>
+    /// This represents a single item in the list.
+    /// </summary>
+    public class ListItem
+    {
+        /// <summary>
+        /// Text
+        /// </summary>
+        public Paragraph Paragraph { get; set; }
+
+        /// <summary>
+        /// Indent level (0 == root)
+        /// </summary>
+        public int IndentLevel
+        {
+            get
+            {
+                string value = Paragraph?.ParagraphNumberProperties().FirstLocalNameDescendant("ilvl").GetVal();
+                return value != null && int.TryParse(value, out int result) ? result : 0;
+            }
+        }
+
+        /// <summary>
+        /// Assigned NumId -- should match owner List
+        /// </summary>
+        public int NumId
+        {
+            get
+            {
+                string numIdVal = Paragraph.ParagraphNumberProperties().Element(DocxNamespace.Main + "numId").GetVal();
+                return numIdVal != null && int.TryParse(numIdVal, out int result) ? result : 0;
+            }
+            set
+            {
+                Paragraph.ParagraphNumberProperties()
+                    .Element(DocxNamespace.Main + "numId")
+                    .SetAttributeValue(DocxNamespace.Main + "val", value);
+            }
+        }
+    }
+
+    /// <summary>
     /// Represents a List in a document.
     /// </summary>
     public class List : InsertBeforeOrAfter
     {
-        internal List(DocX document, XElement xml) : base(document, xml)
-        {
-        }
-
         /// <summary>
-        /// This is a list of paragraphs that will be added to the document
-        /// when the list is inserted into the document.
-        /// The paragraph needs a numPr defined to be in this items collection.
+        /// List of items to add - these will create paragraph objects in the document
+        /// tied to numberId elements in numbering.xml
         /// </summary>
-        public List<Paragraph> Items { get; } = new List<Paragraph>();
+        public List<ListItem> Items { get; } = new List<ListItem>();
 
         /// <summary>
         /// The ListItemType (bullet or numbered) of the list.
         /// </summary>
-        public ListItemType? ListType { get; private set; }
+        public ListItemType ListType { get; internal set; }
 
         /// <summary>
-        /// The numId used to reference the list settings in the numberingDoc.xml
+        /// Start number
+        /// </summary>
+        public int StartNumber { get; set; }
+
+        /// <summary>
+        /// The numId used to reference the list settings in the numbering.xml
         /// </summary>
         public int NumId { get; private set; }
 
         /// <summary>
+        /// Internal constructor when building List from XML
+        /// </summary>
+        internal List()
+        {
+            StartNumber = 1;
+        }
+
+        /// <summary>
+        /// Public constructor
+        /// </summary>
+        public List(ListItemType listType, int startNumber = 1)
+        {
+            if (listType == ListItemType.None)
+                throw new ArgumentException("Cannot use None as the ListType.", nameof(listType));
+
+            ListType = listType;
+            StartNumber = startNumber;
+        }
+
+        /// <summary>
         /// Add an item to the list
         /// </summary>
-        /// <param name="listText">Text</param>
+        /// <param name="text">Text</param>
         /// <param name="level">Level</param>
-        /// <param name="listType">Type</param>
-        /// <param name="startNumber">Starting number</param>
         /// <param name="trackChanges">True to track changes</param>
-        /// <param name="continueNumbering">True to continue numbering</param>
         /// <returns></returns>
-        public List AddItem(string listText, int level = 0, ListItemType listType = ListItemType.Numbered,
-            int? startNumber = null, bool trackChanges = false, bool continueNumbering = false)
+        public List AddItem(string text, int level = 0, bool trackChanges = false)
         {
-            if (startNumber.HasValue && continueNumbering)
-                throw new InvalidOperationException("Cannot specify a start number and at the same time continue numbering from another list");
+            if (text == null) 
+                throw new ArgumentNullException(nameof(text));
 
-            var listToReturn = HelperFunctions.CreateItemInList(this, listText, level, listType, startNumber, trackChanges, continueNumbering);
-            var lastItem = listToReturn.Items.LastOrDefault();
-            if (lastItem != null)
+            var newParagraphSection = new XElement(DocxNamespace.Main + "p",
+                new XElement(DocxNamespace.Main + "pPr",
+                    new XElement(DocxNamespace.Main + "pStyle", new XAttribute(DocxNamespace.Main + "val", "ListParagraph")),
+                    new XElement(DocxNamespace.Main + "numPr",
+                        new XElement(DocxNamespace.Main + "ilvl", new XAttribute(DocxNamespace.Main + "val", level)),
+                        new XElement(DocxNamespace.Main + "numId", new XAttribute(DocxNamespace.Main + "val", 0)))),
+                new XElement(DocxNamespace.Main + "r", new XElement(DocxNamespace.Main + "t", text))
+            );
+
+            if (trackChanges)
             {
-                lastItem.PackagePart = PackagePart;
+                newParagraphSection = HelperFunctions.CreateEdit(EditType.Ins, DateTime.Now, newParagraphSection);
             }
 
-            listToReturn.PackagePart = PackagePart;
+            Items.Add(new ListItem { Paragraph = new Paragraph(null, newParagraphSection, 0, ContainerType.Paragraph) });
 
-            return listToReturn;
+            return this;
         }
 
         /// <summary>
         /// Adds an item to the list.
         /// </summary>
         /// <param name="paragraph"></param>
-        /// <exception cref="InvalidOperationException">
-        /// Throws an InvalidOperationException if the item cannot be added to the list.
-        /// </exception>
-        public void AddItem(Paragraph paragraph)
+        /// <param name="level"></param>
+        public List AddItem(Paragraph paragraph, int level = 0)
         {
-            if (paragraph.IsListItem)
+            var paraProps = paragraph.ParagraphNumberProperties();
+            if (paraProps == null)
             {
-                var numIdNode = paragraph.Xml.FirstLocalNameDescendant("numId");
-                if (!int.TryParse(numIdNode.GetVal(), out int numId))
-                    throw new Exception("Badly formed XML - ListItem missing numId");
-
-                if (!CanAddListItem(paragraph))
-                    throw new InvalidOperationException(
-                        "New list items can only be added to this list if they are have the same numId.");
-
-                NumId = numId;
-                Items.Add(paragraph);
+                paraProps = new XElement(DocxNamespace.Main + "pPr",
+                    new XElement(DocxNamespace.Main + "pStyle", new XAttribute(DocxNamespace.Main + "val", "ListParagraph")),
+                    new XElement(DocxNamespace.Main + "numPr",
+                        new XElement(DocxNamespace.Main + "ilvl", new XAttribute(DocxNamespace.Main + "val", level)),
+                        new XElement(DocxNamespace.Main + "numId", new XAttribute(DocxNamespace.Main + "val", 0))));
+                paragraph.Xml.AddFirst(paraProps);
             }
-        }
-
-        public void AddItem(Paragraph paragraph, int start)
-        {
-            UpdateNumberingForLevelStartNumber(int.Parse(paragraph.IndentLevel.ToString()), start);
-
-            if (ContainsLevel(start))
+            else if (NumId == 0)
             {
-                throw new InvalidOperationException("Cannot add a paragraph with a start value if another element already exists in this list with that level.");
+                string numIdVal = paraProps.Element(DocxNamespace.Main + "numId").GetVal();
+                if (numIdVal != null && int.TryParse(numIdVal, out int result))
+                {
+                    if (Items.Any(i => i.NumId != 0 && i.NumId != result))
+                    {
+                        throw new InvalidOperationException(
+                            "New list items can only be added to this list if they are have the same numId.");
+                    }
+
+                    NumId = result;
+                }
             }
 
-            AddItem(paragraph);
+            if (!CanAddListItem(paragraph))
+            {
+                throw new InvalidOperationException(
+                    "New list items can only be added to this list if they are have the same numId.");
+            }
+
+            Items.Add(new ListItem {Paragraph = paragraph});
+
+            return this;
         }
 
         /// <summary>
-        /// Determine if it is able to add the item to the list
+        /// Determine if the given paragraph can be added to this list.
+        ///    1. Paragraph has a w:numPr element.
+        ///    2. w:numId == 0 or >0 and matches List.numId
         /// </summary>
         /// <param name="paragraph"></param>
         /// <returns>
-        /// Return true if AddItem(...) will succeed with the given paragraph.
+        /// Return true if paragraph can be added to the list.
         /// </returns>
         public bool CanAddListItem(Paragraph paragraph)
         {
-            if (!paragraph.IsListItem) 
+            if (!paragraph.IsListItem()) 
                 return false;
             
             var numIdNode = paragraph.Xml.FirstLocalNameDescendant("numId");
@@ -115,123 +188,32 @@ namespace DXPlus
             return NumId == 0 || (numId == NumId && numId > 0);
         }
 
-        public bool ContainsLevel(int level)
+        protected override void OnDocumentOwnerChanged(DocX previousValue, DocX newValue)
         {
-            return Items.Any(i => i.ParagraphNumberProperties.FirstLocalNameDescendant("ilvl").Value == level.ToString());
-        }
+            base.OnDocumentOwnerChanged(previousValue, newValue);
 
-        internal void CreateNewNumberingNumId(ListItemType listType = ListItemType.Numbered, int? startNumber = null, bool continueNumbering = false)
-        {
-            if (Document.numberingDoc.Root == null)
-                throw new InvalidOperationException("Numbering section not available.");
+            // Attached to a document!
+            if (previousValue == newValue || newValue == null)
+                return;
 
-            ListType = listType;
+            var doc = newValue;
+            PackagePart = doc.PackagePart;
 
-            int numId = GetMaxNumId() + 1;
-            int abstractNumId = GetMaxAbstractNumId() + 1;
-            var listTemplate = listType switch
+            // Add the numbering.xml file
+            doc.AddDefaultNumberingPart();
+            
+            // Create a numbering section if needed.
+            if (NumId == 0)
             {
-                ListItemType.Bulleted => Resources.DefaultBulletNumberingXml(),
-                ListItemType.Numbered => Resources.DefaultDecimalNumberingXml(),
-                _ => throw new InvalidOperationException($"Unable to deal with ListItemType: {listType}."),
-            };
-
-            var abstractNumTemplate = listTemplate.FirstLocalNameDescendant("abstractNum");
-            abstractNumTemplate.SetAttributeValue(DocxNamespace.Main + "abstractNumId", abstractNumId);
-
-            var abstractNumXml = GetAbstractNumXml(abstractNumId, numId, startNumber, continueNumbering);
-            var abstractNumNode = Document.numberingDoc.Root.Descendants().LastOrDefault(xElement => xElement.Name.LocalName == "abstractNum");
-            var numXml = Document.numberingDoc.Root.Descendants().LastOrDefault(xElement => xElement.Name.LocalName == "num");
-
-            if (abstractNumNode == null || numXml == null)
-            {
-                Document.numberingDoc.Root.Add(abstractNumTemplate);
-                Document.numberingDoc.Root.Add(abstractNumXml);
-            }
-            else
-            {
-                abstractNumNode.AddAfterSelf(abstractNumTemplate);
-                numXml.AddAfterSelf(abstractNumXml);
+                NumId = NumberingHelpers.CreateNewNumberingSection(doc, ListType, StartNumber);
             }
 
-            NumId = numId;
-        }
-
-        /// <summary>
-        /// Get the abstractNum definition for the given numId
-        /// </summary>
-        /// <param name="numId">The numId on the pPr element</param>
-        /// <returns>XElement representing the requested abstractNum</returns>
-        internal XElement GetAbstractNum(int numId)
-        {
-            var num = Document.numberingDoc.LocalNameDescendants("num")
-                                                .First(e => int.Parse(e.AttributeValue(DocxNamespace.Main + "numId")) == numId);
-            var abstractNumId = num.FirstLocalNameDescendant("abstractNumId").Value;
-            return Document.numberingDoc.LocalNameDescendants("abstractNum")
-                                     .First(e => e.AttributeValue("abstractNumId") == abstractNumId);
-        }
-
-        private XElement GetAbstractNumXml(int abstractNumId, int numId, int? startNumber, bool continueNumbering)
-        {
-            var startOverride = new XElement(DocxNamespace.Main + "startOverride", new XAttribute(DocxNamespace.Main + "val", startNumber ?? 1));
-            var lvlOverride = new XElement(DocxNamespace.Main + "lvlOverride", new XAttribute(DocxNamespace.Main + "ilvl", 0), startOverride);
-            var abstractNumIdElement = new XElement(DocxNamespace.Main + "abstractNumId", new XAttribute(DocxNamespace.Main + "val", abstractNumId));
-            return continueNumbering
-                ? new XElement(DocxNamespace.Main + "num", new XAttribute(DocxNamespace.Main + "numId", numId), abstractNumIdElement)
-                : new XElement(DocxNamespace.Main + "num", new XAttribute(DocxNamespace.Main + "numId", numId), abstractNumIdElement, lvlOverride);
-        }
-
-        /// <summary>
-        /// Method to determine the last abstractNumId for a list element.
-        /// Also useful for determining the next abstractNumId to use for inserting a new list element into the document.
-        /// </summary>
-        /// <returns>
-        /// -1 if there are no elements in the list already.
-        /// Increment the return for the next valid value of a new list element.
-        /// </returns>
-        private int GetMaxAbstractNumId()
-        {
-            if (Document.numberingDoc != null)
+            // Wire up the paragraphs
+            foreach (var item in Items)
             {
-                var numlist = Document.numberingDoc.LocalNameDescendants("abstractNum").ToList();
-                if (numlist.Count > 0)
-                {
-                    return numlist.Attributes(DocxNamespace.Main + "abstractNumId")
-                                  .Max(e => int.Parse(e.Value));
-                }
+                item.Paragraph.Document = doc;
+                item.NumId = NumId;
             }
-
-            return -1;
-        }
-
-        /// <summary>
-        /// Method to determine the last numId for a list element.
-        /// Also useful for determining the next numId to use for inserting a new list element into the document.
-        /// </summary>
-        /// <returns>
-        /// 0 if there are no elements in the list already.
-        /// Increment the return for the next valid value of a new list element.
-        /// </returns>
-        private int GetMaxNumId()
-        {
-            if (Document.numberingDoc != null)
-            {
-                var numlist = Document.numberingDoc.LocalNameDescendants("num").ToList();
-                if (numlist.Count > 0)
-                {
-                    return numlist.Attributes(DocxNamespace.Main + "numId")
-                                  .Max(e => int.Parse(e.Value));
-                }
-            }
-
-            return 0;
-        }
-
-        private void UpdateNumberingForLevelStartNumber(int iLevel, int start)
-        {
-            var abstractNum = GetAbstractNum(NumId);
-            var level = abstractNum.LocalNameDescendants("lvl").First(el => el.AttributeValueNum(DocxNamespace.Main + "ilvl") == iLevel);
-            level.FirstLocalNameDescendant("start").SetAttributeValue(DocxNamespace.Main + "val", start);
         }
     }
 }
