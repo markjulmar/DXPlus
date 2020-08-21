@@ -1,0 +1,11 @@
+﻿<w:style w:styleId="Hyperlink" w:type="character" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:name w:val="Hyperlink"/>
+  <w:basedOn w:val="DefaultParagraphFont"/>
+  <w:uiPriority w:val="99"/>
+  <w:unhideWhenUsed/>
+  <w:rsid w:val="{rsid}"/>
+  <w:rPr>
+    <w:color w:themeColor="hyperlink" w:val="0000FF"/>
+    <w:u w:val="single"/>
+  </w:rPr>
+</w:style>

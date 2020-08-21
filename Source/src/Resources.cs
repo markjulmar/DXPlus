@@ -14,6 +14,21 @@ namespace DXPlus
     internal static class Resources
     {
         /// <summary>
+        /// Base hyperlink style
+        /// </summary>
+        /// <param name="rsid">Revision Id</param>
+        public static XElement HyperlinkStyle(string rsid)
+                => GetElement("DXPlus.Resources.hyperlinkStyle.xml", new {rsid});
+
+        /// <summary>
+        /// Retrieve the base Document/Body used for all new documents
+        /// </summary>
+        /// <param name="rsid">Revision Id</param>
+        /// <returns></returns>
+        public static XDocument BodyDocument(string rsid)
+                => GetDocument("DXPlus.Resources.document.xml", new {rsid});
+
+        /// <summary>
         /// The TOC base XML element inserted when a new TOC is created.
         /// </summary>
         /// <param name="headerStyle">Header style</param>
@@ -52,10 +67,19 @@ namespace DXPlus
                 => GetElement("DXPlus.Resources.TocHyperLinkStyleBase.xml");
 
         /// <summary>
+        /// Default list paragraph style
+        /// </summary>
+        /// <param name="rsid"></param>
+        /// <returns></returns>
+        public static XElement ListParagraphStyle(string rsid)
+            => GetElement("DXPlus.Resources.ListParagraphStyle.xml", new {rsid});
+
+        /// <summary>
         /// Numbering document.
         /// </summary>
+        /// <param name="nsid">unique identifier</param>
         /// <returns></returns>
-        public static XDocument NumberingXml() => GetDocument("DXPlus.Resources.numbering.xml");
+        public static XDocument NumberingXml(string nsid) => GetDocument("DXPlus.Resources.numbering.xml", new { nsid });
 
         /// <summary>
         /// Default styles document - used for all new documents
@@ -112,7 +136,7 @@ namespace DXPlus
             var assembly = Assembly.GetExecutingAssembly();
             var stream = assembly.GetManifestResourceStream(resourceName);
             if (stream == null)
-                throw new ArgumentException$$"Embedded resource {resourceName} missing from assembly", nameof(resourceName));
+                throw new ArgumentException($"Embedded resource {resourceName} missing from assembly", nameof(resourceName));
 
             var values = CreatePropertyDictionary(tokens);
 

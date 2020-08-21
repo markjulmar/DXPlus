@@ -11,10 +11,6 @@ namespace DXPlus
     /// </summary>
     public class List : InsertBeforeOrAfter
     {
-        internal List(DocX document, XElement xml) : base(document, xml)
-        {
-        }
-
         /// <summary>
         /// This is a list of paragraphs that will be added to the document
         /// when the list is inserted into the document.
@@ -28,9 +24,16 @@ namespace DXPlus
         public ListItemType? ListType { get; private set; }
 
         /// <summary>
-        /// The numId used to reference the list settings in the numberingDoc.xml
+        /// The numId used to reference the list settings in the numbering.xml
         /// </summary>
         public int NumId { get; private set; }
+
+        /// <summary>
+        /// Public constructor
+        /// </summary>
+        public List()
+        {
+        }
 
         /// <summary>
         /// Add an item to the list
@@ -48,7 +51,7 @@ namespace DXPlus
             if (startNumber.HasValue && continueNumbering)
                 throw new InvalidOperationException("Cannot specify a start number and at the same time continue numbering from another list");
 
-            var listToReturn = HelperFunctions.CreateItemInList(this, listText, level, listType, startNumber, trackChanges, continueNumbering);
+            var listToReturn = CreateItemInList(this, listText, level, listType, startNumber, trackChanges, continueNumbering);
             var lastItem = listToReturn.Items.LastOrDefault();
             if (lastItem != null)
             {
@@ -122,9 +125,6 @@ namespace DXPlus
 
         internal void CreateNewNumberingNumId(ListItemType listType = ListItemType.Numbered, int? startNumber = null, bool continueNumbering = false)
         {
-            if (Document.numberingDoc.Root == null)
-                throw new InvalidOperationException("Numbering section not available.");
-
             ListType = listType;
 
             int numId = GetMaxNumId() + 1;
@@ -232,6 +232,53 @@ namespace DXPlus
             var abstractNum = GetAbstractNum(NumId);
             var level = abstractNum.LocalNameDescendants("lvl").First(el => el.AttributeValueNum(DocxNamespace.Main + "ilvl") == iLevel);
             level.FirstLocalNameDescendant("start").SetAttributeValue(DocxNamespace.Main + "val", start);
+        }
+
+        internal static List CreateItemInList(List list, string listText, int level = 0, ListItemType listType = ListItemType.Numbered, int? startNumber = null, bool trackChanges = false, bool continueNumbering = false)
+        {
+            if (list == null)
+                throw new ArgumentNullException(nameof(list));
+
+            if (list.NumId == 0)
+            {
+                list.CreateNewNumberingNumId(listType, startNumber, continueNumbering);
+            }
+
+            if (listText != null)
+            {
+                var newParagraphSection = new XElement(
+                    DocxNamespace.Main + "p",
+                    new XElement(DocxNamespace.Main + "pPr",
+                        new XElement(DocxNamespace.Main + "numPr",
+                            new XElement(DocxNamespace.Main + "ilvl", new XAttribute(DocxNamespace.Main + "val", level)),
+                            new XElement(DocxNamespace.Main + "numId", new XAttribute(DocxNamespace.Main + "val", list.NumId)))),
+                    new XElement(DocxNamespace.Main + "r", new XElement(DocxNamespace.Main + "t", listText))
+                );
+
+                if (trackChanges)
+                {
+                    newParagraphSection = HelperFunctions.CreateEdit(EditType.Ins, DateTime.Now, newParagraphSection);
+                }
+
+                if (startNumber == null)
+                {
+                    list.AddItem(new Paragraph(list.Document, newParagraphSection, 0, ContainerType.Paragraph));
+                }
+                else
+                {
+                    list.AddItem(new Paragraph(list.Document, newParagraphSection, 0, ContainerType.Paragraph), (int)startNumber);
+                }
+            }
+
+            return list;
+        }
+
+
+        protected override void OnDocumentOwnerChanged(DocX previousValue, DocX newValue)
+        {
+            base.OnDocumentOwnerChanged(previousValue, newValue);
+            // Ensure we have numbering
+            newValue?.AddDefaultNumberingPart();
         }
     }
 }

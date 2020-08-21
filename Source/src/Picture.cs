@@ -11,9 +11,10 @@ namespace DXPlus
     public class Picture : DocXElement
     {
         private const int EmusInPixel = 9525;
-        internal Image img;
+        internal Image Image;
+
         private string name;
-        private string descr;
+        private string description;
         private int cx, cy;
         private uint rotation;
         private bool hFlip, vFlip;
@@ -36,7 +37,7 @@ namespace DXPlus
         /// <param name="image"></param>
         internal Picture(DocX document, XElement imageDefinition, Image image) : base(document, imageDefinition)
         {
-            img = image;
+            Image = image;
 
             Id = Xml.LocalNameDescendants("blip")
                      .Select(e => e.AttributeValue(DocxNamespace.RelatedDoc + "embed"))
@@ -50,7 +51,7 @@ namespace DXPlus
             }
 
             name = Xml.DescendantAttributeValues("name").FirstOrDefault() ?? Xml.DescendantAttributeValues("title").FirstOrDefault();
-            descr = Xml.DescendantAttributeValues("descr").FirstOrDefault();
+            description = Xml.DescendantAttributeValues("descr").FirstOrDefault();
             cx = Xml.DescendantAttributeValues("cx").Select(value => int.Parse(value)).FirstOrDefault();
             if (cx == 0)
             {
@@ -226,15 +227,15 @@ namespace DXPlus
         /// </summary>
         public string Description
         {
-            get => descr;
+            get => description;
 
             set
             {
-                descr = value;
+                description = value;
 
                 foreach (XAttribute a in Xml.DescendantAttributes(DocxNamespace.RelatedDoc + "descr"))
                 {
-                    a.Value = descr;
+                    a.Value = description;
                 }
             }
         }
@@ -242,7 +243,7 @@ namespace DXPlus
         ///<summary>
         /// Returns the name of the image file for the picture.
         ///</summary>
-        public string FileName => img.FileName;
+        public string FileName => Image.FileName;
 
         /// <summary>
         /// Get or sets the Width of this Image.

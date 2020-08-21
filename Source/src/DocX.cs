@@ -6,7 +6,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 using DXPlus.Charts;
@@ -51,7 +50,7 @@ namespace DXPlus
 		private PackagePart settingsPart;
 		private PackagePart stylesPart;
 		private PackagePart stylesWithEffectsPart;
-		private string editingSession;
+		private uint revision;
 
 		// A lookup for the Paragraphs in this document
 		internal Dictionary<int, Paragraph> paragraphLookup = new Dictionary<int, Paragraph>();
@@ -66,35 +65,12 @@ namespace DXPlus
 		/// <summary>
 		/// Editing session id for this session.
 		/// </summary>
-		public string EditingSessionId => editingSession ??= HelperFunctions.GenLongHexNumber();
+		public string RevisionId => revision.ToString("X8");
 
 		/// <summary>
 		/// Retrieve all bookmarks
 		/// </summary>
 		public BookmarkCollection Bookmarks => new BookmarkCollection(Paragraphs.SelectMany(p => p.GetBookmarks()));
-
-		///<summary>
-		/// Returns the list of document core properties with corresponding values.
-		///</summary>
-		public Dictionary<string, string> CoreProperties
-		{
-			get
-			{
-				ThrowIfObjectDisposed();
-				if (!Package.PartExists(DocxSections.DocPropsCoreUri)) 
-					return new Dictionary<string, string>();
-
-				// Get all of the core properties in this document
-				var corePropDoc = Package.GetPart(DocxSections.DocPropsCoreUri).Load();
-				return corePropDoc.Root.Elements()
-					.Select(docProperty =>
-						new KeyValuePair<string, string>(
-							$"{corePropDoc.Root.GetPrefixOfNamespace(docProperty.Name.Namespace)}:{docProperty.Name.LocalName}",
-							docProperty.Value))
-					.ToDictionary(p => p.Key, v => v.Value);
-
-			}
-		}
 
 		/// <summary>
 		/// Returns whether the given style exists in the style catalog
@@ -107,44 +83,19 @@ namespace DXPlus
 			ThrowIfObjectDisposed();
 
 			return stylesDoc.Descendants(DocxNamespace.Main + "style").Any(x =>
-					(x.Attribute(DocxNamespace.Main + "type")?.Value.Equals(type) != false)
-					&& x.Attribute(DocxNamespace.Main + "styleId")?.Value.Equals(styleId) == true);
+					x.AttributeValue(DocxNamespace.Main + "type").Equals(type)
+					&& x.AttributeValue(DocxNamespace.Main + "styleId").Equals(styleId));
 		}
 
 		/// <summary>
-		/// Returns a list of custom properties in this document.
+		/// Retrieve the section properties for the document
 		/// </summary>
-		public Dictionary<string, CustomProperty> CustomProperties
-		{
-			get
-			{
-				ThrowIfObjectDisposed();
-
-				if (Package.PartExists(DocxSections.DocPropsCustom))
-				{
-					var customPropDoc = Package.GetPart(DocxSections.DocPropsCustom).Load();
-
-					// Get all of the custom properties in this document
-					return (
-						from p in customPropDoc.Descendants(DocxNamespace.CustomPropertiesSchema + "property")
-						let Name = p.AttributeValue(DocxNamespace.Main + "name")
-						let Type = p.Descendants().Single().Name.LocalName
-						let Value = p.Descendants().Single().Value
-						select new CustomProperty(Name, Type, Value)
-					).ToDictionary(p => p.Name, StringComparer.CurrentCultureIgnoreCase);
-				}
-
-				return new Dictionary<string, CustomProperty>();
-			}
-		}
-
 		private XElement SectPr
 		{
 			get
 			{
 				ThrowIfObjectDisposed();
-				return mainDoc.Root!.Element(DocxNamespace.Main + "body")
-					.GetOrCreateElement(DocxNamespace.Main + "sectPr");
+				return Xml.GetOrCreateElement(DocxNamespace.Main + "sectPr");
 			}
 		}
 
@@ -177,13 +128,13 @@ namespace DXPlus
 			get
 			{
 				ThrowIfObjectDisposed();
-				return settingsDoc.Root.Element(DocxNamespace.Main + "evenAndOddHeaders") != null;
+				return settingsDoc.Root!.Element(DocxNamespace.Main + "evenAndOddHeaders") != null;
 			}
 
 			set
 			{
 				ThrowIfObjectDisposed();
-				var evenAndOddHeaders = settingsDoc.Root.Element(DocxNamespace.Main + "evenAndOddHeaders");
+				var evenAndOddHeaders = settingsDoc.Root!.Element(DocxNamespace.Main + "evenAndOddHeaders");
 				if (evenAndOddHeaders == null && value)
 				{
 					settingsDoc.Root.AddFirst(new XElement(DocxNamespace.Main + "evenAndOddHeaders"));
@@ -198,9 +149,8 @@ namespace DXPlus
 		/// <summary>
 		/// Get the text of each endnote from this document
 		/// </summary>
-		public IEnumerable<string> EndnotesText =>
-			endnotesDoc.Root?.Elements(DocxNamespace.Main + "endnote")
-				.Select(HelperFunctions.GetText);
+		public IEnumerable<string> EndnotesText 
+			=> endnotesDoc.Root?.Elements(DocxNamespace.Main + "endnote").Select(HelperFunctions.GetText);
 
 		/// <summary>
 		/// Returns a collection of Footers in this Document.
@@ -212,9 +162,8 @@ namespace DXPlus
 		/// <summary>
 		/// Get the text of each footnote from this document
 		/// </summary>
-		public IEnumerable<string> FootnotesText =>
-			footnotesDoc.Root?.Elements(DocxNamespace.Main + "footnote")
-				.Select(HelperFunctions.GetText);
+		public IEnumerable<string> FootnotesText
+			=> footnotesDoc.Root?.Elements(DocxNamespace.Main + "footnote").Select(HelperFunctions.GetText);
 
 		/// <summary>
 		/// Returns a collection of Headers in this Document.
@@ -231,7 +180,7 @@ namespace DXPlus
 			get
 			{
 				ThrowIfObjectDisposed();
-				var imageRelationships = PackagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image");
+				var imageRelationships = PackagePart.GetRelationshipsByType($"{DocxNamespace.RelatedDoc.NamespaceName}/image");
 				return imageRelationships.Any()
 					? imageRelationships.Select(i => new Image(this, i)).ToList()
 					: new List<Image>();
@@ -324,16 +273,38 @@ namespace DXPlus
 			// Create the docx package
 			using var ms = new MemoryStream();
 			using var package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
-			PostCreation(package, documentType);
 
-			// Load into a document
+            // Create the main document part for this package
+            var mainDocumentPart = package.CreatePart(new Uri("/word/document.xml", UriKind.Relative),
+                documentType == DocumentTypes.Document ? DocxContentType.Document : DocxContentType.Template,
+                CompressionOption.Normal);
+            package.CreateRelationship(mainDocumentPart.Uri, TargetMode.Internal, $"{DocxNamespace.RelatedDoc.NamespaceName}/officeDocument");
+
+            // Generate an id for this editing session.
+            var startingRevisionId = HelperFunctions.GenerateRevisionStamp(null, out _);
+
+            // Load the document part into a XDocument object
+            var mainDoc = Resources.BodyDocument(startingRevisionId);
+
+            // Add the settings.xml + relationship
+            HelperFunctions.AddDefaultSettingsPart(package, startingRevisionId);
+
+            // Add the default styles + relationship
+            HelperFunctions.AddDefaultStylesXml(package, out var stylesPart, out var stylesDoc);
+
+            // Save the main new document back to the package.
+            mainDocumentPart.Save(mainDoc);
+            package.Close();
+
+			// Load the stream into a document
 			var document = Load(ms);
 			document.filename = filename;
 			document.stream = null;
 
-			// Grab the editing ID we generated.
-			document.editingSession = document.Xml.Element(DocxNamespace.Main + "sectPr")
-												  .AttributeValue(DocxNamespace.Main + "rsidR");
+			// We bumped the revision as part of the loading.
+			// Since we _just_ created this document and assigned a revId
+			// keep it the same as the creator time.
+            document.revision--;
 
 			return document;
 		}
@@ -357,7 +328,7 @@ namespace DXPlus
 			// Open the docx package
 			var package = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite);
 
-			var document = PostLoad(package);
+			var document = CreateDocumentFromPackage(package);
 			document.memoryStream = ms;
 			document.stream = stream;
 			return document;
@@ -386,106 +357,56 @@ namespace DXPlus
 
 			var package = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite);
 
-			var document = PostLoad(package);
+			var document = CreateDocumentFromPackage(package);
 			document.filename = filename;
 			document.memoryStream = ms;
 
 			return document;
 		}
 
+		///<summary>
+		/// Returns the list of document core properties with corresponding values.
+		///</summary>
+		public Dictionary<string, string> CoreProperties
+		{
+			get
+			{
+				ThrowIfObjectDisposed();
+				return CorePropertyHelpers.Get(this.Package);
+			}
+		}
+
 		/// <summary>
 		/// Add a core property to this document. If a core property already exists with the same name it will be replaced. Core property names are case insensitive.
 		/// </summary>
-		///<param name="propertyName">The property name.</param>
-		///<param name="propertyValue">The property value.</param>
-		public void AddCoreProperty(string propertyName, string propertyValue)
+		///<param name="name">The property name.</param>
+		///<param name="value">The property value.</param>
+		public void AddCoreProperty(string name, string value)
 		{
 			ThrowIfObjectDisposed();
+			CorePropertyHelpers.Add(this, name, value);
+		}
 
-			if (string.IsNullOrWhiteSpace(propertyName))
-				throw new ArgumentException("Value cannot be null or whitespace.", nameof(propertyName));
-			if (string.IsNullOrWhiteSpace(propertyValue))
-				throw new ArgumentException("Value cannot be null or whitespace.", nameof(propertyValue));
-			if (!Package.PartExists(DocxSections.DocPropsCoreUri))
-				throw new Exception("Core properties part doesn't exist.");
-
-			string propertyNamespacePrefix = propertyName.Contains(":") ? propertyName.Split(new[] { ':' })[0] : "cp";
-			string propertyLocalName = propertyName.Contains(":") ? propertyName.Split(new[] { ':' })[1] : propertyName;
-
-			var corePropPart = Package.GetPart(DocxSections.DocPropsCoreUri);
-			var corePropDoc = corePropPart.Load();
-
-			var corePropElement = corePropDoc.Root.Elements().SingleOrDefault(e => e.Name.LocalName.Equals(propertyLocalName));
-			if (corePropElement != null)
+		/// <summary>
+		/// Returns a list of custom properties in this document.
+		/// </summary>
+		public Dictionary<string, CustomProperty> CustomProperties
+		{
+			get
 			{
-				corePropElement.SetValue(propertyValue);
+				ThrowIfObjectDisposed();
+				return CustomPropertyHelpers.Get(this.Package);
 			}
-			else
-			{
-				var propertyNamespace = corePropDoc.Root.GetNamespaceOfPrefix(propertyNamespacePrefix);
-				corePropDoc.Root.Add(new XElement(DocxNamespace.Main + propertyLocalName, propertyNamespace.NamespaceName, propertyValue));
-			}
-
-			corePropPart.Save(corePropDoc);
-			UpdateCorePropertyValue(this, propertyLocalName, propertyValue);
 		}
 
 		/// <summary>
 		/// Add a custom property to this document. If a custom property already exists with the same name it will be replace. CustomProperty names are case insensitive.
 		/// </summary>
-		/// <param name="cp">The CustomProperty to add to this document.</param>
-		public void AddCustomProperty(CustomProperty cp)
+		/// <param name="property">The CustomProperty to add to this document.</param>
+		public void AddCustomProperty(CustomProperty property)
 		{
 			ThrowIfObjectDisposed();
-
-			PackagePart customPropertiesPart;
-			XDocument customPropDoc;
-
-			// If this document does not contain a custom properties section create one.
-			if (!Package.PartExists(DocxSections.DocPropsCustom))
-			{
-				customPropertiesPart = Package.CreatePart(new Uri("/docProps/custom.xml", UriKind.Relative), "application/vnd.openxmlformats-officedocument.custom-properties+xml", CompressionOption.Maximum);
-				customPropDoc = new XDocument(new XDeclaration("1.0", "UTF-8", "yes"),
-					new XElement(DocxNamespace.CustomPropertiesSchema + "Properties",
-						new XAttribute(XNamespace.Xmlns + "vt", DocxNamespace.CustomVTypesSchema)
-					)
-				);
-
-				customPropertiesPart.Save(customPropDoc);
-				Package.CreateRelationship(customPropertiesPart.Uri, TargetMode.Internal, $"{DocxNamespace.RelatedDoc.NamespaceName}/custom-properties");
-			}
-			else
-			{
-				customPropertiesPart = Package.GetPart(DocxSections.DocPropsCustom);
-				customPropDoc = customPropertiesPart.Load();
-			}
-
-			// Get the next property id in the document
-			var pid = customPropDoc.LocalNameDescendants("property")
-				.Select(p => int.TryParse(p.AttributeValue(DocxNamespace.Main + "pid"), out int result) ? result : 0)
-				.DefaultIfEmpty().Max() + 1;
-
-			// Check if a custom property already exists with this name - if so, remove it.
-			customPropDoc.LocalNameDescendants("property")
-					.SingleOrDefault(p => p.AttributeValue(DocxNamespace.Main + "name")
-					.Equals(cp.Name, StringComparison.InvariantCultureIgnoreCase))
-					?.Remove();
-
-			var propertiesElement = customPropDoc.Element(DocxNamespace.CustomPropertiesSchema + "Properties");
-			propertiesElement.Add(
-				new XElement(DocxNamespace.CustomPropertiesSchema + "property",
-					new XAttribute("fmtid", "{D5CDD505-2E9C-101B-9397-08002B2CF9AE}"),
-					new XAttribute("pid", pid),
-					new XAttribute("name", cp.Name),
-						new XElement(DocxNamespace.CustomVTypesSchema + cp.Type, cp.Value ?? string.Empty)
-				)
-			);
-
-			// Save the custom properties
-			customPropertiesPart.Save(customPropDoc);
-
-			// Refresh all fields in this document which display this custom property.
-			UpdateCustomPropertyValue(this, cp.Name, (cp.Value ?? string.Empty).ToString());
+			CustomPropertyHelpers.Add(this, property);
 		}
 
 		/// <summary>
@@ -569,7 +490,7 @@ namespace DXPlus
 				throw new ArgumentNullException(nameof(imageStream));
 
 			// Get all image parts in word\document.xml
-			var relationshipsByImages = PackagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image");
+			var relationshipsByImages = PackagePart.GetRelationshipsByType($"{DocxNamespace.RelatedDoc.NamespaceName}/image");
 			var imageParts = relationshipsByImages.Select(ir => Package.GetParts()
 						.FirstOrDefault(p => p.Uri.ToString().EndsWith(ir.TargetUri.ToString())))
 						.Where(e => e != null)
@@ -579,9 +500,11 @@ namespace DXPlus
 																	  && part.ContentType.Equals("application/vnd.openxmlformats-package.relationships+xml")))
 			{
 				var relsPartContent = relsPart.Load();
+				if (relsPartContent.Root == null)
+					throw new InvalidOperationException("Relationships missing root element.");
 				var imageRelationships = relsPartContent.Root.Elements()
 											.Where(imageRel => imageRel.Attribute("Type")
-													.Value.Equals("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"));
+													.Value.Equals($"{DocxNamespace.RelatedDoc.NamespaceName}/image"));
 
 				foreach (var imageRelationship in imageRelationships.Where(e => e.Attribute("Target") != null))
 				{
@@ -611,7 +534,7 @@ namespace DXPlus
 				if (HelperFunctions.IsSameFile(existingImageStream, imageStream))
 				{
 					// Get the image object for this image part
-					string id = PackagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image")
+					string id = PackagePart.GetRelationshipsByType($"{DocxNamespace.RelatedDoc.NamespaceName}/image")
 						.Where(r => r.TargetUri == pp.Uri)
 						.Select(r => r.Id).First();
 
@@ -632,7 +555,7 @@ namespace DXPlus
 			var imagePackagePart = Package.CreatePart(new Uri(imgPartUriPath, UriKind.Relative), contentType, CompressionOption.Normal);
 
 			// Create a new image relationship
-			var imageRelation = PackagePart.CreateRelationship(imagePackagePart.Uri, TargetMode.Internal, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image");
+			var imageRelation = PackagePart.CreateRelationship(imagePackagePart.Uri, TargetMode.Internal, $"{DocxNamespace.RelatedDoc.NamespaceName}/image");
 
 			// Open a Stream to the newly created Image part.
 			using (var imageWriter = imagePackagePart.GetStream(FileMode.Create, FileAccess.Write))
@@ -938,7 +861,7 @@ namespace DXPlus
 					// TODO:
 					//PackagePart = documentNewPart;
 					//mainDoc = templateDocument;
-					LoadDocumentParts();
+					OnLoadDocument();
 				}
 				
 				if (!includeContent)
@@ -954,68 +877,6 @@ namespace DXPlus
 				Package.Flush();
 				templatePackage.Close();
 			}
-		}
-
-		/// <summary>
-		/// Saves and copies the document into a new DocX object
-		/// </summary>
-		/// <returns>
-		/// Returns a new DocX object with an identical document
-		/// </returns>
-		public DocX Copy()
-		{
-			ThrowIfObjectDisposed();
-
-			var ms = new MemoryStream();
-			SaveAs(ms);
-			ms.Seek(0, SeekOrigin.Begin);
-
-			return Load(ms);
-		}
-
-		/// <summary>
-		/// Adds a hyperlink to a document and creates a Paragraph which uses it.
-		/// </summary>
-		/// <param name="text">The text as displayed by the hyperlink.</param>
-		/// <param name="uri">The hyperlink itself.</param>
-		/// <returns>Returns a hyperlink that can be inserted into a Paragraph.</returns>
-		public Hyperlink CreateHyperlink(string text, Uri uri)
-		{
-			AddHyperlinkStyleIfNotPresent();
-
-			var data = new XElement(DocxNamespace.Main + "hyperlink",
-				new XAttribute(DocxNamespace.RelatedDoc + "id", string.Empty),
-				new XAttribute(DocxNamespace.Main + "history", "1"),
-				new XElement(DocxNamespace.Main + "r",
-					new XElement(DocxNamespace.Main + "rPr",
-						new XElement(DocxNamespace.Main + "rStyle",
-							new XAttribute(DocxNamespace.Main + "val", "Hyperlink"))),
-					new XElement(DocxNamespace.Main + "t", text))
-			);
-
-			return new Hyperlink(this, data, PackagePart) { Uri = uri, Text = text };
-		}
-
-		/// <summary>
-		/// Create a new list tied to this document.
-		/// </summary>
-		public List CreateList()
-		{
-			// Ensure we have numbering
-			AddDefaultNumberingPart();
-			return new List(this, null);
-		}
-
-		/// <summary>
-		/// Create a new list tied to this document with a specific XML body
-		/// </summary>
-		/// <param name="xml"></param>
-		/// <returns></returns>
-		internal List CreateListFromXml(XElement xml)
-		{
-			// Ensure we have numbering
-			AddDefaultNumberingPart();
-			return new List(this, xml);
 		}
 
 		/// <summary>
@@ -1101,7 +962,7 @@ namespace DXPlus
 
 			// Create a new chart relationship
 			string id = GetNextRelationshipId();
-			_ = PackagePart.CreateRelationship(chartPackagePart.Uri, TargetMode.Internal, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart", id);
+			_ = PackagePart.CreateRelationship(chartPackagePart.Uri, TargetMode.Internal, $"{DocxNamespace.RelatedDoc.NamespaceName}/chart", id);
 
 			// Save a chart info the chartPackagePart
 			chartPackagePart.Save(chart.Xml);
@@ -1143,201 +1004,8 @@ namespace DXPlus
 		/// <returns>The inserted TableOfContents</returns>
 		public TableOfContents InsertDefaultTableOfContents()
 		{
-			return InsertTableOfContents("Table of contents", TableOfContentsSwitches.O | TableOfContentsSwitches.H | TableOfContentsSwitches.Z | TableOfContentsSwitches.U);
-		}
-
-		/// <summary>
-		/// Insert the contents of another document at the end of this document.
-		/// If the document being inserted contains Images, CustomProperties and or custom styles, these will be correctly inserted into the new document.
-		/// In the case of Images, new ID's are generated for the Images being inserted to avoid ID conflicts. CustomProperties with the same name will be ignored not replaced.
-		/// </summary>
-		/// <param name="otherDoc">The document to insert at the end of this document.</param>
-		/// <param name="append">If true, document is inserted at the end, otherwise document is inserted at the beginning.</param>
-		public void InsertDocument(DocX otherDoc, bool append = true)
-		{
-			if (otherDoc == null)
-				throw new ArgumentNullException(nameof(otherDoc));
-			
-			ThrowIfObjectDisposed();
-			otherDoc.ThrowIfObjectDisposed();
-
-			// Copy all the XML bits
-			var otherMainDoc = new XDocument(otherDoc.mainDoc);
-			var otherFootnotes = otherDoc.footnotesDoc != null ? new XDocument(otherDoc.footnotesDoc) : null;
-			var otherEndnotes = otherDoc.endnotesDoc != null ? new XDocument(otherDoc.endnotesDoc) : null;
-			var otherBody = otherMainDoc.Root.Element(DocxNamespace.Main + "body");
-
-			// Remove all header and footer references.
-			otherMainDoc.Descendants(DocxNamespace.Main + "headerReference").Remove();
-			otherMainDoc.Descendants(DocxNamespace.Main + "footerReference").Remove();
-
-			// Set of content types to ignore
-			var ignoreContentTypes = new List<string>
-			{
-				"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml",
-				"application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml",
-				"application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml",
-				"application/vnd.openxmlformats-package.core-properties+xml",
-				"application/vnd.openxmlformats-officedocument.extended-properties+xml",
-				"application/vnd.openxmlformats-package.relationships+xml",
-			};
-
-			// Valid image content types
-			var imageContentTypes = new List<string>
-			{
-				"image/jpeg",
-				"image/jpg",
-				"image/png",
-				"image/bmp",
-				"image/gif",
-				"image/tiff",
-				"image/icon",
-				"image/pcx",
-				"image/emf",
-				"image/wmf",
-				"image/svg"
-			};
-			
-			// Check if each PackagePart pp exists in this document.
-			foreach (PackagePart otherPackagePart in otherDoc.Package.GetParts())
-			{
-				if (ignoreContentTypes.Contains(otherPackagePart.ContentType) || imageContentTypes.Contains(otherPackagePart.ContentType))
-					continue;
-
-				// If this external PackagePart already exits then we must merge them.
-				if (Package.PartExists(otherPackagePart.Uri))
-				{
-					PackagePart localPackagePart = Package.GetPart(otherPackagePart.Uri);
-					switch (otherPackagePart.ContentType)
-					{
-						case "application/vnd.openxmlformats-officedocument.custom-properties+xml":
-							MergeCustoms(otherPackagePart, localPackagePart);
-							break;
-
-						// Merge footnotes (and endnotes) before merging styles, then set the remote_footnotes to the just updated footnotes
-						case "application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml":
-							MergeFootnotes(otherMainDoc, otherFootnotes);
-							otherFootnotes = footnotesDoc;
-							break;
-
-						case "application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml":
-							MergeEndnotes(otherMainDoc, otherEndnotes);
-							otherEndnotes = endnotesDoc;
-							break;
-
-						case "application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml":
-						case "application/vnd.ms-word.stylesWithEffects+xml":
-							MergeStyles(otherMainDoc, otherDoc, otherFootnotes, otherEndnotes);
-							break;
-
-						case "application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml":
-							MergeFonts(otherDoc);
-							break;
-
-						case "application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml":
-							MergeNumbering(otherMainDoc, otherDoc);
-							break;
-					}
-				}
-
-				// If this external PackagePart does not exits in the internal document then we can simply copy it.
-				else
-				{
-					var packagePart = ClonePackagePart(otherPackagePart);
-					switch (otherPackagePart.ContentType)
-					{
-						case "application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml":
-							endnotesPart = packagePart;
-							endnotesDoc = otherEndnotes;
-							break;
-
-						case "application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml":
-							footnotesPart = packagePart;
-							footnotesDoc = otherFootnotes;
-							break;
-
-						case "application/vnd.openxmlformats-officedocument.custom-properties+xml":
-							break;
-
-						case "application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml":
-							stylesPart = packagePart;
-							stylesDoc = stylesPart.Load();
-							break;
-
-						case "application/vnd.ms-word.stylesWithEffects+xml":
-							stylesWithEffectsPart = packagePart;
-							stylesWithEffectsDoc = stylesWithEffectsPart.Load();
-							break;
-
-						case "application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml":
-							fontTablePart = packagePart;
-							fontTableDoc = fontTablePart.Load();
-							break;
-
-						case "application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml":
-							numberingPart = packagePart;
-							numberingDoc = numberingPart.Load();
-							break;
-					}
-
-					ClonePackageRelationship(otherDoc, otherPackagePart, otherMainDoc);
-				}
-			}
-
-			// Convert hyperlink ids over
-			foreach (var rel in otherDoc.PackagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"))
-			{
-				string oldId = rel.Id;
-				string newId = PackagePart.CreateRelationship(rel.TargetUri, rel.TargetMode, rel.RelationshipType).Id;
-				
-				foreach (var hyperlink in otherMainDoc.Descendants(DocxNamespace.Main + "hyperlink"))
-				{
-					var attrId = hyperlink.Attribute(DocxNamespace.RelatedDoc + "id");
-					if (attrId != null && attrId.Value == oldId)
-						attrId.SetValue(newId);
-				}
-			}
-
-			// OLE object links
-			foreach (var rel in otherDoc.PackagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/oleObject"))
-			{
-				string oldId = rel.Id;
-				string newId = PackagePart.CreateRelationship(rel.TargetUri, rel.TargetMode, rel.RelationshipType).Id;
-				foreach (var oleObject in otherMainDoc.Descendants(XName.Get("OLEObject", "urn:schemas-microsoft-com:office:office")))
-				{
-					var attrId = oleObject.Attribute(DocxNamespace.RelatedDoc + "id");
-					if (attrId != null && attrId.Value == oldId)
-						attrId.SetValue(newId);
-				}
-			}
-
-			// Images
-			foreach (var otherPackageParts in otherDoc.Package.GetParts().Where(otherPackageParts => imageContentTypes.Contains(otherPackageParts.ContentType)))
-			{
-				MergeImages(otherPackageParts, otherDoc, otherMainDoc, otherPackageParts.ContentType);
-			}
-
-			// Get the largest drawing object non-visual property id
-			int id = mainDoc.Root.Descendants(DocxNamespace.WordProcessingDrawing + "docPr")
-							.Max(e => int.TryParse(e.AttributeValue("id"), out int value) ? value : 0) + 1;
-				
-			// Bump the ids in the other document so they are all above the local document
-			foreach (var docPr in otherBody.Descendants(DocxNamespace.WordProcessingDrawing + "docPr"))
-				docPr.SetAttributeValue("id", id++);
-
-			// Add the remote documents contents to this document.
-			var localBody = mainDoc.Root.Element(DocxNamespace.Main + "body");
-			if (append)
-				localBody.Add(otherBody.Elements());
-			else
-				localBody.AddFirst(otherBody.Elements());
-
-			// Copy any missing root attributes to the local document.
-			foreach (var attr in otherMainDoc.Root.Attributes())
-			{
-				if (mainDoc.Root.Attribute(attr.Name) == null)
-					mainDoc.Root.SetAttributeValue(attr.Name, attr.Value);
-			}
+			return InsertTableOfContents("Table of contents", 
+				TableOfContentsSwitches.O | TableOfContentsSwitches.H | TableOfContentsSwitches.Z | TableOfContentsSwitches.U);
 		}
 
 		/// <summary>
@@ -1397,7 +1065,13 @@ namespace DXPlus
 			// Save the main document
 			PackagePart.Save(mainDoc);
 
+			// Refresh settings
 			settingsDoc = settingsPart.Load();
+
+			// Bump the revision and add it to the settings document.
+			settingsDoc.Root!.Element(DocxNamespace.Main + "rsids")
+                             .Add(new XElement(DocxNamespace.Main+"rsid",
+								 new XAttribute(DocxNamespace.Main+"val", HelperFunctions.GenerateRevisionStamp(RevisionId, out revision))));
 
 			// Save all the sections
 			if (Headers?.Even != null)
@@ -1493,244 +1167,17 @@ namespace DXPlus
 		}
 
 		/// <summary>
-		/// Load all the internal properties from the created package
-		/// </summary>
-		/// <param name="package">Document package</param>
-		/// <param name="documentType">Document type</param>
-		internal static void PostCreation(Package package, DocumentTypes documentType = DocumentTypes.Document)
-		{
-			if (package == null)
-				throw new ArgumentNullException(nameof(package));
-
-			// Create the main document part for this package
-			var mainDocumentPart = package.CreatePart(new Uri("/word/document.xml", UriKind.Relative),
-				documentType == DocumentTypes.Document ? DocxContentType.Document : DocxContentType.Template,
-				CompressionOption.Normal);
-			package.CreateRelationship(mainDocumentPart.Uri, TargetMode.Internal, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument");
-
-			// Generate an id for this editing session.
-			var rsid = HelperFunctions.GenLongHexNumber();
-
-			// Load the document part into a XDocument object
-			var mainDoc = XDocument.Parse(
-			$@"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
-			   <w:document xmlns:ve=""http://schemas.openxmlformats.org/markup-compatibility/2006"" xmlns:o=""urn:schemas-microsoft-com:office:office"" xmlns:r=""http://schemas.openxmlformats.org/officeDocument/2006/relationships"" xmlns:m=""http://schemas.openxmlformats.org/officeDocument/2006/math"" xmlns:v=""urn:schemas-microsoft-com:vml"" xmlns:wp=""http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"" xmlns:w10=""urn:schemas-microsoft-com:office:word"" xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"" xmlns:wne=""http://schemas.microsoft.com/office/word/2006/wordml"" xmlns:a=""http://schemas.openxmlformats.org/drawingml/2006/main"" xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
-			   <w:body>
-				<w:sectPr w:rsidR=""{rsid}"" w:rsidSect=""{rsid}"">
-					<w:pgSz w:h=""15840"" w:w=""12240""/>
-					<w:pgMar w:top=""1440"" w:right=""1440"" w:bottom=""1440"" w:left=""1440"" w:header=""720"" w:footer=""720"" w:gutter=""0""/>
-					<w:cols w:space=""720""/>
-					<w:docGrid w:linePitch=""360""/>
-				</w:sectPr>
-			   </w:body>
-			   </w:document>"
-			);
-
-			// Add the settings.xml
-			HelperFunctions.AddDefaultSettingsPart(package, rsid);
-
-			// Add the default styles
-			HelperFunctions.AddDefaultStylesXml(package);
-
-			// Save the main document
-			mainDocumentPart.Save(mainDoc);
-			package.Close();
-		}
-
-		/// <summary>
 		/// Load the properties from the loaded package
 		/// </summary>
 		/// <param name="package">Loaded package</param>
 		/// <returns>New Docx object</returns>
-		internal static DocX PostLoad(Package package)
+		internal static DocX CreateDocumentFromPackage(Package package)
 		{
 			var document = new DocX { Package = package };
 			document.Document = document;
-			document.LoadDocumentParts();
+			document.OnLoadDocument();
 			
 			return document;
-		}
-
-		internal static void UpdateCorePropertyValue(DocX document, string name, string value)
-		{
-			if (document == null)
-				throw new ArgumentNullException(nameof(document));
-			if (string.IsNullOrWhiteSpace(name))
-				throw new ArgumentException("Value cannot be null or whitespace.", nameof(name));
-
-			document.ThrowIfObjectDisposed();
-
-			string matchPattern = $@"(DOCPROPERTY)?{name}\\\*MERGEFORMAT".ToLower();
-			
-			foreach (var e in document.mainDoc.Descendants(DocxNamespace.Main + "fldSimple"))
-			{
-				string attrValue = e.AttributeValue(DocxNamespace.Main + "instr").Replace(" ", string.Empty).Trim().ToLower();
-
-				if (Regex.IsMatch(attrValue, matchPattern))
-				{
-					var firstRun = e.Element(DocxNamespace.Main + "r");
-					var rPr = firstRun?.GetRunProps(false);
-
-					e.RemoveNodes();
-
-					if (firstRun != null)
-					{
-						e.Add(new XElement(firstRun.Name,
-								firstRun.Attributes(),
-								rPr,
-								new XElement(DocxNamespace.Main + "t", value).PreserveSpace()
-							)
-						);
-					}
-				}
-			}
-
-			void ProcessHeaderFooterParts(IEnumerable<PackagePart> packageParts)
-			{
-				foreach (var pp in packageParts)
-				{
-					var section = pp.Load();
-
-					foreach (var e in section.Descendants(DocxNamespace.Main + "fldSimple"))
-					{
-						string attrValue = e.AttributeValue(DocxNamespace.Main + "instr").Replace(" ", string.Empty).Trim().ToLower();
-						if (Regex.IsMatch(attrValue, matchPattern))
-						{
-							var firstRun = e.Element(DocxNamespace.Main + "r");
-							e.RemoveNodes();
-							if (firstRun != null)
-							{
-								e.Add(new XElement(firstRun.Name, 
-										firstRun.Attributes(), 
-										firstRun.GetRunProps(false), 
-										new XElement(DocxNamespace.Main + "t", value).PreserveSpace()
-									)
-								);
-							}
-						}
-					}
-
-					pp.Save(section);
-				}
-			}
-
-
-			ProcessHeaderFooterParts(document.Package.GetParts()
-				.Where(headerPart => Regex.IsMatch(headerPart.Uri.ToString(), @"/word/header\d?.xml")));
-
-			ProcessHeaderFooterParts(document.Package.GetParts()
-				.Where(footerPart => (Regex.IsMatch(footerPart.Uri.ToString(), @"/word/footer\d?.xml"))));
-		}
-
-		/// <summary>
-		/// Update the custom properties inside the document
-		/// </summary>
-		/// <param name="document">The DocX document</param>
-		/// <param name="name">The property used inside the document</param>
-		/// <param name="value">The new value for the property</param>
-		/// <remarks>Different version of Word create different Document XML.</remarks>
-		internal static void UpdateCustomPropertyValue(DocX document, string name, string value)
-		{
-			if (document == null)
-				throw new ArgumentNullException(nameof(document));
-			if (string.IsNullOrWhiteSpace(name))
-				throw new ArgumentNullException(nameof(name));
-
-			var documents = new List<XElement> { document.mainDoc.Root };
-
-			var headers = document.Headers;
-			if (headers.First != null)
-				documents.Add(headers.First.Xml);
-
-			if (headers.Odd != null)
-				documents.Add(headers.Odd.Xml);
-
-			if (headers.Even != null)
-				documents.Add(headers.Even.Xml);
-
-			var footers = document.Footers;
-			if (footers.First != null)
-				documents.Add(footers.First.Xml);
-
-			if (footers.Odd != null)
-				documents.Add(footers.Odd.Xml);
-
-			if (footers.Even != null)
-				documents.Add(footers.Even.Xml);
-
-			string matchCustomPropertyName = name;
-			if (name.Contains(" "))
-				matchCustomPropertyName = "\"" + name + "\"";
-
-			string propertyMatchValue = $@"DOCPROPERTY  {matchCustomPropertyName}  \* MERGEFORMAT".Replace(" ", string.Empty);
-
-			// Process each document in the list.
-			foreach (var doc in documents)
-			{
-				foreach (var e in doc.Descendants(DocxNamespace.Main + "instrText"))
-				{
-					string attrValue = e.Value.Replace(" ", string.Empty).Trim();
-
-					if (attrValue.Equals(propertyMatchValue, StringComparison.CurrentCultureIgnoreCase))
-					{
-						var nextNode = e.Parent.NextNode;
-						bool found = false;
-						while (true)
-						{
-							if (nextNode.NodeType == XmlNodeType.Element)
-							{
-								var ele = (XElement) nextNode;
-								var match = ele.Descendants(DocxNamespace.Main + "t");
-								if (match.Any())
-								{
-									if (!found)
-									{
-										match.First().Value = value;
-										found = true;
-									}
-									else
-									{
-										ele.RemoveNodes();
-									}
-								}
-								else
-								{
-									match = ele.Descendants(DocxNamespace.Main + "fldChar");
-									if (match.Any())
-									{
-										var endMatch = match.First().Attribute(DocxNamespace.Main + "fldCharType");
-										if (endMatch?.Value == "end")
-											break;
-									}
-								}
-							}
-							nextNode = nextNode.NextNode;
-						}
-					}
-				}
-
-				foreach (var e in doc.Descendants(DocxNamespace.Main + "fldSimple"))
-				{
-					string attrValue = e.Attribute(DocxNamespace.Main + "instr").Value.Replace(" ", string.Empty).Trim();
-
-					if (attrValue.Equals(propertyMatchValue, StringComparison.CurrentCultureIgnoreCase))
-					{
-						var firstRun = e.Element(DocxNamespace.Main + "r");
-						var firstText = firstRun.Element(DocxNamespace.Main + "t");
-						var rPr = firstText.GetRunProps(false);
-
-						// Delete everything and insert updated text value
-						e.RemoveNodes();
-
-						e.Add(new XElement(firstRun.Name, 
-								firstRun.Attributes(), 
-								rPr, 
-								new XElement(DocxNamespace.Main + "t", value).PreserveSpace()
-							)
-						);
-					}
-				}
-			}
 		}
 
 		/// <summary>
@@ -1746,19 +1193,19 @@ namespace DXPlus
 			// Delete header/footer
 			DeleteHeadersOrFooters(addHeader);
 
-			var rsid = EditingSessionId;
+			var rsid = RevisionId;
 
 			int index = 1;
 			foreach (var headerType in new[] { "default", "even", "first" })
 			{
 				var headerPart = Package.CreatePart(new Uri($"/word/{reference}{index}.xml", UriKind.Relative),
-					$"application/vnd.openxmlformats-officedocument.wordprocessingml.{reference}+xml", CompressionOption.Normal);
+					$"{DocxContentType.Base}{reference}+xml", CompressionOption.Normal);
 				var headerRelationship = PackagePart.CreateRelationship(headerPart.Uri, TargetMode.Internal,
-					$"http://schemas.openxmlformats.org/officeDocument/2006/relationships/{reference}");
+					$"{DocxNamespace.RelatedDoc.NamespaceName}/{reference}");
 
 				var header = XDocument.Parse(
-					$@"<?xml version=""1.0"" encoding=""utf-16"" standalone=""yes""?>
-				   <w:{element} xmlns:ve=""http://schemas.openxmlformats.org/markup-compatibility/2006"" xmlns:o=""urn:schemas-microsoft-com:office:office"" xmlns:r=""http://schemas.openxmlformats.org/officeDocument/2006/relationships"" xmlns:m=""http://schemas.openxmlformats.org/officeDocument/2006/math"" xmlns:v=""urn:schemas-microsoft-com:vml"" xmlns:wp=""http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"" xmlns:w10=""urn:schemas-microsoft-com:office:word"" xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"" xmlns:wne=""http://schemas.microsoft.com/office/word/2006/wordml"">
+				$@"<?xml version=""1.0"" encoding=""utf-16"" standalone=""yes""?>
+				   <w:{element} xmlns:ve=""http://schemas.openxmlformats.org/markup-compatibility/2006"" xmlns:o=""urn:schemas-microsoft-com:office:office"" xmlns:r=""{DocxNamespace.RelatedDoc.NamespaceName}"" xmlns:m=""{DocxNamespace.Math.NamespaceName}"" xmlns:v=""{DocxNamespace.VML.NamespaceName}"" xmlns:wp=""{DocxNamespace.WordProcessingDrawing.NamespaceName}"" xmlns:w10=""urn:schemas-microsoft-com:office:word"" xmlns:w=""{DocxNamespace.Main.NamespaceName}"" xmlns:wne=""http://schemas.microsoft.com/office/word/2006/wordml"">
 					 <w:p w:rsidR=""{rsid}"" w:rsidRDefault=""{rsid}"">
 					   <w:pPr>
 						 <w:pStyle w:val=""{reference}"" />
@@ -1784,39 +1231,22 @@ namespace DXPlus
 			ThrowIfObjectDisposed();
 
 			// If the document contains no /word/styles.xml create one and associate it
-			if (!Package.PartExists(DocxSections.StylesUri))
+			if (!Package.PartExists(DocxRelations.Styles.Uri))
 			{
-				HelperFunctions.AddDefaultStylesXml(Package);
+				HelperFunctions.AddDefaultStylesXml(Package, out stylesPart, out stylesDoc);
 			}
 
-			// Ensure we are looking at the correct one.
-			stylesPart ??= Package.GetPart(DocxSections.StylesUri);
-			stylesDoc ??= stylesPart.Load();
+			var rootStyles = stylesDoc.Element(DocxNamespace.Main + "styles");
+			if (rootStyles == null)
+				throw new Exception("Missing root styles collection.");
 
-			// Check for the "hyperlinkStyle"
-			bool hyperlinkStyleExists = stylesDoc.Element(DocxNamespace.Main + "styles").Elements()
-				.Any(e => e.Attribute(DocxNamespace.Main + "styleId")?.Value == "Hyperlink");
+			// Check for the "hyperlinkStyle" and add it if it's missing.
+			bool hyperlinkStyleExists = rootStyles.Elements()
+				.Any(e => e.AttributeValue(DocxNamespace.Main + "styleId") == "Hyperlink");
 
 			if (!hyperlinkStyleExists)
 			{
-				// Add a simple Hyperlink style (blue + underline + default font + size)
-				stylesDoc.Element(DocxNamespace.Main + "styles").Add(
-					new XElement
-					(
-						DocxNamespace.Main + "style",
-						new XAttribute(DocxNamespace.Main + "type", "character"),
-						new XAttribute(DocxNamespace.Main + "styleId", "Hyperlink"),
-							new XElement(DocxNamespace.Main + "name", new XAttribute(DocxNamespace.Main + "val", "Hyperlink")),
-							new XElement(DocxNamespace.Main + "basedOn", new XAttribute(DocxNamespace.Main + "val", "DefaultParagraphFont")),
-							new XElement(DocxNamespace.Main + "uiPriority", new XAttribute(DocxNamespace.Main + "val", "99")),
-							new XElement(DocxNamespace.Main + "unhideWhenUsed"),
-							new XElement(DocxNamespace.Main + "rsid", new XAttribute(DocxNamespace.Main + "val", "0005416C")),
-							new XElement(DocxNamespace.Main + "rPr",
-								new XElement(DocxNamespace.Main + "color", new XAttribute(DocxNamespace.Main + "val", "0000FF"), new XAttribute(DocxNamespace.Main + "themeColor", "hyperlink")),
-								new XElement(DocxNamespace.Main + "u", new XAttribute(DocxNamespace.Main + "val", "single"))
-							)
-					)
-				);
+				rootStyles.Add(Resources.HyperlinkStyle(RevisionId));
 			}
 		}
 
@@ -1828,7 +1258,7 @@ namespace DXPlus
 
 			// Get all Header/Footer relationships in this document.
 			foreach (var rel in PackagePart.GetRelationshipsByType(
-				$"http://schemas.openxmlformats.org/officeDocument/2006/relationships/{reference}"))
+				$"{DocxNamespace.RelatedDoc.NamespaceName}/{reference}"))
 			{
 				var uri = rel.TargetUri;
 				if (!uri.OriginalString.StartsWith("/word/"))
@@ -1859,45 +1289,36 @@ namespace DXPlus
 		{
 			ThrowIfObjectDisposed();
 
+			// Get the main document part
 			PackagePart = Package.GetParts().Single(p =>
 				p.ContentType.Equals(DocxContentType.Document, StringComparison.CurrentCultureIgnoreCase) ||
 				p.ContentType.Equals(DocxContentType.Template, StringComparison.CurrentCultureIgnoreCase));
 
-			settingsPart = Package.GetPart(DocxSections.SettingsUri);
+			// Load the settings
+			settingsPart = Package.GetPart(DocxRelations.Settings.Uri);
 
-			// Load all the optional sections
+			// Load all the sections
 			foreach (var rel in PackagePart.GetRelationships())
 			{
-				switch (rel.RelationshipType)
-				{
-					case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/endnotes":
-						endnotesPart = Package.GetPart(new Uri("/word/" + rel.TargetUri.OriginalString.Replace("/word/", ""), UriKind.Relative));
-						break;
-
-					case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes":
-						footnotesPart = Package.GetPart(new Uri("/word/" + rel.TargetUri.OriginalString.Replace("/word/", ""), UriKind.Relative));
-						break;
-
-					case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles":
-						stylesPart = Package.GetPart(new Uri("/word/" + rel.TargetUri.OriginalString.Replace("/word/", ""), UriKind.Relative));
-						break;
-
-					case "http://schemas.microsoft.com/office/2007/relationships/stylesWithEffects":
-						stylesWithEffectsPart = Package.GetPart(new Uri("/word/" + rel.TargetUri.OriginalString.Replace("/word/", ""), UriKind.Relative));
-						break;
-
-					case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable":
-						fontTablePart = Package.GetPart(new Uri("/word/" + rel.TargetUri.OriginalString.Replace("/word/", ""), UriKind.Relative));
-						break;
-
-					case "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numberingDoc":
-						numberingPart = Package.GetPart(new Uri("/word/" + rel.TargetUri.OriginalString.Replace("/word/", ""), UriKind.Relative));
-						break;
-				}
+				if (rel.RelationshipType == DocxRelations.Endnotes.RelType)
+					endnotesPart = Package.GetPart(DocxRelations.Endnotes.Uri);
+				else if (rel.RelationshipType == DocxRelations.Footnotes.RelType)
+					footnotesPart = Package.GetPart(DocxRelations.Footnotes.Uri);
+				else if (rel.RelationshipType == DocxRelations.Styles.RelType)
+					stylesPart = Package.GetPart(DocxRelations.Styles.Uri);
+				else if (rel.RelationshipType == DocxRelations.StylesWithEffects.RelType)
+					stylesWithEffectsPart = Package.GetPart(DocxRelations.StylesWithEffects.Uri);
+				else if (rel.RelationshipType == DocxRelations.FontTable.RelType)
+					fontTablePart = Package.GetPart(DocxRelations.FontTable.Uri);
+				else if (rel.RelationshipType == DocxRelations.Numbering.RelType)
+					numberingPart = Package.GetPart(DocxRelations.Numbering.Uri);
 			}
 		}
 
-		internal void LoadDocumentParts()
+		/// <summary>
+		/// Loads the document contents from the assigned package
+		/// </summary>
+		internal void OnLoadDocument()
 		{
 			if (Package == null)
 				throw new InvalidOperationException($"Cannot load package parts when {nameof(Package)} property is not set.");
@@ -1912,6 +1333,11 @@ namespace DXPlus
 			Xml = mainDoc.Root!.Element(DocxNamespace.Main + "body");
 			if (Xml == null)
 				throw new InvalidOperationException($"Missing {DocxNamespace.Main + "body"} expected content.");
+
+			// Get the last revision id
+			string revValue = SectPr.AttributeValue(DocxNamespace.Main + "rsidR");
+			revision = uint.Parse(revValue, System.Globalization.NumberStyles.AllowHexSpecifier);
+            revision++; // bump revision
 
 			// Load headers
 			Headers = new Headers {
@@ -1947,139 +1373,34 @@ namespace DXPlus
 			}
 		}
 
-		private void AddDefaultNumberingPart()
+		internal void AddDefaultNumberingPart()
 		{
 			if (numberingPart == null)
 			{
-				numberingPart = Package.CreatePart(new Uri("/word/numbering.xml", UriKind.Relative), "application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml", CompressionOption.Maximum);
-				numberingDoc = Resources.NumberingXml();
+				numberingPart = Package.CreatePart(DocxRelations.Numbering.Uri, DocxRelations.Numbering.ContentType, CompressionOption.Maximum);
+				numberingDoc = Resources.NumberingXml(HelperFunctions.GenerateHexId());
 				numberingPart.Save(numberingDoc);
-				PackagePart.CreateRelationship(numberingPart.Uri, TargetMode.Internal, $"{DocxNamespace.RelatedDoc.NamespaceName}/numbering");
+				PackagePart.CreateRelationship(numberingPart.Uri, TargetMode.Internal, DocxRelations.Numbering.RelType);
 			}
 
 			// If the document contains no /word/styles.xml create one and associate it
-			if (!Package.PartExists(DocxSections.StylesUri))
+			if (!Package.PartExists(DocxRelations.Styles.Uri))
 			{
-				HelperFunctions.AddDefaultStylesXml(Package);
+				HelperFunctions.AddDefaultStylesXml(Package, out stylesPart, out stylesDoc);
 			}
-
-			// Ensure we are looking at the correct one.
-			stylesPart ??= Package.GetPart(DocxSections.StylesUri);
-			stylesDoc ??= stylesPart.Load();
 
 			var rootStyleNode = stylesDoc.Element(DocxNamespace.Main + "styles");
 			if (rootStyleNode == null)
 				throw new InvalidOperationException("Missing root style node after creation.");
 
 			// See if we have the list style
-			bool listStyleExists =
-			(
-				from s in rootStyleNode.Elements()
-				let styleId = s.Attribute(DocxNamespace.Main + "styleId")
-				where (styleId?.Value == "ListParagraph")
-				select s
-			).Any();
+			bool listStyleExists = rootStyleNode.Elements()
+				.Any(e => e.AttributeValue(DocxNamespace.Main + "styleId") == "ListParagraph");
 
 			if (!listStyleExists)
 			{
-				var style = new XElement(DocxNamespace.Main + "style",
-					new XAttribute(DocxNamespace.Main + "type", "paragraph"),
-					new XAttribute(DocxNamespace.Main + "styleId", "ListParagraph"),
-					new XElement(DocxNamespace.Main + "name",
-						new XAttribute(DocxNamespace.Main + "val", "List Paragraph")),
-					new XElement(DocxNamespace.Main + "basedOn",
-						new XAttribute(DocxNamespace.Main + "val", "Normal")),
-					new XElement(DocxNamespace.Main + "uiPriority",
-						new XAttribute(DocxNamespace.Main + "val", "34")),
-					new XElement(DocxNamespace.Main + "qformat"),
-					new XElement(DocxNamespace.Main + "rsid",
-						new XAttribute(DocxNamespace.Main + "val", "00832EE1")),
-					new XElement(DocxNamespace.Main + "rPr",
-						new XElement(DocxNamespace.Main + "ind",
-							new XAttribute(DocxNamespace.Main + "left", "720")),
-						new XElement(DocxNamespace.Main + "contextualSpacing")
-					)
-				);
-
-				rootStyleNode.Add(style);
+				rootStyleNode.Add(Resources.ListParagraphStyle(RevisionId));
 			}
-		}
-
-		/// <summary>
-		/// Clone a package part
-		/// </summary>
-		/// <param name="part">Part to clone</param>
-		/// <returns>Clone of passed part</returns>
-		private PackagePart ClonePackagePart(PackagePart part)
-		{
-			if (part == null)
-				throw new ArgumentNullException(nameof(part));
-			
-			ThrowIfObjectDisposed();
-
-			var newPackagePart = Package.CreatePart(part.Uri, part.ContentType, CompressionOption.Normal);
-
-			using var sr = part.GetStream();
-			using var sw = newPackagePart.GetStream(FileMode.Create);
-			sr.CopyTo(sw);
-
-			return newPackagePart;
-		}
-
-		private void ClonePackageRelationship(DocX otherDocument, PackagePart part, XDocument otherXml)
-		{
-			if (otherDocument == null)
-				throw new ArgumentNullException(nameof(otherDocument));
-			if (part == null)
-				throw new ArgumentNullException(nameof(part));
-			if (otherXml == null)
-				throw new ArgumentNullException(nameof(otherXml));
-
-			ThrowIfObjectDisposed();
-			otherDocument.ThrowIfObjectDisposed();
-
-			string url = part.Uri.OriginalString.Replace("/", "");
-			foreach (PackageRelationship remoteRelationship in otherDocument.PackagePart.GetRelationships())
-			{
-				if (url.Equals("word" + remoteRelationship.TargetUri.OriginalString.Replace("/", "")))
-				{
-					string remoteId = remoteRelationship.Id;
-					string localId = PackagePart.CreateRelationship(remoteRelationship.TargetUri, remoteRelationship.TargetMode, remoteRelationship.RelationshipType).Id;
-
-					// Replace all instances of remote id in the local document with the local id
-					foreach (var elem in otherXml.Descendants(DocxNamespace.DrawingMain + "blip"))
-					{
-						var embed = elem.Attribute(DocxNamespace.RelatedDoc + "embed");
-						if (embed?.Value == remoteId)
-						{
-							embed.SetValue(localId);
-						}
-					}
-
-					// Do the same for shapes
-					foreach (var elem in otherXml.Descendants(DocxNamespace.VML + "imagedata"))
-					{
-						var id = elem.Attribute(DocxNamespace.RelatedDoc + "id");
-						if (id?.Value == remoteId)
-						{
-							id.SetValue(localId);
-						}
-					}
-					
-					break;
-				}
-			}
-		}
-
-		private static string ComputeHashString(Stream stream)
-		{
-			byte[] hash = MD5.Create().ComputeHash(stream);
-			
-			var sb = new StringBuilder();
-			foreach (var value in hash)
-				sb.Append(value.ToString("X2"));
-
-			return sb.ToString();
 		}
 
 		private Footer GetFooterByType(string type)
@@ -2161,523 +1482,11 @@ namespace DXPlus
 			return $"rId{id+1}";
 		}
 
-		private void MergeImages(PackagePart remote_pp, DocX remote_document, XDocument remote_mainDoc, string contentType)
-		{
-			if (remote_pp == null)
-				throw new ArgumentNullException(nameof(remote_pp));
-			if (remote_document == null)
-				throw new ArgumentNullException(nameof(remote_document));
-			if (remote_mainDoc == null)
-				throw new ArgumentNullException(nameof(remote_mainDoc));
-			if (string.IsNullOrWhiteSpace(contentType))
-				throw new ArgumentNullException(nameof(contentType));
-
-			// Before doing any other work, check to see if this image is actually referenced in the document.
-			PackageRelationship remote_rel = remote_document.PackagePart.GetRelationships().Where(r => r.TargetUri.OriginalString.Equals(remote_pp.Uri.OriginalString.Replace("/word/", ""))).FirstOrDefault();
-			if (remote_rel == null)
-			{
-				remote_rel = remote_document.PackagePart.GetRelationships().Where(r => r.TargetUri.OriginalString.Equals(remote_pp.Uri.OriginalString)).FirstOrDefault();
-				if (remote_rel == null)
-				{
-					return;
-				}
-			}
-
-			string remote_Id = remote_rel.Id;
-			string remote_hash = ComputeHashString(remote_pp.GetStream());
-			IEnumerable<PackagePart> image_parts = Package.GetParts().Where(pp => pp.ContentType.Equals(contentType));
-
-			bool found = false;
-			foreach (PackagePart part in image_parts)
-			{
-				string local_hash = ComputeHashString(part.GetStream());
-				if (local_hash.Equals(remote_hash))
-				{
-					// This image already exists in this document.
-					found = true;
-
-					PackageRelationship local_rel = PackagePart.GetRelationships().FirstOrDefault(r => r.TargetUri.OriginalString.Equals(part.Uri.OriginalString.Replace("/word/", "")))
-								 ?? PackagePart.GetRelationships().FirstOrDefault(r => r.TargetUri.OriginalString.Equals(part.Uri.OriginalString));
-					if (local_rel != null)
-					{
-						string new_Id = local_rel.Id;
-
-						// Replace all instances of remote_Id in the local document with local_Id
-						foreach (XElement elem in remote_mainDoc.Descendants(DocxNamespace.DrawingMain + "blip"))
-						{
-							XAttribute embed = elem.Attribute(DocxNamespace.RelatedDoc + "embed");
-							if (embed != null && embed.Value == remote_Id)
-							{
-								embed.SetValue(new_Id);
-							}
-						}
-
-						// Replace all instances of remote_Id in the local document with local_Id (for shapes as well)
-						foreach (XElement elem in remote_mainDoc.Descendants(DocxNamespace.VML + "imagedata"))
-						{
-							XAttribute id = elem.Attribute(DocxNamespace.RelatedDoc + "id");
-							if (id != null && id.Value == remote_Id)
-							{
-								id.SetValue(new_Id);
-							}
-						}
-					}
-
-					break;
-				}
-			}
-
-			// This image does not exist in this document.
-			if (!found)
-			{
-				string new_uri = remote_pp.Uri.OriginalString;
-				new_uri = new_uri.Remove(new_uri.LastIndexOf("/"));
-				new_uri += "/" + Guid.NewGuid().ToString() + contentType.Replace("image/", ".");
-				if (!new_uri.StartsWith("/"))
-				{
-					new_uri = "/" + new_uri;
-				}
-
-				PackagePart new_pp = Package.CreatePart(new Uri(new_uri, UriKind.Relative), remote_pp.ContentType, CompressionOption.Normal);
-
-				using (Stream s_read = remote_pp.GetStream())
-				{
-					using Stream s_write = new_pp.GetStream(FileMode.Create);
-					byte[] buffer = new byte[short.MaxValue];
-					int read;
-					while ((read = s_read.Read(buffer, 0, buffer.Length)) > 0)
-					{
-						s_write.Write(buffer, 0, read);
-					}
-				}
-
-				PackageRelationship pr = PackagePart.CreateRelationship(new Uri(new_uri, UriKind.Relative), TargetMode.Internal,
-													"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image");
-
-				string new_Id = pr.Id;
-
-				//Check if the remote relationship id is a default rId from Word
-				Match defRelId = Regex.Match(remote_Id, @"rId\d+", RegexOptions.IgnoreCase);
-
-				// Replace all instances of remote_Id in the local document with local_Id
-				foreach (XElement elem in remote_mainDoc.Descendants(DocxNamespace.DrawingMain + "blip"))
-				{
-					XAttribute embed = elem.Attribute(DocxNamespace.RelatedDoc + "embed");
-					if (embed != null && embed.Value == remote_Id)
-					{
-						embed.SetValue(new_Id);
-					}
-				}
-
-				if (!defRelId.Success)
-				{
-					// Replace all instances of remote_Id in the local document with local_Id
-					foreach (XElement elem in mainDoc.Descendants(DocxNamespace.DrawingMain + "blip"))
-					{
-						XAttribute embed = elem.Attribute(DocxNamespace.RelatedDoc + "embed");
-						if (embed != null && embed.Value == remote_Id)
-						{
-							embed.SetValue(new_Id);
-						}
-					}
-
-					// Replace all instances of remote_Id in the local document with local_Id
-					foreach (XElement elem in mainDoc.Descendants(DocxNamespace.VML + "imagedata"))
-					{
-						XAttribute id = elem.Attribute(DocxNamespace.RelatedDoc + "id");
-						if (id != null && id.Value == remote_Id)
-						{
-							id.SetValue(new_Id);
-						}
-					}
-				}
-
-				// Replace all instances of remote_Id in the local document with local_Id (for shapes as well)
-				foreach (XElement elem in remote_mainDoc.Descendants(DocxNamespace.VML + "imagedata"))
-				{
-					XAttribute id = elem.Attribute(DocxNamespace.RelatedDoc + "id");
-					if (id != null && id.Value == remote_Id)
-					{
-						id.SetValue(new_Id);
-					}
-				}
-			}
-		}
-
-		private void MergeCustoms(PackagePart remote_pp, PackagePart local_pp)
-		{
-			if (remote_pp == null)
-				throw new ArgumentNullException(nameof(remote_pp));
-			if (local_pp == null)
-				throw new ArgumentNullException(nameof(local_pp));
-
-			// Get the remote documents custom.xml file.
-			XDocument remote_custom_document;
-			using (TextReader tr = new StreamReader(remote_pp.GetStream()))
-			{
-				remote_custom_document = XDocument.Load(tr);
-			}
-
-			// Get the local documents custom.xml file.
-			XDocument local_custom_document;
-			using (TextReader tr = new StreamReader(local_pp.GetStream()))
-			{
-				local_custom_document = XDocument.Load(tr);
-			}
-
-			IEnumerable<int> pids = remote_custom_document.Root.Descendants()
-				.Where(d => d.Name.LocalName == "property")
-				.Select(d => int.Parse(d.Attribute("pid").Value));
-
-			int pid = pids.Max() + 1;
-
-			foreach (XElement remote_property in remote_custom_document.Root.Elements())
-			{
-				bool found = false;
-				foreach (XElement local_property in local_custom_document.Root.Elements())
-				{
-					XAttribute remote_property_name = remote_property.Attribute("name");
-					XAttribute local_property_name = local_property.Attribute("name");
-
-					if (remote_property != null && local_property_name != null && remote_property_name.Value.Equals(local_property_name.Value))
-					{
-						found = true;
-					}
-				}
-
-				if (!found)
-				{
-					remote_property.SetAttributeValue("pid", pid);
-					local_custom_document.Root.Add(remote_property);
-					pid++;
-				}
-			}
-
-			// Save the modified local custom styles.xml file.
-			local_pp.Save(local_custom_document);
-		}
-
-		private void MergeEndnotes(XDocument remote_mainDoc, XDocument remote_endnotes)
-		{
-			if (remote_mainDoc == null)
-				throw new ArgumentNullException(nameof(remote_mainDoc));
-			if (remote_endnotes == null)
-				throw new ArgumentNullException(nameof(remote_endnotes));
-			
-			IEnumerable<int> ids = endnotesDoc.Root.Descendants()
-				.Where(d => d.Name.LocalName == "endnote")
-				.Select(d => int.Parse(d.Attribute(DocxNamespace.Main + "id").Value));
-
-			int max_id = ids.Max() + 1;
-			IEnumerable<XElement> endnoteReferences = remote_mainDoc.Descendants(DocxNamespace.Main + "endnoteReference");
-
-			foreach (XElement endnote in remote_endnotes.Root.Elements().OrderBy(fr => fr.Attribute(DocxNamespace.RelatedDoc + "id")).Reverse())
-			{
-				XAttribute id = endnote.Attribute(DocxNamespace.Main + "id");
-				if (id != null && int.TryParse(id.Value, out int i) && i > 0)
-				{
-					foreach (XElement endnoteRef in endnoteReferences)
-					{
-						XAttribute a = endnoteRef.Attribute(DocxNamespace.Main + "id");
-						if (a != null && int.Parse(a.Value).Equals(i))
-						{
-							a.SetValue(max_id);
-						}
-					}
-
-					// We care about copying this footnote.
-					endnote.SetAttributeValue(DocxNamespace.Main + "id", max_id);
-					endnotesDoc.Root.Add(endnote);
-					max_id++;
-				}
-			}
-		}
-
-		private void MergeFonts(DocX remote)
-		{
-			if (remote == null)
-				throw new ArgumentNullException(nameof(remote));
-			
-			// Add each remote font to this document.
-			IEnumerable<XElement> remote_fonts = remote.fontTableDoc.Root.Elements(DocxNamespace.Main + "font");
-			IEnumerable<XElement> local_fonts = fontTableDoc.Root.Elements(DocxNamespace.Main + "font");
-
-			foreach (XElement remote_font in remote_fonts)
-			{
-				bool flag_addFont = true;
-				foreach (XElement local_font in local_fonts)
-				{
-					if (local_font.Attribute(DocxNamespace.Main + "name").Value == remote_font.Attribute(DocxNamespace.Main + "name").Value)
-					{
-						flag_addFont = false;
-						break;
-					}
-				}
-
-				if (flag_addFont)
-				{
-					fontTableDoc.Root.Add(remote_font);
-				}
-			}
-		}
-
-		private void MergeFootnotes(XDocument remote_mainDoc, XDocument remote_footnotes)
-		{
-			if (remote_mainDoc == null)
-				throw new ArgumentNullException(nameof(remote_mainDoc));
-			if (remote_footnotes == null)
-				throw new ArgumentNullException(nameof(remote_footnotes));
-			
-			IEnumerable<int> ids = footnotesDoc.Root.Descendants()
-				.Where(d => d.Name.LocalName == "footnote")
-				.Select(d => int.Parse(d.Attribute(DocxNamespace.Main + "id").Value));
-
-			int max_id = ids.Max() + 1;
-			IEnumerable<XElement> footnoteReferences = remote_mainDoc.Descendants(DocxNamespace.Main + "footnoteReference");
-
-			foreach (XElement footnote in remote_footnotes.Root.Elements().OrderBy(fr => fr.Attribute(DocxNamespace.RelatedDoc + "id")).Reverse())
-			{
-				XAttribute id = footnote.Attribute(DocxNamespace.Main + "id");
-				if (id != null && int.TryParse(id.Value, out int i) && i > 0)
-				{
-					foreach (XElement footnoteRef in footnoteReferences)
-					{
-						XAttribute a = footnoteRef.Attribute(DocxNamespace.Main + "id");
-						if (a != null && int.Parse(a.Value).Equals(i))
-						{
-							a.SetValue(max_id);
-						}
-					}
-
-					// We care about copying this footnote.
-					footnote.SetAttributeValue(DocxNamespace.Main + "id", max_id);
-					footnotesDoc.Root.Add(footnote);
-					max_id++;
-				}
-			}
-		}
-
-		private void MergeNumbering(XDocument remote_mainDoc, DocX remote)
-		{
-			if (remote_mainDoc == null)
-				throw new ArgumentNullException(nameof(remote_mainDoc));
-			if (remote == null)
-				throw new ArgumentNullException(nameof(remote));
-			
-			// Add each remote numberingDoc to this document.
-			List<XElement> remote_abstractNums = remote.numberingDoc.Root.Elements(DocxNamespace.Main + "abstractNum").ToList();
-			int guidd = 0;
-			foreach (XElement an in remote_abstractNums)
-			{
-				XAttribute a = an.Attribute(DocxNamespace.Main + "abstractNumId");
-				if (a != null && int.TryParse(a.Value, out int i) && i > guidd)
-				{
-					guidd = i;
-				}
-			}
-			guidd++;
-
-			List<XElement> remote_nums = remote.numberingDoc.Root.Elements(DocxNamespace.Main + "num").ToList();
-			int guidd2 = 0;
-			foreach (XElement an in remote_nums)
-			{
-				XAttribute a = an.Attribute(DocxNamespace.Main + "numId");
-				if (a != null && int.TryParse(a.Value, out int i) && i > guidd2)
-				{
-					guidd2 = i;
-				}
-			}
-			guidd2++;
-
-			foreach (XElement remote_abstractNum in remote_abstractNums)
-			{
-				XAttribute abstractNumId = remote_abstractNum.Attribute(DocxNamespace.Main + "abstractNumId");
-				if (abstractNumId != null)
-				{
-					string abstractNumIdValue = abstractNumId.Value;
-					abstractNumId.SetValue(guidd);
-
-					foreach (XElement remote_num in remote_nums)
-					{
-						foreach (XElement numId in remote_mainDoc.Descendants(DocxNamespace.Main + "numId"))
-						{
-							XAttribute attr = numId.Attribute(DocxNamespace.Main + "val");
-							if (attr?.Value.Equals(remote_num.Attribute(DocxNamespace.Main + "numId").Value) == true)
-							{
-								attr.SetValue(guidd2);
-							}
-						}
-						remote_num.SetAttributeValue(DocxNamespace.Main + "numId", guidd2);
-
-						XElement e = remote_num.Element(DocxNamespace.Main + "abstractNumId");
-						if (e != null)
-						{
-							XAttribute a2 = e.Attribute(DocxNamespace.Main + "val");
-							if (a2?.Value.Equals(abstractNumIdValue) == true)
-							{
-								a2.SetValue(guidd);
-							}
-						}
-
-						guidd2++;
-					}
-				}
-
-				guidd++;
-			}
-
-			// Checking whether there were more than 0 elements, helped me get rid of exceptions thrown while using InsertDocument
-			if (numberingDoc?.Root.Elements(DocxNamespace.Main + "abstractNum").Any() == true)
-			{
-				numberingDoc.Root.Elements(DocxNamespace.Main + "abstractNum").Last().AddAfterSelf(remote_abstractNums);
-			}
-
-			if (numberingDoc?.Root.Elements(DocxNamespace.Main + "num").Any() == true)
-			{
-				numberingDoc.Root.Elements(DocxNamespace.Main + "num").Last().AddAfterSelf(remote_nums);
-			}
-		}
-
-		private void MergeStyles(XDocument remote_mainDoc, DocX remote, XDocument remote_footnotes, XDocument remote_endnotes)
-		{
-			if (remote_mainDoc == null)
-				throw new ArgumentNullException(nameof(remote_mainDoc));
-			if (remote == null)
-				throw new ArgumentNullException(nameof(remote));
-			if (remote_footnotes == null)
-				throw new ArgumentNullException(nameof(remote_footnotes));
-			if (remote_endnotes == null)
-				throw new ArgumentNullException(nameof(remote_endnotes));
-			
-			Dictionary<string, string> local_styles = new Dictionary<string, string>();
-			foreach (XElement local_style in stylesDoc.Root.Elements(DocxNamespace.Main + "style"))
-			{
-				XElement temp = new XElement(local_style);
-				XAttribute styleId = temp.Attribute(DocxNamespace.Main + "styleId");
-				string value = styleId.Value;
-				styleId.Remove();
-				string key = Regex.Replace(temp.ToString(), @"\s+", "");
-				if (!local_styles.ContainsKey(key))
-				{
-					local_styles.Add(key, value);
-				}
-			}
-
-			// Add each remote style to this document.
-			foreach (XElement remote_style in remote.stylesDoc.Root.Elements(DocxNamespace.Main + "style"))
-			{
-				XElement temp = new XElement(remote_style);
-				XAttribute styleId = temp.Attribute(DocxNamespace.Main + "styleId");
-				string value = styleId.Value;
-				styleId.Remove();
-				string key = Regex.Replace(temp.ToString(), @"\s+", "");
-				string guuid;
-
-				// Check to see if the local document already contains the remote style.
-				if (local_styles.ContainsKey(key))
-				{
-					local_styles.TryGetValue(key, out string local_value);
-
-					// If the styleIds are the same then nothing needs to be done.
-					if (local_value == value)
-					{
-						continue;
-					}
-
-					// All we need to do is update the styleId.
-					else
-					{
-						guuid = local_value;
-					}
-				}
-				else
-				{
-					guuid = Guid.NewGuid().ToString();
-					// Set the styleId in the remote_style to this new Guid
-					// [Fixed the issue that my document referred to a new Guid while my styles still had the old value ("Titel")]
-					remote_style.SetAttributeValue(DocxNamespace.Main + "styleId", guuid);
-				}
-
-				foreach (XElement e in remote_mainDoc.Root.Descendants(DocxNamespace.Main + "pStyle"))
-				{
-					XAttribute e_styleId = e.Attribute(DocxNamespace.Main + "val");
-					if (e_styleId?.Value.Equals(styleId.Value) == true)
-					{
-						e_styleId.SetValue(guuid);
-					}
-				}
-
-				foreach (XElement e in remote_mainDoc.Root.Descendants(DocxNamespace.Main + "rStyle"))
-				{
-					XAttribute e_styleId = e.Attribute(DocxNamespace.Main + "val");
-					if (e_styleId?.Value.Equals(styleId.Value) == true)
-					{
-						e_styleId.SetValue(guuid);
-					}
-				}
-
-				foreach (XElement e in remote_mainDoc.Root.Descendants(DocxNamespace.Main + "tblStyle"))
-				{
-					XAttribute e_styleId = e.Attribute(DocxNamespace.Main + "val");
-					if (e_styleId?.Value.Equals(styleId.Value) == true)
-					{
-						e_styleId.SetValue(guuid);
-					}
-				}
-
-				if (remote_endnotes != null)
-				{
-					foreach (XElement e in remote_endnotes.Root.Descendants(DocxNamespace.Main + "rStyle"))
-					{
-						XAttribute e_styleId = e.Attribute(DocxNamespace.Main + "val");
-						if (e_styleId?.Value.Equals(styleId.Value) == true)
-						{
-							e_styleId.SetValue(guuid);
-						}
-					}
-
-					foreach (XElement e in remote_endnotes.Root.Descendants(DocxNamespace.Main + "pStyle"))
-					{
-						XAttribute e_styleId = e.Attribute(DocxNamespace.Main + "val");
-						if (e_styleId?.Value.Equals(styleId.Value) == true)
-						{
-							e_styleId.SetValue(guuid);
-						}
-					}
-				}
-
-				if (remote_footnotes != null)
-				{
-					foreach (XElement e in remote_footnotes.Root.Descendants(DocxNamespace.Main + "rStyle"))
-					{
-						XAttribute e_styleId = e.Attribute(DocxNamespace.Main + "val");
-						if (e_styleId?.Value.Equals(styleId.Value) == true)
-						{
-							e_styleId.SetValue(guuid);
-						}
-					}
-
-					foreach (XElement e in remote_footnotes.Root.Descendants(DocxNamespace.Main + "pStyle"))
-					{
-						XAttribute e_styleId = e.Attribute(DocxNamespace.Main + "val");
-						if (e_styleId?.Value.Equals(styleId.Value) == true)
-						{
-							e_styleId.SetValue(guuid);
-						}
-					}
-				}
-
-				// Make sure they don't clash by using a uuid.
-				styleId.SetValue(guuid);
-				stylesDoc.Root.Add(remote_style);
-			}
-		}
-
 		/// <summary>
 		/// Method to throw an ObjectDisposedException
 		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		void ThrowIfObjectDisposed()
+		private void ThrowIfObjectDisposed()
 		{
 			if (Package == null)
 				throw new ObjectDisposedException("DocX object has been disposed.");

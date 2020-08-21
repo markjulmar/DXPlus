@@ -17,32 +17,32 @@ namespace TestDXPlus
             Setup("docs");
 
             HelloWorld();
-            HighlightWords();
-            HelloWorldAdvancedFormatting();
-            HelloWorldProtectedDocument();
-            HelloWorldAddPictureToWord();
-            RightToLeft();
-            Indentation();
-            HeadersAndFooters();
+            //HighlightWords();
+            //HelloWorldAdvancedFormatting();
+            //HelloWorldProtectedDocument();
+            //HelloWorldAddPictureToWord();
+            //RightToLeft();
+            //Indentation();
+            //HeadersAndFooters();
             HyperlinksInDocument();
-            AddList();
-            Equations();
-            Bookmarks();
-            BookmarksReplaceTextOfBookmarkKeepingFormat();
-            BarChart();
-            PieChart();
-            LineChart();
-            Chart3D();
-            DocumentMargins();
-            CreateTableWithTextDirection();
-            AddToc();
-            AddTocByReference();
-            TablesDocument();
-            DocumentsWithListsFontChange();
-            DocumentHeading();
-            LargeTable();
-            ProgrammaticallyManipulateImbeddedImage();
-            CountNumberOfParagraphs();
+            //AddList();
+            //Equations();
+            //Bookmarks();
+            //BookmarksReplaceTextOfBookmarkKeepingFormat();
+            //BarChart();
+            //PieChart();
+            //LineChart();
+            //Chart3D();
+            //DocumentMargins();
+            //CreateTableWithTextDirection();
+            //AddToc();
+            //AddTocByReference();
+            //TablesDocument();
+            //DocumentsWithListsFontChange();
+            //DocumentHeading();
+            //LargeTable();
+            //ProgrammaticallyManipulateImbeddedImage();
+            //CountNumberOfParagraphs();
         }
 
         private static void CountNumberOfParagraphs()
@@ -82,7 +82,7 @@ namespace TestDXPlus
             Enter();
 
             DocX document = DocX.Create("Lists.docx");
-            List numberedList = document.CreateList()
+            List numberedList = new List()
                                         .AddItem("First List Item.", 0, ListItemType.Numbered, 2)
                                         .AddItem("First sub list item", 1)
                                         .AddItem("Second List Item.")
@@ -90,7 +90,7 @@ namespace TestDXPlus
                                         .AddItem("Nested item.", 1)
                                         .AddItem("Second nested item.", 1);
 
-            List bulletedList = document.CreateList()
+            List bulletedList = new List()
                                         .AddItem("First Bulleted Item.", 0, ListItemType.Bulleted)
                                         .AddItem("Second bullet item")
                                         .AddItem("Sub bullet item", 1)
@@ -308,7 +308,7 @@ namespace TestDXPlus
 
             // created bulleted lists
 
-            List bulletedList = document.CreateList()
+            List bulletedList = new List()
                 .AddItem("First Bulleted Item.", 0, ListItemType.Bulleted)
                 .AddItem("Second bullet item")
                 .AddItem("Sub bullet item", 1)
@@ -334,7 +334,7 @@ namespace TestDXPlus
                 const double fontSize = 15;
 
                 // created numbered lists 
-                List numberedList = document.CreateList()
+                List numberedList = new List()
                     .AddItem("First List Item.", 0, ListItemType.Numbered, 1)
                     .AddItem("First sub list item", 1)
                     .AddItem("Second List Item.")
@@ -343,7 +343,7 @@ namespace TestDXPlus
                     .AddItem("Second nested item.", 1);
 
                 // created bulleted lists
-                List bulletedList = document.CreateList()
+                List bulletedList = new List()
                     .AddItem("First Bulleted Item.", 0, ListItemType.Bulleted)
                     .AddItem("Second bullet item")
                     .AddItem("Sub bullet item", 1)
@@ -634,9 +634,17 @@ namespace TestDXPlus
                     .AppendLine("This line contains a ")
                     .Append("bold ").Bold().Append("word.")
                     .AppendLine()
-                    .AppendLine("And this line has a cool ")
-                    .AppendHyperlink(document.CreateHyperlink("link", new Uri("http://www.microsoft.com")))
+                    .AppendLine("And a ")
+                    .Append(new Hyperlink("link", new Uri("http://www.microsoft.com")))
                     .Append(".");
+
+            // Insert a hyperlink into the paragraph
+            string text = "A final paragraph - ";
+            var p = document.InsertParagraph(text)
+                .AppendLine("With a few lines of text to read.")
+                .AppendLine("And a final line.");
+
+            p.InsertHyperlink(new Hyperlink("second link", new Uri("http://docs.microsoft.com/")), text.Length);
 
             // Save this document.
             document.Save();

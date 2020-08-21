@@ -1,4 +1,6 @@
-﻿using System.IO.Packaging;
+﻿using System.ComponentModel;
+using System.IO.Packaging;
+using System.Runtime.CompilerServices;
 using System.Xml.Linq;
 
 namespace DXPlus
@@ -9,21 +11,63 @@ namespace DXPlus
     /// </summary>
     public abstract class DocXElement
     {
+        private DocX document;
+        private XElement xml;
+
         /// <summary>
-        /// The section in the Package this element is represented by
+        /// The file in the package where this element is stored
         /// </summary>
         internal PackagePart PackagePart { get; set; }
 
         /// <summary>
         /// This is the actual Xml that gives this element substance.
         /// </summary>
-        public XElement Xml { get; set; }
+        public XElement Xml
+        {
+            get => xml;
+            set
+            {
+                var previousValue = xml;
+                xml = value;
+                OnElementChanged(previousValue, xml);
+            }
+        }
 
         /// <summary>
-        /// This is a reference to the DocX object that this element belongs to.
+        /// Called when the XML element is changed
+        /// </summary>
+        protected virtual void OnElementChanged(XElement previousValue, XElement newValue)
+        {
+        }
+
+        /// <summary>
+        /// This is a reference to the document object that this element belongs to.
         /// Every DocX element is connected to a document.
         /// </summary>
-        public DocX Document { get; set; }
+        public DocX Document
+        {
+            get => document;
+            set
+            {
+                var previousValue = document;
+                document = value;
+                OnDocumentOwnerChanged(previousValue, document);
+            }
+        }
+
+        /// <summary>
+        /// Called when the document owner is changed.
+        /// </summary>
+        protected virtual void OnDocumentOwnerChanged(DocX previousValue, DocX newValue)
+        {
+        }
+
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        internal DocXElement()
+        {
+        }
 
         /// <summary>
         /// Store both the document and xml so that they can be accessed by derived types.

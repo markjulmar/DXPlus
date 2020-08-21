@@ -1,0 +1,11 @@
+﻿<w:style w:styleId="ListParagraph" w:type="paragraph" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:name w:val="List Paragraph"/>
+  <w:basedOn w:val="Normal"/>
+  <w:uiPriority w:val="34"/>
+  <w:qFormat/>
+  <w:rsid w:val="{rsid}"/>
+  <w:pPr>
+    <w:ind w:left="720"/>
+    <w:contextualSpacing/>
+  </w:pPr>
+</w:style>
