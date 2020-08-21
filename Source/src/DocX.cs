@@ -1378,7 +1378,7 @@ namespace DXPlus
 			if (numberingPart == null)
 			{
 				numberingPart = Package.CreatePart(DocxRelations.Numbering.Uri, DocxRelations.Numbering.ContentType, CompressionOption.Maximum);
-				numberingDoc = Resources.NumberingXml(HelperFunctions.GenerateHexId());
+				numberingDoc = Resources.NumberingXml();
 				numberingPart.Save(numberingDoc);
 				PackagePart.CreateRelationship(numberingPart.Uri, TargetMode.Internal, DocxRelations.Numbering.RelType);
 			}

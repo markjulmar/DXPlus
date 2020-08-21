@@ -174,25 +174,36 @@ namespace DXPlus
             get
             {
                 var lists = new List<List>();
-                var list = new List {Document = Document, Xml = Xml};
+                var list = new List();
 
                 foreach (var paragraph in Paragraphs)
                 {
-                    if (paragraph.IsListItem)
+                    if (paragraph.IsListItem())
                     {
                         if (list.CanAddListItem(paragraph))
                         {
+                            if (list.Items.Count == 0)
+                            {
+                                list.ListType = paragraph.GetListItemType();
+                                list.StartNumber = NumberingHelpers.GetStartingNumber(Document, paragraph.GetListNumId(), paragraph.GetListLevel());
+                            }
+
                             list.AddItem(paragraph);
                         }
                         else
                         {
+                            list.Document = Document;
                             lists.Add(list);
-                            list = new List {Document = Document, Xml = Xml};
+
+                            list = new List(paragraph.GetListItemType(), 
+                                NumberingHelpers.GetStartingNumber(Document, 
+                                    paragraph.GetListNumId(), paragraph.GetListLevel()));
                             list.AddItem(paragraph);
                         }
                     }
                 }
 
+                list.Document = Document;
                 lists.Add(list);
 
                 return lists;
@@ -607,9 +618,11 @@ namespace DXPlus
         /// <returns>The List now associated with this document.</returns>
         public List InsertList(List list)
         {
+            list.Document = Document;
+
             foreach (var item in list.Items)
             {
-                Xml.Add(item.Xml);
+                Xml.Add(item.Paragraph.Xml);
             }
 
             return list;
@@ -624,10 +637,12 @@ namespace DXPlus
         /// <returns>The List now associated with this document.</returns>
         public List InsertList(List list, double fontSize)
         {
+            list.Document = Document;
+
             foreach (var item in list.Items)
             {
-                item.FontSize(fontSize);
-                Xml.Add(item.Xml);
+                item.Paragraph.FontSize(fontSize);
+                Xml.Add(item.Paragraph.Xml);
             }
 
             return list;
@@ -643,11 +658,13 @@ namespace DXPlus
         /// <returns>The List now associated with this document.</returns>
         public List InsertList(List list, System.Drawing.FontFamily fontFamily, double fontSize)
         {
+            list.Document = Document;
+
             foreach (var item in list.Items)
             {
-                item.Font(fontFamily);
-                item.FontSize(fontSize);
-                Xml.Add(item.Xml);
+                item.Paragraph.Font(fontFamily);
+                item.Paragraph.FontSize(fontSize);
+                Xml.Add(item.Paragraph.Xml);
             }
 
             return list;
@@ -661,11 +678,13 @@ namespace DXPlus
         /// <returns>The List now associated with this document.</returns>
         public List InsertList(int index, List list)
         {
+            list.Document = Document;
+
             var p = HelperFunctions.GetFirstParagraphAffectedByInsert(Document, index);
 
             var split = HelperFunctions.SplitParagraph(p, index - p.StartIndex);
             var elements = new List<XElement> { split[0] };
-            elements.AddRange(list.Items.Select(i => new XElement(i.Xml)));
+            elements.AddRange(list.Items.Select(i => new XElement(i.Paragraph.Xml)));
             elements.Add(split[1]);
             p.Xml.ReplaceWith(elements.ToArray<object>());
 

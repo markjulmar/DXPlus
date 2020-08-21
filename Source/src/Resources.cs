@@ -79,7 +79,7 @@ namespace DXPlus
         /// </summary>
         /// <param name="nsid">unique identifier</param>
         /// <returns></returns>
-        public static XDocument NumberingXml(string nsid) => GetDocument("DXPlus.Resources.numbering.xml", new { nsid });
+        public static XDocument NumberingXml() => GetDocument("DXPlus.Resources.numbering.xml");
 
         /// <summary>
         /// Default styles document - used for all new documents
@@ -91,13 +91,13 @@ namespace DXPlus
         /// Default bullet style for bulleted lists - added when a new bulleted list is used.
         /// </summary>
         /// <returns></returns>
-        public static XDocument DefaultBulletNumberingXml() => GetDocument("DXPlus.Resources.numbering.bullets.xml");
+        public static XDocument DefaultBulletNumberingXml(string nsid) => GetDocument("DXPlus.Resources.numbering.bullets.xml", new { nsid });
 
         /// <summary>
         /// Default numbering style for numbered lists - added when a numbered list is used
         /// </summary>
         /// <returns></returns>
-        public static XDocument DefaultDecimalNumberingXml() => GetDocument("DXPlus.Resources.numbering.decimal.xml");
+        public static XDocument DefaultDecimalNumberingXml(string nsid) => GetDocument("DXPlus.Resources.numbering.decimal.xml", new { nsid });
 
         /// <summary>
         /// Default styles used for tables - added when a table is used

@@ -226,32 +226,9 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// If this element is a list item, get the indentation level of the list item.
-        /// </summary>
-        public int? IndentLevel
-        {
-            get
-            {
-                if (IsListItem)
-                {
-                    string value = ParagraphNumberProperties.FirstLocalNameDescendant("ilvl").GetVal();
-                    if (value != null && int.TryParse(value, out int result))
-                        return result;
-                }
-
-                return null;
-            }
-        }
-
-        /// <summary>
         /// True to keep with the next element on the page.
         /// </summary>
         public bool ShouldKeepWithNext => ParaElement().Element(DocxNamespace.Main + "keepNext") != null;
-
-        /// <summary>
-        /// Determine if this paragraph is a list element.
-        /// </summary>
-        public bool IsListItem => ParagraphNumberProperties != null;
 
         /// <summary>
         /// Get or set the paragraph line spacing
@@ -296,64 +273,6 @@ namespace DXPlus
             }
 
             set => SpacingBefore(value);
-        }
-
-        /// <summary>
-        /// Return the type of list contained in this paragraph.
-        /// </summary>
-        public ListItemType ListItemType => GetListItemType();
-
-        /// <summary>
-        /// Fetch the paragraph number properties for a list element.
-        /// </summary>
-        public XElement ParagraphNumberProperties
-        {
-            get
-            {
-                var node = Xml.FirstLocalNameDescendant("numPr");
-                var numIdAttr = node?.FirstLocalNameDescendant("numId");
-                return numIdAttr != null && int.TryParse(numIdAttr.GetVal(), out int result) && result > 0
-                    ? node
-                    : null;
-            }
-        }
-
-        /// <summary>
-        /// Get the ListItemType property for the paragraph.
-        /// Defaults to numbered if a list is found but the type is not specified
-        /// </summary>
-        private ListItemType GetListItemType()
-        {
-            var numProperties = ParagraphNumberProperties;
-            if (numProperties == null)
-                return ListItemType.None;
-
-            string level = numProperties.Element(DocxNamespace.Main + "ilvl").GetVal();
-            string numIdRef = numProperties.Element(DocxNamespace.Main + "numId").GetVal();
-
-            // Find the number definition instance. We map <w:num> to <w:abstractNum>
-            var numNode = Document.numberingDoc.LocalNameDescendants("num")?.FindByAttrVal(DocxNamespace.Main + "numId", numIdRef);
-            if (numNode == null)
-            {
-                throw new Exception(
-                    $"Number reference w:numId('{numIdRef}') used in document but not defined in numbering.xml");
-            }
-
-            // Get the abstractNumId
-            string absNumId = numNode.FirstLocalNameDescendant("abstractNumId").GetVal();
-
-            // Find the numbering style section
-            var absNumNode = Document.numberingDoc.LocalNameDescendants("abstractNum")
-                .FindByAttrVal(DocxNamespace.Main + "abstractNumId", absNumId);
-
-            // Get the numbering format.
-            var format = absNumNode.LocalNameDescendants("lvl")
-                .FindByAttrVal(DocxNamespace.Main + "ilvl", level)
-                .FirstLocalNameDescendant("numFmt");
-
-            return format.TryGetEnumValue(out ListItemType result)
-                ? result
-                : ListItemType.Numbered;
         }
 
         /// <summary>
