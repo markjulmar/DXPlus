@@ -1,4 +1,6 @@
 ﻿using System.Drawing;
+using System.Globalization;
+using System.Xml.Linq;
 
 namespace DXPlus.Helpers
 {
@@ -30,5 +32,21 @@ namespace DXPlus.Helpers
             return $"{color.R:X2}{color.G:X2}{color.B:X2}";
         }
 
+        /// <summary>
+        /// Convert the value of an attribute to a Color using ARGB
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        public static Color ToColor(this XAttribute color)
+        {
+            if (color != null)
+            {
+                var rgb = int.Parse(color.Value.Replace("#", ""), NumberStyles.HexNumber) | 0xff000000;
+                return Color.FromArgb((int) rgb);
+
+            }
+
+            return Color.Empty;
+        }
     }
 }

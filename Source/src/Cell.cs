@@ -1,6 +1,7 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
 using System.Drawing;
-using System.Globalization;
+using System.IO.Packaging;
+using System.Linq;
 using System.Xml.Linq;
 using DXPlus.Helpers;
 
@@ -26,27 +27,17 @@ namespace DXPlus
         /// <summary>
         /// Row owner
         /// </summary>
-        internal Row Row { get; set; }
+        public Row Row { get; set; }
 
         /// <summary>
         ///     Gets or Sets the fill color of this Cell.
         /// </summary>
         public Color FillColor
         {
-            get
-            {
-                var fill = Xml.Element(DocxNamespace.Main + "tcPr")?
-                    .Element(DocxNamespace.Main + "shd")?
-                    .Attribute(DocxNamespace.Main + "fill");
-
-                if (fill != null)
-                {
-                    var argb = int.Parse(fill.Value.Replace("#", ""), NumberStyles.HexNumber);
-                    return Color.FromArgb(argb);
-                }
-
-                return Color.Empty;
-            }
+            get => Xml.Element(DocxNamespace.Main + "tcPr")?
+                      .Element(DocxNamespace.Main + "shd")?
+                      .Attribute(DocxNamespace.Main + "fill")
+                      .ToColor() ?? Color.Empty;
 
             set
             {
@@ -59,41 +50,50 @@ namespace DXPlus
             }
         }
 
+        /// <summary>
+        /// Get the applied gridSpan based on cell merges.
+        /// </summary>
+        public int GridSpan =>
+            int.TryParse(Xml.Element(DocxNamespace.Main + "tcPr")?
+                .Element(DocxNamespace.Main + "gridSpan")?
+                .GetVal(), out int result)
+                ? result
+                : 1;
 
         /// <summary>
-        ///     BottomMargin in pixels.
+        /// BottomMargin in pixels.
         /// </summary>
-        public double BottomMargin
+        public double? BottomMargin
         {
-            get => GetMargin("bottom");
-            set => SetMargin("bottom", value);
+            get => GetMargin(TableCellMarginType.Bottom.GetEnumName());
+            set => SetMargin(TableCellMarginType.Bottom.GetEnumName(), value);
         }
 
         /// <summary>
-        ///     LeftMargin in pixels.
+        /// LeftMargin in pixels.
         /// </summary>
-        public double LeftMargin
+        public double? LeftMargin
         {
-            get => GetMargin("left");
-            set => SetMargin("left", value);
+            get => GetMargin(TableCellMarginType.Left.GetEnumName());
+            set => SetMargin(TableCellMarginType.Left.GetEnumName(), value);
         }
 
         /// <summary>
         ///     RightMargin in pixels.
         /// </summary>
-        public double RightMargin
+        public double? RightMargin
         {
-            get => GetMargin("right");
-            set => SetMargin("right", value);
+            get => GetMargin(TableCellMarginType.Right.GetEnumName());
+            set => SetMargin(TableCellMarginType.Right.GetEnumName(), value);
         }
 
         /// <summary>
         ///     TopMargin in pixels.
         /// </summary>
-        public double TopMargin
+        public double? TopMargin
         {
-            get => GetMargin("top");
-            set => SetMargin("top", value);
+            get => GetMargin(TableCellMarginType.Top.GetEnumName());
+            set => SetMargin(TableCellMarginType.Top.GetEnumName(), value);
         }
 
         public Color Shading
@@ -123,6 +123,33 @@ namespace DXPlus
             }
         }
 
+        /// <summary>
+        /// Gets or sets all the text for a paragraph
+        /// </summary>
+        public string Text
+        {
+            get => string.Join('\n', Paragraphs.Select(p => p.Text).Where(p => !string.IsNullOrEmpty(p)));
+            set
+            {
+                string val = value ?? "";
+                switch (Paragraphs.Count)
+                {
+                    case 0: InsertParagraph(val);
+                        break;
+                    case 1: Paragraphs[0].SetText(val);
+                        break;
+                    default:
+                        Xml.Elements(DocxNamespace.Main + "p").Remove();
+                        InsertParagraph(val);
+                        break;
+                }
+
+            }
+        }
+
+        /// <summary>
+        /// Set the text direction for the table cell
+        /// </summary>
         public TextDirection TextDirection
         {
             get
@@ -148,7 +175,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        ///     Gets or Sets this Cells vertical alignment.
+        /// Gets or Sets the vertical alignment.
         /// </summary>
         public VerticalAlignment VerticalAlignment
         {
@@ -163,7 +190,6 @@ namespace DXPlus
                     val?.Remove();
                     return VerticalAlignment.Center;
                 }
-
                 return result;
             }
 
@@ -176,9 +202,9 @@ namespace DXPlus
         }
 
         /// <summary>
-        ///     Width in pixels. // Added by Joel, refactored by Cathal
+        /// Width in pixels
         /// </summary>
-        public double Width
+        public double? Width
         {
             get
             {
@@ -189,10 +215,10 @@ namespace DXPlus
                 if (value == null || !double.TryParse(value.Value, out var widthUnits))
                 {
                     value?.Remove();
-                    return double.NaN;
+                    return null;
                 }
 
-                return widthUnits / 15;
+                return widthUnits / TableHelpers.UnitConversion;
             }
 
             set
@@ -206,15 +232,13 @@ namespace DXPlus
                 }
                 else
                 {
-                    // The type attribute needs to be set to dxa which represents "twips" or twentieths of a point. In other words, 1/1440th of an inch.
-                    tcW.SetAttributeValue(DocxNamespace.Main + "type", "dxa");
-                    // 15 "word units" is equal to one pixel.
-                    tcW.SetAttributeValue(DocxNamespace.Main + "w", value * 15);
+                    tcW.SetAttributeValue(DocxNamespace.Main + "type", "dxa"); // Widths in 20th/pt.
+                    tcW.SetAttributeValue(DocxNamespace.Main + "w", value * TableHelpers.UnitConversion);
                 }
             }
         }
 
-        private double GetMargin(string name)
+        private double? GetMargin(string name)
         {
             var w = Xml.Element(DocxNamespace.Main + "tcPr")?
                 .Element(DocxNamespace.Main + "tcMar")?
@@ -224,27 +248,33 @@ namespace DXPlus
             if (w == null || !double.TryParse(w.Value, out var margin))
             {
                 w?.Remove();
-                return double.NaN;
+                return null;
             }
 
-            // Convert margin to pixels - 15 units is equal to one pixel.
-            return margin / 15;
+            // Convert margin to pixels.
+            return margin / TableHelpers.UnitConversion;
         }
 
-        private void SetMargin(string name, double value)
+        private void SetMargin(string name, double? value)
         {
             var tcPr = Xml.GetOrCreateElement(DocxNamespace.Main + "tcPr");
-            var tcMar = tcPr.GetOrCreateElement(DocxNamespace.Main + "tcMar");
-            var tcMarBottom = tcMar.GetOrCreateElement(DocxNamespace.Main + name);
 
-            // The type attribute needs to be set to dxa which represents "twips" or twentieths of a point. In other words, 1/1440th of an inch.
-            tcMarBottom.SetAttributeValue(DocxNamespace.Main + "type", "dxa");
-            // 15 "word units" is equal to one pixel.
-            tcMarBottom.SetAttributeValue(DocxNamespace.Main + "w", value * 15);
+            if (value != null)
+            {
+                var tcMar = tcPr.GetOrCreateElement(DocxNamespace.Main + "tcMar");
+                var margin = tcMar.GetOrCreateElement(DocxNamespace.Main + name);
+
+                margin.SetAttributeValue(DocxNamespace.Main + "type", "dxa");
+                margin.SetAttributeValue(DocxNamespace.Main + "w", value * TableHelpers.UnitConversion);
+            }
+            else
+            {
+                tcPr.Element("tcMar")?.Element(DocxNamespace.Main + name)?.Remove();
+            }
         }
 
         /// <summary>
-        ///     Get a table cell border
+        /// Get a table cell border
         /// </summary>
         /// <param name="borderType">The table cell border to get</param>
         public Border GetBorder(TableCellBorderType borderType)
@@ -259,7 +289,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        ///     Set the table cell border
+        /// Set the table cell border
         /// </summary>
         /// <param name="borderType">Table Cell border to set</param>
         /// <param name="border">Border object to set the table cell border</param>
@@ -296,5 +326,15 @@ namespace DXPlus
             // The color attribute is used for the border color
             tcBorderType.SetAttributeValue(DocxNamespace.Main + "color", border.Color.ToHex());
         }
+
+        /// <summary>
+        /// Called when the document owner is changed.
+        /// </summary>
+        protected override void OnDocumentOwnerChanged(DocX previousValue, DocX newValue)
+        {
+            base.OnDocumentOwnerChanged(previousValue, newValue);
+            PackagePart = Row?.PackagePart;
+        }
+
     }
 }

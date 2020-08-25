@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Xml.Linq;
 using DXPlus.Helpers;
@@ -45,6 +46,10 @@ namespace DXPlus
                     .SetAttributeValue(DocxNamespace.Main + "val", value);
             }
         }
+
+        public string Text => Paragraph.Text;
+        public XElement Xml => Paragraph.Xml;
+        
     }
 
     /// <summary>

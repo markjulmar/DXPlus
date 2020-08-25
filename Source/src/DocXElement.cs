@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-using System.IO.Packaging;
-using System.Runtime.CompilerServices;
+﻿using System.IO.Packaging;
 using System.Xml.Linq;
 
 namespace DXPlus
@@ -76,8 +74,8 @@ namespace DXPlus
         /// <param name="xml">The Xml that gives this element substance</param>
         internal DocXElement(DocX document, XElement xml)
         {
-            Document = document;
             Xml = xml;
+            Document = document;
         }
     }
 }

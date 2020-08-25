@@ -17,6 +17,7 @@ namespace DXPlus
         private int? kerning;
         private int? position;
         private double? spacing;
+        private bool? superScript; // null = none, true = super, false = sub
 
         /// <summary>
         /// A text formatting.
@@ -25,10 +26,9 @@ namespace DXPlus
         {
             CapsStyle = DXPlus.CapsStyle.None;
             Strikethrough = DXPlus.Strikethrough.None;
-            Script = DXPlus.Script.None;
             Highlight = DXPlus.Highlight.None;
             UnderlineStyle = DXPlus.UnderlineStyle.None;
-            Misc = DXPlus.Misc.None;
+            Effect = DXPlus.Effect.None;
             Language = CultureInfo.CurrentCulture;
         }
 
@@ -47,15 +47,15 @@ namespace DXPlus
                 CapsStyle = CapsStyle,
                 FontColor = FontColor,
                 FontFamily = FontFamily,
-                Hidden = Hidden,
+                IsHidden = IsHidden,
                 Highlight = Highlight,
                 Italic = Italic,
                 Language = Language,
-                Misc = Misc,
+                Effect = Effect,
                 kerning = kerning,
                 percentageScale = percentageScale,
                 position = position,
-                Script = Script,
+                superScript = superScript,
                 size = size,
                 spacing = spacing,
                 Strikethrough = Strikethrough,
@@ -113,11 +113,11 @@ namespace DXPlus
 
                     case "color":
                         string color = option.GetVal();
-                        formatting.FontColor = ColorTranslator.FromHtml(string.Format("#{0}", color));
+                        formatting.FontColor = ColorTranslator.FromHtml($"#{color}");
                         break;
 
                     case "vanish":
-                        formatting.Hidden = true;
+                        formatting.IsHidden = true;
                         break;
 
                     case "b":
@@ -179,7 +179,7 @@ namespace DXPlus
                     );
                 }
 
-                if (Hidden == true)
+                if (IsHidden == true)
                 {
                     rPr.Add(new XElement(DocxNamespace.Main + "vanish"));
                 }
@@ -216,9 +216,10 @@ namespace DXPlus
                     rPr.Add(new XElement(DocxNamespace.Main + Strikethrough.GetEnumName()));
                 }
 
-                if (Script.HasValue && Script != DXPlus.Script.None)
+                if (superScript.HasValue)
                 {
-                    rPr.Add(new XElement(DocxNamespace.Main + "vertAlign", new XAttribute(DocxNamespace.Main + "val", Script.GetEnumName())));
+                    rPr.Add(new XElement(DocxNamespace.Main + "vertAlign", 
+                            new XAttribute(DocxNamespace.Main + "val", superScript == true ? "superscript" : "subscript")));
                 }
 
                 if (size.HasValue)
@@ -242,17 +243,17 @@ namespace DXPlus
                     rPr.Add(new XElement(DocxNamespace.Main + CapsStyle.GetEnumName()));
                 }
 
-                if (Misc.HasValue && Misc != DXPlus.Misc.None)
+                if (Effect.HasValue && Effect != DXPlus.Effect.None)
                 {
-                    switch (Misc)
+                    switch (Effect)
                     {
-                        case DXPlus.Misc.OutlineShadow:
+                        case DXPlus.Effect.OutlineShadow:
                             rPr.Add(new XElement(DocxNamespace.Main + "outline"));
                             rPr.Add(new XElement(DocxNamespace.Main + "shadow"));
                             break;
 
                         default:
-                            rPr.Add(new XElement(DocxNamespace.Main + Misc.GetEnumName()));
+                            rPr.Add(new XElement(DocxNamespace.Main + Effect.GetEnumName()));
                             break;
                     }
                 }
@@ -277,9 +278,34 @@ namespace DXPlus
         public Strikethrough? Strikethrough { get; set; }
 
         /// <summary>
-        /// The script that this formatting should be, normal, superscript or subscript.
+        /// True for subscript text. Note: mutually exclusive with Subscript.
         /// </summary>
-        public Script? Script { get; set; }
+        public bool Superscript
+        {
+            get => superScript == true;
+            set
+            {
+                if (value)
+                    superScript = true;
+                else if (superScript == true)
+                    superScript = null;
+            }
+        }
+
+        /// <summary>
+        /// True for subscript text. Note: mutually exclusive with Superscript.
+        /// </summary>
+        public bool Subscript
+        {
+            get => superScript == false;
+            set
+            {
+                if (value)
+                    superScript = false;
+                else if (superScript == false)
+                    superScript = null;
+            }
+        }
 
         /// <summary>
         /// The Size of this text, must be between 0 and 1638.
@@ -404,19 +430,19 @@ namespace DXPlus
         public UnderlineStyle? UnderlineStyle { get; set; }
 
         /// <summary>
-        /// The underline colour.
+        /// The underline color.
         /// </summary>
         public Color? UnderlineColor { get; set; }
 
         /// <summary>
-        /// Misc settings.
+        /// Effect settings.
         /// </summary>
-        public Misc? Misc { get; set; }
+        public Effect? Effect { get; set; }
 
         /// <summary>
         /// Is this text hidden or visible.
         /// </summary>
-        public bool? Hidden { get; set; }
+        public bool? IsHidden { get; set; }
 
         /// <summary>
         /// Capitalization style.
@@ -444,11 +470,11 @@ namespace DXPlus
         public int CompareTo(object obj)
         {
             Formatting other = (Formatting)obj;
-            return other.Hidden != Hidden || other.Bold != Bold || other.Italic != Italic
-                || other.Strikethrough != Strikethrough || other.Script != Script
+            return other.IsHidden != IsHidden || other.Bold != Bold || other.Italic != Italic
+                || other.Strikethrough != Strikethrough || other.superScript != superScript
                 || other.Highlight != Highlight || other.size != size
                 || other.FontColor != FontColor || other.UnderlineColor != UnderlineColor
-                || other.UnderlineStyle != UnderlineStyle || other.Misc != Misc
+                || other.UnderlineStyle != UnderlineStyle || other.Effect != Effect
                 || other.CapsStyle != CapsStyle || other.FontFamily != FontFamily
                 || other.percentageScale != percentageScale || other.kerning != kerning
                 || other.position != position || other.spacing != spacing

@@ -16,33 +16,96 @@ namespace TestDXPlus
         {
             Setup("docs");
 
-            HelloWorld();
-            HighlightWords();
-            HelloWorldAdvancedFormatting();
-            HelloWorldProtectedDocument();
-            HelloWorldAddPictureToWord();
-            RightToLeft();
-            Indentation();
-            HeadersAndFooters();
-            HyperlinksInDocument();
-            AddList();
-            Equations();
-            Bookmarks();
-            BookmarksReplaceTextOfBookmarkKeepingFormat();
-            BarChart();
-            PieChart();
-            LineChart();
-            Chart3D();
-            DocumentMargins();
+            //HelloWorld();
+            //HighlightWords();
+            //HelloWorldAdvancedFormatting();
+            //HelloWorldProtectedDocument();
+            //HelloWorldAddPictureToWord();
+            //RightToLeft();
+            //Indentation();
+            //HeadersAndFooters();
+            //HyperlinksInDocument();
+            //AddList();
+            //Equations();
+            //Bookmarks();
+            //BookmarksReplaceTextOfBookmarkKeepingFormat();
+            //BarChart();
+            //PieChart();
+            //LineChart();
+            //Chart3D();
+            //DocumentMargins();
             CreateTableWithTextDirection();
-            AddToc();
-            AddTocByReference();
+            //AddToc();
+            //AddTocByReference();
             TablesDocument();
-            DocumentsWithListsFontChange();
-            DocumentHeading();
+            //DocumentsWithListsFontChange();
+            //DocumentHeading();
             LargeTable();
-            ProgrammaticallyManipulateImbeddedImage();
-            CountNumberOfParagraphs();
+            //ProgrammaticallyManipulateImbeddedImage();
+            //CountNumberOfParagraphs();
+            EmptyTable();
+            MergeTableRows();
+            MergeTableColumns();
+        }
+
+        private static void MergeTableColumns()
+        {
+            Enter();
+
+            var doc = DocX.Create("mergeTableColumns.docx");
+
+            doc.InsertParagraph("Check out the table below.");
+
+            var t = new Table(new[,]
+            {
+                { "1", "2", "3" },
+                { "4", "5", "6" },
+                { "7", "8", "9" },
+                { "10", "11", "12" },
+            });
+
+            doc.InsertTable(t);
+
+            t.Rows[1].MergeCells(0, t.ColumnCount);
+            t.Alignment = Alignment.Center;
+            t.Rows[1].Cells[0].VerticalAlignment = VerticalAlignment.Center;
+            doc.Save();
+        }
+
+        private static void MergeTableRows()
+        {
+            Enter();
+
+            var doc = DocX.Create("mergeTableRow.docx");
+
+            doc.InsertParagraph("Check out the table below.");
+
+            var t = new Table(new[,]
+            {
+                { "1", "2", "3" },
+                { "4", "5", "6" },
+                { "7", "8", "9" },
+                { "10", "11", "12" },
+            });
+
+            doc.InsertTable(t);
+
+            t.MergeCellsInColumn(1, 0, t.Rows.Count);
+            t.Alignment = Alignment.Center;
+            doc.Save();
+        }
+
+        private static void EmptyTable()
+        {
+            Enter();
+
+            DocX doc = DocX.Create("emptyTable.docx");
+
+            Table t = new Table(2,1);
+
+            doc.InsertTable(t);
+
+            doc.Save();
         }
 
         private static void CountNumberOfParagraphs()
@@ -470,16 +533,19 @@ namespace TestDXPlus
             Enter();
 
             DocX document = DocX.Create("HelloWorld.docx");
-            Paragraph p = document.InsertParagraph();
+            Paragraph p = document.InsertParagraph("Hello, World!").AppendLine();
 
             // Append some text and add formatting.
-            p.Append("Hello World!")
+            p.Append("Some ")
+                .Append("big")
                 .Font(new FontFamily("Times New Roman"))
                 .FontSize(32)
+                .Append(", blue")
                 .Color(Color.Blue)
+                .Append(", bold text.")
                 .Bold();
 
-            p.AppendLine();
+            p.AppendLine().Bold();
             p.AppendLine("This is some normal text.");
 
             document.Save();
@@ -618,7 +684,8 @@ namespace TestDXPlus
             DocX document = DocX.Create("HighlightWords.docx");
 
             document.InsertParagraph("First line. ")
-                .Append("This sentence is highlighted").Highlight(Highlight.Yellow)
+                .Append("This sentence is highlighted")
+                    .Highlight(Highlight.Yellow)
                 .Append(", but this is ")
                 .Append("not").Italic()
                 .Append(".");

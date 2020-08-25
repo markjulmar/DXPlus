@@ -114,11 +114,6 @@ namespace DXPlus.Helpers
             return GetValAttr(el)?.Value ?? defaultValue;
         }
 
-        public static int AttributeValueNum(this XElement el, XName name, int defaultValue = -1)
-        {
-            return int.TryParse(el.AttributeValue(name), out var result) ? result : defaultValue;
-        }
-
         public static string AttributeValue(this XElement el, XName name, string defaultValue = "")
         {
             var attr = el?.Attribute(name);
@@ -254,6 +249,33 @@ namespace DXPlus.Helpers
         }
 
         /// <summary>
+        /// Convert a text string to an enum value
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="value"></param>
+        /// <param name="result"></param>
+        /// <returns></returns>
+        internal static bool TryGetEnumValue<T>(this string value, out T result)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                foreach (T e in Enum.GetValues(typeof(T)))
+                {
+                    FieldInfo fi = typeof(T).GetField(e.ToString());
+                    string name = fi.GetCustomAttribute<XmlAttributeAttribute>()?.AttributeName ?? e.ToString();
+                    if (string.Compare(name, value, StringComparison.OrdinalIgnoreCase) == 0)
+                    {
+                        result = e;
+                        return true;
+                    }
+                }
+            }
+
+            result = default;
+            return false;
+        }
+
+        /// <summary>
         /// Convert the val() attribute of an Element to an enumeration
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -262,26 +284,7 @@ namespace DXPlus.Helpers
         /// <returns></returns>
         internal static bool TryGetEnumValue<T>(this XElement element, out T result)
         {
-            if (element != null)
-            {
-                string value = element.GetVal();
-                if (!string.IsNullOrWhiteSpace(value))
-                {
-                    foreach (T e in Enum.GetValues(typeof(T)))
-                    {
-                        FieldInfo fi = typeof(T).GetField(e.ToString());
-                        string name = fi.GetCustomAttribute<XmlAttributeAttribute>()?.AttributeName ?? e.ToString();
-                        if (string.Compare(name, value, StringComparison.OrdinalIgnoreCase) == 0)
-                        {
-                            result = e;
-                            return true;
-                        }
-                    }
-                }
-            }
-
-            result = default;
-            return false;
+            return TryGetEnumValue(element?.GetVal(), out result);
         }
 
         /// <summary>

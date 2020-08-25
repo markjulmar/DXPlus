@@ -882,16 +882,11 @@ namespace DXPlus
 		/// <summary>
 		/// Create a new table
 		/// </summary>
-		/// <param name="rowCount"></param>
-		/// <param name="columnCount"></param>
-		public Table CreateTable(int rowCount, int columnCount)
+		/// <param name="rows"></param>
+		/// <param name="columns"></param>
+		public Table CreateTable(int rows, int columns)
 		{
-			if (rowCount < 1)
-				throw new ArgumentOutOfRangeException(nameof(rowCount), "Cannot be less than one.");
-			if (columnCount < 1)
-				throw new ArgumentOutOfRangeException(nameof(columnCount), "Cannot be less than one.");
-
-			return new Table(this, HelperFunctions.CreateTable(rowCount, columnCount)) { PackagePart = PackagePart };
+			return new Table(this, TableHelpers.CreateTable(rows, columns)) { PackagePart = PackagePart };
 		}
 
 		/// <summary>

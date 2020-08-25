@@ -2,7 +2,7 @@
 
 namespace DXPlus
 {
-    public enum Misc
+    public enum Effect
     {
         None,
         Shadow,

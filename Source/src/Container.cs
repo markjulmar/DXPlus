@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.IO.Packaging;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -185,7 +184,8 @@ namespace DXPlus
                             if (list.Items.Count == 0)
                             {
                                 list.ListType = paragraph.GetListItemType();
-                                list.StartNumber = NumberingHelpers.GetStartingNumber(Document, paragraph.GetListNumId(), paragraph.GetListLevel());
+                                list.StartNumber = NumberingHelpers.GetStartingNumber(Document, paragraph.GetListNumId(), 
+                                    paragraph.GetListLevel());
                             }
 
                             list.AddItem(paragraph);
@@ -414,12 +414,12 @@ namespace DXPlus
             // paragraph we are inserting.
             if (p.Styles.Count > 0)
             {
-                Uri stylePackage = new Uri("/word/styles.xml", UriKind.Relative);
+                var stylePackage = DocxRelations.Styles.Uri;
                 XDocument styleDoc;
                 PackagePart stylePackagePart;
                 if (!Document.Package.PartExists(stylePackage))
                 {
-                    stylePackagePart = Document.Package.CreatePart(stylePackage, "application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml", CompressionOption.Maximum);
+                    stylePackagePart = Document.Package.CreatePart(stylePackage, DocxRelations.Styles.ContentType, CompressionOption.Maximum);
                     styleDoc = new XDocument(new XDeclaration("1.0", "UTF-8", "yes"), new XElement(DocxNamespace.Main + "styles"));
                     stylePackagePart.Save(styleDoc);
                 }
@@ -496,7 +496,6 @@ namespace DXPlus
                 DocX _ => Document.PackagePart,
                 Footer f => f.PackagePart,
                 Header h => h.PackagePart,
-                Row r => r.PackagePart,
                 _ => Document.PackagePart,
             };
 
@@ -583,11 +582,16 @@ namespace DXPlus
 
         public Table InsertTable(Table t)
         {
-            var newXElement = new XElement(t.Xml);
-            Xml.Add(newXElement);
-
-            return new Table(Document, newXElement)
+            // Unowned table.
+            if (t.Document == null)
             {
+                Xml.Add(t.Xml);
+                t.Document = Document;
+                return t;
+            }
+
+            // Already owned by another document -- clone it.
+            return new Table(Document, new XElement(t.Xml)) {
                 PackagePart = PackagePart,
                 Design = t.Design
             };

@@ -355,59 +355,6 @@ namespace DXPlus.Helpers
                     content);
         }
 
-        private const int DEFAULT_COL_WIDTH = 2310;
-
-        internal static XElement CreateTable(int rowCount, int columnCount)
-        {
-            int[] columnWidths = new int[columnCount];
-            Array.Fill(columnWidths, DEFAULT_COL_WIDTH);
-
-            return CreateTable(rowCount, columnWidths);
-        }
-
-        internal static XElement CreateTable(int rowCount, int[] columnWidths)
-        {
-            var newTable = new XElement(
-                DocxNamespace.Main + "tbl",
-                new XElement
-                (
-                    DocxNamespace.Main + "tblPr",
-                        new XElement(DocxNamespace.Main + "tblStyle", new XAttribute(DocxNamespace.Main + "val", "TableGrid")),
-                        new XElement(DocxNamespace.Main + "tblW", new XAttribute(DocxNamespace.Main + "w", "5000"), new XAttribute(DocxNamespace.Main + "type", "auto")),
-                        new XElement(DocxNamespace.Main + "tblLook", new XAttribute(DocxNamespace.Main + "val", "04A0"))
-                )
-            );
-
-            for (int i = 0; i < rowCount; i++)
-            {
-                var row = new XElement(DocxNamespace.Main + "tr");
-                for (int j = 0; j < columnWidths.Length; j++)
-                {
-                    var cell = CreateTableCell();
-                    row.Add(cell);
-                }
-
-                newTable.Add(row);
-            }
-            return newTable;
-        }
-
-        /// <summary>
-        /// Create and return a cell of a table
-        /// </summary>
-        internal static XElement CreateTableCell(double width = DEFAULT_COL_WIDTH)
-        {
-            return new XElement(DocxNamespace.Main + "tc",
-                    new XElement(DocxNamespace.Main + "tcPr",
-                        new XElement(DocxNamespace.Main + "tcW",
-                            new XAttribute(DocxNamespace.Main + "w", width),
-                            new XAttribute(DocxNamespace.Main + "type", "dxa"))),
-                    new XElement(DocxNamespace.Main + "p",
-                    new XElement(DocxNamespace.Main + "pPr"))
-            );
-        }
-
-
         internal static void RenumberIds(DocX document)
         {
             if (document == null)

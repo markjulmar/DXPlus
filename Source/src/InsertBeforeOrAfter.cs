@@ -93,7 +93,7 @@ namespace DXPlus
         }
         public virtual Table InsertTableAfterSelf(int rowCount, int columnCount)
         {
-            XElement newTable = HelperFunctions.CreateTable(rowCount, columnCount);
+            XElement newTable = TableHelpers.CreateTable(rowCount, columnCount);
             Xml.AddAfterSelf(newTable);
             XElement newlyInserted = Xml.ElementsAfterSelf().First();
 
@@ -105,12 +105,12 @@ namespace DXPlus
             Xml.AddAfterSelf(t.Xml);
             XElement newlyInserted = Xml.ElementsAfterSelf().First();
 
-            return new Table(Document, newlyInserted) { PackagePart = PackagePart }; //return new table, dont affect parameter table
+            return new Table(Document, newlyInserted) { PackagePart = PackagePart };
         }
 
         public virtual Table InsertTableBeforeSelf(int rowCount, int columnCount)
         {
-            XElement newTable = HelperFunctions.CreateTable(rowCount, columnCount);
+            XElement newTable = TableHelpers.CreateTable(rowCount, columnCount);
             Xml.AddBeforeSelf(newTable);
             XElement newlyInserted = Xml.ElementsBeforeSelf().Last();
 

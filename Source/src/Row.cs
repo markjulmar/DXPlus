@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using DXPlus.Helpers;
@@ -9,13 +9,18 @@ namespace DXPlus
     /// <summary>
     /// Represents a single row in a Table.
     /// </summary>
-    public class Row : Container
+    public class Row : DocXElement
     {
         /// <summary>
         /// Table owner
         /// </summary>
-        internal Table Table { get; set; }
+        public Table Table { get; }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="xml"></param>
         internal Row(Table table, XElement xml) : base(table.Document, xml)
         {
             Table = table;
@@ -25,23 +30,22 @@ namespace DXPlus
         /// <summary>
         /// Allow row to break across pages.
         /// The default value is true: Word will break the contents of the row across pages.
-        /// If set to false, the contents of the row will not be split across pages, the entire row will be moved to the next page instead.
+        /// If set to false, the contents of the row will not be split across pages, the
+        /// entire row will be moved to the next page instead.
         /// </summary>
         public bool BreakAcrossPages
         {
             get => Xml.Element(DocxNamespace.Main + "trPr")?
-                          .Element(DocxNamespace.Main + "cantSplit") == null;
+                      .Element(DocxNamespace.Main + "cantSplit") == null;
 
             set => Xml.GetOrCreateElement(DocxNamespace.Main + "trPr")
-                   .SetElementValue(DocxNamespace.Main + "cantSplit", value ? null : string.Empty);
+                      .SetElementValue(DocxNamespace.Main + "cantSplit", value ? null : string.Empty);
         }
-
-        private ReadOnlyCollection<Cell> cellsCache;
 
         /// <summary>
         /// A list of Cells in this Row.
         /// </summary>
-        public ReadOnlyCollection<Cell> Cells => cellsCache ??= Xml.Elements(DocxNamespace.Main + "tc").Select(c => new Cell(this, c)).ToList().AsReadOnly();
+        public IReadOnlyList<Cell> Cells => Xml.Elements(DocxNamespace.Main + "tc").Select(e => new Cell(this, e)).ToList();
 
         /// <summary>
         /// Calculates columns count in the row, taking spanned cells into account
@@ -50,27 +54,15 @@ namespace DXPlus
         {
             get
             {
-                int gridSpanSum = 0, count = 0;
-                foreach (var c in Cells)
-                {
-                    count++;
-
-                    XElement gridSpan = c.Xml.Element(DocxNamespace.Main + "tcPr")?
-                                             .Element(DocxNamespace.Main + "gridSpan");
-                    XAttribute val = gridSpan?.GetValAttr();
-                    if (val != null && int.TryParse(val.Value, out int value))
-                    {
-                        gridSpanSum += value - 1;
-                    }
-                }
-
-                return count + gridSpanSum;
+                var cells = Cells;
+                return cells.Count + cells.Select(cell => cell.GridSpan-1).Sum();
             }
         }
+
         /// <summary>
         /// Height in pixels.
         /// </summary>
-        public double Height
+        public double? Height
         {
             get
             {
@@ -81,19 +73,13 @@ namespace DXPlus
                 if (value == null || !double.TryParse(value.Value, out double heightInWordUnits))
                 {
                     value?.Remove();
-                    return double.NaN;
+                    return null;
                 }
 
-                return heightInWordUnits / 15;
+                return heightInWordUnits / TableHelpers.UnitConversion;
             }
             set => SetHeight(value, true);
         }
-
-        public override ReadOnlyCollection<Paragraph> Paragraphs
-            => Xml.Descendants(DocxNamespace.Main + "p")
-                    .Select(p => new Paragraph(Document, p, 0) { PackagePart = Table.PackagePart })
-                    .ToList()
-                    .AsReadOnly();
 
         /// <summary>
         /// Set to true to make this row the table header row that will be repeated on each page
@@ -119,54 +105,44 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Merge cells starting with startIndex and ending with endIndex.
+        /// Merge cells starting with startIndex up to count
         /// </summary>
-        public void MergeCells(int startIndex, int endIndex)
+        public void MergeCells(int startIndex, int count)
         {
+            int endIndex = startIndex + count - 1;
+
             // Check for valid start and end indexes.
-            if (startIndex < 0 || endIndex <= startIndex || endIndex > Cells.Count + 1)
-            {
-                throw new IndexOutOfRangeException();
-            }
+            if (startIndex < 0 || startIndex >= endIndex)
+                throw new IndexOutOfRangeException(nameof(startIndex));
+            if (endIndex >= Cells.Count)
+                throw new IndexOutOfRangeException(nameof(count));
 
-            int gridSpanSum = 0; 
-            int value;
+            var cells = Cells;
+            var startCell = cells[startIndex];
+            int gridSpanSum = 0;
 
-            // Foreach each Cell between startIndex and endIndex inclusive.
-            foreach (var c in Cells.Where((_, i) => i > startIndex && i <= endIndex).ToList())
+            // Merge all the cells beyond startIndex up to the ending index.
+            for (int i = startIndex; i <= endIndex; i++)
             {
-                var gsVal = c.Xml.Element(DocxNamespace.Main + "tcPr")?
-                                 .Element(DocxNamespace.Main + "gridSpan")?
-                                 .GetValAttr();
-                if (gsVal != null && int.TryParse(gsVal.Value, out value))
+                var cell = cells[i];
+                gridSpanSum += cell.GridSpan-1;
+
+                // Add the contents of the cell to the starting cell and remove it.
+                if (cell != startCell)
                 {
-                    gridSpanSum += value - 1;
+                    startCell.Xml.Add(cell.Xml.Elements(DocxNamespace.Main + "p"));
+                    cell.Xml.Remove();
                 }
-
-                // Add this cells Paragraph to the merge start Cell.
-                Cells[startIndex].Xml.Add(c.Xml.Elements(DocxNamespace.Main + "p"));
-
-                // Remove this Cell.
-                c.Xml.Remove();
             }
 
-            var startTcPr = Cells[startIndex].Xml.GetOrCreateElement(DocxNamespace.Main + "tcPr");
-            var startGridSpan = startTcPr.GetOrCreateElement(DocxNamespace.Main + "gridSpan");
-            var startVal = startGridSpan.GetValAttr();
-            if (startVal != null && int.TryParse(startVal.Value, out value))
-            {
-                gridSpanSum += value - 1;
-            }
-
-            // Set the val attribute to the number of merged cells.
-            startGridSpan.SetAttributeValue(DocxNamespace.Main + "val", gridSpanSum + endIndex - startIndex + 1);
-
-            // Reset the cell cache
-            cellsCache = null;
+            // Set the gridSpan to the number of merged cells.
+            startCell.Xml.GetOrCreateElement(DocxNamespace.Main + "tcPr")
+                         .GetOrCreateElement(DocxNamespace.Main + "gridSpan")
+                         .SetAttributeValue(DocxNamespace.Main + "val", gridSpanSum + endIndex - startIndex + 1);
         }
 
         /// <summary>
-        /// Remove this cell
+        /// Remove this row
         /// </summary>
         public void Remove()
         {
@@ -176,9 +152,6 @@ namespace DXPlus
             {
                 tableOwner.Remove();
             }
-
-            // Reset the cell cache
-            cellsCache = null;
         }
 
         /// <summary>
@@ -187,22 +160,50 @@ namespace DXPlus
         /// <param name="height">The height value to set (in pixels)</param>
         /// <param name="exact">If true, the height will be forced, otherwise it will be treated as a minimum height, auto growing past it if need be.
         /// </param>
-        private void SetHeight(double height, bool exact)
+        private void SetHeight(double? height, bool exact)
         {
-            var trPr = Xml.GetOrCreateElement(DocxNamespace.Main + "trPr");
-            var trHeight = trPr.GetOrCreateElement(DocxNamespace.Main + "trHeight");
+            if (height != null)
+            {
+                var trPr = Xml.GetOrCreateElement(DocxNamespace.Main + "trPr");
+                var trHeight = trPr.GetOrCreateElement(DocxNamespace.Main + "trHeight");
+                trHeight.SetAttributeValue(DocxNamespace.Main + "hRule", exact ? "exact" : "atLeast");
+                trHeight.SetAttributeValue(DocxNamespace.Main + "val", height * TableHelpers.UnitConversion);
+            }
+            else
+            {
+                Xml.Element(DocxNamespace.Main + "trPr")?
+                    .Element(DocxNamespace.Main + "trHeight")?
+                    .Remove();
 
-            // 15 "word units" is equal to one pixel.
-            trHeight.SetAttributeValue(DocxNamespace.Main + "hRule", exact ? "exact" : "atLeast");
-            trHeight.SetAttributeValue(DocxNamespace.Main + "val", height * 15);
+            }
+
         }
 
         /// <summary>
-        /// Throw away the cell cache
+        /// Reset the column widths - used when the table changes shape.
         /// </summary>
-        internal void InvalidateCellCache()
+        /// <param name="columnWidths">New column widths</param>
+        internal void SetColumnWidths(IList<double> columnWidths)
         {
-            cellsCache = null;
+            var cells = Cells;
+            if (cells.Count != columnWidths.Count)
+                throw new Exception($"Row column count {cells.Count} doesn't match passed column count {columnWidths.Count}.");
+
+            int index = 0;
+            foreach (var cell in cells)
+                cell.Width = columnWidths[index++];
+        }
+
+        /// <summary>
+        /// Called when the document owner is changed.
+        /// </summary>
+        protected override void OnDocumentOwnerChanged(DocX previousValue, DocX newValue)
+        {
+            base.OnDocumentOwnerChanged(previousValue, newValue);
+
+            PackagePart = Table?.PackagePart;
+            foreach (var cell in Cells)
+                cell.Document = newValue;
         }
     }
 }
