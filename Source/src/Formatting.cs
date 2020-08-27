@@ -79,8 +79,8 @@ namespace DXPlus
                     case "lang":
                         formatting.Language = new CultureInfo(
                             option.GetVal(null) ??
-                            option.AttributeValue(DocxNamespace.Main + "eastAsia", null) ??
-                            option.AttributeValue(DocxNamespace.Main + "bidi"));
+                            option.AttributeValue(Namespace.Main + "eastAsia", null) ??
+                            option.AttributeValue(Name.RTL));
                         break;
 
                     case "spacing":
@@ -105,10 +105,10 @@ namespace DXPlus
                     case "rFonts":
                         formatting.FontFamily =
                             new FontFamily(
-                                option.AttributeValue(DocxNamespace.Main + "cs", null) ??
-                                option.AttributeValue(DocxNamespace.Main + "ascii", null) ??
-                                option.AttributeValue(DocxNamespace.Main + "hAnsi", null) ??
-                                option.AttributeValue(DocxNamespace.Main + "eastAsia"));
+                                option.AttributeValue(Namespace.Main + "cs", null) ??
+                                option.AttributeValue(Namespace.Main + "ascii", null) ??
+                                option.AttributeValue(Namespace.Main + "hAnsi", null) ??
+                                option.AttributeValue(Namespace.Main + "eastAsia"));
                         break;
 
                     case "color":
@@ -141,62 +141,61 @@ namespace DXPlus
         {
             get
             {
-                var rPr = new XElement(DocxNamespace.Main + "rPr");
+                var rPr = new XElement(Name.RunProperties);
 
                 if (Language != null)
                 {
-                    rPr.Add(new XElement(DocxNamespace.Main + "lang", new XAttribute(DocxNamespace.Main + "val", Language.Name)));
+                    rPr.Add(new XElement(Name.Language, new XAttribute(Name.MainVal, Language.Name)));
                 }
 
                 if (spacing.HasValue)
                 {
-                    rPr.Add(new XElement(DocxNamespace.Main + "spacing", new XAttribute(DocxNamespace.Main + "val", spacing.Value * 20)));
+                    rPr.Add(new XElement(Name.Spacing, new XAttribute(Name.MainVal, spacing.Value * 20)));
                 }
 
                 if (position.HasValue)
                 {
-                    rPr.Add(new XElement(DocxNamespace.Main + "position", new XAttribute(DocxNamespace.Main + "val", position.Value * 2)));
+                    rPr.Add(new XElement(Name.Position, new XAttribute(Name.MainVal, position.Value * 2)));
                 }
 
                 if (kerning.HasValue)
                 {
-                    rPr.Add(new XElement(DocxNamespace.Main + "kern", new XAttribute(DocxNamespace.Main + "val", kerning.Value * 2)));
+                    rPr.Add(new XElement(Name.Kerning, new XAttribute(Name.MainVal, kerning.Value * 2)));
                 }
 
                 if (percentageScale.HasValue)
                 {
-                    rPr.Add(new XElement(DocxNamespace.Main + "w", new XAttribute(DocxNamespace.Main + "val", percentageScale)));
+                    rPr.Add(new XElement(Namespace.Main + "w", new XAttribute(Name.MainVal, percentageScale)));
                 }
 
                 if (FontFamily != null)
                 {
-                    rPr.Add(new XElement(
-                            DocxNamespace.Main + "rFonts",
-                                new XAttribute(DocxNamespace.Main + "ascii", FontFamily.Name),
-                                new XAttribute(DocxNamespace.Main + "hAnsi", FontFamily.Name),
-                                new XAttribute(DocxNamespace.Main + "cs", FontFamily.Name)
+                    rPr.Add(new XElement(Name.RunFonts,
+                                new XAttribute(Namespace.Main + "ascii", FontFamily.Name),
+                                new XAttribute(Namespace.Main + "hAnsi", FontFamily.Name),
+                                new XAttribute(Namespace.Main + "cs", FontFamily.Name)
                         )
                     );
                 }
 
                 if (IsHidden == true)
                 {
-                    rPr.Add(new XElement(DocxNamespace.Main + "vanish"));
+                    rPr.Add(new XElement(Name.Vanish));
                 }
 
                 if (Bold == true)
                 {
-                    rPr.Add(new XElement(DocxNamespace.Main + "b"));
+                    rPr.Add(new XElement(Name.Bold));
                 }
 
                 if (Italic == true)
                 {
-                    rPr.Add(new XElement(DocxNamespace.Main + "i"));
+                    rPr.Add(new XElement(Name.Italic));
                 }
 
                 if (UnderlineStyle.HasValue && UnderlineStyle != DXPlus.UnderlineStyle.None)
                 {
-                    rPr.Add(new XElement(DocxNamespace.Main + "u", new XAttribute(DocxNamespace.Main + "val", UnderlineStyle.Value.GetEnumName())));
+                    rPr.Add(new XElement(Name.Underline, new XAttribute(Name.MainVal, UnderlineStyle.Value.GetEnumName())));
                 }
 
                 if (UnderlineColor.HasValue)
@@ -205,42 +204,42 @@ namespace DXPlus
                     if (UnderlineStyle == DXPlus.UnderlineStyle.None)
                     {
                         UnderlineStyle = DXPlus.UnderlineStyle.SingleLine;
-                        rPr.Add(new XElement(DocxNamespace.Main + "u", new XAttribute(DocxNamespace.Main + "val", UnderlineStyle.Value.GetEnumName())));
+                        rPr.Add(new XElement(Name.Underline, new XAttribute(Name.MainVal, UnderlineStyle.Value.GetEnumName())));
                     }
 
-                    rPr.Element(DocxNamespace.Main + "u").Add(new XAttribute(DocxNamespace.Main + "color", UnderlineColor.Value.ToHex()));
+                    rPr.Element(Name.Underline).Add(new XAttribute(Name.Color, UnderlineColor.Value.ToHex()));
                 }
 
                 if (Strikethrough.HasValue && Strikethrough != DXPlus.Strikethrough.None)
                 {
-                    rPr.Add(new XElement(DocxNamespace.Main + Strikethrough.GetEnumName()));
+                    rPr.Add(new XElement(Namespace.Main + Strikethrough.GetEnumName()));
                 }
 
                 if (superScript.HasValue)
                 {
-                    rPr.Add(new XElement(DocxNamespace.Main + "vertAlign", 
-                            new XAttribute(DocxNamespace.Main + "val", superScript == true ? "superscript" : "subscript")));
+                    rPr.Add(new XElement(Name.VerticalAlign, 
+                            new XAttribute(Name.MainVal, superScript == true ? "superscript" : "subscript")));
                 }
 
                 if (size.HasValue)
                 {
-                    rPr.Add(new XElement(DocxNamespace.Main + "sz", new XAttribute(DocxNamespace.Main + "val", size * 2)));
-                    rPr.Add(new XElement(DocxNamespace.Main + "szCs", new XAttribute(DocxNamespace.Main + "val", size * 2)));
+                    rPr.Add(new XElement(Name.Size, new XAttribute(Name.MainVal, size * 2)));
+                    rPr.Add(new XElement(Name.ScriptFontSize, new XAttribute(Name.MainVal, size * 2)));
                 }
 
                 if (FontColor.HasValue)
                 {
-                    rPr.Add(new XElement(DocxNamespace.Main + "color", new XAttribute(DocxNamespace.Main + "val", FontColor.Value.ToHex())));
+                    rPr.Add(new XElement(Name.Color, new XAttribute(Name.MainVal, FontColor.Value.ToHex())));
                 }
 
                 if (Highlight.HasValue && Highlight != DXPlus.Highlight.None)
                 {
-                    rPr.Add(new XElement(DocxNamespace.Main + "highlight", new XAttribute(DocxNamespace.Main + "val", Highlight.GetEnumName())));
+                    rPr.Add(new XElement(Name.Highlight, new XAttribute(Name.MainVal, Highlight.GetEnumName())));
                 }
 
                 if (CapsStyle.HasValue && CapsStyle.Value != DXPlus.CapsStyle.None)
                 {
-                    rPr.Add(new XElement(DocxNamespace.Main + CapsStyle.GetEnumName()));
+                    rPr.Add(new XElement(Namespace.Main + CapsStyle.GetEnumName()));
                 }
 
                 if (Effect.HasValue && Effect != DXPlus.Effect.None)
@@ -248,12 +247,12 @@ namespace DXPlus
                     switch (Effect)
                     {
                         case DXPlus.Effect.OutlineShadow:
-                            rPr.Add(new XElement(DocxNamespace.Main + "outline"));
-                            rPr.Add(new XElement(DocxNamespace.Main + "shadow"));
+                            rPr.Add(new XElement(Namespace.Main + DXPlus.Effect.Outline.GetEnumName()));
+                            rPr.Add(new XElement(Namespace.Main + DXPlus.Effect.Shadow.GetEnumName()));
                             break;
 
                         default:
-                            rPr.Add(new XElement(DocxNamespace.Main + Effect.GetEnumName()));
+                            rPr.Add(new XElement(Namespace.Main + Effect.GetEnumName()));
                             break;
                     }
                 }
@@ -454,19 +453,12 @@ namespace DXPlus
         /// </summary>
         public FontFamily FontFamily { get; set; }
 
-        /// <summary>Compares the current instance with another object of the same type and returns an integer that indicates whether the current instance precedes, follows, or occurs in the same position in the sort order as the other object.</summary>
+        /// <summary>
+        /// Compares the current instance with another object of the same type and 
+        /// returns an integer that indicates whether the current instance precedes, 
+        /// follows, or occurs in the same position in the sort order as the other object.
+        /// </summary>
         /// <param name="obj">An object to compare with this instance.</param>
-        /// <returns>A value that indicates the relative order of the objects being compared. The return value has these meanings:  
-        ///   Value  
-        ///   Meaning  
-        ///   Less than zero  
-        ///   This instance precedes <paramref name="obj" /> in the sort order.  
-        ///   Zero  
-        ///   This instance occurs in the same position in the sort order as <paramref name="obj" />.  
-        ///   Greater than zero  
-        ///   This instance follows <paramref name="obj" /> in the sort order.</returns>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="obj" /> is not the same type as this instance.</exception>
         public int CompareTo(object obj)
         {
             Formatting other = (Formatting)obj;

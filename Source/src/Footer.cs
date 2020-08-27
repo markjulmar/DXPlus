@@ -1,11 +1,13 @@
-﻿using System.IO.Packaging;
-using System.Xml.Linq;
+﻿using System.Xml.Linq;
 
 namespace DXPlus
 {
-    public class Footer : Container
+    public sealed class Footer : HeaderOrFooter
     {
-        public bool PageNumbers
+        /// <summary>
+        /// Return the page number setting for the footer.
+        /// </summary>
+        public override bool PageNumbers
         {
             get => false;
 
@@ -45,11 +47,11 @@ namespace DXPlus
             }
         }
 
-        public string Id { get; set; }
-
-        internal Footer(DocX document, XElement xml, PackagePart mainPart) : base(document, xml)
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public Footer()
         {
-            PackagePart = mainPart;
         }
     }
 }

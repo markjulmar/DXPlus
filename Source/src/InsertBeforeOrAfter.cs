@@ -1,140 +1,151 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Xml.Linq;
-using DXPlus.Helpers;
 
 namespace DXPlus
 {
     /// <summary>
     /// This class provides functions for inserting new DocXElements before or after the current DocXElement.
-    /// Only certain DocXElements can support these functions without creating invalid documents, at the moment these are Paragraphs and Table.
     /// </summary>
-    public abstract class InsertBeforeOrAfter : DocXElement
+    public abstract class InsertBeforeOrAfter : DocXBase
     {
+        /// <summary>
+        /// Default constructor used with Lists/Tables
+        /// </summary>
         internal InsertBeforeOrAfter()
         {
         }
 
-        internal InsertBeforeOrAfter(DocX document, XElement xml) : base(document, xml)
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="document"></param>
+        /// <param name="xml"></param>
+        protected InsertBeforeOrAfter(IDocument document, XElement xml) : base(document, xml)
         {
         }
 
-        private XElement PageBreak => new XElement(DocxNamespace.Main + "p",
-                    new XElement(DocxNamespace.Main + "r",
-                            new XElement(DocxNamespace.Main + "br",
-                                new XAttribute(DocxNamespace.Main + "type", "page"))));
+        /// <summary>
+        /// Add a page break after the current element.
+        /// </summary>
+        public void AddPageBreakAfterSelf() => Xml.AddAfterSelf(PageBreak);
 
-        public virtual void InsertPageBreakAfterSelf()
-        {
-            Xml.AddAfterSelf(PageBreak);
-        }
+        /// <summary>
+        /// Insert a page break before the current element.
+        /// </summary>
+        public void InsertPageBreakBeforeSelf() => Xml.AddBeforeSelf(PageBreak);
 
-        public virtual void InsertPageBreakBeforeSelf()
+        /// <summary>
+        /// Add a new paragraph after the current element.
+        /// </summary>
+        /// <param name="paragraph">Paragraph to insert</param>
+        public Paragraph AddParagraphAfterSelf(Paragraph paragraph)
         {
-            Xml.AddBeforeSelf(PageBreak);
-        }
-
-        public virtual Paragraph InsertParagraphAfterSelf(Paragraph p)
-        {
-            Xml.AddAfterSelf(p.Xml);
-            XElement newlyInserted = Xml.ElementsAfterSelf().First();
+            Xml.AddAfterSelf(paragraph.Xml);
+            var newlyInserted = Xml.ElementsAfterSelf().First();
 
             if (this is Paragraph owner)
             {
                 return new Paragraph(Document, newlyInserted, owner.EndIndex);
             }
-            else
-            {
-                p.Xml = newlyInserted;
-                return p;
-            }
+
+            paragraph.Xml = newlyInserted;
+            return paragraph;
         }
 
-        public virtual Paragraph InsertParagraphAfterSelf(string text)
+        /// <summary>
+        /// Add a paragraph after the current element using the passed text
+        /// </summary>
+        /// <param name="text">Text for new paragraph</param>
+        /// <param name="trackChanges">True to track changes</param>
+        /// <param name="formatting">Formatting for the paragraph</param>
+        /// <returns>Newly created paragraph</returns>
+        public Paragraph AddParagraphAfterSelf(string text, bool trackChanges, Formatting formatting)
         {
-            return InsertParagraphAfterSelf(text, false, new Formatting());
-        }
-
-        public virtual Paragraph InsertParagraphAfterSelf(string text, bool trackChanges)
-        {
-            return InsertParagraphAfterSelf(text, trackChanges, new Formatting());
-        }
-
-        public virtual Paragraph InsertParagraphAfterSelf(string text, bool trackChanges, Formatting formatting)
-        {
-            XElement newParagraph = CreateNewParagraph(text, trackChanges, formatting);
+            var newParagraph = ParagraphHelpers.Create(text, trackChanges, formatting);
             Xml.AddAfterSelf(newParagraph);
-            XElement newlyInserted = Xml.ElementsAfterSelf().First();
+            var newlyInserted = Xml.ElementsAfterSelf().First();
+            
             return new Paragraph(Document, newlyInserted, -1);
         }
 
-        public virtual Paragraph InsertParagraphBeforeSelf(Paragraph p)
+        /// <summary>
+        /// Insert a paragraph before the current element
+        /// </summary>
+        /// <param name="paragraph"></param>
+        public Paragraph InsertParagraphBeforeSelf(Paragraph paragraph)
         {
-            Xml.AddBeforeSelf(p.Xml);
-            p.Xml = Xml.ElementsBeforeSelf().First();
-            return p;
-        }
-        public virtual Paragraph InsertParagraphBeforeSelf(string text)
-        {
-            return InsertParagraphBeforeSelf(text, false, new Formatting());
-        }
-
-        public virtual Paragraph InsertParagraphBeforeSelf(string text, bool trackChanges)
-        {
-            return InsertParagraphBeforeSelf(text, trackChanges, new Formatting());
+            Xml.AddBeforeSelf(paragraph.Xml);
+            paragraph.Xml = Xml.ElementsBeforeSelf().First();
+            return paragraph;
         }
 
-        public virtual Paragraph InsertParagraphBeforeSelf(string text, bool trackChanges, Formatting formatting)
+        /// <summary>
+        /// Insert a paragraph before the current element
+        /// </summary>
+        /// <param name="text">Text to use for new paragraph</param>
+        /// <param name="trackChanges">True to track changes</param>
+        /// <param name="formatting">Formatting to use</param>
+        /// <returns></returns>
+        public Paragraph InsertParagraphBeforeSelf(string text, bool trackChanges, Formatting formatting)
         {
-            XElement newParagraph = CreateNewParagraph(text, trackChanges, formatting);
+            var newParagraph = ParagraphHelpers.Create(text, trackChanges, formatting);
             Xml.AddBeforeSelf(newParagraph);
-            XElement newlyInserted = Xml.ElementsBeforeSelf().Last();
+            var newlyInserted = Xml.ElementsBeforeSelf().Last();
+            
             return new Paragraph(Document, newlyInserted, -1);
         }
-        public virtual Table InsertTableAfterSelf(int rowCount, int columnCount)
+
+        /// <summary>
+        /// Add a new table after this container
+        /// </summary>
+        /// <param name="table">Table to add</param>
+        public Table AddTableAfterSelf(Table table)
         {
-            XElement newTable = TableHelpers.CreateTable(rowCount, columnCount);
-            Xml.AddAfterSelf(newTable);
-            XElement newlyInserted = Xml.ElementsAfterSelf().First();
-
-            return new Table(Document, newlyInserted) { PackagePart = PackagePart };
-        }
-
-        public virtual Table InsertTableAfterSelf(Table t)
-        {
-            Xml.AddAfterSelf(t.Xml);
-            XElement newlyInserted = Xml.ElementsAfterSelf().First();
-
-            return new Table(Document, newlyInserted) { PackagePart = PackagePart };
-        }
-
-        public virtual Table InsertTableBeforeSelf(int rowCount, int columnCount)
-        {
-            XElement newTable = TableHelpers.CreateTable(rowCount, columnCount);
-            Xml.AddBeforeSelf(newTable);
-            XElement newlyInserted = Xml.ElementsBeforeSelf().Last();
-
-            return new Table(Document, newlyInserted) { PackagePart = PackagePart };
-        }
-
-        public virtual Table InsertTableBeforeSelf(Table t)
-        {
-            Xml.AddBeforeSelf(t.Xml);
-            XElement newlyInserted = Xml.ElementsBeforeSelf().Last();
-            return new Table(Document, newlyInserted) { PackagePart = PackagePart }; //return new table, dont affect parameter table
-        }
-
-        private static XElement CreateNewParagraph(string text, bool trackChanges, Formatting formatting)
-        {
-            XElement newParagraph = new XElement(DocxNamespace.Main + "p",
-                new XElement(DocxNamespace.Main + "pPr"), HelperFunctions.FormatInput(text, formatting.Xml));
-
-            if (trackChanges)
+            if (table.Document == null)
             {
-                newParagraph = HelperFunctions.CreateEdit(EditType.Ins, DateTime.Now, newParagraph);
+                Xml.AddAfterSelf(table.Xml);
+                table.Document = Document;
+                return table;
             }
 
-            return newParagraph;
+            Xml.AddAfterSelf(table.Xml);
+            XElement newlyInserted = Xml.ElementsAfterSelf().First();
+
+            // Already owned by another document -- clone it.
+            return new Table(Document, newlyInserted)
+            {
+                PackagePart = PackagePart,
+                Design = table.Design
+            };
         }
+
+        /// <summary>
+        /// Insert a table before this element
+        /// </summary>
+        /// <param name="table"></param>
+        public Table InsertTableBeforeSelf(Table table)
+        {
+            if (table.Document == null)
+            {
+                Xml.AddBeforeSelf(table.Xml);
+                table.Document = Document;
+                return table;
+            }
+
+            Xml.AddBeforeSelf(table.Xml);
+            XElement newlyInserted = Xml.ElementsBeforeSelf().Last();
+
+            // Already owned by another document -- clone it.
+            return new Table(Document, newlyInserted)
+            {
+                PackagePart = PackagePart,
+                Design = table.Design
+            };
+        }
+
+        private static XElement PageBreak => new XElement(Name.Paragraph,
+            new XElement(Name.Run,
+                new XElement(Namespace.Main + "br",
+                    new XAttribute(Namespace.Main + "type", "page"))));
     }
 }

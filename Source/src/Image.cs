@@ -9,17 +9,27 @@ namespace DXPlus
     /// </summary>
     public class Image
     {
-        private readonly DocX document;
-        internal PackageRelationship packageRelationship;
+        private readonly IDocument document;
 
+        /// <summary>
+        /// Associated package relationship
+        /// </summary>
+        internal PackageRelationship PackageRelationship { get; }
+
+        /// <summary>
+        /// Get the stream for the picture
+        /// </summary>
+        /// <param name="mode">File mode</param>
+        /// <param name="access">Access type</param>
+        /// <returns>Open stream</returns>
         public Stream GetStream(FileMode mode, FileAccess access)
         {
-            string temp = packageRelationship.SourceUri.OriginalString;
+            string temp = PackageRelationship.SourceUri.OriginalString;
             string start = temp.Remove(temp.LastIndexOf('/'));
-            string end = packageRelationship.TargetUri.OriginalString;
+            string end = PackageRelationship.TargetUri.OriginalString;
             string full = start + "/" + end;
 
-            return document.Package.GetPart(new Uri(full, UriKind.Relative)).GetStream(mode, access);
+            return ((DocX)document).Package.GetPart(new Uri(full, UriKind.Relative)).GetStream(mode, access);
         }
 
         /// <summary>
@@ -27,24 +37,29 @@ namespace DXPlus
         /// </summary>
         public string Id { get; }
 
-        internal Image(DocX document, PackageRelationship packageRelationship)
+        internal Image(IDocument document, PackageRelationship packageRelationship)
         {
             this.document = document;
-            this.packageRelationship = packageRelationship;
+            this.PackageRelationship = packageRelationship;
             Id = packageRelationship.Id;
         }
 
         /// <summary>
-        /// Add an image to a document, create a custom view of that image (picture) and then insert it into a Paragraph using append.
+        /// Create a new picture and insert it into a paragraph.
         /// </summary>
+        /// <returns>New picture</returns>
         public Picture CreatePicture()
         {
-            return Paragraph.CreatePicture(document, Id, string.Empty, string.Empty);
+            return Paragraph.CreatePicture(document as DocX, Id, string.Empty, string.Empty);
         }
 
+        /// <summary>
+        /// Create a new picture with specific dimensions and insert it into a paragraph.
+        /// </summary>
+        /// <returns>New picture</returns>
         public Picture CreatePicture(int height, int width)
         {
-            var picture = Paragraph.CreatePicture(document, Id, string.Empty, string.Empty);
+            var picture = Paragraph.CreatePicture(document as DocX, Id, string.Empty, string.Empty);
             picture.Height = height;
             picture.Width = width;
             return picture;
@@ -53,6 +68,6 @@ namespace DXPlus
         ///<summary>
         /// Returns the name of the image file.
         ///</summary>
-        public string FileName => Path.GetFileName(packageRelationship.TargetUri.ToString());
+        public string FileName => Path.GetFileName(PackageRelationship.TargetUri.ToString());
     }
 }

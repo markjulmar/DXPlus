@@ -1,0 +1,146 @@
+﻿using DXPlus.Helpers;
+using System.Linq;
+using System.Xml.Linq;
+using Xunit;
+
+namespace DXPlus.Tests
+{
+    public class HelperTests
+    {
+        [Fact]
+        public void BasicHexNumberTestsReturnTrueFalse()
+        {
+            string value = 512.ToString("X2");
+            Assert.True(HelperFunctions.IsValidHexNumber(value));
+            Assert.True(HelperFunctions.IsValidHexNumber("FFFFFFFF"));
+            Assert.True(HelperFunctions.IsValidHexNumber("0"));
+            Assert.False(HelperFunctions.IsValidHexNumber(null));
+            Assert.False(HelperFunctions.IsValidHexNumber(""));
+            Assert.False(HelperFunctions.IsValidHexNumber(" "));
+            Assert.False(HelperFunctions.IsValidHexNumber("test"));
+        }
+
+        [Fact]
+        public void GetAttributeValueReturnValueOrNull()
+        {
+            var xml = XElement.Parse(@"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
+                    <tbl>
+                       <tcPr>
+                          <tcMar test='1'>
+                            <bottom w=""10"" test='2' />
+                        </tcMar>
+                        </tcPr>
+                    </tbl>");
+
+            string val = xml.AttributeValue("tcPr", "tcMar", "bottom", "w");
+            Assert.Equal("10", val);
+
+            val = xml.AttributeValue("tcPr", "tcMar", "top", "w");
+            Assert.Null(val);
+        }
+
+        [Fact]
+        public void GetAttributeValueWorksWithNamespaces()
+        {
+            XNamespace Main = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+            var xml = XDocument.Parse(@"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
+                        <w:document xmlns:r=""http://schemas.openxmlformats.org/officeDocument/2006/relationships""
+                                    xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
+                          <w:body>
+                            <w:sectPr>
+                              <w:pgSz w:h=""15840"" w:orient=""portrait"" w:w=""12240"" />
+                              <w:pgMar w:top=""1440"" w:right=""1440"" w:bottom=""1440"" w:left=""1440"" w:header=""720"" w:footer=""720"" w:gutter=""0"" />
+                              <w:cols w:space=""720"" />
+                              <w:docGrid w:linePitch=""360"" />
+                              <w:headerReference w:type=""first"" r:id=""R89b5d4ad56c64367"" />
+                              <w:titlePg></w:titlePg>
+                            </w:sectPr>
+                          </w:body>
+                        </w:document>");
+
+            string val = xml.Root.AttributeValue(Main + "body", Main + "sectPr", Main + "cols", Main + "space");
+            Assert.Equal("720", val);
+            val = xml.Root.AttributeValue("body", "sectPr", Main + "cols", Main + "space");
+            Assert.Null(val);
+        }
+
+        [Fact]
+        public void GetElementReturnValueOrNull()
+        {
+            var xml = XElement.Parse(@"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
+                    <tbl>
+                       <tcPr>
+                          <tcMar test='1'>
+                            <bottom w=""10"" test='2' />
+                        </tcMar>
+                        </tcPr>
+                    </tbl>");
+
+            var val = xml.Element("tcPr", "tcMar", "bottom");
+            Assert.Equal("bottom", val.Name.LocalName);
+
+            val = xml.Element("tcPr", "tcMgn", "bottom");
+            Assert.Null(val);
+        }
+
+        [Fact]
+        public void GetElementWorksWithNamespaces()
+        {
+            XNamespace Main = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+            var xml = XDocument.Parse(@"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
+                        <w:document xmlns:r=""http://schemas.openxmlformats.org/officeDocument/2006/relationships""
+                                    xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
+                          <w:body>
+                            <w:sectPr>
+                              <w:pgSz w:h=""15840"" w:orient=""portrait"" w:w=""12240"" />
+                              <w:pgMar w:top=""1440"" w:right=""1440"" w:bottom=""1440"" w:left=""1440"" w:header=""720"" w:footer=""720"" w:gutter=""0"" />
+                              <w:cols w:space=""720"" />
+                              <w:docGrid w:linePitch=""360"" />
+                              <w:headerReference w:type=""first"" r:id=""R89b5d4ad56c64367"" />
+                              <w:titlePg></w:titlePg>
+                            </w:sectPr>
+                          </w:body>
+                        </w:document>");
+
+            var val = xml.Root.Element(Main + "body", Main + "sectPr", Main + "cols");
+            Assert.Equal("cols", val?.Name.LocalName);
+            val = xml.Element("body", Main + "sectPr", Main + "cols");
+            Assert.Null(val);
+        }
+
+        [Fact]
+        public void GetElementsReturnValueOrEmpty()
+        {
+            var xml = XElement.Parse(@"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
+                    <tbl>
+                        <row>
+                           <line>
+                              <entry />
+                              <entry />
+                              <entry />
+                              <entry />
+                              <entry />
+                            </line>
+                        </row>
+                    </tbl>");
+
+            var vals = xml.Elements("row", "line");
+            Assert.Equal(5, vals.Count());
+            vals = xml.Elements("tcPr", "tcMgn", "bottom");
+            Assert.Empty(vals);
+        }
+
+        [Fact]
+        public void SetAttributeValueCreatesPath()
+        {
+            var xml = XElement.Parse(@"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
+                    <tbl>
+                    </tbl>");
+
+            var attr = xml.SetAttributeValue("tbl", "line", "entry", "value", 10);
+            Assert.NotNull(attr);
+            Assert.Equal("value", attr.Name.LocalName);
+            Assert.Equal("10", attr.Value);
+        }
+    }
+}

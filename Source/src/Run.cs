@@ -1,16 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using DXPlus.Helpers;
 
 namespace DXPlus
 {
-    public class Run : DocXElement
+    /// <summary>
+    /// Represents a single run of text in a paragraph
+    /// </summary>
+    public class Run : DocXBase
     {
-        // A lookup for the text elements in this paragraph
-        private readonly Dictionary<int, TextBlock> textLookup = new Dictionary<int, TextBlock>();
-
         /// <summary>
         /// Gets the start index of this Text (text length before this text)
         /// </summary>
@@ -26,35 +25,37 @@ namespace DXPlus
         /// </summary>
         internal string Value { set; get; }
 
-        internal Run(DocX document, XElement xml, int startIndex)
+        /// <summary>
+        /// Constructor for a run of text
+        /// </summary>
+        /// <param name="document"></param>
+        /// <param name="xml"></param>
+        /// <param name="startIndex"></param>
+        internal Run(IDocument document, XElement xml, int startIndex)
             : base(document, xml)
         {
             StartIndex = startIndex;
             int currentPos = startIndex;
 
             // Loop through each text in this run
-            foreach (XElement te in xml.Descendants())
+            foreach (var te in xml.Descendants())
             {
                 switch (te.Name.LocalName)
                 {
                     case "tab":
-                        textLookup.Add(currentPos + 1, new TextBlock(Document, te, currentPos));
                         Value += "\t";
                         currentPos++;
                         break;
 
                     case "br":
-                        textLookup.Add(currentPos + 1, new TextBlock(Document, te, currentPos));
                         Value += "\n";
                         currentPos++;
                         break;
 
-                    case "t": goto case "delText";
+                    case "t":
                     case "delText":
-                        // Only add strings which are not empty
                         if (te.Value.Length > 0)
                         {
-                            textLookup.Add(currentPos + te.Value.Length, new TextBlock(Document, te, currentPos));
                             Value += te.Value;
                             currentPos += te.Value.Length;
                         }
@@ -70,9 +71,10 @@ namespace DXPlus
             index -= run.StartIndex;
 
             TextBlock text = run.GetFirstTextEffectedByEdit(index, editType);
-            XElement[] splitText = TextBlock.SplitText(text, index);
+            
+            var splitText = TextBlock.SplitText(text, index);
 
-            XElement splitLeft = new XElement(run.Xml.Name,
+            var splitLeft = new XElement(run.Xml.Name,
                                         run.Xml.Attributes(),
                                         run.Xml.GetRunProps(false),
                                         text.Xml.ElementsBeforeSelf().Where(n => n.Name.LocalName != "rPr"),
@@ -83,7 +85,7 @@ namespace DXPlus
                 splitLeft = null;
             }
 
-            XElement splitRight = new XElement(run.Xml.Name,
+            var splitRight = new XElement(run.Xml.Name,
                                         run.Xml.Attributes(),
                                         run.Xml.GetRunProps(false),
                                         splitText[1],
@@ -94,16 +96,14 @@ namespace DXPlus
                 splitRight = null;
             }
 
-            return new XElement[] { splitLeft, splitRight };
+            return new[] { splitLeft, splitRight };
         }
 
         internal TextBlock GetFirstTextEffectedByEdit(int index, EditType type = EditType.Ins)
         {
             // Make sure we are looking within an acceptable index range.
             if (index < 0 || index > HelperFunctions.GetText(Xml).Length)
-            {
-                throw new ArgumentOutOfRangeException();
-            }
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             // Need some memory that can be updated by the recursive search for the XElement to Split.
             int count = 0;
@@ -114,18 +114,18 @@ namespace DXPlus
             return theOne;
         }
 
-        internal void GetFirstTextEffectedByEditRecursive(XElement Xml, int index, ref int count, ref TextBlock theOne, EditType type = EditType.Ins)
+        internal void GetFirstTextEffectedByEditRecursive(XElement element, int index, ref int count, ref TextBlock theOne, EditType type = EditType.Ins)
         {
-            count += HelperFunctions.GetSize(Xml);
-            if (count > 0 && ((type == EditType.Del && count > index) || (type == EditType.Ins && count >= index)))
+            count += HelperFunctions.GetSize(element);
+            if (count > 0 && ((type == EditType.Del && count > index) || type == EditType.Ins && count >= index))
             {
-                theOne = new TextBlock(Document, Xml, count - HelperFunctions.GetSize(Xml));
+                theOne = new TextBlock(Document, element, count - HelperFunctions.GetSize(element));
                 return;
             }
 
-            if (Xml.HasElements)
+            if (element.HasElements)
             {
-                foreach (XElement e in Xml.Elements())
+                foreach (var e in element.Elements())
                 {
                     if (theOne == null)
                     {

@@ -8,7 +8,7 @@ namespace DXPlus
     /// <summary>
     /// Represents a table of contents in the document
     /// </summary>
-    public sealed class TableOfContents : DocXElement
+    public sealed class TableOfContents : DocXBase
     {
         private const string HeaderStyle = "TOCHeading";
         private const int RightTabPos = 9350;
@@ -21,13 +21,9 @@ namespace DXPlus
         /// <param name="headerStyle">Header style</param>
         private TableOfContents(DocX document, XElement xml, string headerStyle) : base(document, xml)
         {
-            // Tell Word to update the document ToC the next time this document is loaded.
-            if (!document.settingsDoc.Descendants(DocxNamespace.Main + "updateFields").Any())
-            {
-                document.settingsDoc.Root!.Add(new XElement(DocxNamespace.Main + "updateFields",
-                                           new XAttribute(DocxNamespace.Main + "val", true)));
-            }
-
+            // Invalidate placeholder fields
+            document.InvalidatePlaceholderFields();
+            
             // Add any required styles to the document
             EnsureTocStylesArePresent(document, headerStyle);
         }
@@ -93,7 +89,7 @@ namespace DXPlus
                 if (!document.HasStyle(style, applyTo))
                 {
                     var xml = template.Invoke(style, name);
-                    document.stylesDoc.Root!.Add(xml);
+                    document.AddStyle(xml);
                 }
             }
         }

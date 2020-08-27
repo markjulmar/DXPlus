@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Xml.Linq;
 using DXPlus.Helpers;
@@ -36,15 +35,12 @@ namespace DXPlus
         {
             get
             {
-                string numIdVal = Paragraph.ParagraphNumberProperties().Element(DocxNamespace.Main + "numId").GetVal();
+                string numIdVal = Paragraph.ParagraphNumberProperties().Element(Namespace.Main + "numId").GetVal();
                 return numIdVal != null && int.TryParse(numIdVal, out int result) ? result : 0;
             }
-            set
-            {
-                Paragraph.ParagraphNumberProperties()
-                    .Element(DocxNamespace.Main + "numId")
-                    .SetAttributeValue(DocxNamespace.Main + "val", value);
-            }
+            set => Paragraph.ParagraphNumberProperties()
+                    .Element(Namespace.Main + "numId")?
+                    .SetAttributeValue(Name.MainVal, value);
         }
 
         public string Text => Paragraph.Text;
@@ -79,11 +75,10 @@ namespace DXPlus
         public int NumId { get; private set; }
 
         /// <summary>
-        /// Internal constructor when building List from XML
+        /// Internal constructor when building List from paragraphs
         /// </summary>
         internal List()
         {
-            StartNumber = 1;
         }
 
         /// <summary>
@@ -99,6 +94,18 @@ namespace DXPlus
         }
 
         /// <summary>
+        /// Method to clone a list
+        /// </summary>
+        /// <param name="otherList">Other list</param>
+        /// <returns>Copy of the list</returns>
+        internal List(List otherList)
+        {
+            ListType = otherList.ListType;
+            StartNumber = otherList.StartNumber;
+            this.Items.AddRange(otherList.Items.Select(item => new ListItem {Paragraph = new Paragraph {Xml = item.Xml}}));
+        }
+
+        /// <summary>
         /// Add an item to the list
         /// </summary>
         /// <param name="text">Text</param>
@@ -110,13 +117,13 @@ namespace DXPlus
             if (text == null) 
                 throw new ArgumentNullException(nameof(text));
 
-            var newParagraphSection = new XElement(DocxNamespace.Main + "p",
-                new XElement(DocxNamespace.Main + "pPr",
-                    new XElement(DocxNamespace.Main + "pStyle", new XAttribute(DocxNamespace.Main + "val", "ListParagraph")),
-                    new XElement(DocxNamespace.Main + "numPr",
-                        new XElement(DocxNamespace.Main + "ilvl", new XAttribute(DocxNamespace.Main + "val", level)),
-                        new XElement(DocxNamespace.Main + "numId", new XAttribute(DocxNamespace.Main + "val", 0)))),
-                new XElement(DocxNamespace.Main + "r", new XElement(DocxNamespace.Main + "t", text))
+            var newParagraphSection = new XElement(Name.Paragraph,
+                new XElement(Name.ParagraphProperties,
+                    new XElement(Name.ParagraphStyle, new XAttribute(Name.MainVal, "ListParagraph")),
+                    new XElement(Namespace.Main + "numPr",
+                        new XElement(Namespace.Main + "ilvl", new XAttribute(Name.MainVal, level)),
+                        new XElement(Namespace.Main + "numId", new XAttribute(Name.MainVal, 0)))),
+                new XElement(Name.Run, new XElement(Name.Text, text))
             );
 
             if (trackChanges)
@@ -139,16 +146,16 @@ namespace DXPlus
             var paraProps = paragraph.ParagraphNumberProperties();
             if (paraProps == null)
             {
-                paraProps = new XElement(DocxNamespace.Main + "pPr",
-                    new XElement(DocxNamespace.Main + "pStyle", new XAttribute(DocxNamespace.Main + "val", "ListParagraph")),
-                    new XElement(DocxNamespace.Main + "numPr",
-                        new XElement(DocxNamespace.Main + "ilvl", new XAttribute(DocxNamespace.Main + "val", level)),
-                        new XElement(DocxNamespace.Main + "numId", new XAttribute(DocxNamespace.Main + "val", 0))));
+                paraProps = new XElement(Name.ParagraphProperties,
+                    new XElement(Name.ParagraphStyle, new XAttribute(Name.MainVal, "ListParagraph")),
+                    new XElement(Namespace.Main + "numPr",
+                        new XElement(Namespace.Main + "ilvl", new XAttribute(Name.MainVal, level)),
+                        new XElement(Namespace.Main + "numId", new XAttribute(Name.MainVal, 0))));
                 paragraph.Xml.AddFirst(paraProps);
             }
             else if (NumId == 0)
             {
-                string numIdVal = paraProps.Element(DocxNamespace.Main + "numId").GetVal();
+                string numIdVal = paraProps.Element(Namespace.Main + "numId").GetVal();
                 if (numIdVal != null && int.TryParse(numIdVal, out int result))
                 {
                     if (Items.Any(i => i.NumId != 0 && i.NumId != result))
@@ -193,31 +200,28 @@ namespace DXPlus
             return NumId == 0 || (numId == NumId && numId > 0);
         }
 
-        protected override void OnDocumentOwnerChanged(DocX previousValue, DocX newValue)
+        protected override void OnDocumentOwnerChanged(IDocument previousValue, IDocument newValue)
         {
             base.OnDocumentOwnerChanged(previousValue, newValue);
 
             // Attached to a document!
-            if (previousValue == newValue || newValue == null)
-                return;
-
-            var doc = newValue;
-            PackagePart = doc.PackagePart;
-
-            // Add the numbering.xml file
-            doc.AddDefaultNumberingPart();
-            
-            // Create a numbering section if needed.
-            if (NumId == 0)
+            if (newValue is DocX doc)
             {
-                NumId = NumberingHelpers.CreateNewNumberingSection(doc, ListType, StartNumber);
-            }
+                PackagePart = doc.PackagePart;
 
-            // Wire up the paragraphs
-            foreach (var item in Items)
-            {
-                item.Paragraph.Document = doc;
-                item.NumId = NumId;
+                // Add the numbering.xml file
+                doc.AddDefaultNumberingPart();
+
+                // Create a numbering section if needed.
+                if (NumId == 0)
+                    NumId = NumberingHelpers.CreateNewNumberingSection(doc, ListType, StartNumber);
+
+                // Wire up the paragraphs
+                foreach (var item in Items)
+                {
+                    item.Paragraph.Document = doc;
+                    item.NumId = NumId;
+                }
             }
         }
     }

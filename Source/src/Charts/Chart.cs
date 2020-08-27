@@ -60,8 +60,8 @@ namespace DXPlus.Charts
             ChartXml = CreateChartXml();
 
             // Create result plotarea element
-            var plotAreaXml = new XElement(DocxNamespace.Chart + "plotArea",
-                                        new XElement(DocxNamespace.Chart + "layout"),
+            var plotAreaXml = new XElement(Namespace.Chart + "plotArea",
+                                        new XElement(Namespace.Chart + "layout"),
                                             ChartXml);
 
             // Set labels
@@ -85,7 +85,7 @@ namespace DXPlus.Charts
                 var axIDcatXml = XElement.Parse($@"<c:axId val=""{CategoryAxis.Id}"" xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart""/>");
                 var axIDvalXml = XElement.Parse($@"<c:axId val=""{ValueAxis.Id}"" xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart""/>");
 
-                var insertPoint = ChartXml.Element(DocxNamespace.Chart + "gapWidth");
+                var insertPoint = ChartXml.Element(Namespace.Chart + "gapWidth");
                 if (insertPoint != null)
                 {
                     insertPoint.AddAfterSelf(axIDvalXml);
@@ -101,8 +101,8 @@ namespace DXPlus.Charts
                 plotAreaXml.Add(ValueAxis.Xml);
             }
 
-            ChartRootXml = Xml.Root.Element(DocxNamespace.Chart + "chart");
-            ChartRootXml.Element(DocxNamespace.Chart + "autoTitleDeleted").AddAfterSelf(plotAreaXml);
+            ChartRootXml = Xml.Root.Element(Namespace.Chart + "chart");
+            ChartRootXml.Element(Namespace.Chart + "autoTitleDeleted").AddAfterSelf(plotAreaXml);
         }
 
         /// <summary>
@@ -115,8 +115,8 @@ namespace DXPlus.Charts
         /// </summary>
         public DisplayBlanksAs DisplayBlanksAs
         {
-            get => ChartRootXml.Element(DocxNamespace.Chart + "dispBlanksAs").GetEnumValue<DisplayBlanksAs>();
-            set => ChartRootXml.Element(DocxNamespace.Chart + "dispBlanksAs").SetEnumValue(value);
+            get => ChartRootXml.Element(Namespace.Chart + "dispBlanksAs").GetEnumValue<DisplayBlanksAs>();
+            set => ChartRootXml.Element(Namespace.Chart + "dispBlanksAs").SetEnumValue(value);
         }
 
         /// <summary>
@@ -144,9 +144,9 @@ namespace DXPlus.Charts
             {
                 var series = new List<Series>();
                 int index = 1;
-                foreach (var element in ChartXml.Elements(DocxNamespace.Chart + "ser"))
+                foreach (var element in ChartXml.Elements(Namespace.Chart + "ser"))
                 {
-                    element.Add(new XElement(DocxNamespace.Chart + "idx"), index++);
+                    element.Add(new XElement(Namespace.Chart + "idx"), index++);
                     series.Add(new Series(element));
                 }
                 return series;
@@ -171,13 +171,13 @@ namespace DXPlus.Charts
                     if (!View3D)
                     {
                         string currentName = ChartXml.Name.LocalName;
-                        ChartXml.Name = DocxNamespace.Chart + currentName.Replace("Chart", "3DChart");
+                        ChartXml.Name = Namespace.Chart + currentName.Replace("Chart", "3DChart");
                     }
                 }
                 else if (View3D)
                 {
                     string currentName = ChartXml.Name.LocalName;
-                    ChartXml.Name = DocxNamespace.Chart + currentName.Replace("3DChart", "Chart");
+                    ChartXml.Name = Namespace.Chart + currentName.Replace("3DChart", "Chart");
                 }
             }
         }
@@ -216,7 +216,7 @@ namespace DXPlus.Charts
                 RemoveLegend();
 
             Legend = new ChartLegend(position, overlay);
-            ChartRootXml.GetOrCreateElement(DocxNamespace.Chart + "plotArea").AddAfterSelf(Legend.Xml);
+            ChartRootXml.GetOrCreateElement(Namespace.Chart + "plotArea").AddAfterSelf(Legend.Xml);
         }
 
         /// <summary>
@@ -236,14 +236,14 @@ namespace DXPlus.Charts
         /// </summary>
         public void AddSeries(Series series)
         {
-            int serCount = ChartXml.Elements(DocxNamespace.Chart + "ser").Count();
+            int serCount = ChartXml.Elements(Namespace.Chart + "ser").Count();
             if (serCount >= MaxSeriesCount)
             {
                 throw new InvalidOperationException($"{serCount} > {MaxSeriesCount} series count for {GetType().Name}");
             }
 
-            series.Xml.AddFirst(new XElement(DocxNamespace.Chart + "order", new XAttribute("val", (serCount + 1).ToString())));
-            series.Xml.AddFirst(new XElement(DocxNamespace.Chart + "idx", new XAttribute("val", (serCount + 1).ToString())));
+            series.Xml.AddFirst(new XElement(Namespace.Chart + "order", new XAttribute("val", (serCount + 1).ToString())));
+            series.Xml.AddFirst(new XElement(Namespace.Chart + "idx", new XAttribute("val", (serCount + 1).ToString())));
 
             ChartXml.Add(series.Xml);
         }

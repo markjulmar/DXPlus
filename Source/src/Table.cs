@@ -43,11 +43,11 @@ namespace DXPlus
         /// </summary>
         /// <param name="document">Document owner</param>
         /// <param name="xml">XML fragment representing the table</param>
-        internal Table(DocX document, XElement xml) : base(document, xml)
+        internal Table(IDocument document, XElement xml) : base(document, xml)
         {
-            PackagePart = document?.PackagePart;
+            PackagePart = Document?.PackagePart;
 
-            var style = TblPr?.Element(DocxNamespace.Main + "tblStyle");
+            var style = TblPr?.Element(Namespace.Main + "tblStyle");
             if (style == null)
                 tableDesign = TableDesign.None;
             else
@@ -68,13 +68,13 @@ namespace DXPlus
         /// </summary>
         public Alignment Alignment
         {
-            get => TblPr.Element(DocxNamespace.Main + "jc")
+            get => TblPr.Element(Name.ParagraphAlignment)
                     .GetVal().TryGetEnumValue<Alignment>(out var result)
                     ? result
                     : Alignment.Left;
             
-            set => TblPr.GetOrCreateElement(DocxNamespace.Main + "jc")
-                    .SetAttributeValue(DocxNamespace.Main + "val", 
+            set => TblPr.GetOrCreateElement(Name.ParagraphAlignment)
+                    .SetAttributeValue(Name.MainVal, 
                         value.GetEnumName());
         }
 
@@ -85,12 +85,12 @@ namespace DXPlus
         {
             get
             {
-                string preferredTableWidth = TblPr.Element(DocxNamespace.Main + "tblW").AttributeValue(DocxNamespace.Main + "type", "auto");
+                string preferredTableWidth = TblPr.Element(Namespace.Main + "tblW").AttributeValue(Namespace.Main + "type", "auto");
 
                 if (string.Equals("auto", preferredTableWidth, StringComparison.CurrentCultureIgnoreCase))
                 {
                     return Xml.LocalNameDescendants("tcW")
-                              .All(e => e.AttributeValue(DocxNamespace.Main + "type", "auto") == "auto")
+                              .All(e => e.AttributeValue(Namespace.Main + "type", "auto") == "auto")
                         ? AutoFit.Contents 
                         : AutoFit.ColumnWidth;
                 }
@@ -113,11 +113,8 @@ namespace DXPlus
                     case AutoFit.ColumnWidth:
                         preferredTableWidth = "auto";
                         preferredColWidth = "dxa";
-
                         // Disable "Automatically resize to fit contents" option
-                        TblPr.GetOrCreateElement(DocxNamespace.Main + "tblLayout")
-                            .GetOrCreateAttribute(DocxNamespace.Main + "type")
-                            .Value = "fixed";
+                        TblPr.SetAttributeValue(Namespace.Main + "tblLayout", Namespace.Main + "type", "fixed");
                         break;
 
                     case AutoFit.Contents:
@@ -137,31 +134,31 @@ namespace DXPlus
                         preferredTableWidth = "dxa";
                         preferredColWidth = "dxa";
 
-                        var tblLayout = TblPr?.Element(DocxNamespace.Main + "tblLayout");
+                        var tblLayout = TblPr?.Element(Namespace.Main + "tblLayout");
                         if (tblLayout == null)
                         {
-                            var tmp = TblPr?.Element(DocxNamespace.Main + "tblInd") ??
-                                      TblPr?.Element(DocxNamespace.Main + "tblW");
+                            var tmp = TblPr?.Element(Namespace.Main + "tblInd") ??
+                                      TblPr?.Element(Namespace.Main + "tblW");
                             if (tmp != null)
                             {
-                                tmp.AddAfterSelf(new XElement(DocxNamespace.Main + "tblLayout"));
-                                TblPr.Element(DocxNamespace.Main + "tblLayout")
-                                    ?.SetAttributeValue(DocxNamespace.Main + "type", "fixed");
-                                TblPr.Element(DocxNamespace.Main + "tblW")
-                                    ?.SetAttributeValue(DocxNamespace.Main + "w", ColumnWidths.Sum());
+                                tmp.AddAfterSelf(new XElement(Namespace.Main + "tblLayout"));
+                                TblPr.Element(Namespace.Main + "tblLayout")
+                                    ?.SetAttributeValue(Namespace.Main + "type", "fixed");
+                                TblPr.Element(Namespace.Main + "tblW")
+                                    ?.SetAttributeValue(Namespace.Main + "w", ColumnWidths.Sum());
                             }
                             break;
                         }
 
                         foreach (var type in Xml.LocalNameDescendants("tblLayout")
-                            .Attributes(DocxNamespace.Main + "type"))
+                            .Attributes(Namespace.Main + "type"))
                         {
                             type.Value = "fixed";
                         }
 
                         // Set the table width based on the column widths
-                        TblPr.GetOrCreateElement(DocxNamespace.Main + "tblW")?
-                             .SetAttributeValue(DocxNamespace.Main + "w", ColumnWidths.Sum());
+                        TblPr.GetOrCreateElement(Namespace.Main + "tblW")?
+                             .SetAttributeValue(Namespace.Main + "w", ColumnWidths.Sum());
                         break;
                 }
 
@@ -171,13 +168,13 @@ namespace DXPlus
                 // Set preferred width exception type
                 foreach (var type in Xml.LocalNameDescendants("tblW"))
                 {
-                    type.SetAttributeValue(DocxNamespace.Main + "type", preferredTableWidth);
+                    type.SetAttributeValue(Namespace.Main + "type", preferredTableWidth);
                 }
 
                 // Set preferred table cell width type
                 foreach (var type in Xml.LocalNameDescendants("tcW"))
                 {
-                    type.SetAttributeValue(DocxNamespace.Main + "type", preferredColWidth);
+                    type.SetAttributeValue(Namespace.Main + "type", preferredColWidth);
                 }
             }
         }
@@ -192,9 +189,9 @@ namespace DXPlus
         /// Gets a list of all column widths for this table.
         /// </summary>
         public IReadOnlyList<double> ColumnWidths =>
-            Xml.Element(DocxNamespace.Main + "tblGrid")?
-               .Elements(DocxNamespace.Main + "gridCol")
-               .Select(c => Convert.ToDouble(c.AttributeValue(DocxNamespace.Main + "w")))
+            Xml.Element(Namespace.Main + "tblGrid")?
+               .Elements(Namespace.Main + "gridCol")
+               .Select(c => Convert.ToDouble(c.AttributeValue(Namespace.Main + "w")))
                .ToArray();
 
         /// <summary>
@@ -207,8 +204,8 @@ namespace DXPlus
             {
                 customTableDesignName = value;
                 tableDesign = TableDesign.Custom;
-                TblPr.GetOrCreateElement(DocxNamespace.Main + "tblStyle")
-                     .SetAttributeValue(DocxNamespace.Main + "val", value);
+                TblPr.GetOrCreateElement(Namespace.Main + "tblStyle")
+                     .SetAttributeValue(Name.MainVal, value);
             }
         }
 
@@ -225,11 +222,11 @@ namespace DXPlus
 
                 tableDesign = value;
 
-                var style = TblPr.GetOrCreateElement(DocxNamespace.Main + "tblStyle");
+                var style = TblPr.GetOrCreateElement(Namespace.Main + "tblStyle");
                 if (tableDesign == TableDesign.None)
                     style?.Remove();
                 else
-                    style.SetAttributeValue(DocxNamespace.Main + "val", tableDesign.GetEnumName());
+                    style.SetAttributeValue(Name.MainVal, tableDesign.GetEnumName());
 
                 ApplyTableStyleToDocumentOwner();
             }
@@ -238,15 +235,18 @@ namespace DXPlus
         /// <summary>
         /// Called when the document owner is changed.
         /// </summary>
-        protected override void OnDocumentOwnerChanged(DocX previousValue, DocX newValue)
+        protected override void OnDocumentOwnerChanged(IDocument previousValue, IDocument newValue)
         {
             base.OnDocumentOwnerChanged(previousValue, newValue);
-            PackagePart = newValue?.PackagePart;
 
-            if (newValue != null && Xml != null)
+            if (newValue is DocX doc)
             {
-                ApplyTableStyleToDocumentOwner();
-                Rows.ForEach(r => r.Document = newValue);
+                PackagePart = doc.PackagePart;
+                if (Xml != null)
+                {
+                    ApplyTableStyleToDocumentOwner();
+                    Rows.ForEach(r => r.Document = doc);
+                }
             }
         }
 
@@ -258,54 +258,54 @@ namespace DXPlus
             if (Document == null)
                 return;
 
-            string designName = TblPr.Element(DocxNamespace.Main + "tblStyle").GetVal();
+            string designName = TblPr.Element(Namespace.Main + "tblStyle").GetVal();
             if (string.IsNullOrWhiteSpace(designName))
                 return;
 
-            var tableStyle = Document.stylesDoc.Descendants().FindByAttrVal(DocxNamespace.Main + "styleId", designName);
+            var tableStyle = Document.GetStyle(designName);
             if (tableStyle == null)
             {
                 var externalStyleDoc = Resources.DefaultTableStyles();
-                var styleElement = externalStyleDoc.Descendants().FindByAttrVal(DocxNamespace.Main + "styleId", designName);
-                Document.stylesDoc.Element(DocxNamespace.Main + "styles")!.Add(styleElement);
+                var styleElement = externalStyleDoc.Descendants().FindByAttrVal(Namespace.Main + "styleId", designName);
+                Document.AddStyle(styleElement);
             }
         }
 
         /// <summary>
         /// Get all of the Hyperlinks in this Table.
         /// </summary>
-        public List<Hyperlink> Hyperlinks => Rows.SelectMany(r => r.Cells).SelectMany(c => c.Hyperlinks).ToList();
+        public IEnumerable<Hyperlink> Hyperlinks => Rows.SelectMany(r => r.Cells).SelectMany(c => c.Hyperlinks);
 
         /// <summary>
         /// Returns Paragraphs inside this container.
         /// </summary>
-        public virtual List<Paragraph> Paragraphs => Rows.SelectMany(r => r.Cells).SelectMany(c => c.Paragraphs).ToList();
+        public IEnumerable<Paragraph> Paragraphs => Rows.SelectMany(r => r.Cells).SelectMany(c => c.Paragraphs);
 
         /// <summary>
         /// Returns Pictures in this container.
         /// </summary>
-        public List<Picture> Pictures => Rows.SelectMany(r => r.Cells).SelectMany(c => c.Pictures).ToList();
+        public IEnumerable<Picture> Pictures => Rows.SelectMany(r => r.Cells).SelectMany(c => c.Pictures);
 
         /// <summary>
         /// Returns the number of rows in this table.
         /// </summary>
-        public bool HasRows => Xml.Elements(DocxNamespace.Main + "tr").Any();
+        public bool HasRows => Xml.Elements(Namespace.Main + "tr").Any();
 
         /// <summary>
         /// Returns a list of rows in this table.
         /// </summary>
-        public List<Row> Rows => Xml.Elements(DocxNamespace.Main + "tr").Select(r => new Row(this, r)).ToList();
+        public List<Row> Rows => Xml.Elements(Namespace.Main + "tr").Select(r => new Row(this, r)).ToList();
 
         /// <summary>
         /// Gets or Sets the value of the Table Caption (Alternate Text Title) of this table.
         /// </summary>
         public string TableCaption
         {
-            get => TblPr.Element(DocxNamespace.Main + "tblCaption")?.GetVal() ?? string.Empty;
+            get => TblPr.Element(Namespace.Main + "tblCaption")?.GetVal() ?? string.Empty;
             set
             {
-                TblPr?.Descendants(DocxNamespace.Main + "tblCaption").FirstOrDefault()?.Remove();
-                TblPr?.Add(new XElement(DocxNamespace.Main + "tblCaption",new XAttribute(DocxNamespace.Main + "val", value)));
+                TblPr?.Descendants(Namespace.Main + "tblCaption").FirstOrDefault()?.Remove();
+                TblPr?.Add(new XElement(Namespace.Main + "tblCaption",new XAttribute(Name.MainVal, value)));
             }
         }
 
@@ -314,11 +314,11 @@ namespace DXPlus
         /// </summary>
         public string TableDescription
         {
-            get => TblPr.Element(DocxNamespace.Main + "tblDescription")?.GetVal() ?? string.Empty;
+            get => TblPr.Element(Namespace.Main + "tblDescription")?.GetVal() ?? string.Empty;
             set
             {
-                TblPr.Descendants(DocxNamespace.Main + "tblDescription").FirstOrDefault()?.Remove();
-                TblPr.Add(new XElement(DocxNamespace.Main + "tblDescription", new XAttribute(DocxNamespace.Main + "val", value)));
+                TblPr.Descendants(Namespace.Main + "tblDescription").FirstOrDefault()?.Remove();
+                TblPr.Add(new XElement(Namespace.Main + "tblDescription", new XAttribute(Name.MainVal, value)));
             }
         }
 
@@ -329,8 +329,8 @@ namespace DXPlus
         public Border GetBorder(TableBorderType borderType)
         {
             var border = new Border();
-            border.GetDetails(TblPr.Element(DocxNamespace.Main + "tblBorders")?
-                                   .Element(DocxNamespace.Main + borderType.GetEnumName()));
+            border.GetDetails(TblPr.Element(Namespace.Main + "tblBorders")?
+                                   .Element(Namespace.Main + borderType.GetEnumName()));
             return border;
         }
 
@@ -421,8 +421,8 @@ namespace DXPlus
             if (row == null)
                 throw new ArgumentNullException(nameof(row));
 
-            var content = row.Xml.Elements(DocxNamespace.Main + "tc")
-                                 .Select(HelperFunctions.CloneElement);
+            var content = row.Xml.Elements(Namespace.Main + "tc")
+                                 .Select(HelperFunctions.Clone);
             
             return InsertRow(index, content);
         }
@@ -446,16 +446,16 @@ namespace DXPlus
             for (int rowIndex = startRow; rowIndex <= endRow; rowIndex++)
             {
                 var cell = Rows[rowIndex].Cells[columnIndex];
-                var vMerge = cell.Xml.GetOrCreateElement(DocxNamespace.Main + "tcPr")
-                            .GetOrCreateElement(DocxNamespace.Main + "vMerge");
+                var vMerge = cell.Xml.GetOrCreateElement(Namespace.Main + "tcPr")
+                            .GetOrCreateElement(Namespace.Main + "vMerge");
 
                 if (rowIndex == startRow)
                 {
-                    vMerge.SetAttributeValue(DocxNamespace.Main + "val", "restart");
+                    vMerge.SetAttributeValue(Name.MainVal, "restart");
                 }
                 else
                 {
-                    var paragraphs = cell.Xml.Elements(DocxNamespace.Main + "p").ToList();
+                    var paragraphs = cell.Xml.Elements(Name.Paragraph).ToList();
                     if (paragraphs.Count > 0)
                     {
                         startRowElement.Add(paragraphs);
@@ -518,9 +518,9 @@ namespace DXPlus
         public void SetBorder(TableBorderType borderType, Border border)
         {
             // Set the border style
-            var tblBorders = TblPr.GetOrCreateElement(DocxNamespace.Main + "tblBorders");
-            var tblBorderType = tblBorders.GetOrCreateElement(DocxNamespace.Main + borderType.GetEnumName());
-            tblBorderType.SetAttributeValue(DocxNamespace.Main + "val", border.Style.GetEnumName());
+            var tblBorders = TblPr.GetOrCreateElement(Namespace.Main + "tblBorders");
+            var tblBorderType = tblBorders.GetOrCreateElement(Namespace.Main + borderType.GetEnumName());
+            tblBorderType.SetAttributeValue(Name.MainVal, border.Style.GetEnumName());
 
             // .. and the style
             if (border.Style != BorderStyle.Empty)
@@ -540,13 +540,13 @@ namespace DXPlus
                 };
 
                 // The sz attribute is used for the border size
-                tblBorderType.SetAttributeValue(DocxNamespace.Main + "sz", size);
+                tblBorderType.SetAttributeValue(Name.Size, size);
 
                 // The space attribute is used for the cell 
-                tblBorderType.SetAttributeValue(DocxNamespace.Main + "space", border.SpacingOffset);
+                tblBorderType.SetAttributeValue(Namespace.Main + "space", border.SpacingOffset);
 
                 // The color attribute is used for the border color
-                tblBorderType.SetAttributeValue(DocxNamespace.Main + "color", border.Color.ToHex());
+                tblBorderType.SetAttributeValue(Name.Color, border.Color.ToHex());
             }
         }
 
@@ -604,20 +604,20 @@ namespace DXPlus
             }
 
             // Replace the columns with the new values.
-            var grid = Xml.Element(DocxNamespace.Main + "tblGrid");
+            var grid = Xml.Element(Namespace.Main + "tblGrid");
             if (grid != null)
             {
                 grid.RemoveAll();
             }
             else
             {
-                grid = new XElement(DocxNamespace.Main + "tblGrid");
+                grid = new XElement(Namespace.Main + "tblGrid");
                 TblPr.AddAfterSelf(grid);
             }
 
             foreach (var width in columnWidths)
-                grid.Add(new XElement(DocxNamespace.Main + "gridCol",
-                    new XAttribute(DocxNamespace.Main + "w", width * TableHelpers.UnitConversion)));
+                grid.Add(new XElement(Namespace.Main + "gridCol",
+                    new XAttribute(Namespace.Main + "w", width * TableHelpers.UnitConversion)));
 
             // Reset cell widths
             foreach (var row in Rows)
@@ -633,7 +633,7 @@ namespace DXPlus
         /// <param name="direction">(Left to Right) or (Right to Left)</param>
         public void SetDirection(Direction direction)
         {
-            TblPr.Add(new XElement(DocxNamespace.Main + "bidiVisual"));
+            TblPr.Add(new XElement(Namespace.Main + "bidiVisual"));
             foreach (var cell in Rows.SelectMany(row => row.Cells))
                 cell.SetDirection(direction);
         }
@@ -644,9 +644,9 @@ namespace DXPlus
         /// <param name="type">Table margin type</param>
         /// <returns>The value for the specified margin in pixels, null if it's not set.</returns>
         public double? GetDefaultCellMargin(TableCellMarginType type) =>
-            double.TryParse(TblPr.Element(DocxNamespace.Main + "tblCellMar")?
-                .Element(DocxNamespace.Main + type.GetEnumName())?
-                .AttributeValue(DocxNamespace.Main + "w"), out var result)
+            double.TryParse(TblPr.Element(Namespace.Main + "tblCellMar")?
+                .Element(Namespace.Main + type.GetEnumName())?
+                .AttributeValue(Namespace.Main + "w"), out var result)
                 ? (double?) result / TableHelpers.UnitConversion
                 : null;
 
@@ -659,15 +659,15 @@ namespace DXPlus
         {
             if (margin != null)
             {
-                var cellMargin = TblPr.GetOrCreateElement(DocxNamespace.Main + "tblCellMar")
-                    .GetOrCreateElement(DocxNamespace.Main + type.GetEnumName());
-                cellMargin.SetAttributeValue(DocxNamespace.Main + "w", margin * TableHelpers.UnitConversion);
-                cellMargin.SetAttributeValue(DocxNamespace.Main + "type", "dxa");
+                var cellMargin = TblPr.GetOrCreateElement(Namespace.Main + "tblCellMar")
+                    .GetOrCreateElement(Namespace.Main + type.GetEnumName());
+                cellMargin.SetAttributeValue(Namespace.Main + "w", margin * TableHelpers.UnitConversion);
+                cellMargin.SetAttributeValue(Namespace.Main + "type", "dxa");
             }
             else
             {
-                var margins = TblPr.Element(DocxNamespace.Main + "tblCellMar");
-                margins?.Element(DocxNamespace.Main + type.GetEnumName())?.Remove();
+                var margins = TblPr.Element(Namespace.Main + "tblCellMar");
+                margins?.Element(Namespace.Main + type.GetEnumName())?.Remove();
                 if (margins?.IsEmpty == true)
                     margins.Remove();
             }
@@ -677,7 +677,7 @@ namespace DXPlus
         /// Retrieves or create the table properties (tblPr) section.
         /// </summary>
         /// <returns>The w:tbl/tblPr element.</returns>
-        private XElement GetOrCreateTablePropertiesSection() => Xml.GetOrCreateElement(DocxNamespace.Main + "tblPr");
+        private XElement GetOrCreateTablePropertiesSection() => Xml.GetOrCreateElement(Namespace.Main + "tblPr");
 
         /// <summary>
         /// Inserts a row using the passed elements at the given index.
@@ -688,7 +688,7 @@ namespace DXPlus
         private Row InsertRow(int index, IEnumerable<XElement> content)
         {
             var rows = Rows;
-            var row = new Row(this, new XElement(DocxNamespace.Main + "tr", content));
+            var row = new Row(this, new XElement(Namespace.Main + "tr", content));
 
             if (index == -1)
                 index = rows.Count;

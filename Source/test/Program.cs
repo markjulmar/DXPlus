@@ -16,33 +16,33 @@ namespace TestDXPlus
         {
             Setup("docs");
 
-            //HelloWorld();
-            //HighlightWords();
-            //HelloWorldAdvancedFormatting();
-            //HelloWorldProtectedDocument();
-            //HelloWorldAddPictureToWord();
-            //RightToLeft();
-            //Indentation();
-            //HeadersAndFooters();
-            //HyperlinksInDocument();
-            //AddList();
-            //Equations();
-            //Bookmarks();
-            //BookmarksReplaceTextOfBookmarkKeepingFormat();
-            //BarChart();
-            //PieChart();
-            //LineChart();
-            //Chart3D();
-            //DocumentMargins();
+            HelloWorld();
+            HighlightWords();
+            HelloWorldAdvancedFormatting();
+            HelloWorldProtectedDocument();
+            HelloWorldAddPictureToWord();
+            RightToLeft();
+            Indentation();
+            FirstPageHeader();
+            HyperlinksInDocument();
+            AddList();
+            Equations();
+            Bookmarks();
+            BookmarksReplaceTextOfBookmarkKeepingFormat();
+            BarChart();
+            PieChart();
+            LineChart();
+            Chart3D();
+            DocumentMargins();
             CreateTableWithTextDirection();
-            //AddToc();
-            //AddTocByReference();
+            AddToc();
+            AddTocByReference();
             TablesDocument();
-            //DocumentsWithListsFontChange();
-            //DocumentHeading();
+            DocumentsWithListsFontChange();
+            DocumentHeading();
             LargeTable();
-            //ProgrammaticallyManipulateImbeddedImage();
-            //CountNumberOfParagraphs();
+            ProgrammaticallyManipulateImbeddedImage();
+            CountNumberOfParagraphs();
             EmptyTable();
             MergeTableRows();
             MergeTableColumns();
@@ -52,23 +52,21 @@ namespace TestDXPlus
         {
             Enter();
 
-            var doc = DocX.Create("mergeTableColumns.docx");
+            var doc = Document.Create("mergeTableColumns.docx");
 
-            doc.InsertParagraph("Check out the table below.");
+            doc.AddParagraph("Check out the table below.")
+               .Heading(HeadingType.Heading2)
+               .AppendLine();
 
-            var t = new Table(new[,]
+            var t = new Table(new[,] {{"1", "2", "3"}, {"4", "5", "6"}, {"7", "8", "9"}, {"10", "11", "12"},})
             {
-                { "1", "2", "3" },
-                { "4", "5", "6" },
-                { "7", "8", "9" },
-                { "10", "11", "12" },
-            });
-
-            doc.InsertTable(t);
+                Alignment = Alignment.Center
+            };
 
             t.Rows[1].MergeCells(0, t.ColumnCount);
-            t.Alignment = Alignment.Center;
             t.Rows[1].Cells[0].VerticalAlignment = VerticalAlignment.Center;
+
+            doc.AddTable(t);
             doc.Save();
         }
 
@@ -76,9 +74,9 @@ namespace TestDXPlus
         {
             Enter();
 
-            var doc = DocX.Create("mergeTableRow.docx");
+            var doc = Document.Create("mergeTableRow.docx");
 
-            doc.InsertParagraph("Check out the table below.");
+            doc.AddParagraph("Check out the table below.");
 
             var t = new Table(new[,]
             {
@@ -88,7 +86,7 @@ namespace TestDXPlus
                 { "10", "11", "12" },
             });
 
-            doc.InsertTable(t);
+            doc.AddTable(t);
 
             t.MergeCellsInColumn(1, 0, t.Rows.Count);
             t.Alignment = Alignment.Center;
@@ -99,12 +97,8 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX doc = DocX.Create("emptyTable.docx");
-
-            Table t = new Table(2,1);
-
-            doc.InsertTable(t);
-
+            var doc = Document.Create("emptyTable.docx");
+            doc.AddTable(new Table(2, 1));
             doc.Save();
         }
 
@@ -112,9 +106,9 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX doc = DocX.Load(Path.Combine("..", "Input.docx"));
+            var doc = Document.Load(Path.Combine("..", "Input.docx"));
 
-            foreach (Paragraph p in doc.Paragraphs.Where(p => !string.IsNullOrEmpty(p.Text)))
+            foreach (var p in doc.Paragraphs.Where(p => !string.IsNullOrEmpty(p.Text)))
             {
                 Console.WriteLine(p.Text);
             }
@@ -129,11 +123,11 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("DocumentHeading.docx");
+            var document = Document.Create("documentHeading.docx");
 
-            foreach (HeadingType heading in (HeadingType[])Enum.GetValues(typeof(HeadingType)))
+            foreach (var heading in (HeadingType[])Enum.GetValues(typeof(HeadingType)))
             {
-                document.InsertParagraph($"{heading} - The quick brown fox jumps over the lazy dog")
+                document.AddParagraph($"{heading} - The quick brown fox jumps over the lazy dog")
                         .Heading(heading);
             }
 
@@ -144,14 +138,22 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("Lists.docx");
-            List numberedList = new List(ListItemType.Numbered,3)
+            var document = Document.Create("Lists.docx");
+
+            document.AddParagraph("Numbered List")
+                .Heading(HeadingType.Heading1);
+
+            List numberedList = new List(ListItemType.Numbered)
                                         .AddItem("First List Item.")
                                         .AddItem("First sub list item", level: 1)
                                         .AddItem("Second List Item.")
                                         .AddItem("Third list item.")
                                         .AddItem("Nested item.", level: 1)
                                         .AddItem("Second nested item.", level: 1);
+            document.AddList(numberedList);
+
+            document.AddParagraph("Bullet List")
+                    .Heading(HeadingType.Heading1);
 
             List bulletedList = new List(ListItemType.Bulleted)
                                         .AddItem("First Bulleted Item.")
@@ -159,10 +161,7 @@ namespace TestDXPlus
                                         .AddItem("Sub bullet item", level: 1)
                                         .AddItem("Second sub bullet item", level: 1)
                                         .AddItem("Third bullet item");
-
-            document.InsertList(numberedList);
-            document.InsertList(bulletedList);
-
+            document.AddList(bulletedList);
 
             foreach (var list in document.Lists)
             {
@@ -180,23 +179,24 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("Toc.docx");
+            var document = Document.Create("Toc.docx");
 
-            document.InsertTableOfContents("I can haz table of contentz",
+            document.AddParagraph("Welcome to the document").Heading(HeadingType.Title).Align(Alignment.Center);
+            document.AddPageBreak();
+
+            document.InsertTableOfContents("Table of Contents",
                 TableOfContentsSwitches.O | TableOfContentsSwitches.U | TableOfContentsSwitches.Z | TableOfContentsSwitches.H, "Heading2");
 
-            document.InsertParagraph("Heading 1").Style("Heading1");
+            document.AddPageBreak();
+            document.AddParagraph("Page #1").Heading(HeadingType.Heading1);
+            document.AddParagraph("Some very interesting content here");
+            document.AddParagraph("Heading 2").Style("Heading2");
 
-            document.InsertParagraph("Some very interesting content here");
-
-            document.InsertParagraph("Heading 2").Style("Heading2");
-
-            document.InsertSectionPageBreak();
-            document.InsertParagraph("Some very interesting content here as well");
-
-            document.InsertParagraph("Heading 3").Style("Heading3");
-
-            document.InsertParagraph("Not so very interesting....");
+            document.AddPageBreak();
+            document.AddParagraph("Page #2").Heading(HeadingType.Heading1);
+            document.AddParagraph("Some very interesting content here as well");
+            document.AddParagraph("Heading 3").Style("Heading3");
+            document.AddParagraph("Not so very interesting....");
 
             document.Save();
         }
@@ -205,17 +205,18 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("TocByReference.docx");
+            var document = Document.Create("TocByReference.docx");
 
-            document.InsertParagraph("Heading 1").Style("Heading1");
-            document.InsertParagraph("Some very interesting content here");
-            document.InsertParagraph("Heading 2").Style("Heading1");
-            document.InsertSectionPageBreak();
-            document.InsertParagraph("Some very interesting content here as well");
-            Paragraph h2 = document.InsertParagraph("Heading 2.1").Style("Heading2");
-            document.InsertParagraph("Not so very interesting....");
+            document.AddParagraph("Heading 1").Style("Heading1");
+            document.AddParagraph("Some very interesting content here");
+            document.AddParagraph("Heading 2").Style("Heading1");
+            document.AddPageBreak();
 
-            document.InsertTableOfContents(h2, "I can haz table of contentz",
+            document.AddParagraph("Some very interesting content here as well");
+            Paragraph h2 = document.AddParagraph("Heading 2.1").Style("Heading2");
+            document.AddParagraph("Not so very interesting....");
+
+            document.InsertTableOfContents(h2, "Table of Contents Goes Here",
                 TableOfContentsSwitches.O | TableOfContentsSwitches.U | TableOfContentsSwitches.Z | TableOfContentsSwitches.H, "Heading2");
 
             document.Save();
@@ -225,10 +226,10 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("BarChart.docx");
+            var document = Document.Create("BarChart.docx");
 
             // Create chart.
-            BarChart chart = new BarChart
+            var chart = new BarChart
             {
                 BarDirection = BarDirection.Column,
                 BarGrouping = BarGrouping.Standard,
@@ -238,21 +239,20 @@ namespace TestDXPlus
             chart.AddLegend(ChartLegendPosition.Bottom, false);
 
             // Create data.
-            List<ChartData> company1 = ChartData.CreateCompanyList1();
-            List<ChartData> company2 = ChartData.CreateCompanyList2();
+            var company1 = ChartData.CreateCompanyList1();
+            var company2 = ChartData.CreateCompanyList2();
 
             // Create and add series
-            Series series1 = new Series("Microsoft") { Color = Color.DarkBlue };
+            var series1 = new Series("Microsoft") { Color = Color.DarkBlue };
             series1.Bind(company1, nameof(ChartData.Month), nameof(ChartData.Money));
             chart.AddSeries(series1);
 
-            Series series2 = new Series("Apple") { Color = Color.FromArgb(1, 0xff, 0, 0xff)};
+            var series2 = new Series("Apple") { Color = Color.FromArgb(1, 0xff, 0, 0xff)};
             series2.Bind(company2, nameof(ChartData.Month), nameof(ChartData.Money));
             chart.AddSeries(series2);
 
             // Insert chart into document
-            document.InsertParagraph("Diagram")
-                    .FontSize(20);
+            document.AddParagraph("Diagram").FontSize(20);
             document.InsertChart(chart);
 
             document.Save();
@@ -262,12 +262,12 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("Bookmarks.docx");
+            var document = Document.Create("Bookmarks.docx");
 
-            document.InsertBookmark("firstBookmark");
+            document.AddBookmark("firstBookmark");
 
-            Paragraph paragraph2 = document.InsertParagraph("This is a paragraph which contains a ")
-                .AppendBookmark("secondBookmark").Append("bookmark");
+            var paragraph2 = document.AddParagraph("This is a paragraph which contains a ")
+                                     .AppendBookmark("secondBookmark").Append("bookmark");
 
             paragraph2.InsertAtBookmark("secondBookmark", "handy ");
 
@@ -282,14 +282,14 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX docX = DocX.Load(Path.Combine("..", "DocumentWithBookmarks.docx"));
+            var docX = Document.Load(Path.Combine("..", "DocumentWithBookmarks.docx"));
 
-            foreach (Bookmark bookmark in docX.Bookmarks)
+            foreach (var bookmark in docX.Bookmarks)
             {
                 Console.WriteLine("Found bookmark {0}", bookmark.Name);
             }
 
-            // Replace bookmars content
+            // Replace bookmarks content
             docX.Bookmarks["bmkNoContent"].SetText("Here there was a bookmark");
             docX.Bookmarks["bmkContent"].SetText("Here there was a bookmark with a previous content");
             docX.Bookmarks["bmkFormattedContent"].SetText("Here there was a formatted bookmark");
@@ -301,28 +301,18 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("3DChart.docx");
+            var document = Document.Create("3DChart.docx");
 
-            BarChart c = new BarChart
-            {
-                View3D = true
-            };
+            var company1 = ChartData.CreateCompanyList1();
+            var series = new Series("Microsoft") {Color = Color.GreenYellow};
+            series.Bind(company1, nameof(ChartData.Month), nameof(ChartData.Money));
 
-            // Create data.
-            List<ChartData> company1 = ChartData.CreateCompanyList1();
-
-            // Create and add series
-            Series s = new Series("Microsoft")
-            {
-                Color = Color.GreenYellow
-            };
-
-            s.Bind(company1, nameof(ChartData.Month), nameof(ChartData.Money));
-            c.AddSeries(s);
+            var barChart = new BarChart { View3D = true };
+            barChart.AddSeries(series);
 
             // Insert chart into document
-            document.InsertParagraph("3D Diagram").FontSize(20);
-            document.InsertChart(c);
+            document.AddParagraph("3D Diagram").FontSize(20);
+            document.InsertChart(barChart);
 
             document.Save();
         }
@@ -331,27 +321,19 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("CeateTableWithTextDirection.docx");
+            var document = Document.Create("createTableWithTextDirection.docx");
 
-            Table t = document.CreateTable(2, 3);
-            t.Alignment = Alignment.Left;
-            t.Design = TableDesign.MediumGrid1Accent2;
+            var t = new Table(new[,]
+            {
+                { "A", "B", "C"},
+                { "D", "E", "F"}
 
-            List<Cell> cells = t.Rows[0].Cells.ToList();
+            }) {Alignment = Alignment.Left, Design = TableDesign.MediumGrid1Accent2};
 
-            cells[0].Paragraphs[0].Append("A");
-            cells[0].TextDirection = TextDirection.BottomToTopLeftToEnd;
-            cells[1].Paragraphs[0].Append("B");
-            cells[1].TextDirection = TextDirection.BottomToTopLeftToEnd;
-            cells[2].Paragraphs[0].Append("C");
-            cells[2].TextDirection = TextDirection.BottomToTopLeftToEnd;
+            foreach (var cell in t.Rows[0].Cells)
+                cell.TextDirection = TextDirection.BottomToTopLeftToEnd;
 
-            cells = t.Rows[1].Cells.ToList();
-            cells[0].Paragraphs[0].Append("D");
-            cells[1].Paragraphs[0].Append("E");
-            cells[2].Paragraphs[0].Append("F");
-
-            document.InsertTable(t);
+            document.AddTable(t);
             document.Save();
         }
 
@@ -359,7 +341,7 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("DocumentMargins.docx");
+            var document = Document.Create("DocumentMargins.docx");
 
             // Create a float var that contains doc Margins properties.
             double leftMargin = document.MarginLeft;
@@ -380,17 +362,13 @@ namespace TestDXPlus
             document.MarginTop = topMargin;
             document.MarginBottom = bottomMargin;
 
-            // created bulleted lists
-
             var bulletedList = new List(ListItemType.Bulleted)
                 .AddItem("First Bulleted Item.")
                 .AddItem("Second bullet item")
                 .AddItem("Sub bullet item", level: 1)
                 .AddItem("Second sub bullet item", level: 1)
                 .AddItem("Third bullet item");
-
-
-            document.InsertList(bulletedList);
+            document.AddList(bulletedList);
 
             // Save this document.
             document.Save();
@@ -400,32 +378,29 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("DocumentsWithListsFontChange.docx");
+            var document = Document.Create("DocumentsWithListsFontChange.docx");
 
-            foreach (FontFamily oneFontFamily in FontFamily.Families)
+            foreach (var oneFontFamily in FontFamily.Families)
             {
                 FontFamily fontFamily = oneFontFamily;
                 const double fontSize = 15;
 
-                // created numbered lists 
-                List numberedList = new List(ListItemType.Numbered)
+                var numberedList = new List(ListItemType.Numbered)
                     .AddItem("First List Item.")
                     .AddItem("First sub list item", level: 1)
                     .AddItem("Second List Item.")
                     .AddItem("Third list item.")
                     .AddItem("Nested item.", level: 1)
                     .AddItem("Second nested item.", level: 1);
+                document.AddList(numberedList, fontFamily, fontSize);
 
-                // created bulleted lists
-                List bulletedList = new List(ListItemType.Bulleted)
+                var bulletedList = new List(ListItemType.Bulleted)
                     .AddItem("First Bulleted Item.")
                     .AddItem("Second bullet item")
                     .AddItem("Sub bullet item", level: 1)
                     .AddItem("Second sub bullet item", level: 1)
                     .AddItem("Third bullet item");
-
-                document.InsertList(bulletedList);
-                document.InsertList(numberedList, fontFamily, fontSize);
+                document.AddList(bulletedList);
             }
             
             document.Save();
@@ -438,88 +413,24 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("Equations.docx");
+            var document = Document.Create("Equations.docx");
 
-            document.InsertEquation("x = y+z");
-
-            document.InsertEquation("x = (y+z)/t")
-                    .FontSize(18)
-                    .Color(Color.Blue);
+            document.AddEquation("x = y+z");
+            document.AddEquation("x = (y+z)/t").FontSize(18).Color(Color.Blue);
 
             document.Save();
         }
 
-        private static void HeadersAndFooters()
+        private static void FirstPageHeader()
         {
             Enter();
 
-            DocX document = DocX.Create("HeadersAndFooters.docx");
+            var document = Document.Create("firstPageHeader.docx");
 
-            // Add Headers and Footers to this document.
-            document.AddHeaders();
-            document.AddFooters();
+            document.Headers.First
+                    .Add().Append("First page header").Bold();
 
-            // Force the first page to have a different Header and Footer.
-            document.DifferentFirstPage = true;
-
-            // Force odd & even pages to have different Headers and Footers.
-            document.DifferentOddAndEvenPages = true;
-
-            // Get the first, odd and even Headers for this document.
-            Header headerFirst = document.Headers.First;
-            Header headerOdd = document.Headers.Odd;
-            Header headerEven = document.Headers.Even;
-
-            // Get the first, odd and even Footer for this document.
-            Footer footerFirst = document.Footers.First;
-            Footer footerOdd = document.Footers.Odd;
-            Footer footerEven = document.Footers.Even;
-
-            // Insert a Paragraph into the first Header.
-            headerFirst.InsertParagraph().Append("Hello First Header.").Bold();
-
-            // Insert a Paragraph into the odd Header.
-            headerOdd.InsertParagraph().Append("Hello Odd Header.").Bold();
-
-            // Insert a Paragraph into the even Header.
-            headerEven.InsertParagraph().Append("Hello Even Header.").Bold();
-
-            // Insert a Paragraph into the first Footer.
-            footerFirst.InsertParagraph().Append("Hello First Footer.").Bold();
-
-            // Insert a Paragraph into the odd Footer.
-            footerOdd.InsertParagraph().Append("Hello Odd Footer.").Bold();
-
-            // Insert a Paragraph into the even Header.
-            footerEven.InsertParagraph().Append("Hello Even Footer.").Bold();
-
-            // Insert a Paragraph into the document.
-            // Create a second page to show that the first page has its own header and footer.
-            document.InsertParagraph().AppendLine("Hello First page.").InsertPageBreakAfterSelf();
-
-            // Insert a Paragraph after the page break.
-            Paragraph p7 = document.InsertParagraph().AppendLine("Hello Second page.");
-
-            // Create a third page to show that even and odd pages have different headers and footers.
-            p7.InsertPageBreakAfterSelf();
-
-            // Insert a Paragraph after the page break.
-            Paragraph p8 = document.InsertParagraph();
-            p8.AppendLine("Hello Third page.");
-
-            //Insert a next page break, which is a section break combined with a page break
-            document.InsertSectionPageBreak();
-
-            //Insert a paragraph after the "Next" page break
-            Paragraph p9 = document.InsertParagraph();
-            p9.Append("Next page section break.");
-
-            //Insert a continuous section break
-            document.InsertSection();
-
-            //Create a paragraph in the new section
-            Paragraph p10 = document.InsertParagraph();
-            p10.Append("Continuous section paragraph.");
+            document.AddParagraph("This is page #1");
 
             // Save all changes to this document.
             document.Save();
@@ -532,8 +443,8 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("HelloWorld.docx");
-            Paragraph p = document.InsertParagraph("Hello, World!").AppendLine();
+            var document = Document.Create("HelloWorld.docx");
+            Paragraph p = document.AddParagraph("Hello, World!").AppendLine();
 
             // Append some text and add formatting.
             p.Append("Some ")
@@ -558,7 +469,7 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("HelloWorldAddPictureToWord.docx");
+            var document = Document.Create("HelloWorldAddPictureToWord.docx");
 
             // Add an image into the document.    
             DXPlus.Image image = document.AddImage(Path.Combine("..", "images", "logo_template.png"));
@@ -569,14 +480,14 @@ namespace TestDXPlus
             picture.Rotation = 10;
 
             // Insert a new Paragraph into the document.
-            Paragraph title = document.InsertParagraph()
+            Paragraph title = document.AddParagraph()
                 .Append("This is a test for a picture")
                 .FontSize(20)
                 .Font(new FontFamily("Comic Sans MS"));
             title.Alignment = Alignment.Center;
 
             // Insert a new Paragraph into the document.
-            Paragraph p1 = document.InsertParagraph();
+            Paragraph p1 = document.AddParagraph();
 
             // Append content to the Paragraph
             p1.AppendLine("Just below there should be a picture ")
@@ -589,13 +500,13 @@ namespace TestDXPlus
               .AppendLine();
 
             // Insert a new Paragraph into the document.
-            document.InsertParagraph()
+            document.AddParagraph()
                     .AppendLine("Is it correct?")
                     .AppendLine();
 
             // Lets add another copy of the image
             Picture pictureNormal = image.CreatePicture();
-            document.InsertParagraph()
+            document.AddParagraph()
                     .AppendLine("Lets add another picture (without the fancy  rotation stuff)")
                     .AppendLine()
                     .AppendPicture(pictureNormal);
@@ -608,10 +519,10 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("HelloWorldAdvancedFormatting.docx");
+            var document = Document.Create("HelloWorldAdvancedFormatting.docx");
 
             // Insert a new Paragraphs.
-            Paragraph p = document.InsertParagraph();
+            Paragraph p = document.AddParagraph();
 
             p.Append("I am ").Append("bold").Bold()
             .Append(" and I am ")
@@ -633,10 +544,10 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("unused.docx");
+            var document = Document.Create("unused.docx");
 
             // Insert a Paragraph into this document.
-            document.InsertParagraph("Hello, World!")
+            document.AddParagraph("Hello, World!")
                     .Font(new FontFamily("Times New Roman"))
                     .FontSize(32)
                     .Color(Color.Blue)
@@ -681,9 +592,9 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("HighlightWords.docx");
+            var document = Document.Create("HighlightWords.docx");
 
-            document.InsertParagraph("First line. ")
+            document.AddParagraph("First line. ")
                 .Append("This sentence is highlighted")
                     .Highlight(Highlight.Yellow)
                 .Append(", but this is ")
@@ -700,16 +611,16 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("Hyperlinks.docx");
+            var document = Document.Create("Hyperlinks.docx");
 
             // Add a title
-            document.InsertParagraph("Test")
+            document.AddParagraph("Test")
                     .Align(Alignment.Center)
                     .FontSize(20)
                     .Font(new FontFamily("Comic Sans MS"));
 
             // Insert a new Paragraph into the document.
-            document.InsertParagraph()
+            document.AddParagraph()
                     .AppendLine("This line contains a ")
                     .Append("bold ").Bold().Append("word.")
                     .AppendLine()
@@ -719,7 +630,7 @@ namespace TestDXPlus
 
             // Insert a hyperlink into the paragraph
             string text = "A final paragraph - ";
-            var p = document.InsertParagraph(text)
+            var p = document.AddParagraph(text)
                 .AppendLine("With a few lines of text to read.")
                 .AppendLine("And a final line.");
 
@@ -730,15 +641,15 @@ namespace TestDXPlus
         }
 
         /// <summary>
-        /// Create a document with a Paragraph whos first line is indented.
+        /// Create a document with a Paragraph where the first line is indented.
         /// </summary>
         private static void Indentation()
         {
             Enter();
 
-            DocX document = DocX.Create("Indentation.docx");
+            var document = Document.Create("Indentation.docx");
 
-            Paragraph p = document.InsertParagraph("Line 1\nLine 2\nLine 3");
+            Paragraph p = document.AddParagraph("Line 1\nLine 2\nLine 3");
             p.IndentationFirstLine = 1.0f;
             document.Save();
         }
@@ -749,8 +660,8 @@ namespace TestDXPlus
 
             Enter();
 
-            DocX doc = DocX.Create("LargeTables.docx");
-            Table table = doc.InsertTable(1, 18);
+            var doc = Document.Create("LargeTables.docx");
+            Table table = doc.AddTable(1, 18);
 
             double wholeWidth = doc.PageWidth - doc.MarginLeft - doc.MarginRight;
             double colWidth = wholeWidth / table.ColumnCount;
@@ -782,7 +693,7 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("LineChart.docx");
+            var document = Document.Create("LineChart.docx");
 
             // Create chart.
             LineChart c = new LineChart();
@@ -805,7 +716,7 @@ namespace TestDXPlus
             c.AddSeries(s2);
 
             // Insert chart into document
-            document.InsertParagraph("Diagram").FontSize(20);
+            document.AddParagraph("Diagram").FontSize(20);
             document.InsertChart(c);
             document.Save();
         }
@@ -814,7 +725,7 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("PieChart.docx");
+            var document = Document.Create("PieChart.docx");
 
             // Create chart.
             PieChart c = new PieChart();
@@ -829,7 +740,7 @@ namespace TestDXPlus
             c.AddSeries(s);
 
             // Insert chart into document
-            document.InsertParagraph("Diagram").FontSize(20);
+            document.AddParagraph("Diagram").FontSize(20);
             document.InsertChart(c);
             document.Save();
         }
@@ -842,7 +753,7 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Load(Path.Combine("..", "Input.docx"));
+            var document = Document.Load(Path.Combine("..", "Input.docx"));
 
             // Make sure this document has at least one Image.
             if (document.Images.Count > 0)
@@ -880,9 +791,9 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("RightToLeft.docx");
+            var document = Document.Create("RightToLeft.docx");
 
-            Paragraph p = document.InsertParagraph("Hello World.");
+            Paragraph p = document.AddParagraph("Hello World.");
 
             // Make this Paragraph flow right to left. Default is left to right.
             p.Direction = Direction.RightToLeft;
@@ -909,42 +820,36 @@ namespace TestDXPlus
         {
             Enter();
 
-            DocX document = DocX.Create("Tables.docx");
+            var document = Document.Create("Tables.docx");
 
-            Table table = document.CreateTable(2, 2);
+            Table table = new Table(new[,] {{"1", "2"}, {"3", "4"}})
+                {
+                    Design = TableDesign.ColorfulGrid, Alignment = Alignment.Center
+                };
 
-            table.Design = TableDesign.ColorfulGrid;
-            table.Alignment = Alignment.Center;
+            // Add it once
+            document.AddTable(table);
 
-            List<Cell> cells = table.Rows[0].Cells.ToList();
-            cells[0].Paragraphs[0].Append("1");
-            cells[1].Paragraphs[0].Append("2");
-
-            cells = table.Rows[1].Cells.ToList();
-            cells[0].Paragraphs[0].Append("3");
-            cells[1].Paragraphs[0].Append("4");
-
-            document.InsertParagraph()
-                    .AppendLine("Can you check this Table of figures for me?")
+            // Add it again
+            document.AddParagraph()
+                    .AppendLine("Here's another copy of the table!")
                     .AppendLine()
-                    .InsertTableAfterSelf(table);
+                    .AddTableAfterSelf(table)
+                    .Rows[0].Cells[0].ReplaceText("1", "One");
 
             // Insert a new Paragraph into the document.
-            document.InsertParagraph()
+            document.AddParagraph()
                     .AppendLine()
                     .AppendLine("Adding another table...");
 
-            Table table1 = document.CreateTable(2, 2);
+            Table table1 = new Table(2, 2) {Design = TableDesign.MediumGrid1Accent1, Alignment = Alignment.Center};
 
-            table1.Design = TableDesign.ColorfulGridAccent2;
-            table1.Alignment = Alignment.Center;
+            table1.Rows[0].Cells[0].Paragraphs[0].Append("One");
+            table1.Rows[0].Cells[1].Paragraphs[0].Append("Two");
+            table1.Rows[1].Cells[0].Paragraphs[0].Append("Three");
+            table1.Rows[1].Cells[1].Paragraphs[0].Append("Four");
 
-            table1.Rows[0].Cells.ElementAt(0).Paragraphs[0].Append("1");
-            table1.Rows[0].Cells.ElementAt(1).Paragraphs[0].Append("2");
-            table1.Rows[1].Cells.ElementAt(0).Paragraphs[0].Append("3");
-            table1.Rows[1].Cells.ElementAt(1).Paragraphs[0].Append("4");
-
-            Paragraph p = document.InsertParagraph()
+            var p = document.AddParagraph()
                 .AppendLine()
                 .AppendLine("The table should be right above this paragraph!");
 

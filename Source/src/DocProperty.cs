@@ -8,7 +8,7 @@ namespace DXPlus
     /// <summary>
     /// Represents a field of type document property. This field displays the value stored in a custom property.
     /// </summary>
-    public class DocProperty : DocXElement
+    public class DocProperty : DocXBase
     {
         /// <summary>
         /// Name of the property
@@ -20,12 +20,11 @@ namespace DXPlus
         /// </summary>
         public string Value { get; }
 
-        internal DocProperty(DocX document, XElement xml)
-            : base(document, xml)
+        internal DocProperty(IDocument document, XElement xml) : base(document, xml)
         {
-            string instr = Xml.AttributeValue(DocxNamespace.Main + "instr").Trim();
+            string instr = Xml.AttributeValue(Namespace.Main + "instr").Trim();
             Name = new Regex("DOCPROPERTY (?<name>.*) \\\\\\*").Match(instr).Groups["name"].Value;
-            Value = Xml.Descendants().First(e => e.Name == DocxNamespace.Main + "t")?.Value;
+            Value = Xml.Descendants().First(e => e.Name == DXPlus.Name.Text)?.Value;
         }
     }
 }

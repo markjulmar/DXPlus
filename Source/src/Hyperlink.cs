@@ -10,7 +10,7 @@ namespace DXPlus
     /// <summary>
     /// Represents a Hyperlink in a document.
     /// </summary>
-    public class Hyperlink : DocXElement
+    public class Hyperlink : DocXBase
     {
         private Uri uri;
         private string text;
@@ -23,10 +23,7 @@ namespace DXPlus
         /// <summary>
         /// Remove a Hyperlink from this Paragraph only.
         /// </summary>
-        public void Remove()
-        {
-            Xml.Remove();
-        }
+        public void Remove() => Xml.Remove();
 
         /// <summary>
         /// Change the Text of a Hyperlink.
@@ -37,21 +34,15 @@ namespace DXPlus
 
             set
             {
-                var rPr = new XElement(DocxNamespace.Main + "rPr",
-                                new XElement(DocxNamespace.Main + "rStyle",
-                                    new XAttribute(DocxNamespace.Main + "val", "Hyperlink")));
+                var rPr = new XElement(Name.RunProperties,
+                                new XElement(Namespace.Main + "rStyle",
+                                    new XAttribute(Name.MainVal, "Hyperlink")));
 
                 // Format and add the new text.
                 var newRuns = HelperFunctions.FormatInput(value, rPr);
                 if (type == 0)
                 {
-                    // Get all the runs in this Text.
-                    var runs = Xml.LocalNameElements("r").ToList();
-                    for (int i = 0; i < runs.Count; i++)
-                    {
-                        runs.Remove();
-                    }
-
+                    Xml.LocalNameElements("r").Remove();
                     Xml.Add(newRuns);
                 }
                 else
@@ -116,14 +107,14 @@ namespace DXPlus
         /// <param name="uri">Link URI</param>
         public Hyperlink(string text, Uri uri)
         {
-            Xml = new XElement(DocxNamespace.Main + "hyperlink",
-                new XAttribute(DocxNamespace.RelatedDoc + "id", string.Empty),
-                new XAttribute(DocxNamespace.Main + "history", "1"),
-                new XElement(DocxNamespace.Main + "r",
-                    new XElement(DocxNamespace.Main + "rPr",
-                        new XElement(DocxNamespace.Main + "rStyle",
-                            new XAttribute(DocxNamespace.Main + "val", "Hyperlink"))),
-                    new XElement(DocxNamespace.Main + "t", text))
+            Xml = new XElement(Namespace.Main + "hyperlink",
+                new XAttribute(Namespace.RelatedDoc + "id", string.Empty),
+                new XAttribute(Namespace.Main + "history", "1"),
+                new XElement(Name.Run,
+                    new XElement(Name.RunProperties,
+                        new XElement(Namespace.Main + "rStyle",
+                            new XAttribute(Name.MainVal, "Hyperlink"))),
+                    new XElement(Name.Text, text))
             );
 
             type = 0;
@@ -138,11 +129,11 @@ namespace DXPlus
         /// <returns>Relationship id</returns>
         internal string GetOrCreateRelationship()
         {
-            string uri = Uri.OriginalString;
+            string baseUri = Uri.OriginalString;
 
             // Search for a relationship with a TargetUri that points at this Image.
-            string id = PackagePart.GetRelationshipsByType($"{DocxNamespace.RelatedDoc.NamespaceName}/hyperlink")
-                .Where(r => r.TargetUri.OriginalString == uri)
+            string id = PackagePart.GetRelationshipsByType($"{Namespace.RelatedDoc.NamespaceName}/hyperlink")
+                .Where(r => r.TargetUri.OriginalString == baseUri)
                 .Select(r => r.Id)
                 .SingleOrDefault();
 
@@ -151,12 +142,12 @@ namespace DXPlus
             {
                 // Check to see if a relationship for this Hyperlink exists and create it if not.
                 var pr = PackagePart.CreateRelationship(Uri, TargetMode.External,
-                    $"{DocxNamespace.RelatedDoc.NamespaceName}/hyperlink");
+                    $"{Namespace.RelatedDoc.NamespaceName}/hyperlink");
                 id = pr.Id;
             }
 
             Id = id;
-            Xml.SetAttributeValue(DocxNamespace.RelatedDoc + "id", id);
+            Xml.SetAttributeValue(Namespace.RelatedDoc + "id", id);
 
             return id;
         }
@@ -166,10 +157,10 @@ namespace DXPlus
         /// </summary>
         /// <param name="document">Document owner</param>
         /// <param name="xml">XML fragment representing hyperlink</param>
-        internal Hyperlink(DocX document, XElement xml) : base(document, xml)
+        internal Hyperlink(IDocument document, XElement xml) : base(document, xml)
         {
             type = 0;
-            Id = xml.AttributeValue(DocxNamespace.RelatedDoc + "id");
+            Id = xml.AttributeValue(Namespace.RelatedDoc + "id");
             text = HelperFunctions.GetTextRecursive(xml).ToString();
         }
 
@@ -179,7 +170,7 @@ namespace DXPlus
         /// <param name="document">Document owner</param>
         /// <param name="instrText">Text with field codes</param>
         /// <param name="runs">Text runs making up this hyperlink</param>
-        internal Hyperlink(DocX document, XElement instrText, List<XElement> runs) : base(document, null)
+        internal Hyperlink(IDocument document, XElement instrText, List<XElement> runs) : base(document, null)
         {
             type = 1;
             this.instrText = instrText;
@@ -190,11 +181,11 @@ namespace DXPlus
             if (start != -1 && end != -1)
             {
                 Uri = new Uri(instrText.Value[start..end], UriKind.Absolute);
-                text = HelperFunctions.GetTextRecursive(new XElement(DocxNamespace.Main + "temp", runs)).ToString();
+                text = HelperFunctions.GetTextRecursive(new XElement(Namespace.Main + "temp", runs)).ToString();
             }
         }
 
-        internal static IEnumerable<Hyperlink> Enumerate(DocXElement owner)
+        internal static IEnumerable<Hyperlink> Enumerate(DocXBase owner)
         {
             foreach (var he in owner.Xml.Descendants()
                                 .Where(h => h.Name.LocalName == "hyperlink" 
@@ -216,15 +207,15 @@ namespace DXPlus
 
                     // Take every element until we reach w:fldCharType="end"
                     var hyperLinkRuns = new List<XElement>();
-                    foreach (var run in e.ElementsAfterSelf(DocxNamespace.Main + "r"))
+                    foreach (var run in e.ElementsAfterSelf(Name.Run))
                     {
                         // Add this run to the list.
                         hyperLinkRuns.Add(run);
 
-                        var fldChar = run.Descendants(DocxNamespace.Main + "fldChar").SingleOrDefault();
+                        var fldChar = run.Descendants(Namespace.Main + "fldChar").SingleOrDefault();
                         if (fldChar != null)
                         {
-                            var fldCharType = fldChar.Attribute(DocxNamespace.Main + "fldCharType");
+                            var fldCharType = fldChar.Attribute(Namespace.Main + "fldCharType");
                             if (fldCharType?.Value.Equals("end", StringComparison.CurrentCultureIgnoreCase) == true)
                             {
                                 yield return new Hyperlink(owner.Document, he, hyperLinkRuns) {PackagePart = owner.PackagePart};
@@ -239,11 +230,11 @@ namespace DXPlus
         /// <summary>
         /// Called when the document owner is changed.
         /// </summary>
-        protected override void OnDocumentOwnerChanged(DocX previousValue, DocX newValue)
+        protected override void OnDocumentOwnerChanged(IDocument previousValue, IDocument newValue)
         {
             base.OnDocumentOwnerChanged(previousValue, newValue);
             // Add the hyperlink styles to the document if missing.
-            newValue?.AddHyperlinkStyleIfNotPresent();
+            (newValue as DocX)?.AddHyperlinkStyleIfNotPresent();
         }
     }
 }

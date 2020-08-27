@@ -22,9 +22,9 @@ namespace DXPlus.Charts
         /// <param name="overlay"></param>
         internal ChartLegend(ChartLegendPosition position, bool overlay)
         {
-            Xml = new XElement(DocxNamespace.Chart + "legend",
-                new XElement(DocxNamespace.Chart + "legendPos", new XAttribute("val", position.GetEnumName())),
-                new XElement(DocxNamespace.Chart + "overlay", new XAttribute("val", overlay ? "1" : "0")));
+            Xml = new XElement(Namespace.Chart + "legend",
+                new XElement(Namespace.Chart + "legendPos", new XAttribute("val", position.GetEnumName())),
+                new XElement(Namespace.Chart + "overlay", new XAttribute("val", overlay ? "1" : "0")));
         }
 
         /// <summary>
@@ -32,8 +32,8 @@ namespace DXPlus.Charts
         /// </summary>
         public bool Overlay
         {
-            get => Xml.Element(DocxNamespace.Chart + "overlay").GetVal() == "1";
-            set => Xml.GetOrCreateElement(DocxNamespace.Chart + "overlay").SetAttributeValue("val", value ? "1" : "0");
+            get => Xml.Element(Namespace.Chart + "overlay").GetVal() == "1";
+            set => Xml.GetOrCreateElement(Namespace.Chart + "overlay").SetAttributeValue("val", value ? "1" : "0");
         }
 
         /// <summary>
@@ -41,8 +41,8 @@ namespace DXPlus.Charts
         /// </summary>
         public ChartLegendPosition Position
         {
-            get => Xml.Element(DocxNamespace.Chart + "legendPos").GetEnumValue<ChartLegendPosition>();
-            set => Xml.GetOrCreateElement(DocxNamespace.Chart + "legendPos").SetEnumValue(value);
+            get => Xml.Element(Namespace.Chart + "legendPos").GetEnumValue<ChartLegendPosition>();
+            set => Xml.GetOrCreateElement(Namespace.Chart + "legendPos").SetEnumValue(value);
         }
     }
 }

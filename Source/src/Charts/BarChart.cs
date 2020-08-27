@@ -36,8 +36,8 @@ namespace DXPlus.Charts
         /// </summary>
         public BarDirection BarDirection
         {
-            get => ChartXml.Element(DocxNamespace.Chart + "barDir").GetEnumValue<BarDirection>();
-            set => ChartXml.GetOrCreateElement(DocxNamespace.Chart + "barDir").SetEnumValue(value);
+            get => ChartXml.Element(Namespace.Chart + "barDir").GetEnumValue<BarDirection>();
+            set => ChartXml.GetOrCreateElement(Namespace.Chart + "barDir").SetEnumValue(value);
         }
 
         /// <summary>
@@ -45,8 +45,8 @@ namespace DXPlus.Charts
         /// </summary>
         public BarGrouping BarGrouping
         {
-            get => ChartXml.Element(DocxNamespace.Chart + "grouping").GetEnumValue<BarGrouping>();
-            set => ChartXml.GetOrCreateElement(DocxNamespace.Chart + "grouping").SetEnumValue(value);
+            get => ChartXml.Element(Namespace.Chart + "grouping").GetEnumValue<BarGrouping>();
+            set => ChartXml.GetOrCreateElement(Namespace.Chart + "grouping").SetEnumValue(value);
         }
 
         /// <summary>
@@ -54,13 +54,13 @@ namespace DXPlus.Charts
         /// </summary>
         public int GapWidth
         {
-            get => Convert.ToInt32(ChartXml.Element(DocxNamespace.Chart + "gapWidth").GetVal());
+            get => Convert.ToInt32(ChartXml.Element(Namespace.Chart + "gapWidth").GetVal());
             set
             {
                 if (value < 1 || value > 500)
                     throw new ArgumentException($"{nameof(GapWidth)} must be between 0% and 500%!", nameof(GapWidth));
 
-                ChartXml.GetOrCreateElement(DocxNamespace.Chart + "gapWidth").SetAttributeValue("val", value.ToString());
+                ChartXml.GetOrCreateElement(Namespace.Chart + "gapWidth").SetAttributeValue("val", value.ToString());
             }
         }
 

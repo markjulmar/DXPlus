@@ -13,6 +13,21 @@ namespace DXPlus
     public static class ParagraphHelpers
     {
         /// <summary>
+        /// Create a new paragraph from some text
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="trackChanges"></param>
+        /// <param name="formatting"></param>
+        /// <returns>New paragraph</returns>
+        internal static XElement Create(string text, bool trackChanges, Formatting formatting)
+        {
+            var newParagraph = new XElement(Name.Paragraph, HelperFunctions.FormatInput(text, formatting?.Xml));
+            if (trackChanges)
+                newParagraph = HelperFunctions.CreateEdit(EditType.Ins, DateTime.Now, newParagraph);
+            return newParagraph;
+        }
+
+        /// <summary>
         /// Fluent method to set alignment
         /// </summary>
         /// <param name="paragraph">Paragraph</param>
@@ -404,9 +419,41 @@ namespace DXPlus
         /// <param name="paragraph"></param>
         /// <param name="bookmarkName">Bookmark name</param>
         /// <returns></returns>
-        public static bool BookmarkExists(this Paragraph paragraph, string bookmarkName)
-        {
-            return paragraph.GetBookmarks().Any(b => b.Name.Equals(bookmarkName));
-        }
+        public static bool BookmarkExists(this Paragraph paragraph, string bookmarkName) 
+            => paragraph.GetBookmarks().Any(b => b.Name.Equals(bookmarkName));
+
+        /// <summary>
+        /// Add a paragraph after the current element using the passed text
+        /// </summary>
+        /// <param name="container">Container owner</param>
+        /// <param name="text">Text for new paragraph</param>
+        /// <returns>Newly created paragraph</returns>
+        public static Paragraph AddParagraphAfterSelf(this InsertBeforeOrAfter container, string text) => container.AddParagraphAfterSelf(text, false, new Formatting());
+
+        /// <summary>
+        /// Add a paragraph after the current element using the passed text
+        /// </summary>
+        /// <param name="container">Container owner</param>
+        /// <param name="text">Text for new paragraph</param>
+        /// <param name="trackChanges">True to track changes</param>
+        /// <returns>Newly created paragraph</returns>
+        public static Paragraph AddParagraphAfterSelf(this InsertBeforeOrAfter container, string text, bool trackChanges) => container.AddParagraphAfterSelf(text, trackChanges, new Formatting());
+
+        /// <summary>
+        /// Insert a paragraph before this container.
+        /// </summary>
+        /// <param name="container">Container owner</param>
+        /// <param name="text">Text for new paragraph</param>
+        /// <returns>Newly created paragraph</returns>
+        public static Paragraph InsertParagraphBeforeSelf(this InsertBeforeOrAfter container, string text) => container.InsertParagraphBeforeSelf(text, false, new Formatting());
+
+        /// <summary>
+        /// Insert a paragraph before this container.
+        /// </summary>
+        /// <param name="container">Container owner</param>
+        /// <param name="text">Text for new paragraph</param>
+        /// <param name="trackChanges">True to track changes</param>
+        /// <returns>Newly created paragraph</returns>
+        public static Paragraph InsertParagraphBeforeSelf(this InsertBeforeOrAfter container, string text, bool trackChanges) => container.InsertParagraphBeforeSelf(text, trackChanges, new Formatting());
     }
 }

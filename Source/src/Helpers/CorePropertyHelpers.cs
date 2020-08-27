@@ -55,82 +55,12 @@ namespace DXPlus.Helpers
                 var propertyNamespace = corePropDoc.Root.GetNamespaceOfPrefix(propertyNamespacePrefix);
                 if (propertyNamespace == null)
                     throw new InvalidOperationException("Unable to identify namespace for core property.");
-                corePropDoc.Root.Add(new XElement(DocxNamespace.Main + propertyLocalName,
+                corePropDoc.Root.Add(new XElement(Namespace.Main + propertyLocalName,
                     propertyNamespace.NamespaceName, value));
             }
 
             corePropPart.Save(corePropDoc);
-            UpdateUsages(document, propertyLocalName, value);
-        }
-
-        static void UpdateUsages(DocX document, string name, string value)
-        {
-            if (document == null)
-                throw new ArgumentNullException(nameof(document));
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("Value cannot be null or whitespace.", nameof(name));
-
-            string matchPattern = $@"(DOCPROPERTY)?{name}\\\*MERGEFORMAT".ToLower();
-
-            foreach (var e in document.mainDoc.Descendants(DocxNamespace.Main + "fldSimple"))
-            {
-                string attrValue = e.AttributeValue(DocxNamespace.Main + "instr")
-                    .Replace(" ", string.Empty).Trim()
-                    .ToLower();
-
-                if (Regex.IsMatch(attrValue, matchPattern))
-                {
-                    var firstRun = e.Element(DocxNamespace.Main + "r");
-                    var rPr = firstRun?.GetRunProps(false);
-
-                    e.RemoveNodes();
-
-                    if (firstRun != null)
-                    {
-                        e.Add(new XElement(firstRun.Name,
-                                firstRun.Attributes(),
-                                rPr,
-                                new XElement(DocxNamespace.Main + "t", value).PreserveSpace()
-                            )
-                        );
-                    }
-                }
-            }
-
-            void ProcessHeaderFooterParts(IEnumerable<PackagePart> packageParts)
-            {
-                foreach (var pp in packageParts)
-                {
-                    var section = pp.Load();
-
-                    foreach (var e in section.Descendants(DocxNamespace.Main + "fldSimple"))
-                    {
-                        string attrValue = e.AttributeValue(DocxNamespace.Main + "instr").Replace(" ", string.Empty).Trim().ToLower();
-                        if (Regex.IsMatch(attrValue, matchPattern))
-                        {
-                            var firstRun = e.Element(DocxNamespace.Main + "r");
-                            e.RemoveNodes();
-                            if (firstRun != null)
-                            {
-                                e.Add(new XElement(firstRun.Name,
-                                        firstRun.Attributes(),
-                                        firstRun.GetRunProps(false),
-                                        new XElement(DocxNamespace.Main + "t", value).PreserveSpace()
-                                    )
-                                );
-                            }
-                        }
-                    }
-
-                    pp.Save(section);
-                }
-            }
-
-            ProcessHeaderFooterParts(document.Package.GetParts()
-                .Where(headerPart => Regex.IsMatch(headerPart.Uri.ToString(), @"/word/header\d?.xml")));
-
-            ProcessHeaderFooterParts(document.Package.GetParts()
-                .Where(footerPart => (Regex.IsMatch(footerPart.Uri.ToString(), @"/word/footer\d?.xml"))));
+            document?.UpdateCorePropertyUsages(propertyLocalName, value);
         }
     }
 }

@@ -25,29 +25,29 @@ namespace DXPlus
         /// <param name="text">New text value</param>
         public void SetText(string text)
         {
-            var bookmark = Paragraph.Xml.Descendants(DocxNamespace.Main + "bookmarkStart")
-                                                .FindByAttrVal(DocxNamespace.Main + "name", Name);
+            var bookmark = Paragraph.Xml.Descendants(DXPlus.Name.BookmarkStart)
+                                    .FindByAttrVal(DXPlus.Name.NameId, Name);
             if (bookmark == null)
                 return;
 
             var nextNode = bookmark.NextNode;
             var nextElement = nextNode as XElement;
             while (nextElement == null
-                   || nextElement.Name.NamespaceName != DocxNamespace.Main.NamespaceName
-                   || (nextElement.Name.LocalName != "r" && nextElement.Name.LocalName != "bookmarkEnd"))
+                   || (nextElement.Name != DXPlus.Name.Run 
+                   && nextElement.Name != DXPlus.Name.BookmarkEnd))
             {
                 nextNode = nextNode.NextNode;
                 nextElement = nextNode as XElement;
             }
 
             // Check if next element is a bookmarkEnd
-            if (nextElement.Name.LocalName == "bookmarkEnd")
+            if (nextElement.Name == DXPlus.Name.BookmarkEnd)
             {
                 AddBookmarkRef(bookmark, text);
                 return;
             }
 
-            var contentElement = nextElement.Elements(DocxNamespace.Main + "t").FirstOrDefault();
+            var contentElement = nextElement.Elements(DXPlus.Name.Text).FirstOrDefault();
             if (contentElement == null)
             {
                 AddBookmarkRef(bookmark, text);
@@ -77,8 +77,8 @@ namespace DXPlus
         {
             var run = HelperFunctions.FormatInput(text, null);
             bookmark.AddAfterSelf(run);
-            Paragraph.Runs = Paragraph.Xml.Elements(DocxNamespace.Main + "r").ToList();
-            HelperFunctions.RenumberIds(Paragraph.Document);
+            Paragraph.Runs = Paragraph.Xml.Elements(DXPlus.Name.Run).ToList();
+            Paragraph.Document.RenumberIds();
         }
     }
 }

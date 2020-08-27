@@ -14,24 +14,24 @@ namespace DXPlus.Tests
         [Fact]
         public void AlignmentGetAndSetAreAligned()
         {
-            using var doc = DocX.Create(Filename);
-            doc.InsertParagraph("This is a test.").Align(Alignment.Center);
+            using var doc = Document.Create(Filename);
+            doc.AddParagraph("This is a test.").Align(Alignment.Center);
             Assert.Equal(Alignment.Center, doc.Paragraphs[0].Alignment);
         }
 
         [Fact]
         public void DefaultAlignmentIsLeft()
         {
-            using var doc = DocX.Create(Filename);
-            doc.InsertParagraph("This is a test.");
+            using var doc = Document.Create(Filename);
+            doc.AddParagraph("This is a test.");
             Assert.Equal(Alignment.Left, doc.Paragraphs[0].Alignment);
         }
 
         [Fact]
         public void DirectionGetAndSetAreAligned()
         {
-            using var doc = DocX.Create(Filename);
-            var p = doc.InsertParagraph("This is a test.");
+            using var doc = Document.Create(Filename);
+            var p = doc.AddParagraph("This is a test.");
             p.Direction = Direction.RightToLeft;
             Assert.Equal(Direction.RightToLeft, doc.Paragraphs[0].Direction);
         }
@@ -39,15 +39,15 @@ namespace DXPlus.Tests
         [Fact]
         public void DefaultDirectionIsLeftToRight()
         {
-            using var doc = DocX.Create(Filename);
-            doc.InsertParagraph("This is a test.");
+            using var doc = Document.Create(Filename);
+            doc.AddParagraph("This is a test.");
             Assert.Equal(Direction.LeftToRight, doc.Paragraphs[0].Direction);
         }
 
         [Fact]
         public void AddDocumentProperty()
         {
-            using var doc = DocX.Create(Filename);
+            using var doc = Document.Create(Filename);
 
             var props = new[]
             {
@@ -58,7 +58,7 @@ namespace DXPlus.Tests
                 new CustomProperty("boolProperty", true)
             };
 
-            var p = doc.InsertParagraph();
+            var p = doc.AddParagraph();
             props.ToList().ForEach(prop => p.AddDocumentProperty(prop));
 
             Assert.Equal(props.Length, p.DocumentProperties.Count);
@@ -72,8 +72,8 @@ namespace DXPlus.Tests
         [Fact]
         public void CheckHeading1()
         {
-            using var doc = DocX.Create(Filename);
-            doc.InsertParagraph("This is a test.").Heading(HeadingType.Heading1);
+            using var doc = Document.Create(Filename);
+            doc.AddParagraph("This is a test.").Heading(HeadingType.Heading1);
             Assert.Equal("Heading1", doc.Paragraphs[0].StyleName);
         }
 
@@ -81,38 +81,83 @@ namespace DXPlus.Tests
         public void CheckHyperlinksInDoc()
         {
             var microsoftUrl = new Uri("http://www.microsoft.com");
-            using var doc = DocX.Create(Filename);
-            doc.InsertParagraph("Test");
-            doc.InsertParagraph()
+            using var doc = Document.Create(Filename);
+            doc.AddParagraph("Test");
+            doc.AddParagraph()
                 .AppendLine("This line contains a ")
                 .Append(new Hyperlink("link", microsoftUrl))
                 .Append(".");
 
             Assert.Single(doc.Hyperlinks);
-            Assert.Equal("link", doc.Hyperlinks[0].Text);
-            Assert.Equal(microsoftUrl, doc.Hyperlinks[0].Uri);
+            Assert.Equal("link", doc.Hyperlinks.First().Text);
+            Assert.Equal(microsoftUrl, doc.Hyperlinks.First().Uri);
         }
 
         [Fact]
-        public void CheckHeaders()
+        public void FirstHeaderAddsElements()
         {
-            using var doc = DocX.Create(Filename);
-            doc.InsertParagraph("Test");
-            doc.InsertSectionPageBreak();
-            doc.InsertParagraph("Second page.");
+            using var doc = Document.Create(Filename);
 
             Assert.NotNull(doc.Headers);
-            Assert.Null(doc.Headers.Even);
-            Assert.Null(doc.Headers.Odd);
-            Assert.Null(doc.Headers.First);
+            Assert.False(doc.Headers.Even.Exists);
+            Assert.False(doc.Headers.Odd.Exists);
+            Assert.False(doc.Headers.First.Exists);
+            Assert.False(doc.DifferentFirstPage);
 
-            doc.AddHeaders();
-            Assert.NotNull(doc.Headers.Even);
-            Assert.NotNull(doc.Headers.Odd);
-            Assert.NotNull(doc.Headers.First);
+            doc.Headers.First.Add().SetText("Page Header 1");
+            Assert.False(doc.Headers.Even.Exists);
+            Assert.False(doc.Headers.Odd.Exists);
+            Assert.True(doc.Headers.First.Exists);
+            Assert.True(doc.DifferentFirstPage);
 
-            doc.Headers.First.InsertParagraph("This is the first page header");
-            doc.SaveAs(@"/users/mark/Desktop/test.docx");
+            Assert.Single(doc.Xml.RemoveNamespaces().XPathSelectElements("//sectPr/headerReference"));
+            Assert.Empty(doc.Xml.RemoveNamespaces().XPathSelectElements("//sectPr/footerReference"));
+        }
+
+        [Fact]
+        public void FirstHeaderRemovesElements()
+        {
+            using var doc = Document.Create(Filename);
+
+            Assert.NotNull(doc.Headers);
+
+            doc.Headers.First.Add().SetText("Page Header 1");
+            Assert.False(doc.Headers.Even.Exists);
+            Assert.False(doc.Headers.Odd.Exists);
+            Assert.True(doc.Headers.First.Exists);
+            Assert.True(doc.DifferentFirstPage);
+
+            doc.Headers.First.Remove();
+            Assert.False(doc.Headers.Even.Exists);
+            Assert.False(doc.Headers.Odd.Exists);
+            Assert.False(doc.Headers.First.Exists);
+            Assert.False(doc.DifferentFirstPage);
+
+            Assert.Empty(doc.Xml.RemoveNamespaces().XPathSelectElements("//sectPr/headerReference"));
+            Assert.Empty(doc.Xml.RemoveNamespaces().XPathSelectElements("//sectPr/footerReference"));
+        }
+
+        [Fact]
+        public void SecondHeaderIncrementsCorrectly()
+        {
+            using var doc = Document.Create(Filename);
+
+            Assert.NotNull(doc.Headers);
+            Assert.False(doc.Headers.Even.Exists);
+            Assert.False(doc.Headers.Odd.Exists);
+            Assert.False(doc.Headers.First.Exists);
+
+            doc.Headers.First.Add();
+            Assert.Equal("/word/header1.xml", doc.Headers.First.Uri.OriginalString);
+            doc.Headers.Even.Add();
+            Assert.Equal("/word/header2.xml", doc.Headers.Even.Uri.OriginalString);
+
+            Assert.True(doc.Headers.Even.Exists);
+            Assert.False(doc.Headers.Odd.Exists);
+            Assert.True(doc.Headers.First.Exists);
+
+            Assert.Equal(2, doc.Xml.RemoveNamespaces().XPathSelectElements("//sectPr/headerReference").Count());
+            Assert.Empty(doc.Xml.RemoveNamespaces().XPathSelectElements("//sectPr/footerReference"));
         }
 
         [Fact]

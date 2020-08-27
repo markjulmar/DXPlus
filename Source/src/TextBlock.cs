@@ -1,14 +1,12 @@
 ﻿using System;
-using System.Linq;
 using System.Xml.Linq;
 using DXPlus.Helpers;
 
 namespace DXPlus
 {
-    internal class TextBlock : DocXElement
+    internal class TextBlock : DocXBase
     {
-        internal TextBlock(DocX document, XElement xml, int startIndex)
-                    : base(document, xml)
+        internal TextBlock(IDocument document, XElement xml, int startIndex) : base(document, xml)
         {
             StartIndex = startIndex;
 

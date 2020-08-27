@@ -16,15 +16,15 @@ namespace DXPlus.Charts
         /// <summary>
         /// ID of this Axis
         /// </summary>
-        public string Id => Xml.Element(DocxNamespace.Chart + "axId").GetVal();
+        public string Id => Xml.Element(Namespace.Chart + "axId").GetVal();
 
         /// <summary>
         /// Return true if this axis is visible
         /// </summary>
         public bool IsVisible
         {
-            get => Xml.Element(DocxNamespace.Chart + "delete")?.GetVal() == "0";
-            set => Xml.GetOrCreateElement(DocxNamespace.Chart + "delete").SetValue(value ? "1" : "0");
+            get => Xml.Element(Namespace.Chart + "delete")?.GetVal() == "0";
+            set => Xml.GetOrCreateElement(Namespace.Chart + "delete").SetValue(value ? "1" : "0");
         }
     }
 }

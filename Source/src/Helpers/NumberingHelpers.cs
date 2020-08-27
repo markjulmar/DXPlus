@@ -4,8 +4,82 @@ using System.Xml.Linq;
 
 namespace DXPlus.Helpers
 {
-    public static class NumberingHelpers
+    internal static class NumberingHelpers
     {
+        /// <summary>
+        /// Determine if this paragraph is a list element.
+        /// </summary>
+        internal static bool IsListItem(this Paragraph p) => ParagraphNumberProperties(p) != null;
+
+        /// <summary>
+        /// Fetch the paragraph number properties for a list element.
+        /// </summary>
+        internal static XElement ParagraphNumberProperties(this Paragraph p) => p.Xml.FirstLocalNameDescendant("numPr");
+
+        /// <summary>
+        /// Return the associated numId for the list
+        /// </summary>
+        /// <param name="p"></param>
+        /// <returns></returns>
+        internal static int GetListNumId(this Paragraph p)
+        {
+            var numProperties = ParagraphNumberProperties(p);
+            return numProperties == null
+                ? -1
+                : int.Parse(numProperties.Element(Namespace.Main + "numId").GetVal());
+        }
+
+        /// <summary>
+        /// Return the list level for this paragraph
+        /// </summary>
+        /// <param name="p"></param>
+        /// <returns></returns>
+        internal static int GetListLevel(this Paragraph p)
+        {
+            var numProperties = ParagraphNumberProperties(p);
+            return numProperties == null
+                ? -1
+                : int.Parse(numProperties.Element(Namespace.Main + "ilvl").GetVal());
+        }
+
+        /// <summary>
+        /// Get the ListItemType property for the paragraph.
+        /// Defaults to numbered if a list is found but the type is not specified
+        /// </summary>
+        internal static ListItemType GetListItemType(this Paragraph p)
+        {
+            var numProperties = ParagraphNumberProperties(p);
+            if (numProperties == null)
+                return ListItemType.None;
+
+            string level = numProperties.Element(Namespace.Main + "ilvl").GetVal();
+            string numIdRef = numProperties.Element(Namespace.Main + "numId").GetVal();
+
+            // Find the number definition instance. We map <w:num> to <w:abstractNum>
+            var numNode = p.Document.numberingDoc.LocalNameDescendants("num")?.FindByAttrVal(Namespace.Main + "numId", numIdRef);
+            if (numNode == null)
+            {
+                throw new Exception(
+                    $"Number reference w:numId('{numIdRef}') used in document but not defined in numbering.xml");
+            }
+
+            // Get the abstractNumId
+            string absNumId = numNode.FirstLocalNameDescendant("abstractNumId").GetVal();
+
+            // Find the numbering style section
+            var absNumNode = p.Document.numberingDoc.LocalNameDescendants("abstractNum")
+                .FindByAttrVal(Namespace.Main + "abstractNumId", absNumId);
+
+            // Get the numbering format.
+            var format = absNumNode.LocalNameDescendants("lvl")
+                .FindByAttrVal(Namespace.Main + "ilvl", level)
+                .FirstLocalNameDescendant("numFmt");
+
+            return format.TryGetEnumValue(out ListItemType result)
+                ? result
+                : ListItemType.Numbered;
+        }
+
         internal static int CreateNewNumberingSection(DocX document, ListItemType listType, int startNumber)
         {
             int numId = GetMaxNumId(document) + 1;
@@ -18,17 +92,17 @@ namespace DXPlus.Helpers
             };
 
             var abstractNumTemplate = listTemplate.FirstLocalNameDescendant("abstractNum");
-            abstractNumTemplate.SetAttributeValue(DocxNamespace.Main + "abstractNumId", abstractNumId);
+            abstractNumTemplate.SetAttributeValue(Namespace.Main + "abstractNumId", abstractNumId);
 
-            var abstractNumIdElement = new XElement(DocxNamespace.Main + "abstractNumId", new XAttribute(DocxNamespace.Main + "val", abstractNumId));
-            var abstractNumXml = new XElement(DocxNamespace.Main + "num", new XAttribute(DocxNamespace.Main + "numId", numId), abstractNumIdElement);
+            var abstractNumIdElement = new XElement(Namespace.Main + "abstractNumId", new XAttribute(Name.MainVal, abstractNumId));
+            var abstractNumXml = new XElement(Namespace.Main + "num", new XAttribute(Namespace.Main + "numId", numId), abstractNumIdElement);
 
             if (startNumber != 1)
             {
-                var startOverride = new XElement(DocxNamespace.Main + "lvlOverride",
-                    new XAttribute(DocxNamespace.Main + "ilvl", 0),
-                    new XElement(DocxNamespace.Main + "startOverride",
-                        new XAttribute(DocxNamespace.Main + "val", startNumber)));
+                var startOverride = new XElement(Namespace.Main + "lvlOverride",
+                    new XAttribute(Namespace.Main + "ilvl", 0),
+                    new XElement(Namespace.Main + "startOverride",
+                        new XAttribute(Name.MainVal, startNumber)));
                 abstractNumXml.Add(startOverride);
             }
 
@@ -59,7 +133,7 @@ namespace DXPlus.Helpers
 
             return document.numberingDoc
                 .LocalNameDescendants("num")
-                .FindByAttrVal(DocxNamespace.Main + "numId", numId.ToString());
+                .FindByAttrVal(Namespace.Main + "numId", numId.ToString());
         }
 
         internal static XElement GetAbstractNumFromNumId(DocX document, int numId)
@@ -72,14 +146,14 @@ namespace DXPlus.Helpers
 
             var numSection = document.numberingDoc
                 .LocalNameDescendants("num")
-                .Where(e => e.AttributeValue(DocxNamespace.Main + "numId") == numId.ToString())
-                .Select(e => int.Parse(e.Element(DocxNamespace.Main + "abstractNumId").GetVal()))
+                .Where(e => e.AttributeValue(Namespace.Main + "numId") == numId.ToString())
+                .Select(e => int.Parse(e.Element(Namespace.Main + "abstractNumId").GetVal()))
                 .Single();
 
 
             return document.numberingDoc.Root!
-                .Descendants(DocxNamespace.Main + "abstractNum")
-                .Single(e => e.AttributeValue(DocxNamespace.Main + "abstractNumId").Equals(numSection.ToString()));
+                .Descendants(Namespace.Main + "abstractNum")
+                .Single(e => e.AttributeValue(Namespace.Main + "abstractNumId").Equals(numSection.ToString()));
         }
 
         /// <summary>
@@ -101,7 +175,7 @@ namespace DXPlus.Helpers
             var absNums = document.numberingDoc.LocalNameDescendants("abstractNum").ToList();
             if (absNums.Count > 0)
             {
-                return absNums.Attributes(DocxNamespace.Main + "abstractNumId")
+                return absNums.Attributes(Namespace.Main + "abstractNumId")
                               .Max(e => int.Parse(e.Value));
             }
 
@@ -126,7 +200,7 @@ namespace DXPlus.Helpers
             var numberSections = document.numberingDoc.LocalNameDescendants("num").ToList();
             if (numberSections.Count > 0)
             {
-                return numberSections.Attributes(DocxNamespace.Main + "numId")
+                return numberSections.Attributes(Namespace.Main + "numId")
                                      .Max(e => int.Parse(e.Value));
             }
 
@@ -140,18 +214,18 @@ namespace DXPlus.Helpers
         /// <param name="numId">NumId</param>
         /// <param name="level">Level</param>
         /// <returns></returns>
-        public static int GetStartingNumber(DocX document, int numId, int level = 0)
+        internal static int GetStartingNumber(DocX document, int numId, int level = 0)
         {
             var numEl = GetNumElementFromNumId(document, numId);
             if (numEl == null)
                 throw new ArgumentException($"NumId {numId} doesn't existing in numbering.xml", nameof(numId));
 
             // See if there's an override.
-            var lvlOverride = numEl.Elements(DocxNamespace.Main + "lvlOverride")
-                .FindByAttrVal(DocxNamespace.Main + "ilvl", level.ToString());
+            var lvlOverride = numEl.Elements(Namespace.Main + "lvlOverride")
+                .FindByAttrVal(Namespace.Main + "ilvl", level.ToString());
             if (lvlOverride != null)
             {
-                return int.Parse(lvlOverride.Element(DocxNamespace.Main + "startOverride").GetVal());
+                return int.Parse(lvlOverride.Element(Namespace.Main + "startOverride").GetVal());
             }
 
             // Otherwise, grab the abstract.
@@ -159,93 +233,9 @@ namespace DXPlus.Helpers
             if (absNum == null)
                 throw new ArgumentException($"NumId {numId} [abstract] doesn't existing in numbering.xml", nameof(numId));
 
-            var levelNode = absNum.Descendants(DocxNamespace.Main + "lvl")
-                .FindByAttrVal(DocxNamespace.Main + "ilvl", level.ToString());
-            return int.Parse(levelNode.Element(DocxNamespace.Main + "start").GetVal());
+            var levelNode = absNum.Descendants(Namespace.Main + "lvl")
+                .FindByAttrVal(Namespace.Main + "ilvl", level.ToString());
+            return int.Parse(levelNode.Element(Namespace.Main + "start").GetVal());
         }
     }
-
-    internal static class ParagraphListHelpers
-    {
-        /// <summary>
-        /// Determine if this paragraph is a list element.
-        /// </summary>
-        internal static bool IsListItem(this Paragraph p)
-        {
-            return ParagraphNumberProperties(p) != null;
-        }
-
-        /// <summary>
-        /// Fetch the paragraph number properties for a list element.
-        /// </summary>
-        internal static XElement ParagraphNumberProperties(this Paragraph p)
-        {
-            return p.Xml.FirstLocalNameDescendant("numPr");
-        }
-
-        /// <summary>
-        /// Return the associated numId for the list
-        /// </summary>
-        /// <param name="p"></param>
-        /// <returns></returns>
-        internal static int GetListNumId(this Paragraph p)
-        {
-            var numProperties = ParagraphNumberProperties(p);
-            return numProperties == null
-                ? -1
-                : int.Parse(numProperties.Element(DocxNamespace.Main + "numId").GetVal());
-        }
-
-        /// <summary>
-        /// Return the list level for this paragraph
-        /// </summary>
-        /// <param name="p"></param>
-        /// <returns></returns>
-        internal static int GetListLevel(this Paragraph p)
-        {
-            var numProperties = ParagraphNumberProperties(p);
-            return numProperties == null
-                ? -1
-                : int.Parse(numProperties.Element(DocxNamespace.Main + "ilvl").GetVal());
-        }
-
-        /// <summary>
-        /// Get the ListItemType property for the paragraph.
-        /// Defaults to numbered if a list is found but the type is not specified
-        /// </summary>
-        internal static ListItemType GetListItemType(this Paragraph p)
-        {
-            var numProperties = ParagraphNumberProperties(p);
-            if (numProperties == null)
-                return ListItemType.None;
-
-            string level = numProperties.Element(DocxNamespace.Main + "ilvl").GetVal();
-            string numIdRef = numProperties.Element(DocxNamespace.Main + "numId").GetVal();
-
-            // Find the number definition instance. We map <w:num> to <w:abstractNum>
-            var numNode = p.Document.numberingDoc.LocalNameDescendants("num")?.FindByAttrVal(DocxNamespace.Main + "numId", numIdRef);
-            if (numNode == null)
-            {
-                throw new Exception(
-                    $"Number reference w:numId('{numIdRef}') used in document but not defined in numbering.xml");
-            }
-
-            // Get the abstractNumId
-            string absNumId = numNode.FirstLocalNameDescendant("abstractNumId").GetVal();
-
-            // Find the numbering style section
-            var absNumNode = p.Document.numberingDoc.LocalNameDescendants("abstractNum")
-                .FindByAttrVal(DocxNamespace.Main + "abstractNumId", absNumId);
-
-            // Get the numbering format.
-            var format = absNumNode.LocalNameDescendants("lvl")
-                .FindByAttrVal(DocxNamespace.Main + "ilvl", level)
-                .FirstLocalNameDescendant("numFmt");
-
-            return format.TryGetEnumValue(out ListItemType result)
-                ? result
-                : ListItemType.Numbered;
-        }
-    }
-
 }

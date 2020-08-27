@@ -1,6 +1,4 @@
-﻿using System;
-using System.Drawing;
-using System.IO.Packaging;
+﻿using System.Drawing;
 using System.Linq;
 using System.Xml.Linq;
 using DXPlus.Helpers;
@@ -34,19 +32,19 @@ namespace DXPlus
         /// </summary>
         public Color FillColor
         {
-            get => Xml.Element(DocxNamespace.Main + "tcPr")?
-                      .Element(DocxNamespace.Main + "shd")?
-                      .Attribute(DocxNamespace.Main + "fill")
+            get => Xml.Element(Namespace.Main + "tcPr")?
+                      .Element(Namespace.Main + "shd")?
+                      .Attribute(Namespace.Main + "fill")
                       .ToColor() ?? Color.Empty;
 
             set
             {
-                var tcPr = Xml.GetOrCreateElement(DocxNamespace.Main + "tcPr");
-                var shd = tcPr.GetOrCreateElement(DocxNamespace.Main + "shd");
+                var tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
+                var shd = tcPr.GetOrCreateElement(Namespace.Main + "shd");
 
-                shd.SetAttributeValue(DocxNamespace.Main + "val", "clear");
-                shd.SetAttributeValue(DocxNamespace.Main + "color", "auto");
-                shd.SetAttributeValue(DocxNamespace.Main + "fill", value.ToHex());
+                shd.SetAttributeValue(Name.MainVal, "clear");
+                shd.SetAttributeValue(Name.Color, "auto");
+                shd.SetAttributeValue(Namespace.Main + "fill", value.ToHex());
             }
         }
 
@@ -54,8 +52,8 @@ namespace DXPlus
         /// Get the applied gridSpan based on cell merges.
         /// </summary>
         public int GridSpan =>
-            int.TryParse(Xml.Element(DocxNamespace.Main + "tcPr")?
-                .Element(DocxNamespace.Main + "gridSpan")?
+            int.TryParse(Xml.Element(Namespace.Main + "tcPr")?
+                .Element(Namespace.Main + "gridSpan")?
                 .GetVal(), out int result)
                 ? result
                 : 1;
@@ -100,9 +98,9 @@ namespace DXPlus
         {
             get
             {
-                var fill = Xml.Element(DocxNamespace.Main + "tcPr")?
-                    .Element(DocxNamespace.Main + "shd")?
-                    .Attribute(DocxNamespace.Main + "fill");
+                var fill = Xml.Element(Namespace.Main + "tcPr")?
+                    .Element(Namespace.Main + "shd")?
+                    .Attribute(Namespace.Main + "fill");
 
                 return fill == null
                     ? Color.White
@@ -111,15 +109,15 @@ namespace DXPlus
 
             set
             {
-                var tcPr = Xml.GetOrCreateElement(DocxNamespace.Main + "tcPr");
-                var shd = tcPr.GetOrCreateElement(DocxNamespace.Main + "shd");
+                var tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
+                var shd = tcPr.GetOrCreateElement(Namespace.Main + "shd");
 
                 // The val attribute needs to be set to clear
-                shd.SetAttributeValue(DocxNamespace.Main + "val", "clear");
+                shd.SetAttributeValue(Name.MainVal, "clear");
                 // The color attribute needs to be set to auto
-                shd.SetAttributeValue(DocxNamespace.Main + "color", "auto");
+                shd.SetAttributeValue(Name.Color, "auto");
                 // The fill attribute needs to be set to the hex for this Color.
-                shd.SetAttributeValue(DocxNamespace.Main + "fill", value.ToHex());
+                shd.SetAttributeValue(Namespace.Main + "fill", value.ToHex());
             }
         }
 
@@ -134,13 +132,13 @@ namespace DXPlus
                 string val = value ?? "";
                 switch (Paragraphs.Count)
                 {
-                    case 0: InsertParagraph(val);
+                    case 0: this.AddParagraph(val);
                         break;
                     case 1: Paragraphs[0].SetText(val);
                         break;
                     default:
-                        Xml.Elements(DocxNamespace.Main + "p").Remove();
-                        InsertParagraph(val);
+                        Xml.Elements(Name.Paragraph).Remove();
+                        this.AddParagraph(val);
                         break;
                 }
 
@@ -154,8 +152,8 @@ namespace DXPlus
         {
             get
             {
-                var val = Xml.Element(DocxNamespace.Main + "tcPr")?
-                    .Element(DocxNamespace.Main + "textDirection")?
+                var val = Xml.Element(Namespace.Main + "tcPr")?
+                    .Element(Namespace.Main + "textDirection")?
                     .GetValAttr();
 
                 if (!val.TryGetEnumValue(out TextDirection result))
@@ -168,9 +166,9 @@ namespace DXPlus
             }
             set
             {
-                var tcPr = Xml.GetOrCreateElement(DocxNamespace.Main + "tcPr");
-                var textDirection = tcPr.GetOrCreateElement(DocxNamespace.Main + "textDirection");
-                textDirection.SetAttributeValue(DocxNamespace.Main + "val", value.GetEnumName());
+                var tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
+                var textDirection = tcPr.GetOrCreateElement(Namespace.Main + "textDirection");
+                textDirection.SetAttributeValue(Name.MainVal, value.GetEnumName());
             }
         }
 
@@ -181,8 +179,8 @@ namespace DXPlus
         {
             get
             {
-                var val = Xml.Element(DocxNamespace.Main + "tcPr")?
-                    .Element(DocxNamespace.Main + "vAlign")?
+                var val = Xml.Element(Namespace.Main + "tcPr")?
+                    .Element(Namespace.Main + "vAlign")?
                     .GetValAttr();
 
                 if (!val.TryGetEnumValue(out VerticalAlignment result))
@@ -195,9 +193,9 @@ namespace DXPlus
 
             set
             {
-                var tcPr = Xml.GetOrCreateElement(DocxNamespace.Main + "tcPr");
-                var vAlign = tcPr.GetOrCreateElement(DocxNamespace.Main + "vAlign");
-                vAlign.SetAttributeValue(DocxNamespace.Main + "val", value.GetEnumName());
+                var tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
+                var vAlign = tcPr.GetOrCreateElement(Namespace.Main + "vAlign");
+                vAlign.SetAttributeValue(Name.MainVal, value.GetEnumName());
             }
         }
 
@@ -208,9 +206,9 @@ namespace DXPlus
         {
             get
             {
-                var value = Xml.Element(DocxNamespace.Main + "tcPr")?
-                    .Element(DocxNamespace.Main + "tcW")?
-                    .Attribute(DocxNamespace.Main + "w");
+                var value = Xml.Element(Namespace.Main + "tcPr")?
+                    .Element(Namespace.Main + "tcW")?
+                    .Attribute(Namespace.Main + "w");
 
                 if (value == null || !double.TryParse(value.Value, out var widthUnits))
                 {
@@ -223,8 +221,8 @@ namespace DXPlus
 
             set
             {
-                var tcPr = Xml.GetOrCreateElement(DocxNamespace.Main + "tcPr");
-                var tcW = tcPr.GetOrCreateElement(DocxNamespace.Main + "tcW");
+                var tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
+                var tcW = tcPr.GetOrCreateElement(Namespace.Main + "tcW");
 
                 if (value < 0)
                 {
@@ -232,18 +230,18 @@ namespace DXPlus
                 }
                 else
                 {
-                    tcW.SetAttributeValue(DocxNamespace.Main + "type", "dxa"); // Widths in 20th/pt.
-                    tcW.SetAttributeValue(DocxNamespace.Main + "w", value * TableHelpers.UnitConversion);
+                    tcW.SetAttributeValue(Namespace.Main + "type", "dxa"); // Widths in 20th/pt.
+                    tcW.SetAttributeValue(Namespace.Main + "w", value * TableHelpers.UnitConversion);
                 }
             }
         }
 
         private double? GetMargin(string name)
         {
-            var w = Xml.Element(DocxNamespace.Main + "tcPr")?
-                .Element(DocxNamespace.Main + "tcMar")?
-                .Element(DocxNamespace.Main + name)?
-                .Attribute(DocxNamespace.Main + "w");
+            var w = Xml.Element(Namespace.Main + "tcPr")?
+                .Element(Namespace.Main + "tcMar")?
+                .Element(Namespace.Main + name)?
+                .Attribute(Namespace.Main + "w");
 
             if (w == null || !double.TryParse(w.Value, out var margin))
             {
@@ -257,19 +255,19 @@ namespace DXPlus
 
         private void SetMargin(string name, double? value)
         {
-            var tcPr = Xml.GetOrCreateElement(DocxNamespace.Main + "tcPr");
+            var tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
 
             if (value != null)
             {
-                var tcMar = tcPr.GetOrCreateElement(DocxNamespace.Main + "tcMar");
-                var margin = tcMar.GetOrCreateElement(DocxNamespace.Main + name);
+                var tcMar = tcPr.GetOrCreateElement(Namespace.Main + "tcMar");
+                var margin = tcMar.GetOrCreateElement(Namespace.Main + name);
 
-                margin.SetAttributeValue(DocxNamespace.Main + "type", "dxa");
-                margin.SetAttributeValue(DocxNamespace.Main + "w", value * TableHelpers.UnitConversion);
+                margin.SetAttributeValue(Namespace.Main + "type", "dxa");
+                margin.SetAttributeValue(Namespace.Main + "w", value * TableHelpers.UnitConversion);
             }
             else
             {
-                tcPr.Element("tcMar")?.Element(DocxNamespace.Main + name)?.Remove();
+                tcPr.Element("tcMar")?.Element(Namespace.Main + name)?.Remove();
             }
         }
 
@@ -280,9 +278,9 @@ namespace DXPlus
         public Border GetBorder(TableCellBorderType borderType)
         {
             var border = new Border();
-            var tcBorder = Xml.Element(DocxNamespace.Main + "tcPr")?
-                .Element(DocxNamespace.Main + "tcBorders")?
-                .Element(DocxNamespace.Main + borderType.GetEnumName());
+            var tcBorder = Xml.Element(Namespace.Main + "tcPr")?
+                .Element(Namespace.Main + "tcBorders")?
+                .Element(Namespace.Main + borderType.GetEnumName());
             if (tcBorder != null) border.GetDetails(tcBorder);
 
             return border;
@@ -295,13 +293,13 @@ namespace DXPlus
         /// <param name="border">Border object to set the table cell border</param>
         public void SetBorder(TableCellBorderType borderType, Border border)
         {
-            var tcPr = Xml.GetOrCreateElement(DocxNamespace.Main + "tcPr");
-            var tcBorders = tcPr.GetOrCreateElement(DocxNamespace.Main + "tcBorders");
+            var tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
+            var tcBorders = tcPr.GetOrCreateElement(Namespace.Main + "tcBorders");
             var tcBorderType =
-                tcBorders.GetOrCreateElement(DocxNamespace.Main.NamespaceName + borderType.GetEnumName());
+                tcBorders.GetOrCreateElement(Namespace.Main.NamespaceName + borderType.GetEnumName());
 
             // The val attribute is used for the style
-            tcBorderType.SetAttributeValue(DocxNamespace.Main + "val", border.Style.GetEnumName());
+            tcBorderType.SetAttributeValue(Name.MainVal, border.Style.GetEnumName());
 
             var size = border.Size switch
             {
@@ -318,19 +316,19 @@ namespace DXPlus
             };
 
             // The sz attribute is used for the border size
-            tcBorderType.SetAttributeValue(DocxNamespace.Main + "sz", size);
+            tcBorderType.SetAttributeValue(Name.Size, size);
 
             // The space attribute is used for the cell spacing (probably '0')
-            tcBorderType.SetAttributeValue(DocxNamespace.Main + "space", border.SpacingOffset);
+            tcBorderType.SetAttributeValue(Namespace.Main + "space", border.SpacingOffset);
 
             // The color attribute is used for the border color
-            tcBorderType.SetAttributeValue(DocxNamespace.Main + "color", border.Color.ToHex());
+            tcBorderType.SetAttributeValue(Name.Color, border.Color.ToHex());
         }
 
         /// <summary>
         /// Called when the document owner is changed.
         /// </summary>
-        protected override void OnDocumentOwnerChanged(DocX previousValue, DocX newValue)
+        protected override void OnDocumentOwnerChanged(IDocument previousValue, IDocument newValue)
         {
             base.OnDocumentOwnerChanged(previousValue, newValue);
             PackagePart = Row?.PackagePart;

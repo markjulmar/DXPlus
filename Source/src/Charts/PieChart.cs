@@ -20,6 +20,6 @@ namespace DXPlus.Charts
         /// <summary>
         /// Method which creates the current chart XML
         /// </summary>
-        protected override XElement CreateChartXml() => new XElement(DocxNamespace.Chart + "pieChart");
+        protected override XElement CreateChartXml() => new XElement(Namespace.Chart + "pieChart");
     }
 }

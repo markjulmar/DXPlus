@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Xml.Linq;
@@ -10,6 +11,152 @@ namespace DXPlus.Helpers
     internal static class XElementHelpers
     {
         /// <summary>
+        /// Retrieves a specific attribute value by following a path of XNames
+        /// </summary>
+        /// <param name="xml">Root XML element to start with</param>
+        /// <param name="path">Path to follow - the final XName should be the attribute name</param>
+        /// <returns>String value of the attribute, or null if any part of the path doesn't exist.</returns>
+        public static string AttributeValue(this XContainer xml, params XName[] path)
+        {
+            if (xml == null)
+                return null;
+
+            if (path == null || path.Length == 0)
+                throw new ArgumentException("Must supply the path to follow.", nameof(path));
+
+            if (path.Length > 1)
+            {
+                for (int i = 0; i < path.Length - 1 && xml != null; i++)
+                    xml = xml.Element(path[i]);
+            }
+
+            var e = xml as XElement;
+            var attr = e?.Attribute(path[^1]);
+            return attr != null ? attr.Value : null;
+        }
+
+        /// <summary>
+        /// Retrieves a specific element by walking a path.
+        /// </summary>
+        /// <param name="xml">Root XML element to start with</param>
+        /// <param name="path">Path to follow</param>
+        /// <returns>String value of the attribute, or null if any part of the path doesn't exist.</returns>
+        internal static XElement Element(this XContainer xml, params XName[] path)
+        {
+            if (xml == null)
+                return null;
+
+            if (path == null || path.Length == 0)
+                throw new ArgumentException("Must supply the path to follow.", nameof(path));
+
+            // Walk the elements
+            for (int i = 0; i < path.Length && xml != null; i++)
+                xml = xml.Element(path[i]);
+
+            return (XElement) xml;
+        }
+
+        /// <summary>
+        /// Retrieves a set of elements by walking a path.
+        /// </summary>
+        /// <param name="xml">Root XML element to start with</param>
+        /// <param name="path">Path to follow</param>
+        /// <returns>String value of the attribute, or null if any part of the path doesn't exist.</returns>
+        internal static IEnumerable<XElement> Elements(this XContainer xml, params XName[] path)
+        {
+            if (xml == null)
+                return null;
+
+            if (path == null || path.Length == 0)
+                throw new ArgumentException("Must supply the path to follow.", nameof(path));
+
+            // Walk the elements
+            for (int i = 0; i < path.Length && xml != null; i++)
+                xml = xml.Element(path[i]);
+
+            return (xml as XElement)?.Elements() ?? Enumerable.Empty<XElement>();
+        }
+
+        /// <summary>
+        /// Gets or creates an element based on a path.
+        /// </summary>
+        /// <param name="el">Starting container element</param>
+        /// <param name="path">Path to create/follow</param>
+        /// <returns>Final node created</returns>
+        public static XElement GetOrCreateElement(this XContainer node, params XName[] path)
+        {
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
+
+            if (path == null || path.Length == 0)
+                throw new ArgumentException("Must supply the path to follow.", nameof(path));
+
+            for (int i = 0; i < path.Length; i++)
+            {
+                var child = node.Element(path[i]);
+                if (child == null)
+                {
+                    child = new XElement(path[i]);
+                    node.Add(child);
+                }
+                node = child;
+            }
+
+            return (XElement) node;
+        }
+
+        /// <summary>
+        /// Gets or creates an element path + attribute based on a path.
+        /// </summary>
+        /// <param name="node">Starting container element</param>
+        /// <param name="name">Attribute name or starting path</param>
+        /// <param name="pathAndValue">Remaining path + attribute value</param>
+        /// <returns>Attribute located or created</returns>
+        public static XAttribute SetAttributeValue(this XElement node, XName name, params object[] pathAndValue)
+        {
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+            if (pathAndValue == null || pathAndValue.Length < 1)
+                throw new ArgumentException("Must include a value for the attribute.", nameof(pathAndValue));
+
+            if (pathAndValue.Length == 1)
+            {
+                // This is just the attribute value -- can be null to kill the attribute.
+                node.SetAttributeValue(name, pathAndValue[0]);
+                return node.Attribute(name);
+            }
+
+            // Use the first name as an element.
+            node = node.GetOrCreateElement(name);
+
+            XName part; object val; int index;
+
+            // Use all but the last two elements -- that's always the attrName + value.
+            for (index = 0; index < pathAndValue.Length-2 && node != null; index++)
+            {
+                val = pathAndValue[index];
+                part = val switch {
+                    XName xn => xn,
+                    string sn => sn,
+                    _ => throw new ArgumentException($"Path cannot include {val.GetType().Name} types.", nameof(pathAndValue)),
+                };
+                node = node.GetOrCreateElement(part);
+            }
+
+            val = pathAndValue[index++];
+            part = val switch {
+                XName xn => xn,
+                string sn => sn,
+                _ => throw new ArgumentException($"Path cannot include {val.GetType().Name} types.", nameof(pathAndValue)),
+            };
+
+            node.SetAttributeValue(part, pathAndValue[index]);
+            return node.Attribute(part);
+        }
+
+        /// <summary>
         /// Get the rPr element from a parent, or create it if it doesn't exist.
         /// </summary>
         /// <param name="owner"></param>
@@ -17,10 +164,10 @@ namespace DXPlus.Helpers
         /// <returns></returns>
         internal static XElement GetRunProps(this XElement owner, bool create = true)
         {
-            var rPr = owner.Element(DocxNamespace.Main + "rPr");
+            var rPr = owner.Element(Name.RunProperties);
             if (rPr == null && create)
             {
-                rPr = new XElement(DocxNamespace.Main + "rPr");
+                rPr = new XElement(Name.RunProperties);
                 owner.AddFirst(rPr);
             }
 
@@ -34,8 +181,8 @@ namespace DXPlus.Helpers
         /// <param name="e">The (t or delText) element check</param>
         public static XElement PreserveSpace(this XElement e)
         {
-            if (!e.Name.Equals(DocxNamespace.Main + "t")
-                && !e.Name.Equals(DocxNamespace.Main + "delText"))
+            if (!e.Name.Equals(Name.Text)
+                && !e.Name.Equals(Namespace.Main + "delText"))
             {
                 throw new ArgumentException($"{nameof(PreserveSpace)} can only work with elements of type 't' or 'delText'", nameof(e));
             }
@@ -63,35 +210,6 @@ namespace DXPlus.Helpers
             return e;
         }
 
-        public static XElement GetOrCreateElement(this XContainer el, XName name, string defaultValue = "")
-        {
-            if (el == null)
-                throw new ArgumentNullException(nameof(el));
-            
-            var node = el.Element(name);
-            if (node == null)
-            {
-                node = new XElement(name, defaultValue);
-                el.Add(node);
-            }
-            return node;
-        }
-
-        public static XAttribute GetOrCreateAttribute(this XElement el, XName name, string defaultValue = "")
-        {
-            if (el == null)
-                throw new ArgumentNullException(nameof(el));
-
-            var attr = el.Attribute(name);
-            if (attr == null)
-            {
-                attr = new XAttribute(name, defaultValue);
-                el.Add(attr);
-            }
-
-            return attr;
-        }
-
         public static XElement FindByAttrVal(this IEnumerable<XElement> nodes, XName name, string attributeValue)
         {
             if (nodes == null)
@@ -106,7 +224,7 @@ namespace DXPlus.Helpers
                 return null;
 
             var valAttr = el.Attribute("val");
-            return valAttr ?? el.Attribute(DocxNamespace.Main + "val");
+            return valAttr ?? el.Attribute(Name.MainVal);
         }
 
         public static string GetVal(this XElement el, string defaultValue = "")

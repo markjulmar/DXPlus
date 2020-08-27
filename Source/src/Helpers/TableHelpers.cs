@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Xml.Linq;
+using DXPlus.Helpers;
 
-namespace DXPlus.Helpers
+namespace DXPlus
 {
     public static class TableHelpers
     {
@@ -22,18 +23,18 @@ namespace DXPlus.Helpers
 
         internal static XElement CreateTable(int rows, int[] columnWidths)
         {
-            var newTable = new XElement(DocxNamespace.Main + "tbl",
-                new XElement(DocxNamespace.Main + "tblPr",
-                        new XElement(DocxNamespace.Main + "tblStyle", new XAttribute(DocxNamespace.Main + "val", TableDesign.TableGrid.GetEnumName())),
-                        new XElement(DocxNamespace.Main + "tblW", new XAttribute(DocxNamespace.Main + "w", MaxTableWidth),
-                                new XAttribute(DocxNamespace.Main + "type", "dxa")),
-                        new XElement(DocxNamespace.Main + "tblLook", new XAttribute(DocxNamespace.Main + "val", "04A0"))
+            var newTable = new XElement(Namespace.Main + "tbl",
+                new XElement(Namespace.Main + "tblPr",
+                        new XElement(Namespace.Main + "tblStyle", new XAttribute(Name.MainVal, TableDesign.TableGrid.GetEnumName())),
+                        new XElement(Namespace.Main + "tblW", new XAttribute(Namespace.Main + "w", MaxTableWidth),
+                                new XAttribute(Namespace.Main + "type", "dxa")),
+                        new XElement(Namespace.Main + "tblLook", new XAttribute(Name.MainVal, "04A0"))
                 )
             );
 
             for (int i = 0; i < rows; i++)
             {
-                var row = new XElement(DocxNamespace.Main + "tr");
+                var row = new XElement(Namespace.Main + "tr");
                 foreach (var width in columnWidths)
                     row.Add(CreateTableCell(width));
 
@@ -50,13 +51,13 @@ namespace DXPlus.Helpers
             string type = width == null ? "auto" : "dxa";
             width ??= 0;
 
-            return new XElement(DocxNamespace.Main + "tc",
-                    new XElement(DocxNamespace.Main + "tcPr",
-                        new XElement(DocxNamespace.Main + "tcW",
-                            new XAttribute(DocxNamespace.Main + "type", type),
-                            new XAttribute(DocxNamespace.Main + "w", width.Value * UnitConversion)
+            return new XElement(Namespace.Main + "tc",
+                    new XElement(Namespace.Main + "tcPr",
+                        new XElement(Namespace.Main + "tcW",
+                            new XAttribute(Namespace.Main + "type", type),
+                            new XAttribute(Namespace.Main + "w", width.Value * UnitConversion)
                         )),
-                    new XElement(DocxNamespace.Main + "p") // always has an empty paragraph
+                    new XElement(Name.Paragraph) // always has an empty paragraph
             );
         }
 
@@ -90,5 +91,21 @@ namespace DXPlus.Helpers
             return table;
         }
 
+
+        /// <summary>
+        /// Add a new table after this container
+        /// </summary>
+        /// <param name="container">Container owner</param>
+        /// <param name="rows">Number of rows</param>
+        /// <param name="columns">Number of columns</param>
+        public static Table AddTableAfterSelf(this InsertBeforeOrAfter container, int rows, int columns) => container.AddTableAfterSelf(new Table(rows, columns));
+
+        /// <summary>
+        /// Insert a new table before this container
+        /// </summary>
+        /// <param name="container">Container owner</param>
+        /// <param name="rows">Number of rows</param>
+        /// <param name="columns">Number of columns</param>
+        public static Table InsertTableBeforeSelf(this InsertBeforeOrAfter container, int rows, int columns) => container.InsertTableBeforeSelf(new Table(rows, columns));
     }
 }

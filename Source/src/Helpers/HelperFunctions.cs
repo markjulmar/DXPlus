@@ -4,7 +4,6 @@ using System.Globalization;
 using System.IO;
 using System.IO.Packaging;
 using System.Linq;
-using System.Security;
 using System.Text;
 using System.Xml.Linq;
 
@@ -77,6 +76,13 @@ namespace DXPlus.Helpers
                 || desired.Elements().Count() == toCheck.Elements().Count();
         }
 
+        internal static bool IsValidHexNumber(string value)
+        {
+            return !string.IsNullOrWhiteSpace(value)
+                    && value.Length <= 8
+                    && int.TryParse(value, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int _);
+        }
+
         internal static int GetSize(XElement xml)
         {
             if (xml == null) 
@@ -124,7 +130,6 @@ namespace DXPlus.Helpers
 
         internal static List<FormattedText> GetFormattedText(XElement xml)
         {
-           
             var list = new List<FormattedText>();
             GetFormattedTextRecursive(xml, ref list);
             return list;
@@ -179,8 +184,8 @@ namespace DXPlus.Helpers
                 return null;
 
             // xml is a w:t element, it must exist inside a w:r element or a w:tabs, lets climb until we find it.
-            while (!xml.Name.Equals(DocxNamespace.Main + "r") &&
-                   !xml.Name.Equals(DocxNamespace.Main + "tabs"))
+            while (!xml.Name.Equals(Name.Run) &&
+                   !xml.Name.Equals(Namespace.Main + "tabs"))
             {
                 xml = xml.Parent;
             }
@@ -197,7 +202,6 @@ namespace DXPlus.Helpers
         /// Turn a Word (w:t) element into text.
         /// </summary>
         /// <param name="e"></param>
-        /// <returns></returns>
         internal static string ToText(XElement e)
         {
             switch (e.Name.LocalName)
@@ -232,12 +236,12 @@ namespace DXPlus.Helpers
         /// </summary>
         /// <param name="element"></param>
         /// <returns></returns>
-        internal static XElement CloneElement(XElement element)
+        internal static XElement Clone(this XElement element)
         {
             return new XElement(
                 element.Name,
                 element.Attributes(),
-                element.Nodes().Select(n => n is XElement e ? CloneElement(e) : n)
+                element.Nodes().Select(n => n is XElement e ? Clone(e) : n)
             );
         }
 
@@ -252,16 +256,16 @@ namespace DXPlus.Helpers
                 throw new ArgumentNullException(nameof(package));
             if (string.IsNullOrEmpty(rsid))
                 throw new ArgumentException($"'{nameof(rsid)}' cannot be null or empty", nameof(rsid));
-            if (package.PartExists(DocxRelations.Settings.Uri))
+            if (package.PartExists(Relations.Settings.Uri))
                 throw new InvalidOperationException("Settings.xml section already exists.");
 
             // Add the settings package part and document
-            var settingsPart = package.CreatePart(DocxRelations.Settings.Uri, DocxRelations.Settings.ContentType, CompressionOption.Maximum);
+            var settingsPart = package.CreatePart(Relations.Settings.Uri, Relations.Settings.ContentType, CompressionOption.Maximum);
             var settings = Resources.SettingsXml(rsid);
 
             // Set the correct language
-            settings.Root.Element(DocxNamespace.Main + "themeFontLang")
-                         .SetAttributeValue(DocxNamespace.Main + "val", CultureInfo.CurrentCulture);
+            settings.Root.Element(Namespace.Main + "themeFontLang")
+                         .SetAttributeValue(Name.MainVal, CultureInfo.CurrentCulture);
 
             // Save the settings document.
             settingsPart.Save(settings);
@@ -271,10 +275,10 @@ namespace DXPlus.Helpers
                     p.ContentType.Equals(DocxContentType.Document, StringComparison.CurrentCultureIgnoreCase)
                  || p.ContentType.Equals(DocxContentType.Template, StringComparison.CurrentCultureIgnoreCase));
 
-            mainDocumentPart.CreateRelationship(DocxRelations.Settings.Uri, TargetMode.Internal, DocxRelations.Settings.RelType);
+            mainDocumentPart.CreateRelationship(Relations.Settings.Uri, TargetMode.Internal, Relations.Settings.RelType);
         }
 
-        internal static Uri EnsureRelsPathExists(DocXElement element)
+        internal static Uri EnsureRelsPathExists(DocXBase element)
         {
             // Convert the path of this mainPart to its equivalent rels file path.
             string path = element.PackagePart.Uri.OriginalString.Replace("/word/", "");
@@ -286,7 +290,7 @@ namespace DXPlus.Helpers
                 var pp = element.Document.Package.CreatePart(relationshipPath, DocxContentType.Relationships, CompressionOption.Maximum);
                 pp.Save(new XDocument(
                     new XDeclaration("1.0", "UTF-8", "yes"),
-                    new XElement(DocxNamespace.RelatedPackage + "Relationships")
+                    new XElement(Namespace.RelatedPackage + "Relationships")
                 ));
             }
 
@@ -303,18 +307,18 @@ namespace DXPlus.Helpers
         {
             if (package == null)
                 throw new ArgumentNullException(nameof(package));
-            if (package.PartExists(DocxRelations.Styles.Uri))
+            if (package.PartExists(Relations.Styles.Uri))
                 throw new InvalidOperationException("Root style collection already exists.");
 
-            stylesPart = package.CreatePart(DocxRelations.Styles.Uri, DocxRelations.Styles.ContentType, CompressionOption.Maximum);
+            stylesPart = package.CreatePart(Relations.Styles.Uri, Relations.Styles.ContentType, CompressionOption.Maximum);
             stylesDoc = Resources.DefaultStylesXml();
 
             // Set the run default language to be the current culture.
-            stylesDoc.Root!.Element(DocxNamespace.Main + "docDefaults")
-                          .Element(DocxNamespace.Main + "rPrDefault")
-                          .Element(DocxNamespace.Main + "rPr")
-                          .Element(DocxNamespace.Main + "lang")
-                          .SetAttributeValue(DocxNamespace.Main + "val", CultureInfo.CurrentCulture);
+            stylesDoc.Root!.Element(Namespace.Main + "docDefaults")
+                          .Element(Namespace.Main + "rPrDefault")
+                          .Element(Name.RunProperties)
+                          .Element(Name.Language)
+                          .SetAttributeValue(Name.MainVal, CultureInfo.CurrentCulture);
 
             // Save /word/styles.xml
             stylesPart.Save(stylesDoc);
@@ -324,7 +328,7 @@ namespace DXPlus.Helpers
                     p.ContentType.Equals(DocxContentType.Document, StringComparison.CurrentCultureIgnoreCase)
                  || p.ContentType.Equals(DocxContentType.Template, StringComparison.CurrentCultureIgnoreCase));
 
-            mainDocumentPart.CreateRelationship(stylesPart.Uri, TargetMode.Internal, $"{DocxNamespace.RelatedDoc.NamespaceName}/styles");
+            mainDocumentPart.CreateRelationship(stylesPart.Uri, TargetMode.Internal, $"{Namespace.RelatedDoc.NamespaceName}/styles");
             return stylesDoc;
         }
 
@@ -340,35 +344,19 @@ namespace DXPlus.Helpers
             {
                 foreach (var e in iex)
                 {
-                    var ts = e.DescendantsAndSelf(DocxNamespace.Main + "t").ToList();
+                    var ts = e.DescendantsAndSelf(Name.Text).ToList();
                     foreach (var text in ts)
                     {
-                        text.ReplaceWith(new XElement(DocxNamespace.Main + "delText", text.Attributes(), text.Value));
+                        text.ReplaceWith(new XElement(Namespace.Main + "delText", text.Attributes(), text.Value));
                     }
                 }
             }
 
-            return new XElement(DocxNamespace.Main + editType.ToString(),
-                    new XAttribute(DocxNamespace.Main + "id", 0),
-                    new XAttribute(DocxNamespace.Main + "author", Environment.UserName),
-                    new XAttribute(DocxNamespace.Main + "date", editTime),
+            return new XElement(Namespace.Main + editType.ToString(),
+                    new XAttribute(Name.Id, 0),
+                    new XAttribute(Namespace.Main + "author", Environment.UserName),
+                    new XAttribute(Namespace.Main + "date", editTime),
                     content);
-        }
-
-        internal static void RenumberIds(DocX document)
-        {
-            if (document == null)
-                throw new ArgumentNullException(nameof(document));
-            
-            var trackerIds = document.mainDoc.Descendants()
-                    .Where(d => d.Name.LocalName == "ins" || d.Name.LocalName == "del")
-                    .Select(d => d.Attribute(DocxNamespace.Main + "id"))
-                    .ToList();
-
-            for (int i = 0; i < trackerIds.Count; i++)
-            {
-                trackerIds[i].Value = i.ToString();
-            }
         }
 
         internal static Paragraph GetFirstParagraphAffectedByInsert(DocX document, int index)
@@ -397,8 +385,8 @@ namespace DXPlus.Helpers
                 return newRuns;
             }
 
-            var tabRun = new XElement(DocxNamespace.Main + "tab");
-            var breakRun = new XElement(DocxNamespace.Main + "br");
+            var tabRun = new XElement(Namespace.Main + "tab");
+            var breakRun = new XElement(Namespace.Main + "br");
             var sb = new StringBuilder();
 
             foreach (var c in text)
@@ -408,22 +396,22 @@ namespace DXPlus.Helpers
                     case '\t':
                         if (sb.Length > 0)
                         {
-                            newRuns.Add(new XElement(DocxNamespace.Main + "r", rPr,
-                                new XElement(DocxNamespace.Main + "t", sb.ToString()).PreserveSpace()));
+                            newRuns.Add(new XElement(Name.Run, rPr,
+                                new XElement(Name.Text, sb.ToString()).PreserveSpace()));
                             sb = new StringBuilder();
                         }
-                        newRuns.Add(new XElement(DocxNamespace.Main + "r", rPr, tabRun));
+                        newRuns.Add(new XElement(Name.Run, rPr, tabRun));
                         break;
 
                     case '\r':
                     case '\n':
                         if (sb.Length > 0)
                         {
-                            newRuns.Add(new XElement(DocxNamespace.Main + "r", rPr,
-                                new XElement(DocxNamespace.Main + "t", sb.ToString()).PreserveSpace()));
+                            newRuns.Add(new XElement(Name.Run, rPr,
+                                new XElement(Name.Text, sb.ToString()).PreserveSpace()));
                             sb = new StringBuilder();
                         }
-                        newRuns.Add(new XElement(DocxNamespace.Main + "r", rPr, breakRun));
+                        newRuns.Add(new XElement(Name.Run, rPr, breakRun));
                         break;
 
                     default:
@@ -434,8 +422,8 @@ namespace DXPlus.Helpers
 
             if (sb.Length > 0)
             {
-                newRuns.Add(new XElement(DocxNamespace.Main + "r", rPr,
-                    new XElement(DocxNamespace.Main + "t", sb.ToString()).PreserveSpace()));
+                newRuns.Add(new XElement(Name.Run, rPr,
+                    new XElement(Name.Text, sb.ToString()).PreserveSpace()));
             }
 
             return newRuns;

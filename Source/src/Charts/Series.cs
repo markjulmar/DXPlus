@@ -71,8 +71,8 @@ namespace DXPlus.Charts
         /// </summary>
         private void LoadCache()
         {
-            strCache = Xml.Element(DocxNamespace.Chart + "cat")?.Element(DocxNamespace.Chart + "strRef")?.Element(DocxNamespace.Chart + "strCache");
-            numCache = Xml.Element(DocxNamespace.Chart + "val")?.Element(DocxNamespace.Chart + "numRef")?.Element(DocxNamespace.Chart + "numCache");
+            strCache = Xml.Element(Namespace.Chart + "cat")?.Element(Namespace.Chart + "strRef")?.Element(Namespace.Chart + "strCache");
+            numCache = Xml.Element(Namespace.Chart + "val")?.Element(Namespace.Chart + "numRef")?.Element(Namespace.Chart + "numCache");
         }
 
         /// <summary>
@@ -82,25 +82,25 @@ namespace DXPlus.Charts
         {
             get
             {
-                var colorElement = Xml.Element(DocxNamespace.Chart + "spPr");
+                var colorElement = Xml.Element(Namespace.Chart + "spPr");
                 return colorElement == null
                     ? Color.Transparent
                     : Color.FromArgb(int.Parse(
-                        colorElement.Element(DocxNamespace.DrawingMain + "solidFill")
-                                    .Element(DocxNamespace.DrawingMain + "srgbClr").GetVal(),
+                        colorElement.Element(Namespace.DrawingMain + "solidFill")
+                                    .Element(Namespace.DrawingMain + "srgbClr").GetVal(),
                         System.Globalization.NumberStyles.HexNumber));
             }
             set
             {
-                var colorElement = Xml.Element(DocxNamespace.Chart + "spPr");
+                var colorElement = Xml.Element(Namespace.Chart + "spPr");
                 colorElement?.Remove();
                 
                 colorElement = new XElement(
-                    DocxNamespace.Chart + "spPr",
-                    new XElement(DocxNamespace.DrawingMain + "solidFill",
-                        new XElement(DocxNamespace.DrawingMain + "srgbClr",
+                    Namespace.Chart + "spPr",
+                    new XElement(Namespace.DrawingMain + "solidFill",
+                        new XElement(Namespace.DrawingMain + "srgbClr",
                             new XAttribute("val", value.ToHex()))));
-                Xml.GetOrCreateElement(DocxNamespace.Chart + "tx").AddAfterSelf(colorElement);
+                Xml.GetOrCreateElement(Namespace.Chart + "tx").AddAfterSelf(colorElement);
             }
         }
 
@@ -115,8 +115,8 @@ namespace DXPlus.Charts
             strCache.RemoveAll();
             numCache.RemoveAll();
 
-            var ptCount = new XElement(DocxNamespace.Chart + "ptCount", new XAttribute("val", list.Count));
-            var formatCode = new XElement(DocxNamespace.Chart + "formatCode", "General");
+            var ptCount = new XElement(Namespace.Chart + "ptCount", new XAttribute("val", list.Count));
+            var formatCode = new XElement(Namespace.Chart + "formatCode", "General");
 
             strCache.Add(ptCount);
             numCache.Add(formatCode);
@@ -125,14 +125,14 @@ namespace DXPlus.Charts
             int index = 0;
             foreach (object item in list)
             {
-                var pt = new XElement(DocxNamespace.Chart + "pt",
+                var pt = new XElement(Namespace.Chart + "pt",
                             new XAttribute("idx", index),
-                            new XElement(DocxNamespace.Chart + "v", item.GetType().GetProperty(categoryPropertyName).GetValue(item, null)));
+                            new XElement(Namespace.Chart + "v", item.GetType().GetProperty(categoryPropertyName).GetValue(item, null)));
                 strCache.Add(pt);
 
-                pt = new XElement(DocxNamespace.Chart + "pt",
+                pt = new XElement(Namespace.Chart + "pt",
                             new XAttribute("idx", index),
-                            new XElement(DocxNamespace.Chart + "v", item.GetType().GetProperty(valuePropertyName).GetValue(item, null)));
+                            new XElement(Namespace.Chart + "v", item.GetType().GetProperty(valuePropertyName).GetValue(item, null)));
                 numCache.Add(pt);
                 index++;
             }
@@ -151,8 +151,8 @@ namespace DXPlus.Charts
             strCache.RemoveAll();
             numCache.RemoveAll();
 
-            var ptCount = new XElement(DocxNamespace.Chart + "ptCount", new XAttribute("val", categories.Count));
-            var formatCode = new XElement(DocxNamespace.Chart + "formatCode", "General");
+            var ptCount = new XElement(Namespace.Chart + "ptCount", new XAttribute("val", categories.Count));
+            var formatCode = new XElement(Namespace.Chart + "formatCode", "General");
 
             strCache.Add(ptCount);
             numCache.Add(formatCode);
@@ -160,14 +160,14 @@ namespace DXPlus.Charts
 
             for (int index = 0; index < categories.Count; index++)
             {
-                var pt = new XElement(DocxNamespace.Chart + "pt",
+                var pt = new XElement(Namespace.Chart + "pt",
                             new XAttribute("idx", index),
-                            new XElement(DocxNamespace.Chart + "v", categories[index].ToString()));
+                            new XElement(Namespace.Chart + "v", categories[index].ToString()));
                 strCache.Add(pt);
 
-                pt = new XElement(DocxNamespace.Chart + "pt",
+                pt = new XElement(Namespace.Chart + "pt",
                             new XAttribute("idx", index),
-                            new XElement(DocxNamespace.Chart + "v", values[index].ToString()));
+                            new XElement(Namespace.Chart + "v", values[index].ToString()));
                 numCache.Add(pt);
             }
         }

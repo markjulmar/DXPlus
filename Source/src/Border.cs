@@ -70,7 +70,7 @@ namespace DXPlus
                 return;
             
             // The val attribute is the border style
-            var val = borderDetails.Attribute(DocxNamespace.Main + "val");
+            var val = borderDetails.Attribute(Name.MainVal);
             if (val != null)
             {
                 if (val.TryGetEnumValue<BorderStyle>(out var bs))
@@ -84,7 +84,7 @@ namespace DXPlus
             }
 
             // The sz attribute is used for the border size
-            var sz = borderDetails.Attribute(DocxNamespace.Main + "sz");
+            var sz = borderDetails.Attribute(Name.Size);
             if (sz != null)
             {
                 if (int.TryParse(sz.Value, out int result))
@@ -110,7 +110,7 @@ namespace DXPlus
             }
 
             // The space attribute is used for the border spacing
-            var space = borderDetails.Attribute(DocxNamespace.Main + "space");
+            var space = borderDetails.Attribute(Namespace.Main + "space");
             if (space != null)
             {
                 if (int.TryParse(space.Value, out int result))
@@ -124,7 +124,7 @@ namespace DXPlus
             }
 
             // The color attribute is used for the border color
-            var color = borderDetails.Attribute(DocxNamespace.Main + "color");
+            var color = borderDetails.Attribute(Name.Color);
             if (color != null)
             {
                 try

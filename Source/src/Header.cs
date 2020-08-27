@@ -1,13 +1,16 @@
-﻿using System.Collections.Generic;
-using System.IO.Packaging;
-using System.Linq;
-using System.Xml.Linq;
+﻿using System.Xml.Linq;
 
 namespace DXPlus
 {
-    public class Header : Container
+    /// <summary>
+    /// Represents a single header (even, odd, first) in a document
+    /// </summary>
+    public sealed class Header : HeaderOrFooter
     {
-        public bool PageNumbers
+        /// <summary>
+        /// Return the page number setting for the header
+        /// </summary>
+        public override bool PageNumbers
         {
             get => false;
 
@@ -47,14 +50,11 @@ namespace DXPlus
             }
         }
 
-        public string Id { get; set; }
-
-        internal Header(DocX document, XElement xml, PackagePart mainPart) : base(document, xml)
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public Header()
         {
-            PackagePart = mainPart;
         }
-
-        public IEnumerable<Image> Images => PackagePart.GetRelationshipsByType("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image")
-                                  .Select(i => new Image(Document, i));
     }
 }

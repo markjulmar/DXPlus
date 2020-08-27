@@ -4,7 +4,7 @@ using DXPlus.Helpers;
 
 namespace DXPlus
 {
-    public class PageLayout : DocXElement
+    public class PageLayout : DocXBase
     {
         private const int A4_WIDTH = 11906;
         private const int A4_HEIGHT = 16838;
@@ -19,8 +19,8 @@ namespace DXPlus
             get
             {
                 // Get the pgSz (page size) value + orient attribute
-                string value = Xml.Element(DocxNamespace.Main + "pgSz")?
-                    .AttributeValue(DocxNamespace.Main + "orient");
+                string value = Xml.Element(Namespace.Main + "pgSz")?
+                    .AttributeValue(Namespace.Main + "orient");
 
                 return value?.Equals("landscape", StringComparison.CurrentCultureIgnoreCase) == true
                     ? Orientation.Landscape
@@ -35,18 +35,18 @@ namespace DXPlus
                     return;
                 }
 
-                XElement pgSz = Xml.GetOrCreateElement(DocxNamespace.Main + "pgSz");
-                pgSz.SetAttributeValue(DocxNamespace.Main + "orient", value.GetEnumName());
+                XElement pgSz = Xml.GetOrCreateElement(Namespace.Main + "pgSz");
+                pgSz.SetAttributeValue(Namespace.Main + "orient", value.GetEnumName());
 
                 if (value == Orientation.Landscape)
                 {
-                    pgSz.SetAttributeValue(DocxNamespace.Main + "w", A4_HEIGHT);
-                    pgSz.SetAttributeValue(DocxNamespace.Main + "h", A4_WIDTH);
+                    pgSz.SetAttributeValue(Namespace.Main + "w", A4_HEIGHT);
+                    pgSz.SetAttributeValue(Namespace.Main + "h", A4_WIDTH);
                 }
                 else // if (value == Orientation.Portrait)
                 {
-                    pgSz.SetAttributeValue(DocxNamespace.Main + "w", A4_WIDTH);
-                    pgSz.SetAttributeValue(DocxNamespace.Main + "h", A4_HEIGHT);
+                    pgSz.SetAttributeValue(Namespace.Main + "w", A4_WIDTH);
+                    pgSz.SetAttributeValue(Namespace.Main + "h", A4_HEIGHT);
                 }
             }
         }

@@ -9,7 +9,7 @@ namespace DXPlus
     /// <summary>
     /// Represents a single row in a Table.
     /// </summary>
-    public class Row : DocXElement
+    public class Row : DocXBase
     {
         /// <summary>
         /// Table owner
@@ -35,17 +35,17 @@ namespace DXPlus
         /// </summary>
         public bool BreakAcrossPages
         {
-            get => Xml.Element(DocxNamespace.Main + "trPr")?
-                      .Element(DocxNamespace.Main + "cantSplit") == null;
+            get => Xml.Element(Namespace.Main + "trPr")?
+                      .Element(Namespace.Main + "cantSplit") == null;
 
-            set => Xml.GetOrCreateElement(DocxNamespace.Main + "trPr")
-                      .SetElementValue(DocxNamespace.Main + "cantSplit", value ? null : string.Empty);
+            set => Xml.GetOrCreateElement(Namespace.Main + "trPr")
+                      .SetElementValue(Namespace.Main + "cantSplit", value ? null : string.Empty);
         }
 
         /// <summary>
         /// A list of Cells in this Row.
         /// </summary>
-        public IReadOnlyList<Cell> Cells => Xml.Elements(DocxNamespace.Main + "tc").Select(e => new Cell(this, e)).ToList();
+        public IReadOnlyList<Cell> Cells => Xml.Elements(Namespace.Main + "tc").Select(e => new Cell(this, e)).ToList();
 
         /// <summary>
         /// Calculates columns count in the row, taking spanned cells into account
@@ -66,8 +66,8 @@ namespace DXPlus
         {
             get
             {
-                var value = Xml.Element(DocxNamespace.Main + "trPr")?
-                               .Element(DocxNamespace.Main + "trHeight")?
+                var value = Xml.Element(Namespace.Main + "trPr")?
+                               .Element(Namespace.Main + "trHeight")?
                                .GetValAttr();
 
                 if (value == null || !double.TryParse(value.Value, out double heightInWordUnits))
@@ -86,16 +86,16 @@ namespace DXPlus
         /// </summary>
         public bool TableHeader
         {
-            get => Xml.Element(DocxNamespace.Main + "trPr")?
-                      .Element(DocxNamespace.Main + "tblHeader") != null;
+            get => Xml.Element(Namespace.Main + "trPr")?
+                      .Element(Namespace.Main + "tblHeader") != null;
             set
             {
-                var trPr = Xml.GetOrCreateElement(DocxNamespace.Main + "trPr");
-                var tblHeader = trPr.Element(DocxNamespace.Main + "tblHeader");
+                var trPr = Xml.GetOrCreateElement(Namespace.Main + "trPr");
+                var tblHeader = trPr.Element(Namespace.Main + "tblHeader");
 
                 if (tblHeader == null && value)
                 {
-                    trPr.SetElementValue(DocxNamespace.Main + "tblHeader", string.Empty);
+                    trPr.SetElementValue(Namespace.Main + "tblHeader", string.Empty);
                 }
                 if (tblHeader != null && !value)
                 {
@@ -130,15 +130,15 @@ namespace DXPlus
                 // Add the contents of the cell to the starting cell and remove it.
                 if (cell != startCell)
                 {
-                    startCell.Xml.Add(cell.Xml.Elements(DocxNamespace.Main + "p"));
+                    startCell.Xml.Add(cell.Xml.Elements(Name.Paragraph));
                     cell.Xml.Remove();
                 }
             }
 
             // Set the gridSpan to the number of merged cells.
-            startCell.Xml.GetOrCreateElement(DocxNamespace.Main + "tcPr")
-                         .GetOrCreateElement(DocxNamespace.Main + "gridSpan")
-                         .SetAttributeValue(DocxNamespace.Main + "val", gridSpanSum + endIndex - startIndex + 1);
+            startCell.Xml.GetOrCreateElement(Namespace.Main + "tcPr")
+                         .GetOrCreateElement(Namespace.Main + "gridSpan")
+                         .SetAttributeValue(Name.MainVal, gridSpanSum + endIndex - startIndex + 1);
         }
 
         /// <summary>
@@ -148,7 +148,7 @@ namespace DXPlus
         {
             var tableOwner = Xml.Parent;
             Xml.Remove();
-            if (tableOwner?.Elements(DocxNamespace.Main + "tr").Any() == false)
+            if (tableOwner?.Elements(Namespace.Main + "tr").Any() == false)
             {
                 tableOwner.Remove();
             }
@@ -164,15 +164,15 @@ namespace DXPlus
         {
             if (height != null)
             {
-                var trPr = Xml.GetOrCreateElement(DocxNamespace.Main + "trPr");
-                var trHeight = trPr.GetOrCreateElement(DocxNamespace.Main + "trHeight");
-                trHeight.SetAttributeValue(DocxNamespace.Main + "hRule", exact ? "exact" : "atLeast");
-                trHeight.SetAttributeValue(DocxNamespace.Main + "val", height * TableHelpers.UnitConversion);
+                var trPr = Xml.GetOrCreateElement(Namespace.Main + "trPr");
+                var trHeight = trPr.GetOrCreateElement(Namespace.Main + "trHeight");
+                trHeight.SetAttributeValue(Namespace.Main + "hRule", exact ? "exact" : "atLeast");
+                trHeight.SetAttributeValue(Name.MainVal, height * TableHelpers.UnitConversion);
             }
             else
             {
-                Xml.Element(DocxNamespace.Main + "trPr")?
-                    .Element(DocxNamespace.Main + "trHeight")?
+                Xml.Element(Namespace.Main + "trPr")?
+                    .Element(Namespace.Main + "trHeight")?
                     .Remove();
 
             }
@@ -197,13 +197,13 @@ namespace DXPlus
         /// <summary>
         /// Called when the document owner is changed.
         /// </summary>
-        protected override void OnDocumentOwnerChanged(DocX previousValue, DocX newValue)
+        protected override void OnDocumentOwnerChanged(IDocument previousValue, IDocument newValue)
         {
             base.OnDocumentOwnerChanged(previousValue, newValue);
 
             PackagePart = Table?.PackagePart;
             foreach (var cell in Cells)
-                cell.Document = newValue;
+                cell.Document = (DocX) newValue;
         }
     }
 }
