@@ -19,8 +19,8 @@ namespace DXPlus
         public static XName Bold = Namespace.Main + "b";
         public static XName Italic = Namespace.Main + "i";
         public static XName Underline = Namespace.Main + "u";
+        public static XName Emphasis = Namespace.Main + "em";
         public static XName Size = Namespace.Main + "sz";
-        public static XName ScriptFontSize = Namespace.Main + "szCs";
         public static XName Color = Namespace.Main + "color";
         public static XName Language = Namespace.Main + "lang";
         public static XName RunFonts = Namespace.Main + "rFonts";
@@ -44,6 +44,7 @@ namespace DXPlus
         public static XName BookmarkEnd = Namespace.Main + "bookmarkEnd";
         public static XName MathParagraph = Namespace.Math + "oMathPara";
         public static XName OfficeMath = Namespace.Math + "oMath";
+        public static XName NoProof => Namespace.Main + "noProof";
     }
 
     internal static class Relations

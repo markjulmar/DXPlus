@@ -19,13 +19,7 @@ namespace DXPlus
         /// Add a new paragraph with the given text at the end of this container.
         /// </summary>
         /// <returns>Newly added paragraph</returns>
-        public static Paragraph AddParagraph(this IContainer container, string text) => container.AddParagraph(text, false);
-
-        /// <summary>
-        /// Add a new paragraph with the given text, possibly tracking changes at the end of this container.
-        /// </summary>
-        /// <returns>Newly added paragraph</returns>
-        public static Paragraph AddParagraph(this IContainer container, string text, bool trackChanges) => container.AddParagraph(text, trackChanges, null);
+        public static Paragraph AddParagraph(this IContainer container, string text) => container.AddParagraph(text, null);
 
         /// <summary>
         /// Insert a paragraph with the given text at the specified paragraph index.
@@ -33,9 +27,8 @@ namespace DXPlus
         /// <param name="container">Container to insert into</param>
         /// <param name="index">Index to insert new paragraph at</param>
         /// <param name="text">Text for new paragraph</param>
-        /// <param name="trackChanges">True to track changes</param>
         /// <returns>Newly added paragraph</returns>
-        public static Paragraph InsertParagraph(this IContainer container, int index, string text, bool trackChanges) => container.InsertParagraph(index, text, trackChanges, null);
+        public static Paragraph InsertParagraph(this IContainer container, int index, string text) => container.InsertParagraph(index, text, null);
 
         /// <summary>
         /// Add a new equation using the specified text at the end of this container.

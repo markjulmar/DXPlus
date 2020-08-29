@@ -91,11 +91,6 @@ namespace DXPlus
         /// </summary>
         double PageWidth { get; set; }
 
-        /// <summary>
-        /// Get the Text of this document.
-        /// </summary>
-        string Text { get; }
-
         ///<summary>
         /// Returns the list of document core properties with corresponding values.
         ///</summary>

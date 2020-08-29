@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Xml.XPath;
 using Xunit;
 
@@ -9,8 +7,6 @@ namespace DXPlus.Tests
 {
     public class TableTests
     {
-        private const string Filename = "test.docx";
-
         [Fact]
         public void CreateTableWithInvalidRowsOrColumnsThrowsException()
         {
@@ -298,6 +294,22 @@ namespace DXPlus.Tests
             Assert.Equal(string.Empty, t.Rows[1].Cells[1].Text);
             Assert.Equal(string.Empty, t.Rows[2].Cells[1].Text);
             Assert.Equal(string.Empty, t.Rows[3].Cells[1].Text);
+        }
+
+        [Fact]
+        public void PackagePartSetWhenAddedToDoc()
+        {
+            Table t = new Table(1,1);
+            Assert.Null(t.PackagePart);
+
+            var doc = Document.Create();
+            var t2 = doc.AddTable(t);
+            Assert.NotNull(t2.PackagePart);
+
+            var t3 = doc.AddTable(t);
+            Assert.NotNull(t3.PackagePart);
+
+            Assert.Equal(2, doc.Tables.Count());
         }
     }
 }

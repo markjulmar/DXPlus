@@ -61,14 +61,13 @@ namespace DXPlus
         /// </summary>
         /// <param name="searchValue">Text value to search for</param>
         /// <param name="newValue">Replacement value</param>
-        /// <param name="trackChanges">True to track changes</param>
         /// <param name="options">Regex options</param>
         /// <param name="newFormatting">New formatting to apply</param>
         /// <param name="matchFormatting">Formatting to match</param>
         /// <param name="formattingOptions">Match formatting options</param>
         /// <param name="escapeRegEx">True to escape Regex expression</param>
         /// <param name="useRegExSubstitutions">True to use RegEx in substitution</param>
-        void ReplaceText(string searchValue, string newValue, bool trackChanges = false, 
+        void ReplaceText(string searchValue, string newValue,
             RegexOptions options = RegexOptions.None, Formatting newFormatting = null, Formatting matchFormatting = null, 
             MatchFormattingOptions formattingOptions = MatchFormattingOptions.SubsetMatch, 
             bool escapeRegEx = true, bool useRegExSubstitutions = false);
@@ -98,31 +97,27 @@ namespace DXPlus
         /// </summary>
         /// <param name="index">Index to insert into</param>
         /// <param name="text">Text for new paragraph</param>
-        /// <param name="trackChanges">True to track changes</param>
         /// <param name="formatting">Formatting for new paragraph</param>
         /// <returns></returns>
-        Paragraph InsertParagraph(int index, string text, bool trackChanges, Formatting formatting);
+        Paragraph InsertParagraph(int index, string text, Formatting formatting);
 
         /// <summary>
         /// Add a new section to the container
         /// </summary>
-        /// <param name="trackChanges">True to track changes</param>
-        void AddSection(bool trackChanges = false);
+        void AddSection();
 
         /// <summary>
         /// Add a new page break to the container
         /// </summary>
-        /// <param name="trackChanges">True to track changes</param>
-        void AddPageBreak(bool trackChanges = false);
+        void AddPageBreak();
 
         /// <summary>
         /// Add a paragraph with the given text to the end of the container
         /// </summary>
         /// <param name="text">Text to add</param>
-        /// <param name="trackChanges">True to track changes</param>
         /// <param name="formatting">Formatting to use</param>
         /// <returns></returns>
-        Paragraph AddParagraph(string text, bool trackChanges, Formatting formatting);
+        Paragraph AddParagraph(string text, Formatting formatting);
 
         /// <summary>
         /// Add a new table to the end of the container
@@ -134,10 +129,10 @@ namespace DXPlus
         /// <summary>
         /// Insert a Table into this document. The Table's source can be a completely different document.
         /// </summary>
-        /// <param name="t">The Table to insert.</param>
+        /// <param name="table">The Table to insert.</param>
         /// <param name="index">The index to insert this Table at.</param>
         /// <returns>The Table now associated with this document.</returns>
-        Table InsertTable(int index, Table t);
+        Table InsertTable(int index, Table table);
 
         /// <summary>
         /// Insert a List into this document.

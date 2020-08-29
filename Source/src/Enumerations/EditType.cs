@@ -1,18 +1,18 @@
 ﻿namespace DXPlus
 {
     /// <summary>
-    /// Paragraph edit types
+    /// Edit types tracked in the document.
     /// </summary>
     internal enum EditType
     {
         /// <summary>
-        /// A ins is a tracked insertion
+        /// Paragraph has a tracked insertion
         /// </summary>
-        Ins,
+        Insert,
 
         /// <summary>
-        /// A del is  tracked deletion
+        /// Paragraph has a tracked deletion
         /// </summary>
-        Del
+        Delete
     }
 }

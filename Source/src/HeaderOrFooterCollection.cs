@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO.Packaging;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Xml.Linq;
 using DXPlus.Helpers;
 
@@ -22,6 +21,9 @@ namespace DXPlus
         /// Constructor used to create the header collection
         /// </summary>
         /// <param name="documentOwner"></param>
+        /// <param name="rootElementName"></param>
+        /// <param name="relation"></param>
+        /// <param name="typeName"></param>
         internal HeaderOrFooterCollection(DocX documentOwner, string rootElementName, Relationship relation, string typeName)
         {
             this.documentOwner = documentOwner;
@@ -31,7 +33,7 @@ namespace DXPlus
 
             First = LoadFromPackage(HeaderFooterType.First);
             Even = LoadFromPackage(HeaderFooterType.Even);
-            Odd = LoadFromPackage(HeaderFooterType.Odd);
+            Default = LoadFromPackage(HeaderFooterType.Odd);
         }
 
         /// <summary>
@@ -47,7 +49,7 @@ namespace DXPlus
         /// <summary>
         /// Header/Footer on odd pages
         /// </summary>
-        public T Odd { get; }
+        public T Default { get; }
 
         /// <summary>
         /// Retrieve a header/footer from the owning document by type
@@ -226,7 +228,7 @@ namespace DXPlus
         /// </summary>
         internal void Save()
         {
-            Odd.Save();
+            Default.Save();
             First.Save();
             Even.Save();
         }

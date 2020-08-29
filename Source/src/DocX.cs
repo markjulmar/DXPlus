@@ -52,10 +52,11 @@ namespace DXPlus
         private PackagePart settingsPart;
         private PackagePart stylesPart;
         private PackagePart stylesWithEffectsPart;
-        private uint revision;
 
-        // A lookup for the Paragraphs in this document
-        internal Dictionary<int, Paragraph> paragraphLookup = new Dictionary<int, Paragraph>();
+        /// <summary>
+        /// Document revision
+        /// </summary>
+        private uint revision;
 
         /// <summary>
         /// Default constructor
@@ -144,7 +145,7 @@ namespace DXPlus
             if (xml.Name.LocalName != "style")
                 throw new ArgumentException("Passed element is not a <style> object.", nameof(xml));
 
-            stylesDoc.Root.Add(xml);
+            stylesDoc.Root!.Add(xml);
         }
 
         /// <summary>
@@ -277,7 +278,7 @@ namespace DXPlus
             {
                 var pgSz = SectPr.Element(Namespace.Main + "pgSz");
                 var w = pgSz?.Attribute(Namespace.Main + "w");
-                return w != null && double.TryParse(w.Value, out double f) ? Math.Round(f / 20.0) : 12240.0 / 20.0;
+                return w != null && double.TryParse(w.Value, out var value) ? Math.Round(value / 20.0) : 12240.0 / 20.0;
             }
 
             set => SectPr.Element(Namespace.Main + "pgSz")?
@@ -285,55 +286,19 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Get the Text of this document.
+        /// Method to create an unnamed document
         /// </summary>
-        public string Text => HelperFunctions.GetText(Xml);
-
-        /// <summary>
-        /// Creates a document using a fully qualified or relative filename.
-        /// </summary>
-        /// <param name="filename">The fully qualified or relative filename.</param>
-        /// <param name="documentType"></param>
-        /// <returns>Returns a DocX object which represents the document.</returns>
-        public static DocX Create(string filename, DocumentTypes documentType = DocumentTypes.Document)
+        /// <param name="filename">optional filename</param>
+        /// <param name="documentType">Type to create</param>
+        /// <returns>New document</returns>
+        internal static DocX Create(string filename, DocumentTypes documentType)
         {
-            // Create the docx package
-            using var ms = new MemoryStream();
-            using var package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
-
-            // Create the main document part for this package
-            var mainDocumentPart = package.CreatePart(new Uri("/word/document.xml", UriKind.Relative),
-                documentType == DocumentTypes.Document ? DocxContentType.Document : DocxContentType.Template,
-                CompressionOption.Normal);
-            package.CreateRelationship(mainDocumentPart.Uri, TargetMode.Internal, $"{Namespace.RelatedDoc.NamespaceName}/officeDocument");
-
-            // Generate an id for this editing session.
-            var startingRevisionId = HelperFunctions.GenerateRevisionStamp(null, out _);
-
-            // Load the document part into a XDocument object
-            var mainDoc = Resources.BodyDocument(startingRevisionId);
-
-            // Add the settings.xml + relationship
-            HelperFunctions.AddDefaultSettingsPart(package, startingRevisionId);
-
-            // Add the default styles + relationship
-            HelperFunctions.AddDefaultStylesXml(package, out var stylesPart, out var stylesDoc);
-
-            // Save the main new document back to the package.
-            mainDocumentPart.Save(mainDoc);
-            package.Close();
-
-            // Load the stream into a document
-            var document = Load(ms);
-            document.filename = filename;
-            document.stream = null;
-
-            // We bumped the revision as part of the loading.
-            // Since we _just_ created this document and assigned a revId
-            // keep it the same as the creator time.
-            document.revision--;
-
-            return document;
+            var doc = Load(HelperFunctions.CreateDocumentType(documentType));
+            doc.stream.Dispose();
+            doc.stream = null;
+            doc.filename = filename;
+            doc.revision--;
+            return doc;
         }
 
         /// <summary>
@@ -343,11 +308,8 @@ namespace DXPlus
         /// <returns>
         /// Returns a DocX object which represents the document.
         /// </returns>
-        public static DocX Load(Stream stream)
+        internal static DocX Load(Stream stream)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
             var ms = new MemoryStream();
             stream.Seek(0, SeekOrigin.Begin);
             stream.CopyTo(ms);
@@ -368,7 +330,7 @@ namespace DXPlus
         /// <returns>
         /// Returns a DocX object which represents the document.
         /// </returns>
-        public static DocX Load(string filename)
+        internal static DocX Load(string filename)
         {
             if (string.IsNullOrWhiteSpace(filename))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(filename));
@@ -853,7 +815,7 @@ namespace DXPlus
                 {
                     foreach (var paragraph in Paragraphs)
                     {
-                        paragraph.Remove(false);
+                        paragraph.Remove();
                     }
                 }
             }
@@ -905,11 +867,11 @@ namespace DXPlus
                 else
                 {
                     paragraphs.Add(para);
-                    yield return new Section(this, sectionInPara) { SectionParagraphs = paragraphs };
+                    yield return new Section(this, sectionInPara) { SectionParagraphs = paragraphs, PackagePart = PackagePart };
                     paragraphs = new List<Paragraph>();
                 }
             }
-            yield return new Section(this, SectPr) { SectionParagraphs = paragraphs };
+            yield return new Section(this, SectPr) { SectionParagraphs = paragraphs, PackagePart = PackagePart };
         }
 
         /// <summary>
@@ -1209,16 +1171,6 @@ namespace DXPlus
             stylesWithEffectsDoc = stylesWithEffectsPart?.Load();
             fontTableDoc = fontTablePart?.Load();
             numberingDoc = numberingPart?.Load();
-
-            // Load all the paragraphs
-            paragraphLookup.Clear();
-            foreach (var paragraph in Paragraphs)
-            {
-                if (!paragraphLookup.ContainsKey(paragraph.EndIndex))
-                {
-                    paragraphLookup.Add(paragraph.EndIndex, paragraph);
-                }
-            }
         }
 
         internal void AddDefaultNumberingPart()
@@ -1399,7 +1351,6 @@ namespace DXPlus
         /// <summary>
         /// Update the custom properties inside the document
         /// </summary>
-        /// <param name="document">The DocX document</param>
         /// <param name="property">Custom property</param>
         /// <remarks>Different version of Word create different Document XML.</remarks>
         internal void UpdateCustomPropertyUsages(CustomProperty property)
@@ -1414,14 +1365,14 @@ namespace DXPlus
 
             if (Headers.First.Exists)
                 documents.Add(Headers.First.Xml);
-            if (Headers.Odd.Exists)
-                documents.Add(Headers.Odd.Xml);
+            if (Headers.Default.Exists)
+                documents.Add(Headers.Default.Xml);
             if (Headers.Even.Exists)
                 documents.Add(Headers.Even.Xml);
             if (Footers.First.Exists)
                 documents.Add(Footers.First.Xml);
-            if (Footers.Odd.Exists)
-                documents.Add(Footers.Odd.Xml);
+            if (Footers.Default.Exists)
+                documents.Add(Footers.Default.Xml);
             if (Footers.Even.Exists)
                 documents.Add(Footers.Even.Xml);
 

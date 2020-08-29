@@ -106,6 +106,31 @@ namespace DXPlus.Helpers
         }
 
         /// <summary>
+        /// Adds, removes or modifies the specified element and sets the Main:val attribute to the specified value.
+        /// </summary>
+        /// <param name="node">Parent node</param>
+        /// <param name="name">Name of the element to add/remove</param>
+        /// <param name="value">Value for the Main:val attribute</param>
+        /// <returns>Created or located element</returns>
+        public static XElement AddElementVal(this XElement node, XName name, object value)
+        {
+            if (value == null)
+            {
+                node.Element(name)?.Remove();
+                return null;
+            }
+
+            var e = node.Element(name);
+            if (e == null)
+            {
+                e = new XElement(name);
+                node.Add(e);
+            }
+            e.SetAttributeValue(Name.MainVal, value.ToString());
+            return e;
+        }
+
+        /// <summary>
         /// Gets or creates an element path + attribute based on a path.
         /// </summary>
         /// <param name="node">Starting container element</param>
@@ -152,7 +177,7 @@ namespace DXPlus.Helpers
                 _ => throw new ArgumentException($"Path cannot include {val.GetType().Name} types.", nameof(pathAndValue)),
             };
 
-            node.SetAttributeValue(part, pathAndValue[index]);
+            node!.SetAttributeValue(part, pathAndValue[index]);
             return node.Attribute(part);
         }
 

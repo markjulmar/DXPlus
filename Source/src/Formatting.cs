@@ -8,517 +8,387 @@ using DXPlus.Helpers;
 namespace DXPlus
 {
     /// <summary>
-    /// A text formatting.
+    /// This holds all the formatting properties for a run of text.
+    /// This is typically contained in a (rPr) element.
     /// </summary>
-    public class Formatting : IComparable
+    public sealed class Formatting
     {
-        private double? size;
-        private int? percentageScale;
-        private int? kerning;
-        private int? position;
-        private double? spacing;
-        private bool? superScript; // null = none, true = super, false = sub
+        public XElement Xml { get; set; }
 
         /// <summary>
-        /// A text formatting.
+        /// Returns whether this paragraph is marked as BOLD
         /// </summary>
-        public Formatting()
+        public bool Bold
         {
-            CapsStyle = DXPlus.CapsStyle.None;
-            Strikethrough = DXPlus.Strikethrough.None;
-            Highlight = DXPlus.Highlight.None;
-            UnderlineStyle = DXPlus.UnderlineStyle.None;
-            Effect = DXPlus.Effect.None;
-            Language = CultureInfo.CurrentCulture;
-        }
-
-        /// <summary>
-        /// Text language
-        /// </summary>
-        public CultureInfo Language { get; set; }
-
-        /// <summary>
-        /// Returns a new identical instance of Formatting.
-        /// </summary>
-        public Formatting Clone()
-        {
-            return new Formatting {
-                Bold = Bold,
-                CapsStyle = CapsStyle,
-                FontColor = FontColor,
-                FontFamily = FontFamily,
-                IsHidden = IsHidden,
-                Highlight = Highlight,
-                Italic = Italic,
-                Language = Language,
-                Effect = Effect,
-                kerning = kerning,
-                percentageScale = percentageScale,
-                position = position,
-                superScript = superScript,
-                size = size,
-                spacing = spacing,
-                Strikethrough = Strikethrough,
-                UnderlineColor = UnderlineColor,
-                UnderlineStyle = UnderlineStyle
-            };
-        }
-
-        public static Formatting Parse(XElement rPr)
-        {
-            if (rPr == null)
-                return null;
-
-            var formatting = new Formatting();
-
-            // Build up the Formatting object.
-            foreach (var option in rPr.Elements())
+            get => Xml.Element(Name.Bold) != null;
+            set
             {
-                switch (option.Name.LocalName)
-                {
-                    case "lang":
-                        formatting.Language = new CultureInfo(
-                            option.GetVal(null) ??
-                            option.AttributeValue(Namespace.Main + "eastAsia", null) ??
-                            option.AttributeValue(Name.RTL));
-                        break;
-
-                    case "spacing":
-                        formatting.Spacing = double.Parse(option.GetVal()) / 20.0;
-                        break;
-
-                    case "position":
-                    case "kern":
-                        formatting.Position = int.Parse(option.GetVal()) / 2;
-                        break;
-
-                    case "sz":
-                        formatting.Size = int.Parse(
-                            option.GetVal()) / 2;
-                        break;
-
-                    case "w":
-                        formatting.PercentageScale = int.Parse(
-                            option.GetVal());
-                        break;
-
-                    case "rFonts":
-                        formatting.FontFamily =
-                            new FontFamily(
-                                option.AttributeValue(Namespace.Main + "cs", null) ??
-                                option.AttributeValue(Namespace.Main + "ascii", null) ??
-                                option.AttributeValue(Namespace.Main + "hAnsi", null) ??
-                                option.AttributeValue(Namespace.Main + "eastAsia"));
-                        break;
-
-                    case "color":
-                        string color = option.GetVal();
-                        formatting.FontColor = ColorTranslator.FromHtml($"#{color}");
-                        break;
-
-                    case "vanish":
-                        formatting.IsHidden = true;
-                        break;
-
-                    case "b":
-                        formatting.Bold = true;
-                        break;
-
-                    case "i":
-                        formatting.Italic = true;
-                        break;
-
-                    case "u":
-                        formatting.UnderlineStyle = option.GetEnumValue<UnderlineStyle>();
-                        break;
-                }
+                Xml.SetElementValue(Name.Bold, value ? string.Empty : null);
+                Xml.SetElementValue(Name.Bold + "Cs", value ? string.Empty : null);
             }
-
-            return formatting;
         }
 
-        internal XElement Xml
+        /// <summary>
+        /// Change the italic state of this paragraph
+        /// </summary>
+        public bool Italic
+        {
+            get => Xml.Element(Name.Italic) != null;
+            set
+            {
+                Xml.SetElementValue(Name.Italic, value ? string.Empty : null);
+                Xml.SetElementValue(Name.Italic + "Cs", value ? string.Empty : null);
+            }
+        }
+
+        /// <summary>
+        /// Change the paragraph to be small caps, capitals or none.
+        /// </summary>
+        public CapsStyle CapsStyle
+        {
+            get => Xml.Element(Namespace.Main + CapsStyle.SmallCaps.GetEnumName()) != null
+                ? CapsStyle.SmallCaps
+                : Xml.Element(Namespace.Main + CapsStyle.Caps.GetEnumName()) != null
+                    ? CapsStyle.Caps
+                    : CapsStyle.None;
+            set
+            {
+                Xml.Element(Namespace.Main + CapsStyle.SmallCaps.GetEnumName())?.Remove();
+                Xml.Element(Namespace.Main + CapsStyle.Caps.GetEnumName())?.Remove();
+                if (value != CapsStyle.None)
+                    Xml.Add(new XElement(Namespace.Main + value.GetEnumName()));
+            }
+        }
+
+        /// <summary>
+        /// Returns the applied text color, or None for default.
+        /// </summary>
+        public Color Color
+        {
+            get => Xml.Element(Name.Color)?.GetValAttr().ToColor() ?? Color.Empty;
+            set => Xml.AddElementVal(Name.Color, value == Color.Empty ? null : value.ToHex());
+        }
+
+        /// <summary>
+        /// Change the culture of the given paragraph.
+        /// </summary>
+        public CultureInfo Culture
         {
             get
             {
-                var rPr = new XElement(Name.RunProperties);
+                var name = Xml.Element(Name.Language)?.GetVal();
+                return name != null ? CultureInfo.GetCultureInfo(name) : null;
+            }
 
-                if (Language != null)
+            set => Xml.AddElementVal(Name.Language, value?.Name);
+        }
+
+        /// <summary>
+        /// Change the font for the paragraph
+        /// </summary>
+        public FontFamily Font
+        {
+            get
+            {
+                var font = Xml.Element(Name.RunFonts);
+                if (font == null) return null;
+                string name = font.AttributeValue(Namespace.Main + "ascii");
+                return !string.IsNullOrEmpty(name) ? new FontFamily(name) : null;
+            }
+            set
+            {
+                Xml.Element(Name.RunFonts)?.Remove();
+                if (value != null)
                 {
-                    rPr.Add(new XElement(Name.Language, new XAttribute(Name.MainVal, Language.Name)));
+                    Xml.Add(new XElement(Name.RunFonts,
+                        new XAttribute(Namespace.Main + "ascii", value.Name),
+                        new XAttribute(Namespace.Main + "hAnsi", value.Name),
+                        new XAttribute(Namespace.Main + "cs", value.Name)));
                 }
-
-                if (spacing.HasValue)
-                {
-                    rPr.Add(new XElement(Name.Spacing, new XAttribute(Name.MainVal, spacing.Value * 20)));
-                }
-
-                if (position.HasValue)
-                {
-                    rPr.Add(new XElement(Name.Position, new XAttribute(Name.MainVal, position.Value * 2)));
-                }
-
-                if (kerning.HasValue)
-                {
-                    rPr.Add(new XElement(Name.Kerning, new XAttribute(Name.MainVal, kerning.Value * 2)));
-                }
-
-                if (percentageScale.HasValue)
-                {
-                    rPr.Add(new XElement(Namespace.Main + "w", new XAttribute(Name.MainVal, percentageScale)));
-                }
-
-                if (FontFamily != null)
-                {
-                    rPr.Add(new XElement(Name.RunFonts,
-                                new XAttribute(Namespace.Main + "ascii", FontFamily.Name),
-                                new XAttribute(Namespace.Main + "hAnsi", FontFamily.Name),
-                                new XAttribute(Namespace.Main + "cs", FontFamily.Name)
-                        )
-                    );
-                }
-
-                if (IsHidden == true)
-                {
-                    rPr.Add(new XElement(Name.Vanish));
-                }
-
-                if (Bold == true)
-                {
-                    rPr.Add(new XElement(Name.Bold));
-                }
-
-                if (Italic == true)
-                {
-                    rPr.Add(new XElement(Name.Italic));
-                }
-
-                if (UnderlineStyle.HasValue && UnderlineStyle != DXPlus.UnderlineStyle.None)
-                {
-                    rPr.Add(new XElement(Name.Underline, new XAttribute(Name.MainVal, UnderlineStyle.Value.GetEnumName())));
-                }
-
-                if (UnderlineColor.HasValue)
-                {
-                    // If an underlineColor has been set but no underlineStyle has been set
-                    if (UnderlineStyle == DXPlus.UnderlineStyle.None)
-                    {
-                        UnderlineStyle = DXPlus.UnderlineStyle.SingleLine;
-                        rPr.Add(new XElement(Name.Underline, new XAttribute(Name.MainVal, UnderlineStyle.Value.GetEnumName())));
-                    }
-
-                    rPr.Element(Name.Underline).Add(new XAttribute(Name.Color, UnderlineColor.Value.ToHex()));
-                }
-
-                if (Strikethrough.HasValue && Strikethrough != DXPlus.Strikethrough.None)
-                {
-                    rPr.Add(new XElement(Namespace.Main + Strikethrough.GetEnumName()));
-                }
-
-                if (superScript.HasValue)
-                {
-                    rPr.Add(new XElement(Name.VerticalAlign, 
-                            new XAttribute(Name.MainVal, superScript == true ? "superscript" : "subscript")));
-                }
-
-                if (size.HasValue)
-                {
-                    rPr.Add(new XElement(Name.Size, new XAttribute(Name.MainVal, size * 2)));
-                    rPr.Add(new XElement(Name.ScriptFontSize, new XAttribute(Name.MainVal, size * 2)));
-                }
-
-                if (FontColor.HasValue)
-                {
-                    rPr.Add(new XElement(Name.Color, new XAttribute(Name.MainVal, FontColor.Value.ToHex())));
-                }
-
-                if (Highlight.HasValue && Highlight != DXPlus.Highlight.None)
-                {
-                    rPr.Add(new XElement(Name.Highlight, new XAttribute(Name.MainVal, Highlight.GetEnumName())));
-                }
-
-                if (CapsStyle.HasValue && CapsStyle.Value != DXPlus.CapsStyle.None)
-                {
-                    rPr.Add(new XElement(Namespace.Main + CapsStyle.GetEnumName()));
-                }
-
-                if (Effect.HasValue && Effect != DXPlus.Effect.None)
-                {
-                    switch (Effect)
-                    {
-                        case DXPlus.Effect.OutlineShadow:
-                            rPr.Add(new XElement(Namespace.Main + DXPlus.Effect.Outline.GetEnumName()));
-                            rPr.Add(new XElement(Namespace.Main + DXPlus.Effect.Shadow.GetEnumName()));
-                            break;
-
-                        default:
-                            rPr.Add(new XElement(Namespace.Main + Effect.GetEnumName()));
-                            break;
-                    }
-                }
-
-                return rPr;
             }
         }
 
         /// <summary>
-        /// This formatting will apply Bold.
+        /// Get or set the font size of this paragraph
         /// </summary>
-        public bool? Bold { get; set; }
-
-        /// <summary>
-        /// This formatting will apply Italic.
-        /// </summary>
-        public bool? Italic { get; set; }
-
-        /// <summary>
-        /// This formatting will apply Strike-through.
-        /// </summary>
-        public Strikethrough? Strikethrough { get; set; }
-
-        /// <summary>
-        /// True for subscript text. Note: mutually exclusive with Subscript.
-        /// </summary>
-        public bool Superscript
+        public double? FontSize
         {
-            get => superScript == true;
-            set
-            {
-                if (value)
-                    superScript = true;
-                else if (superScript == true)
-                    superScript = null;
-            }
-        }
-
-        /// <summary>
-        /// True for subscript text. Note: mutually exclusive with Superscript.
-        /// </summary>
-        public bool Subscript
-        {
-            get => superScript == false;
-            set
-            {
-                if (value)
-                    superScript = false;
-                else if (superScript == false)
-                    superScript = null;
-            }
-        }
-
-        /// <summary>
-        /// The Size of this text, must be between 0 and 1638.
-        /// </summary>
-        public double? Size
-        {
-            get => size;
+            get => double.TryParse(Xml.Element(Name.Size)?.GetVal(), out var result)
+                ? (double?)(result / 2)
+                : null;
 
             set
             {
+                // Fonts are measured in half-points.
                 if (value != null)
                 {
                     // [0-1638] rounded to nearest half.
-                    double fontSize = Math.Min(Math.Max(0, value.Value), 1638.0);
-                    value = Math.Round(fontSize * 2, MidpointRounding.AwayFromZero) / 2;
+                    double fontSize = value.Value;
+                    fontSize = Math.Min(Math.Max(0, fontSize), 1638.0);
+                    fontSize = Math.Round(fontSize * 2, MidpointRounding.AwayFromZero) / 2;
+
+                    Xml.AddElementVal(Name.Size, fontSize * 2);
+                    Xml.AddElementVal(Name.Size + "Cs", fontSize * 2);
                 }
-
-                size = value;
-            }
-        }
-
-        /// <summary>
-        /// Percentage scale.
-        /// </summary>
-        public int? PercentageScale
-        {
-            get => percentageScale;
-
-            set
-            {
-                if (value != null)
+                else
                 {
-                    int[] valid = new int[] { 200, 150, 100, 90, 80, 66, 50, 33 };
-                    if (!valid.Contains(value.Value))
-                    {
-                        throw new ArgumentOutOfRangeException($"Must be one of the values [{string.Join(",", valid.Select(i => i.ToString()))}]", nameof(PercentageScale));
-                    }
+                    Xml.Element(Name.Size)?.Remove();
+                    Xml.Element(Name.Size + "Cs")?.Remove();
                 }
-
-                percentageScale = value;
             }
         }
 
         /// <summary>
-        /// The Kerning to apply to this text.
+        /// True if this paragraph is hidden.
+        /// </summary>
+        public bool IsHidden
+        {
+            get => Xml.Element(Name.Vanish) != null;
+            set => Xml.SetElementValue(Name.Vanish, value ? string.Empty : null);
+        }
+
+        /// <summary>
+        /// Gets or sets the highlight on this paragraph
+        /// </summary>
+        public Highlight Highlight
+        {
+            get => Xml.Element(Name.Highlight).TryGetEnumValue<Highlight>(out var result) ? result : Highlight.None;
+            set => Xml.AddElementVal(Name.Highlight, value == Highlight.None ? null : value.GetEnumName());
+        }
+
+        /// <summary>
+        /// Set the kerning for the paragraph in Pts.
         /// </summary>
         public int? Kerning
         {
-            get => kerning;
-
-            set
-            {
-                if (value != null)
-                {
-                    int[] valid = new int[] { 8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72 };
-                    if (!valid.Contains(value.Value))
-                    {
-                        throw new ArgumentOutOfRangeException($"Must be one of the values [{string.Join(",", valid.Select(i => i.ToString()))}]", nameof(Kerning));
-                    }
-                }
-
-                kerning = value;
-            }
+            // Value is represented in half-pts (1/144") in the document structure.
+            get => int.TryParse(Xml.Element(Name.Kerning)?.GetVal(), out var result) ? (int?) result / 2 : null;
+            set => Xml.AddElementVal(Name.Kerning, (value*2)?.ToString());
         }
 
-        private const int MAX_POSITION_OR_SPACING = 1585;
-
         /// <summary>
-        /// Text position
+        /// Applied effect on the paragraph
         /// </summary>
-        public int? Position
+        public Effect Effect
         {
-            get => position;
-
-            set
+            get
             {
-                if (value < -1 * MAX_POSITION_OR_SPACING || value > MAX_POSITION_OR_SPACING)
+                var appliedEffects = Enum.GetValues(typeof(Effect)).Cast<Effect>()
+                    .Select(e => Xml.Element(Namespace.Main + e.GetEnumName()))
+                    .Select(e => (e != null && e.Name.LocalName.TryGetEnumValue<Effect>(out var result)) ? result : Effect.None)
+                    .Where(e => e != Effect.None)
+                    .ToList();
+
+                // The only pair that can be added together.
+                if (appliedEffects.Contains(Effect.Outline)
+                    && appliedEffects.Contains(Effect.Shadow))
                 {
-                    throw new ArgumentOutOfRangeException($"Value must be in the range -{MAX_POSITION_OR_SPACING} - {MAX_POSITION_OR_SPACING}", nameof(Position));
+                    appliedEffects.Remove(Effect.Outline);
+                    appliedEffects.Remove(Effect.Shadow);
+                    appliedEffects.Add(Effect.OutlineShadow);
                 }
 
-                position = value;
+                return appliedEffects.Count == 0 ? Effect.None : appliedEffects[0];
+            }
+            set
+            {
+                // Remove all effects first as most are mutually exclusive.
+                foreach (var eval in Enum.GetValues(typeof(Effect)).Cast<Effect>())
+                {
+                    if (eval != Effect.None)
+                        Xml.Element(Namespace.Main + eval.GetEnumName())?.Remove();
+                }
+
+                // Now add the new effect.
+                switch (value)
+                {
+                    case Effect.None:
+                        break;
+                    case Effect.OutlineShadow:
+                        Xml.Add(new XElement(Namespace.Main + Effect.Outline.GetEnumName()),
+                                new XElement(Namespace.Main + Effect.Shadow.GetEnumName()));
+                        break;
+                    default:
+                        Xml.Add(new XElement(Namespace.Main + value.GetEnumName()));
+                        break;
+                }
             }
         }
 
         /// <summary>
-        /// Text spacing
+        /// Specifies the amount of character pitch which shall be added or removed after each character
+        /// in this run before the following character is rendered in the document.
         /// </summary>
         public double? Spacing
         {
-            get => spacing;
+            // Represented in 20ths of a pt.
+            get => double.TryParse(Xml.Element(Name.Spacing).GetVal(), out var result) ? (double?)Math.Round(result/20.0,1) : null;
+            set => Xml.AddElementVal(Name.Spacing, value == null ? null : Math.Round(value.Value*20.0,1).ToString(CultureInfo.InvariantCulture));
+        }
+
+        /// <summary>
+        /// Specifies the amount by which each character shall be expanded or when the character is rendered in the document.
+        /// This property stretches or compresses each character in the run.
+        /// </summary>
+        public int? ExpansionScale
+        {
+            get => int.TryParse(Xml.Element(Namespace.Main + "w").GetVal(), out var result) ? (int?)result : null;
 
             set
             {
                 if (value != null)
                 {
-                    // Round to nearest digit
-                    value = Math.Round(value.Value, 1);
-                    if (value < -1 * MAX_POSITION_OR_SPACING || value > MAX_POSITION_OR_SPACING)
-                    {
-                        throw new ArgumentOutOfRangeException($"Value must be in the range -{MAX_POSITION_OR_SPACING} - {MAX_POSITION_OR_SPACING}", nameof(Spacing));
-                    }
+                    if (value < 0 || value > 600)
+                        throw new ArgumentOutOfRangeException(nameof(ExpansionScale), "Value must be between 0 and 600.");
                 }
-
-                spacing = value;
+                Xml.AddElementVal(Namespace.Main + "w", value?.ToString());
             }
         }
 
         /// <summary>
-        /// The colour of the text.
+        /// Specifies the amount (in pts) by which text shall be raised or lowered for this run in relation to the default
+        /// baseline of the surrounding non-positioned text. This allows the text to be repositioned without
+        /// altering the font size of the contents.
         /// </summary>
-        public Color? FontColor { get; set; }
-
-        /// <summary>
-        /// Highlight colour.
-        /// </summary>
-        public Highlight? Highlight { get; set; }
-
-        /// <summary>
-        /// The Underline style that this formatting applies.
-        /// </summary>
-        public UnderlineStyle? UnderlineStyle { get; set; }
-
-        /// <summary>
-        /// The underline color.
-        /// </summary>
-        public Color? UnderlineColor { get; set; }
-
-        /// <summary>
-        /// Effect settings.
-        /// </summary>
-        public Effect? Effect { get; set; }
-
-        /// <summary>
-        /// Is this text hidden or visible.
-        /// </summary>
-        public bool? IsHidden { get; set; }
-
-        /// <summary>
-        /// Capitalization style.
-        /// </summary>
-        public CapsStyle? CapsStyle { get; set; }
-
-        /// <summary>
-        /// The font family of this formatting.
-        /// </summary>
-        public FontFamily FontFamily { get; set; }
-
-        /// <summary>
-        /// Compares the current instance with another object of the same type and 
-        /// returns an integer that indicates whether the current instance precedes, 
-        /// follows, or occurs in the same position in the sort order as the other object.
-        /// </summary>
-        /// <param name="obj">An object to compare with this instance.</param>
-        public int CompareTo(object obj)
+        public double? Position
         {
-            Formatting other = (Formatting)obj;
-            return other.IsHidden != IsHidden || other.Bold != Bold || other.Italic != Italic
-                || other.Strikethrough != Strikethrough || other.superScript != superScript
-                || other.Highlight != Highlight || other.size != size
-                || other.FontColor != FontColor || other.UnderlineColor != UnderlineColor
-                || other.UnderlineStyle != UnderlineStyle || other.Effect != Effect
-                || other.CapsStyle != CapsStyle || other.FontFamily != FontFamily
-                || other.percentageScale != percentageScale || other.kerning != kerning
-                || other.position != position || other.spacing != spacing
-                || !other.Language.Equals(Language)
-                ? -1
-                : 0;
+            // Measured in half-pts (1/144")
+            get => double.TryParse(Xml.Element(Name.Position).GetVal(), out var value) ? (double?) value/2.0 : null;
+            set => Xml.AddElementVal(Name.Position, value != null 
+                    ? Math.Round(value.Value * 2, 2).ToString(CultureInfo.InvariantCulture) 
+                    : null);
         }
 
-        public override bool Equals(object obj)
+        /// <summary>
+        /// Set the paragraph to subscript. Note this is mutually exclusive with Superscript
+        /// </summary>
+        public bool Subscript
         {
-            return ReferenceEquals(this, obj)
-                || (!(obj is null)
-                    && (obj is Formatting f && CompareTo(f) == 0));
+            get => Xml.Element(Name.VerticalAlign)?.GetVal() == "subscript";
+            set
+            {
+                if (value)
+                {
+                    Xml.AddElementVal(Name.VerticalAlign, "subscript");
+                }
+                else if (Subscript)
+                {
+                    Xml.Element(Name.VerticalAlign)?.Remove();
+                }
+            }
         }
 
-        public override int GetHashCode()
+        /// <summary>
+        /// Set the paragraph to Superscript. Note this is mutually exclusive with Subscript.
+        /// </summary>
+        public bool Superscript
         {
-            return Xml.ToString().GetHashCode();
+            get => Xml.Element(Name.VerticalAlign)?.GetVal() == "superscript";
+            set
+            {
+                if (value)
+                {
+                    Xml.AddElementVal(Name.VerticalAlign, "superscript");
+                }
+                else if (Superscript)
+                {
+                    Xml.Element(Name.VerticalAlign)?.Remove();
+                }
+            }
         }
 
-        public static bool operator ==(Formatting left, Formatting right)
+        /// <summary>
+        /// Specifies that spell/grammar checking is turned off for this text run.
+        /// </summary>
+        public bool NoProof
         {
-            return left is null ? right is null : left.Equals(right);
+            get => Xml.Element(Name.NoProof) != null;
+            set => Xml.SetElementValue(Name.NoProof, value ? string.Empty : null);
         }
 
-        public static bool operator !=(Formatting left, Formatting right)
+        /// <summary>
+        /// Get or set the underline style for this paragraph
+        /// </summary>
+        public UnderlineStyle UnderlineStyle
         {
-            return !(left == right);
+            get => Xml.Element(Name.Underline).GetVal().TryGetEnumValue<UnderlineStyle>(out var result) 
+                ? result : UnderlineStyle.None;
+            set => Xml.AddElementVal(Name.Underline, value != UnderlineStyle.None ? value.GetEnumName() : null);
         }
 
-        public static bool operator <(Formatting left, Formatting right)
+        /// <summary>
+        /// Get or set the underline style for this paragraph
+        /// </summary>
+        public Color UnderlineColor
         {
-            return left is null
-                ? right is object
-                : left.CompareTo(right) < 0;
+            get
+            {
+                var attr = Xml.Element(Name.Underline)?.Attribute(Name.Color);
+                return attr == null || attr.Value == "auto" ? Color.Empty : attr.ToColor();
+            }
+
+            set
+            {
+                if (value != Color.Empty)
+                {
+                    var e = Xml.GetOrCreateElement(Name.Underline);
+                    if (e.GetValAttr() == null) // no underline?
+                    {
+                        e.SetAttributeValue(Name.MainVal, UnderlineStyle.SingleLine.GetEnumName());
+                    }
+                    e.SetAttributeValue(Name.Color, value.ToHex());
+                }
+                else
+                {
+                    Xml.Element(Name.Underline)?.SetAttributeValue(Name.Color, null);
+                }
+            }
         }
 
-        public static bool operator <=(Formatting left, Formatting right)
+        /// <summary>
+        /// Specifies the emphasis mark which shall be displayed for each non-space character in this run.
+        /// An emphasis mark is an additional character that is rendered above or below the main character glyph.
+        /// </summary>
+        public Emphasis Emphasis
         {
-            return left is null || left.CompareTo(right) <= 0;
+            get => Xml.Element(Name.Emphasis).GetVal().TryGetEnumValue<Emphasis>(out var result)
+                ? result : Emphasis.None;
+            set => Xml.AddElementVal(Name.Emphasis, value != Emphasis.None ? value.GetEnumName() : null);
         }
 
-        public static bool operator >(Formatting left, Formatting right)
+        /// <summary>
+        /// Specifies that the text in this paragraph should be displayed with a single or double-line
+        /// strikethrough
+        /// </summary>
+        public Strikethrough StrikeThrough
         {
-            return left is object && left.CompareTo(right) > 0;
+            get => Xml.Element(Namespace.Main + Strikethrough.Strike.GetEnumName()) != null
+                ? Strikethrough.Strike
+                : Xml.Element(Namespace.Main + Strikethrough.DoubleStrike.GetEnumName()) != null
+                    ? Strikethrough.DoubleStrike
+                    : Strikethrough.None;
+            set
+            {
+                Xml.Element(Namespace.Main + Strikethrough.Strike.GetEnumName())?.Remove();
+                Xml.Element(Namespace.Main + Strikethrough.DoubleStrike.GetEnumName())?.Remove();
+
+                if (value != Strikethrough.None)
+                {
+                    Xml.AddElementVal(Namespace.Main + value.GetEnumName(), true);
+                }
+            }
         }
 
-        public static bool operator >=(Formatting left, Formatting right)
+        // TODO: add TextBorder (bdr)
+        // TODO: add Shading (shd)
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="element">Element containing run properties; if not supplied a new (rPr) element is created.</param>
+        public Formatting(XElement element = null)
         {
-            return left is null
-                ? right is null
-                : left.CompareTo(right) >= 0;
+            Xml = element ?? new XElement(Name.RunProperties);
         }
     }
 }

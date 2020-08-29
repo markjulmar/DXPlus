@@ -131,7 +131,7 @@ namespace DXPlus
         {
             string baseUri = Uri.OriginalString;
 
-            // Search for a relationship with a TargetUri that points at this Image.
+            // Search for a relationship with a TargetUri for this hyperlink.
             string id = PackagePart.GetRelationshipsByType($"{Namespace.RelatedDoc.NamespaceName}/hyperlink")
                 .Where(r => r.TargetUri.OriginalString == baseUri)
                 .Select(r => r.Id)
@@ -185,6 +185,11 @@ namespace DXPlus
             }
         }
 
+        /// <summary>
+        /// Return all hyperlinks associated to a given parent
+        /// </summary>
+        /// <param name="owner"></param>
+        /// <returns></returns>
         internal static IEnumerable<Hyperlink> Enumerate(DocXBase owner)
         {
             foreach (var he in owner.Xml.Descendants()
@@ -218,7 +223,7 @@ namespace DXPlus
                             var fldCharType = fldChar.Attribute(Namespace.Main + "fldCharType");
                             if (fldCharType?.Value.Equals("end", StringComparison.CurrentCultureIgnoreCase) == true)
                             {
-                                yield return new Hyperlink(owner.Document, he, hyperLinkRuns) {PackagePart = owner.PackagePart};
+                                yield return new Hyperlink(owner.Document, he, hyperLinkRuns) { PackagePart = owner.PackagePart };
                                 break;
                             }
                         }

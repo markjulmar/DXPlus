@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
 using DXPlus.Helpers;
@@ -17,6 +19,15 @@ namespace DXPlus
         public Table Table { get; }
 
         /// <summary>
+        /// PackagePart (file) this element is stored in.
+        /// </summary>
+        internal override PackagePart PackagePart
+        {
+            get => Table.PackagePart;
+            set => throw new InvalidOperationException("Cannot set packagePart for Row.");
+        }
+
+        /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="table"></param>
@@ -24,7 +35,6 @@ namespace DXPlus
         internal Row(Table table, XElement xml) : base(table.Document, xml)
         {
             Table = table;
-            PackagePart = table.PackagePart;
         }
 
         /// <summary>
@@ -200,8 +210,6 @@ namespace DXPlus
         protected override void OnDocumentOwnerChanged(IDocument previousValue, IDocument newValue)
         {
             base.OnDocumentOwnerChanged(previousValue, newValue);
-
-            PackagePart = Table?.PackagePart;
             foreach (var cell in Cells)
                 cell.Document = (DocX) newValue;
         }

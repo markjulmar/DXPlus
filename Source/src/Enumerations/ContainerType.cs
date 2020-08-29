@@ -1,9 +1,11 @@
 ﻿namespace DXPlus
 {
+    /// <summary>
+    /// Container owner type
+    /// </summary>
     public enum ContainerType
     {
         None,
-        TOC,
         Section,
         Cell,
         Table,

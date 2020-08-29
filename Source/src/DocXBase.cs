@@ -12,6 +12,9 @@ namespace DXPlus
         private XElement xml;
         private DocX document;
 
+        /// <summary>
+        /// The document owner
+        /// </summary>
         internal DocX Document
         {
             get => document;
@@ -25,6 +28,11 @@ namespace DXPlus
                 }
             }
         }
+
+        /// <summary>
+        /// PackagePart (file) this element is stored in.
+        /// </summary>
+        internal virtual PackagePart PackagePart { get; set; }
 
         /// <summary>
         /// Default constructor
@@ -43,11 +51,6 @@ namespace DXPlus
             this.xml = xml;
             this.document = (DocX) document;
         }
-
-        /// <summary>
-        /// The file in the package where this element is stored
-        /// </summary>
-        internal PackagePart PackagePart { get; set; }
 
         /// <summary>
         /// This is the actual Xml that gives this element substance.

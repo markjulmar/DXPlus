@@ -4,7 +4,7 @@
     /// Table Cell Border styles
     /// source: http://msdn.microsoft.com/en-us/library/documentformat.openxml.wordprocessing.tablecellborders.aspx
     /// </summary>
-    public enum BorderStyle
+    public enum TableBorderStyle
     {
         Empty = -1,
         None = 0,

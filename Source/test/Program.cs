@@ -656,7 +656,7 @@ namespace TestDXPlus
 
         private static void LargeTable()
         {
-            Border noBorder = new Border(BorderStyle.None, 0, 0, Color.White);
+            TableBorder noTableBorder = new TableBorder(TableBorderStyle.None, 0, 0, Color.White);
 
             Enter();
 
@@ -679,12 +679,12 @@ namespace TestDXPlus
                 cells[i].TopMargin = 0;
             }
 
-            table.SetBorder(TableBorderType.Bottom, noBorder);
-            table.SetBorder(TableBorderType.Left, noBorder);
-            table.SetBorder(TableBorderType.Right, noBorder);
-            table.SetBorder(TableBorderType.Top, noBorder);
-            table.SetBorder(TableBorderType.InsideV, noBorder);
-            table.SetBorder(TableBorderType.InsideH, noBorder);
+            table.SetBorder(TableBorderType.Bottom, noTableBorder);
+            table.SetBorder(TableBorderType.Left, noTableBorder);
+            table.SetBorder(TableBorderType.Right, noTableBorder);
+            table.SetBorder(TableBorderType.Top, noTableBorder);
+            table.SetBorder(TableBorderType.InsideV, noTableBorder);
+            table.SetBorder(TableBorderType.InsideH, noTableBorder);
 
             doc.Save();
         }

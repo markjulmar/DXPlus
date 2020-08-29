@@ -16,16 +16,10 @@ namespace DXPlus
         /// Create a new paragraph from some text
         /// </summary>
         /// <param name="text"></param>
-        /// <param name="trackChanges"></param>
         /// <param name="formatting"></param>
         /// <returns>New paragraph</returns>
-        internal static XElement Create(string text, bool trackChanges, Formatting formatting)
-        {
-            var newParagraph = new XElement(Name.Paragraph, HelperFunctions.FormatInput(text, formatting?.Xml));
-            if (trackChanges)
-                newParagraph = HelperFunctions.CreateEdit(EditType.Ins, DateTime.Now, newParagraph);
-            return newParagraph;
-        }
+        internal static XElement Create(string text, Formatting formatting) => 
+            new XElement(Name.Paragraph, HelperFunctions.FormatInput(text, formatting?.Xml));
 
         /// <summary>
         /// Fluent method to set alignment
@@ -287,13 +281,12 @@ namespace DXPlus
         /// </summary>
         /// <param name="paragraph"></param>
         /// <param name="index">The position to begin deleting characters.</param>
-        /// <param name="trackChanges">Track changes</param>
-        public static void RemoveText(this Paragraph paragraph, int index, bool trackChanges = false)
+        public static void RemoveText(this Paragraph paragraph, int index)
         {
             if (paragraph == null)
                 throw new ArgumentNullException(nameof(paragraph));
 
-            paragraph.RemoveText(index, paragraph.Text.Length - index, trackChanges);
+            paragraph.RemoveText(index, paragraph.Text.Length - index);
         }
 
         /// <summary>
@@ -428,16 +421,7 @@ namespace DXPlus
         /// <param name="container">Container owner</param>
         /// <param name="text">Text for new paragraph</param>
         /// <returns>Newly created paragraph</returns>
-        public static Paragraph AddParagraphAfterSelf(this InsertBeforeOrAfter container, string text) => container.AddParagraphAfterSelf(text, false, new Formatting());
-
-        /// <summary>
-        /// Add a paragraph after the current element using the passed text
-        /// </summary>
-        /// <param name="container">Container owner</param>
-        /// <param name="text">Text for new paragraph</param>
-        /// <param name="trackChanges">True to track changes</param>
-        /// <returns>Newly created paragraph</returns>
-        public static Paragraph AddParagraphAfterSelf(this InsertBeforeOrAfter container, string text, bool trackChanges) => container.AddParagraphAfterSelf(text, trackChanges, new Formatting());
+        public static Paragraph AddParagraphAfterSelf(this InsertBeforeOrAfter container, string text) => container.AddParagraphAfterSelf(text, null);
 
         /// <summary>
         /// Insert a paragraph before this container.
@@ -445,15 +429,6 @@ namespace DXPlus
         /// <param name="container">Container owner</param>
         /// <param name="text">Text for new paragraph</param>
         /// <returns>Newly created paragraph</returns>
-        public static Paragraph InsertParagraphBeforeSelf(this InsertBeforeOrAfter container, string text) => container.InsertParagraphBeforeSelf(text, false, new Formatting());
-
-        /// <summary>
-        /// Insert a paragraph before this container.
-        /// </summary>
-        /// <param name="container">Container owner</param>
-        /// <param name="text">Text for new paragraph</param>
-        /// <param name="trackChanges">True to track changes</param>
-        /// <returns>Newly created paragraph</returns>
-        public static Paragraph InsertParagraphBeforeSelf(this InsertBeforeOrAfter container, string text, bool trackChanges) => container.InsertParagraphBeforeSelf(text, trackChanges, new Formatting());
+        public static Paragraph InsertParagraphBeforeSelf(this InsertBeforeOrAfter container, string text) => container.InsertParagraphBeforeSelf(text, null);
     }
 }

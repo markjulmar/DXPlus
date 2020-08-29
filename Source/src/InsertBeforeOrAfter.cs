@@ -1,13 +1,17 @@
-﻿using System.Linq;
+﻿using System.Buffers;
+using System.Linq;
 using System.Xml.Linq;
 
 namespace DXPlus
 {
     /// <summary>
-    /// This class provides functions for inserting new DocXElements before or after the current DocXElement.
+    /// This class is the basis for Paragraphs, Lists, and Table elements. It provides helper methods to
+    /// insert/add other elements before and after in the element tree.
     /// </summary>
     public abstract class InsertBeforeOrAfter : DocXBase
     {
+        private Container owner;
+
         /// <summary>
         /// Default constructor used with Lists/Tables
         /// </summary>
@@ -43,9 +47,9 @@ namespace DXPlus
             Xml.AddAfterSelf(paragraph.Xml);
             var newlyInserted = Xml.ElementsAfterSelf().First();
 
-            if (this is Paragraph owner)
+            if (this is Paragraph me)
             {
-                return new Paragraph(Document, newlyInserted, owner.EndIndex);
+                return new Paragraph(Document, newlyInserted, me.EndIndex);
             }
 
             paragraph.Xml = newlyInserted;
@@ -56,12 +60,11 @@ namespace DXPlus
         /// Add a paragraph after the current element using the passed text
         /// </summary>
         /// <param name="text">Text for new paragraph</param>
-        /// <param name="trackChanges">True to track changes</param>
         /// <param name="formatting">Formatting for the paragraph</param>
         /// <returns>Newly created paragraph</returns>
-        public Paragraph AddParagraphAfterSelf(string text, bool trackChanges, Formatting formatting)
+        public Paragraph AddParagraphAfterSelf(string text, Formatting formatting)
         {
-            var newParagraph = ParagraphHelpers.Create(text, trackChanges, formatting);
+            var newParagraph = ParagraphHelpers.Create(text, formatting);
             Xml.AddAfterSelf(newParagraph);
             var newlyInserted = Xml.ElementsAfterSelf().First();
             
@@ -83,12 +86,11 @@ namespace DXPlus
         /// Insert a paragraph before the current element
         /// </summary>
         /// <param name="text">Text to use for new paragraph</param>
-        /// <param name="trackChanges">True to track changes</param>
         /// <param name="formatting">Formatting to use</param>
         /// <returns></returns>
-        public Paragraph InsertParagraphBeforeSelf(string text, bool trackChanges, Formatting formatting)
+        public Paragraph InsertParagraphBeforeSelf(string text, Formatting formatting)
         {
-            var newParagraph = ParagraphHelpers.Create(text, trackChanges, formatting);
+            var newParagraph = ParagraphHelpers.Create(text, formatting);
             Xml.AddBeforeSelf(newParagraph);
             var newlyInserted = Xml.ElementsBeforeSelf().Last();
             
@@ -112,11 +114,7 @@ namespace DXPlus
             XElement newlyInserted = Xml.ElementsAfterSelf().First();
 
             // Already owned by another document -- clone it.
-            return new Table(Document, newlyInserted)
-            {
-                PackagePart = PackagePart,
-                Design = table.Design
-            };
+            return new Table(Document, newlyInserted) { Design = table.Design };
         }
 
         /// <summary>
@@ -136,13 +134,51 @@ namespace DXPlus
             XElement newlyInserted = Xml.ElementsBeforeSelf().Last();
 
             // Already owned by another document -- clone it.
-            return new Table(Document, newlyInserted)
-            {
-                PackagePart = PackagePart,
-                Design = table.Design
-            };
+            return new Table(Document, newlyInserted) { Design = table.Design };
         }
 
+        /// <summary>
+        /// Set the container owner for this element.
+        /// </summary>
+        internal Container Container
+        {
+            get => owner;
+            set
+            {
+                if (owner == value)
+                    return;
+                
+                if (owner != null)
+                    OnRemovedFromContainer(owner);
+                    
+                owner = value;
+                PackagePart = owner?.PackagePart;
+                Document = owner?.Document;
+
+                if (owner != null)
+                    OnAddedToContainer(owner);
+            }
+        }
+
+        /// <summary>
+        /// Invoked when this element is added to a container.
+        /// </summary>
+        /// <param name="container">Current Container owner</param>
+        protected virtual void OnAddedToContainer(Container container)
+        {
+        }
+
+        /// <summary>
+        /// Invoked when this element is removed from a container.
+        /// </summary>
+        /// <param name="container">Current Container owner</param>
+        protected virtual void OnRemovedFromContainer(Container container)
+        {
+        }
+
+        /// <summary>
+        /// Page break element
+        /// </summary>
         private static XElement PageBreak => new XElement(Name.Paragraph,
             new XElement(Name.Run,
                 new XElement(Namespace.Main + "br",

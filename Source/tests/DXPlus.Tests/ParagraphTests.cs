@@ -2,6 +2,8 @@ using System;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http.Headers;
+using System.Xml.Linq;
 using System.Xml.XPath;
 using Xunit;
 
@@ -61,11 +63,11 @@ namespace DXPlus.Tests
             var p = doc.AddParagraph();
             props.ToList().ForEach(prop => p.AddDocumentProperty(prop));
 
-            Assert.Equal(props.Length, p.DocumentProperties.Count);
-            for (var index = 0; index < p.DocumentProperties.Count; index++)
+            Assert.Equal(props.Length, p.DocumentProperties.Count());
+            int index = 0;
+            foreach(var prop in p.DocumentProperties)
             {
-                var prop = p.DocumentProperties[index];
-                Assert.Equal(props[index].Name, prop.Name);
+                Assert.Equal(props[index++].Name, prop.Name);
             }
         }
 
@@ -100,13 +102,13 @@ namespace DXPlus.Tests
 
             Assert.NotNull(doc.Headers);
             Assert.False(doc.Headers.Even.Exists);
-            Assert.False(doc.Headers.Odd.Exists);
+            Assert.False(doc.Headers.Default.Exists);
             Assert.False(doc.Headers.First.Exists);
             Assert.False(doc.DifferentFirstPage);
 
             doc.Headers.First.Add().SetText("Page Header 1");
             Assert.False(doc.Headers.Even.Exists);
-            Assert.False(doc.Headers.Odd.Exists);
+            Assert.False(doc.Headers.Default.Exists);
             Assert.True(doc.Headers.First.Exists);
             Assert.True(doc.DifferentFirstPage);
 
@@ -123,13 +125,13 @@ namespace DXPlus.Tests
 
             doc.Headers.First.Add().SetText("Page Header 1");
             Assert.False(doc.Headers.Even.Exists);
-            Assert.False(doc.Headers.Odd.Exists);
+            Assert.False(doc.Headers.Default.Exists);
             Assert.True(doc.Headers.First.Exists);
             Assert.True(doc.DifferentFirstPage);
 
             doc.Headers.First.Remove();
             Assert.False(doc.Headers.Even.Exists);
-            Assert.False(doc.Headers.Odd.Exists);
+            Assert.False(doc.Headers.Default.Exists);
             Assert.False(doc.Headers.First.Exists);
             Assert.False(doc.DifferentFirstPage);
 
@@ -144,7 +146,7 @@ namespace DXPlus.Tests
 
             Assert.NotNull(doc.Headers);
             Assert.False(doc.Headers.Even.Exists);
-            Assert.False(doc.Headers.Odd.Exists);
+            Assert.False(doc.Headers.Default.Exists);
             Assert.False(doc.Headers.First.Exists);
 
             doc.Headers.First.Add();
@@ -153,7 +155,7 @@ namespace DXPlus.Tests
             Assert.Equal("/word/header2.xml", doc.Headers.Even.Uri.OriginalString);
 
             Assert.True(doc.Headers.Even.Exists);
-            Assert.False(doc.Headers.Odd.Exists);
+            Assert.False(doc.Headers.Default.Exists);
             Assert.True(doc.Headers.First.Exists);
 
             Assert.Equal(2, doc.Xml.RemoveNamespaces().XPathSelectElements("//sectPr/headerReference").Count());
@@ -412,7 +414,7 @@ namespace DXPlus.Tests
             Assert.Null(p.ExpansionScale);
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/w"));
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => p.ExpansionScale = 0);
+            Assert.Throws<ArgumentOutOfRangeException>(() => p.ExpansionScale = -1);
         }
 
         [Fact]
@@ -430,12 +432,6 @@ namespace DXPlus.Tests
             p.Position = null;
             Assert.Null(p.Position);
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/position"));
-
-            p.Position = 1800;
-            Assert.Equal(1585, p.Position);
-
-            p.Position = -1800;
-            Assert.Equal(-1585, p.Position);
         }
 
         [Fact]
@@ -642,5 +638,144 @@ namespace DXPlus.Tests
             Assert.Equal("of the emergency broadcast system.", p.Text);
             Assert.Equal("of the emergency broadcast system.", p.Xml.RemoveNamespaces().Value);
         }
+
+        [Fact]
+        public void CheckPackagePartAssignmentForParagraphs()
+        {
+            using DocX doc = (DocX) Document.Create();
+            Assert.NotNull(doc.PackagePart);
+
+            Paragraph p = new Paragraph();
+            p.SetText("Test");
+            p.Bold = true;
+
+            Assert.Null(p.PackagePart);
+
+            var p2 = doc.AddParagraph(p);
+            Assert.NotNull(p2.PackagePart);
+            Assert.Equal(doc.PackagePart, p2.PackagePart);
+
+            Assert.Null(p.PackagePart);
+            var p3 = doc.InsertParagraph(0, p);
+            Assert.NotNull(p3.PackagePart);
+            Assert.Equal(doc.PackagePart, p3.PackagePart);
+        }
+
+
+        [Fact]
+        public void InsertParagraphAtZeroAddsToBeginning()
+        {
+            using var doc = Document.Create(Filename);
+            var firstParagraph = doc.AddParagraph("First paragraph");
+            Assert.Single(doc.Paragraphs);
+            Assert.Equal("First paragraph", firstParagraph.Text);
+
+            var secondParagraph = doc.AddParagraph("Another paragraph");
+            Assert.Equal(2, doc.Paragraphs.Count);
+            Assert.Equal("Another paragraph", secondParagraph.Text);
+
+            var p = doc.InsertParagraph(0, " Inserted Text ");
+            Assert.Equal(3, doc.Paragraphs.Count);
+
+            Assert.Equal(" Inserted Text ", doc.Paragraphs[0].Text);
+        }
+
+        [Fact] 
+        public void InsertParagraphInMiddleSplitsParagraph()
+        {
+            using var doc = Document.Create(Filename);
+            var firstParagraph = doc.AddParagraph("First paragraph");
+            Assert.Single(doc.Paragraphs);
+            Assert.Equal("First paragraph", firstParagraph.Text);
+
+            var p = doc.InsertParagraph(5, " Inserted Text ");
+            Assert.Equal(3, doc.Paragraphs.Count);
+
+            Assert.Equal("First", doc.Paragraphs[0].Text);
+            Assert.Equal(" Inserted Text ", doc.Paragraphs[1].Text);
+            Assert.Equal(" paragraph", doc.Paragraphs[2].Text);
+        }
+
+        [Fact]
+        public void RemoveTextEditsParagraph()
+        {
+            string text = "This is a paragraph in a document where we are looking to remove some text.";
+            using var doc = Document.Create(Filename);
+            var p = doc.AddParagraph(text);
+            Assert.Single(doc.Paragraphs);
+            Assert.Equal(text, p.Text);
+
+            p.RemoveText(10, 10);
+            Assert.Equal("This is a in a document where we are looking to remove some text.", p.Text);
+        }
+
+        [Fact]
+        public void RemoveTextRemovesEmptyParagraph()
+        {
+            string text = "Test";
+            using var doc = Document.Create(Filename);
+            var p = doc.AddParagraph(text);
+            Assert.Single(doc.Paragraphs);
+            Assert.Equal(text, p.Text);
+
+            p.RemoveText(0);
+            Assert.Empty(doc.Paragraphs);
+        }
+
+        [Fact]
+        public void RemoveTextWithMultipleRunsSpansRun()
+        {
+            using var doc = Document.Create(Filename);
+            var p = doc.AddParagraph("This")
+                .Append(" is ").Bold()
+                .Append("a ").Italic()
+                .Append("test.");
+
+            Assert.Equal("This is a test.", p.Text);
+
+            p.RemoveText(5, 3);
+            Assert.Equal("This a test.", p.Text);
+        }
+
+        [Fact]
+        public void RemoveTextWithInsertRemovesText()
+        {
+            var e = new XElement(Name.Paragraph,
+                new XElement(Name.Run,
+                    new XElement(Name.Text, "Some ")),
+                new XElement(Namespace.Main + "ins",
+                    new XElement(Name.Run,
+                        new XElement(Name.Text, "text goes "))),
+                new XElement(Name.Run,
+                    new XElement(Name.Text, "here.")));
+
+            var p = new Paragraph(null, e, 0);
+            Assert.Equal("Some text goes here.", p.Text);
+            Assert.Equal(0, p.StartIndex);
+
+            p.RemoveText(5, 5);
+            Assert.Equal("Some goes here.", p.Text);
+        }
+
+        [Fact]
+        public void RemoveTextWithInsertRemovesPartialText()
+        {
+            var e = new XElement(Name.Paragraph,
+                new XElement(Name.Run,
+                    new XElement(Name.Text, "Some ")),
+                new XElement(Namespace.Main + "ins",
+                    new XElement(Name.Run,
+                        new XElement(Name.Text, "text goes "))),
+                new XElement(Name.Run,
+                    new XElement(Name.Text, "here.")));
+
+            var p = new Paragraph(null, e, 0);
+            Assert.Equal("Some text goes here.", p.Text);
+            Assert.Equal(0, p.StartIndex);
+
+            p.RemoveText(4, 6);
+            Assert.Equal("Somegoes here.", p.Text);
+        }
+
     }
 }

@@ -1,4 +1,6 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
+using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
 using DXPlus.Helpers;
@@ -11,6 +13,15 @@ namespace DXPlus
     public class Cell : Container
     {
         /// <summary>
+        /// PackagePart (file) this element is stored in.
+        /// </summary>
+        internal override PackagePart PackagePart
+        {
+            get => Row.PackagePart;
+            set => throw new InvalidOperationException("Cannot set packagePart for Cell.");
+        }
+
+        /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="row">Owner Row</param>
@@ -19,7 +30,6 @@ namespace DXPlus
             : base(row.Document, xml)
         {
             Row = row;
-            PackagePart = row.PackagePart;
         }
 
         /// <summary>
@@ -275,9 +285,9 @@ namespace DXPlus
         /// Get a table cell border
         /// </summary>
         /// <param name="borderType">The table cell border to get</param>
-        public Border GetBorder(TableCellBorderType borderType)
+        public TableBorder GetBorder(TableCellBorderType borderType)
         {
-            var border = new Border();
+            var border = new TableBorder();
             var tcBorder = Xml.Element(Namespace.Main + "tcPr")?
                 .Element(Namespace.Main + "tcBorders")?
                 .Element(Namespace.Main + borderType.GetEnumName());
@@ -290,8 +300,8 @@ namespace DXPlus
         /// Set the table cell border
         /// </summary>
         /// <param name="borderType">Table Cell border to set</param>
-        /// <param name="border">Border object to set the table cell border</param>
-        public void SetBorder(TableCellBorderType borderType, Border border)
+        /// <param name="tableBorder">Border object to set the table cell border</param>
+        public void SetBorder(TableCellBorderType borderType, TableBorder tableBorder)
         {
             var tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
             var tcBorders = tcPr.GetOrCreateElement(Namespace.Main + "tcBorders");
@@ -299,9 +309,9 @@ namespace DXPlus
                 tcBorders.GetOrCreateElement(Namespace.Main.NamespaceName + borderType.GetEnumName());
 
             // The val attribute is used for the style
-            tcBorderType.SetAttributeValue(Name.MainVal, border.Style.GetEnumName());
+            tcBorderType.SetAttributeValue(Name.MainVal, tableBorder.Style.GetEnumName());
 
-            var size = border.Size switch
+            var size = tableBorder.Size switch
             {
                 BorderSize.One => 2,
                 BorderSize.Two => 4,
@@ -319,20 +329,10 @@ namespace DXPlus
             tcBorderType.SetAttributeValue(Name.Size, size);
 
             // The space attribute is used for the cell spacing (probably '0')
-            tcBorderType.SetAttributeValue(Namespace.Main + "space", border.SpacingOffset);
+            tcBorderType.SetAttributeValue(Namespace.Main + "space", tableBorder.SpacingOffset);
 
             // The color attribute is used for the border color
-            tcBorderType.SetAttributeValue(Name.Color, border.Color.ToHex());
+            tcBorderType.SetAttributeValue(Name.Color, tableBorder.Color.ToHex());
         }
-
-        /// <summary>
-        /// Called when the document owner is changed.
-        /// </summary>
-        protected override void OnDocumentOwnerChanged(IDocument previousValue, IDocument newValue)
-        {
-            base.OnDocumentOwnerChanged(previousValue, newValue);
-            PackagePart = Row?.PackagePart;
-        }
-
     }
 }

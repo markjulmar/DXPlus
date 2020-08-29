@@ -45,8 +45,6 @@ namespace DXPlus
         /// <param name="xml">XML fragment representing the table</param>
         internal Table(IDocument document, XElement xml) : base(document, xml)
         {
-            PackagePart = Document?.PackagePart;
-
             var style = TblPr?.Element(Namespace.Main + "tblStyle");
             if (style == null)
                 tableDesign = TableDesign.None;
@@ -239,14 +237,10 @@ namespace DXPlus
         {
             base.OnDocumentOwnerChanged(previousValue, newValue);
 
-            if (newValue is DocX doc)
+            if (newValue is DocX doc && Xml != null)
             {
-                PackagePart = doc.PackagePart;
-                if (Xml != null)
-                {
-                    ApplyTableStyleToDocumentOwner();
-                    Rows.ForEach(r => r.Document = doc);
-                }
+                ApplyTableStyleToDocumentOwner();
+                Rows.ForEach(r => r.Document = doc);
             }
         }
 
@@ -326,9 +320,9 @@ namespace DXPlus
         /// Get a border edge value for this table
         /// </summary>
         /// <param name="borderType">The table border to get</param>
-        public Border GetBorder(TableBorderType borderType)
+        public TableBorder GetBorder(TableBorderType borderType)
         {
-            var border = new Border();
+            var border = new TableBorder();
             border.GetDetails(TblPr.Element(Namespace.Main + "tblBorders")?
                                    .Element(Namespace.Main + borderType.GetEnumName()));
             return border;
@@ -514,18 +508,18 @@ namespace DXPlus
         /// Set a table border
         /// </summary>
         /// <param name="borderType">The table border to set</param>
-        /// <param name="border">Border object to set the table border</param>
-        public void SetBorder(TableBorderType borderType, Border border)
+        /// <param name="tableBorder">Border object to set the table border</param>
+        public void SetBorder(TableBorderType borderType, TableBorder tableBorder)
         {
             // Set the border style
             var tblBorders = TblPr.GetOrCreateElement(Namespace.Main + "tblBorders");
             var tblBorderType = tblBorders.GetOrCreateElement(Namespace.Main + borderType.GetEnumName());
-            tblBorderType.SetAttributeValue(Name.MainVal, border.Style.GetEnumName());
+            tblBorderType.SetAttributeValue(Name.MainVal, tableBorder.Style.GetEnumName());
 
             // .. and the style
-            if (border.Style != BorderStyle.Empty)
+            if (tableBorder.Style != TableBorderStyle.Empty)
             {
-                int size = border.Size switch
+                int size = tableBorder.Size switch
                 {
                     BorderSize.One => 2,
                     BorderSize.Two => 4,
@@ -543,10 +537,10 @@ namespace DXPlus
                 tblBorderType.SetAttributeValue(Name.Size, size);
 
                 // The space attribute is used for the cell 
-                tblBorderType.SetAttributeValue(Namespace.Main + "space", border.SpacingOffset);
+                tblBorderType.SetAttributeValue(Namespace.Main + "space", tableBorder.SpacingOffset);
 
                 // The color attribute is used for the border color
-                tblBorderType.SetAttributeValue(Name.Color, border.Color.ToHex());
+                tblBorderType.SetAttributeValue(Name.Color, tableBorder.Color.ToHex());
             }
         }
 

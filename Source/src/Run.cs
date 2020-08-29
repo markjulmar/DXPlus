@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Xml.Linq;
 using DXPlus.Helpers;
@@ -8,8 +9,14 @@ namespace DXPlus
     /// <summary>
     /// Represents a single run of text in a paragraph
     /// </summary>
-    public class Run : DocXBase
+    [DebuggerDisplay("{Text}")]
+    internal class Run
     {
+        /// <summary>
+        /// XML backing storage
+        /// </summary>
+        public XElement Xml { get; }
+
         /// <summary>
         /// Gets the start index of this Text (text length before this text)
         /// </summary>
@@ -21,63 +28,51 @@ namespace DXPlus
         public int EndIndex { get; }
 
         /// <summary>
-        /// The text value of this text element
+        /// The raw text value of this text element
         /// </summary>
-        internal string Value { set; get; }
+        public string Text { get; }
+
+        /// <summary>
+        /// The run properties for this text run
+        /// </summary>
+        public Formatting Formatting => new Formatting(Xml.Element(Name.RunProperties));
 
         /// <summary>
         /// Constructor for a run of text
         /// </summary>
-        /// <param name="document"></param>
         /// <param name="xml"></param>
         /// <param name="startIndex"></param>
-        internal Run(IDocument document, XElement xml, int startIndex)
-            : base(document, xml)
+        internal Run(XElement xml, int startIndex)
         {
+            Xml = xml ?? throw new ArgumentNullException(nameof(xml));
             StartIndex = startIndex;
             int currentPos = startIndex;
 
-            // Loop through each text in this run
+            // Determine the end and get the raw text from the run.
             foreach (var te in xml.Descendants())
             {
-                switch (te.Name.LocalName)
+                var text = HelperFunctions.ToText(te);
+                if (!string.IsNullOrEmpty(text))
                 {
-                    case "tab":
-                        Value += "\t";
-                        currentPos++;
-                        break;
-
-                    case "br":
-                        Value += "\n";
-                        currentPos++;
-                        break;
-
-                    case "t":
-                    case "delText":
-                        if (te.Value.Length > 0)
-                        {
-                            Value += te.Value;
-                            currentPos += te.Value.Length;
-                        }
-                        break;
+                    Text += text;
+                    currentPos += text.Length;
                 }
             }
-
             EndIndex = currentPos;
         }
 
-        internal static XElement[] SplitRun(Run run, int index, EditType editType = EditType.Ins)
+        internal XElement[] SplitRun(int index, EditType editType = EditType.Insert)
         {
-            index -= run.StartIndex;
+            index -= StartIndex;
 
-            TextBlock text = run.GetFirstTextEffectedByEdit(index, editType);
+            TextBlock text = GetFirstTextAffectedByEdit(index, editType);
             
-            var splitText = TextBlock.SplitText(text, index);
+            var splitText = text.Split(index);
 
-            var splitLeft = new XElement(run.Xml.Name,
-                                        run.Xml.Attributes(),
-                                        run.Xml.GetRunProps(false),
-                                        text.Xml.ElementsBeforeSelf().Where(n => n.Name.LocalName != "rPr"),
+            var splitLeft = new XElement(Xml.Name,
+                                        Xml.Attributes(),
+                                        Xml.Element(Name.RunProperties),
+                                        text.Xml.ElementsBeforeSelf().Where(n => n.Name != Name.RunProperties),
                                         splitText[0]);
 
             if (Paragraph.GetElementTextLength(splitLeft) == 0)
@@ -85,11 +80,11 @@ namespace DXPlus
                 splitLeft = null;
             }
 
-            var splitRight = new XElement(run.Xml.Name,
-                                        run.Xml.Attributes(),
-                                        run.Xml.GetRunProps(false),
+            var splitRight = new XElement(Xml.Name,
+                                        Xml.Attributes(),
+                                        Xml.Element(Name.RunProperties),
                                         splitText[1],
-                                        text.Xml.ElementsAfterSelf().Where(n => n.Name.LocalName != "rPr"));
+                                        text.Xml.ElementsAfterSelf().Where(n => n.Name != Name.RunProperties));
 
             if (Paragraph.GetElementTextLength(splitRight) == 0)
             {
@@ -99,7 +94,7 @@ namespace DXPlus
             return new[] { splitLeft, splitRight };
         }
 
-        internal TextBlock GetFirstTextEffectedByEdit(int index, EditType type = EditType.Ins)
+        internal TextBlock GetFirstTextAffectedByEdit(int index, EditType type = EditType.Insert)
         {
             // Make sure we are looking within an acceptable index range.
             if (index < 0 || index > HelperFunctions.GetText(Xml).Length)
@@ -114,12 +109,12 @@ namespace DXPlus
             return theOne;
         }
 
-        internal void GetFirstTextEffectedByEditRecursive(XElement element, int index, ref int count, ref TextBlock theOne, EditType type = EditType.Ins)
+        internal void GetFirstTextEffectedByEditRecursive(XElement element, int index, ref int count, ref TextBlock theOne, EditType type = EditType.Insert)
         {
             count += HelperFunctions.GetSize(element);
-            if (count > 0 && ((type == EditType.Del && count > index) || type == EditType.Ins && count >= index))
+            if (count > 0 && ((type == EditType.Delete && count > index) || (type == EditType.Insert && count >= index)))
             {
-                theOne = new TextBlock(Document, element, count - HelperFunctions.GetSize(element));
+                theOne = new TextBlock(element, count - HelperFunctions.GetSize(element));
                 return;
             }
 

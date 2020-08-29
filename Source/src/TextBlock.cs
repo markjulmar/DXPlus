@@ -4,58 +4,74 @@ using DXPlus.Helpers;
 
 namespace DXPlus
 {
-    internal class TextBlock : DocXBase
+    /// <summary>
+    /// This represents a piece of text (typically a 'w:t') in a Run (w:r).
+    /// </summary>
+    internal class TextBlock
     {
-        internal TextBlock(IDocument document, XElement xml, int startIndex) : base(document, xml)
-        {
-            StartIndex = startIndex;
-
-            switch (Xml.Name.LocalName)
-            {
-                case "t":
-                case "delText":
-                    EndIndex = startIndex + xml.Value.Length;
-                    Value = xml.Value;
-                    break;
-
-                case "br":
-                    Value = "\n";
-                    EndIndex = startIndex + 1;
-                    break;
-
-                case "tab":
-                    Value = "\t";
-                    EndIndex = startIndex + 1;
-                    break;
-            }
-        }
-
         /// <summary>
-        /// Gets the start index of this Text (text length before this text)
+        /// XML fragment in parent Run
         /// </summary>
-        public int StartIndex { get; }
-
-        /// <summary>
-        /// Gets the end index of this Text (text length before this text + this texts length)
-        /// </summary>
-        public int EndIndex { get; }
+        public XElement Xml { get; }
 
         /// <summary>
         /// The text value of this text element
         /// </summary>
         public string Value { get; }
 
-        internal static XElement[] SplitText(TextBlock t, int index)
+        public int StartIndex { get; }
+        public int EndIndex { get; }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="xml">XML fragment with a single element from parent run</param>
+        /// <param name="startIndex">Starting index in parent run</param>
+        internal TextBlock(XElement xml, int startIndex)
         {
-            if (index < t.StartIndex || index > t.EndIndex)
+            StartIndex = startIndex;
+            Xml = xml ?? throw new ArgumentNullException(nameof(xml));
+
+            switch (Xml.Name.LocalName)
+            {
+                case "t":
+                case "delText":
+                    Value = xml.Value;
+                    break;
+
+                case "cr":
+                case "br":
+                    Value = "\n";
+                    break;
+
+                case "tab":
+                    Value = "\t";
+                    break;
+
+                default:
+                    Value = string.Empty;
+                    break;
+            }
+
+            EndIndex = startIndex + Value.Length;
+        }
+
+        /// <summary>
+        /// Split the text block at the given index
+        /// </summary>
+        /// <param name="index">Index to split at in parent Run values</param>
+        /// <returns>Array with left/right XElement values</returns>
+        internal XElement[] Split(int index)
+        {
+            if (index < StartIndex || index > EndIndex)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
             XElement splitLeft = null, splitRight = null;
 
-            if (t.Xml.Name.LocalName == "t" || t.Xml.Name.LocalName == "delText")
+            if (Xml.Name.LocalName == "t" || Xml.Name.LocalName == "delText")
             {
                 // The original text element, now containing only the text before the index point.
-                splitLeft = new XElement(t.Xml.Name, t.Xml.Attributes(), t.Xml.Value.Substring(0, index - t.StartIndex));
+                splitLeft = new XElement(Xml.Name, Xml.Attributes(), Xml.Value.Substring(0, index - StartIndex));
                 if (splitLeft.Value.Length == 0)
                 {
                     splitLeft = null;
@@ -66,7 +82,7 @@ namespace DXPlus
                 }
 
                 // The original text element, now containing only the text after the index point.
-                splitRight = new XElement(t.Xml.Name, t.Xml.Attributes(), t.Xml.Value.Substring(index - t.StartIndex, t.Xml.Value.Length - (index - t.StartIndex)));
+                splitRight = new XElement(Xml.Name, Xml.Attributes(), Xml.Value.Substring(index - StartIndex, Xml.Value.Length - (index-StartIndex)));
                 if (splitRight.Value.Length == 0)
                 {
                     splitRight = null;
@@ -78,13 +94,13 @@ namespace DXPlus
             }
             else
             {
-                if (index == t.EndIndex)
+                if (index == EndIndex)
                 {
-                    splitLeft = t.Xml;
+                    splitLeft = Xml;
                 }
                 else
                 {
-                    splitRight = t.Xml;
+                    splitRight = Xml;
                 }
             }
 

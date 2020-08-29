@@ -12,6 +12,43 @@ namespace DXPlus.Helpers
     internal static class HelperFunctions
     {
         /// <summary>
+        /// This creates a Word docx in a memory stream.
+        /// </summary>
+        /// <param name="documentType">Type (doc or template)</param>
+        /// <returns>Memory stream with loaded doc</returns>
+        internal static Stream CreateDocumentType(DocumentTypes documentType)
+        {
+            // Create the docx package
+            var ms = new MemoryStream();
+            using var package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
+
+            // Create the main document part for this package
+            var mainDocumentPart = package.CreatePart(new Uri("/word/document.xml", UriKind.Relative),
+                documentType == DocumentTypes.Document ? DocxContentType.Document : DocxContentType.Template,
+                CompressionOption.Normal);
+            package.CreateRelationship(mainDocumentPart.Uri, TargetMode.Internal, $"{Namespace.RelatedDoc.NamespaceName}/officeDocument");
+
+            // Generate an id for this editing session.
+            var startingRevisionId = GenerateRevisionStamp(null, out _);
+
+            // Load the document part into a XDocument object
+            var mainDoc = Resources.BodyDocument(startingRevisionId);
+
+            // Add the settings.xml + relationship
+            AddDefaultSettingsPart(package, startingRevisionId);
+
+            // Add the default styles + relationship
+            AddDefaultStylesXml(package, out var stylesPart, out var stylesDoc);
+
+            // Save the main new document back to the package.
+            mainDocumentPart.Save(mainDoc);
+            package.Close();
+
+            // Return the stream representing the created document.
+            return ms;
+        }
+
+        /// <summary>
         /// Method to persist XML back to a PackagePart
         /// </summary>
         /// <param name="packagePart"></param>
@@ -85,12 +122,13 @@ namespace DXPlus.Helpers
 
         internal static int GetSize(XElement xml)
         {
-            if (xml == null) 
+            if (xml == null)
                 throw new ArgumentNullException(nameof(xml));
 
             switch (xml.Name.LocalName)
             {
                 case "tab":
+                case "cr":
                 case "br":
                 case "tr":
                 case "tc":
@@ -107,27 +145,29 @@ namespace DXPlus.Helpers
 
         internal static string GetText(XElement e)
         {
-            return GetTextRecursive(e).ToString();
+            return GetTextRecursive(e)?.ToString() ?? string.Empty;
         }
 
         internal static StringBuilder GetTextRecursive(XElement xml, StringBuilder sb = null)
         {
             if (xml == null)
                 throw new ArgumentNullException(nameof(xml));
-            
-            (sb ??= new StringBuilder()).Append(ToText(xml));
+
+            string text = ToText(xml);
+            if (!string.IsNullOrEmpty(text))
+            {
+                (sb ??= new StringBuilder()).Append(text);
+            }
 
             if (xml.HasElements)
             {
-                foreach (var e in xml.Elements())
-                {
-                    GetTextRecursive(e, sb);
-                }
+                sb = xml.Elements().Aggregate(sb, (current, e) => GetTextRecursive(e, current));
             }
 
             return sb;
         }
 
+        /*
         internal static List<FormattedText> GetFormattedText(XElement xml)
         {
             var list = new List<FormattedText>();
@@ -197,6 +237,7 @@ namespace DXPlus.Helpers
                 Formatting = Formatting.Parse(xml.GetRunProps(false))
             };
         }
+        */
 
         /// <summary>
         /// Turn a Word (w:t) element into text.
@@ -210,22 +251,21 @@ namespace DXPlus.Helpers
                 case "tc":
                     return "\t";
 
+                case "cr":
                 case "tr":
                 case "br":
                     return "\n";
 
                 case "t":
                 case "delText":
+                    if (e.Parent?.Name == Name.Run)
                     {
-                        if (e.Parent?.Name.LocalName == "r")
-                        {
-                            var caps = e.Parent.FirstLocalNameDescendant("rPr")?
-                                               .FirstLocalNameDescendant("caps");
-                            if (caps != null)
-                                return e.Value.ToUpper();
-                        }
-                        return e.Value;
+                        // Get the caps setting.
+                        var props = new Formatting(e.Parent!.Element(Name.RunProperties));
+                        if (props.CapsStyle != CapsStyle.None)
+                            return e.Value.ToUpper();
                     }
+                    return e.Value;
                 default:
                     return string.Empty;
             }
@@ -278,25 +318,6 @@ namespace DXPlus.Helpers
             mainDocumentPart.CreateRelationship(Relations.Settings.Uri, TargetMode.Internal, Relations.Settings.RelType);
         }
 
-        internal static Uri EnsureRelsPathExists(DocXBase element)
-        {
-            // Convert the path of this mainPart to its equivalent rels file path.
-            string path = element.PackagePart.Uri.OriginalString.Replace("/word/", "");
-            Uri relationshipPath = new Uri($"/word/_rels/{path}.rels", UriKind.Relative);
-
-            // Check to see if the rels file exists and create it if not.
-            if (!element.Document.Package.PartExists(relationshipPath))
-            {
-                var pp = element.Document.Package.CreatePart(relationshipPath, DocxContentType.Relationships, CompressionOption.Maximum);
-                pp.Save(new XDocument(
-                    new XDeclaration("1.0", "UTF-8", "yes"),
-                    new XElement(Namespace.RelatedPackage + "Relationships")
-                ));
-            }
-
-            return relationshipPath;
-        }
-
         /// <summary>
         /// If this document does not contain a /word/styles.xml add the default one generated by Microsoft Word.
         /// </summary>
@@ -332,46 +353,20 @@ namespace DXPlus.Helpers
             return stylesDoc;
         }
 
-        /// <summary>
-        /// Creates an Edit either a ins or a del with the specified content and date
-        /// </summary>
-        /// <param name="editType">The type of this edit (ins or del)</param>
-        /// <param name="editTime">The time stamp to use for this edit</param>
-        /// <param name="content">The initial content of this edit</param>
-        internal static XElement CreateEdit(EditType editType, DateTime editTime, object content)
-        {
-            if (editType == EditType.Del && content is IEnumerable<XElement> iex)
-            {
-                foreach (var e in iex)
-                {
-                    var ts = e.DescendantsAndSelf(Name.Text).ToList();
-                    foreach (var text in ts)
-                    {
-                        text.ReplaceWith(new XElement(Namespace.Main + "delText", text.Attributes(), text.Value));
-                    }
-                }
-            }
-
-            return new XElement(Namespace.Main + editType.ToString(),
-                    new XAttribute(Name.Id, 0),
-                    new XAttribute(Namespace.Main + "author", Environment.UserName),
-                    new XAttribute(Namespace.Main + "date", editTime),
-                    content);
-        }
-
         internal static Paragraph GetFirstParagraphAffectedByInsert(DocX document, int index)
         {
             if (document == null)
                 throw new ArgumentNullException(nameof(document));
 
             // If the insertion position is first (0) and there are no paragraphs, then return null.
-            if (document.paragraphLookup.Keys.Count == 0 && index == 0)
+            var lookup = document.GetParagraphIndexes();
+            if (lookup.Keys.Count == 0 && index == 0)
                 return null;
 
             // Find the paragraph that contains the index
-            foreach (var paragraphEndIndex in document.paragraphLookup.Keys.Where(paragraphEndIndex => paragraphEndIndex >= index))
+            foreach (var paragraphEndIndex in lookup.Keys.Where(paragraphEndIndex => paragraphEndIndex >= index))
             {
-                return document.paragraphLookup[paragraphEndIndex];
+                return lookup[paragraphEndIndex];
             }
 
             throw new ArgumentOutOfRangeException(nameof(index));
@@ -434,24 +429,24 @@ namespace DXPlus.Helpers
             if (p == null)
                 throw new ArgumentNullException(nameof(p));
             
-            var r = p.GetFirstRunEffectedByEdit(index);
+            var r = p.GetFirstRunAffectedByEdit(index);
             XElement[] split;
             XElement before, after;
 
             switch (r.Xml.Parent?.Name.LocalName)
             {
                 case "ins":
-                    split = p.SplitEdit(r.Xml.Parent, index, EditType.Ins);
+                    split = p.SplitEdit(r.Xml.Parent, index, EditType.Insert);
                     before = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.Parent.ElementsBeforeSelf(), split[0]);
                     after = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.Parent.ElementsAfterSelf(), split[1]);
                     break;
                 case "del":
-                    split = p.SplitEdit(r.Xml.Parent, index, EditType.Del);
+                    split = p.SplitEdit(r.Xml.Parent, index, EditType.Delete);
                     before = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.Parent.ElementsBeforeSelf(), split[0]);
                     after = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.Parent.ElementsAfterSelf(), split[1]);
                     break;
                 default:
-                    split = Run.SplitRun(r, index);
+                    split = r.SplitRun(index);
                     before = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.ElementsBeforeSelf(), split[0]);
                     after = new XElement(p.Xml.Name, p.Xml.Attributes(), split[1], r.Xml.ElementsAfterSelf());
                     break;
