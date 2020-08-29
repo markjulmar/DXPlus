@@ -55,7 +55,6 @@ namespace DXPlus
         public static Relationship Endnotes = new Relationship($"{Namespace.RelatedDoc.NamespaceName}/endnotes", "/word/endnotes.xml", DocxContentType.Base + "endnotes+xml");
         public static Relationship Footnotes = new Relationship($"{Namespace.RelatedDoc.NamespaceName}/footnotes", "/word/footnotes.xml", DocxContentType.Base + "footnotes+xml");
         public static Relationship Styles = new Relationship($"{Namespace.RelatedDoc.NamespaceName}/styles", "/word/styles.xml", DocxContentType.Base + "styles+xml");
-        public static Relationship StylesWithEffects = new Relationship("http://schemas.microsoft.com/office/2007/relationships/stylesWithEffects", "/word/stylesWithEffects.xml", "application/vnd.ms-word.stylesWithEffects+xml");
         public static Relationship FontTable = new Relationship($"{Namespace.RelatedDoc.NamespaceName}/fontTable", "/word/fontTable.xml", DocxContentType.Base + "fontTable+xml");
         public static Relationship Numbering = new Relationship($"{Namespace.RelatedDoc.NamespaceName}/numbering", "/word/numbering.xml", DocxContentType.Base + "numbering+xml");
         public static Relationship Settings = new Relationship($"{Namespace.RelatedDoc.NamespaceName}/settings", "/word/settings.xml", DocxContentType.Base + "settings+xml");

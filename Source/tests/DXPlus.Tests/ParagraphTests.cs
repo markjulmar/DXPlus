@@ -97,7 +97,7 @@ namespace DXPlus.Tests
         [Fact]
         public void FirstHeaderAddsElements()
         {
-            using var doc = Document.Create(Filename);
+            using var doc = (DocX) Document.Create();
 
             Assert.NotNull(doc.Headers);
             Assert.False(doc.Headers.Even.Exists);
@@ -118,7 +118,7 @@ namespace DXPlus.Tests
         [Fact]
         public void FirstHeaderRemovesElements()
         {
-            using var doc = Document.Create(Filename);
+            using var doc = (DocX)Document.Create();
 
             Assert.NotNull(doc.Headers);
 
@@ -141,7 +141,7 @@ namespace DXPlus.Tests
         [Fact]
         public void SecondHeaderIncrementsCorrectly()
         {
-            using var doc = Document.Create(Filename);
+            using var doc = (DocX)Document.Create();
 
             Assert.NotNull(doc.Headers);
             Assert.False(doc.Headers.Even.Exists);

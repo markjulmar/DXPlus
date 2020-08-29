@@ -16,6 +16,16 @@ namespace DXPlus
         string RevisionId { get; }
 
         /// <summary>
+        /// Numbering styles in this document. Null if no lists are in use.
+        /// </summary>
+        NumberingStyleManager NumberingStyles { get; }
+
+        /// <summary>
+        /// The style manager for this document. Null if no styles are present.
+        /// </summary>
+        StyleManager Styles { get; }
+
+        /// <summary>
         /// Retrieve all bookmarks
         /// </summary>
         BookmarkCollection Bookmarks { get; }
@@ -105,14 +115,6 @@ namespace DXPlus
         /// Returns true if any editing restrictions are imposed on this document.
         /// </summary>
         bool IsProtected { get; }
-
-        /// <summary>
-        /// Returns whether the given style exists in the style catalog
-        /// </summary>
-        /// <param name="styleId"></param>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        bool HasStyle(string styleId, string type);
 
         /// <summary>
         /// Add a core property to this document. If a core property already exists with the same name it will be replaced. Core property names are case insensitive.

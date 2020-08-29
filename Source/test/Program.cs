@@ -143,7 +143,7 @@ namespace TestDXPlus
             document.AddParagraph("Numbered List")
                 .Heading(HeadingType.Heading1);
 
-            List numberedList = new List(ListItemType.Numbered)
+            List numberedList = new List(NumberingFormat.Numbered)
                                         .AddItem("First List Item.")
                                         .AddItem("First sub list item", level: 1)
                                         .AddItem("Second List Item.")
@@ -155,7 +155,7 @@ namespace TestDXPlus
             document.AddParagraph("Bullet List")
                     .Heading(HeadingType.Heading1);
 
-            List bulletedList = new List(ListItemType.Bulleted)
+            List bulletedList = new List(NumberingFormat.Bulleted)
                                         .AddItem("First Bulleted Item.")
                                         .AddItem("Second bullet item")
                                         .AddItem("Sub bullet item", level: 1)
@@ -362,7 +362,7 @@ namespace TestDXPlus
             document.MarginTop = topMargin;
             document.MarginBottom = bottomMargin;
 
-            var bulletedList = new List(ListItemType.Bulleted)
+            var bulletedList = new List(NumberingFormat.Bulleted)
                 .AddItem("First Bulleted Item.")
                 .AddItem("Second bullet item")
                 .AddItem("Sub bullet item", level: 1)
@@ -385,7 +385,7 @@ namespace TestDXPlus
                 FontFamily fontFamily = oneFontFamily;
                 const double fontSize = 15;
 
-                var numberedList = new List(ListItemType.Numbered)
+                var numberedList = new List(NumberingFormat.Numbered)
                     .AddItem("First List Item.")
                     .AddItem("First sub list item", level: 1)
                     .AddItem("Second List Item.")
@@ -394,7 +394,7 @@ namespace TestDXPlus
                     .AddItem("Second nested item.", level: 1);
                 document.AddList(numberedList, fontFamily, fontSize);
 
-                var bulletedList = new List(ListItemType.Bulleted)
+                var bulletedList = new List(NumberingFormat.Bulleted)
                     .AddItem("First Bulleted Item.")
                     .AddItem("Second bullet item")
                     .AddItem("Sub bullet item", level: 1)

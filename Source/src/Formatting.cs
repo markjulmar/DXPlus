@@ -13,7 +13,7 @@ namespace DXPlus
     /// </summary>
     public sealed class Formatting
     {
-        public XElement Xml { get; set; }
+        internal XElement Xml { get; set; }
 
         /// <summary>
         /// Returns whether this paragraph is marked as BOLD

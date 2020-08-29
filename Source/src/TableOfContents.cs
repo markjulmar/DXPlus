@@ -74,22 +74,25 @@ namespace DXPlus
         {
             headerStyle ??= HeaderStyle;
 
-            var availableStyles = new (string headerStyle, string applyTo, Func<string, string, XElement> template, string name)[]
+            var availableStyles = new (string headerStyle, StyleType applyTo, Func<string, string, XElement> template, string name)[]
             {
-                (headerStyle, "paragraph", Resources.TocHeadingStyleBase, headerStyle),
-                ("TOC1", "paragraph", Resources.TocElementStyleBase, "toc 1"),
-                ("TOC2", "paragraph", Resources.TocElementStyleBase, "toc 2"),
-                ("TOC3", "paragraph", Resources.TocElementStyleBase, "toc 3"),
-                ("TOC4", "paragraph", Resources.TocElementStyleBase, "toc 4"),
-                ("Hyperlink", "character", Resources.TocHyperLinkStyleBase, "")
+                (headerStyle, StyleType.Paragraph, Resources.TocHeadingStyleBase, headerStyle),
+                ("TOC1", StyleType.Paragraph, Resources.TocElementStyleBase, "toc 1"),
+                ("TOC2", StyleType.Paragraph, Resources.TocElementStyleBase, "toc 2"),
+                ("TOC3", StyleType.Paragraph, Resources.TocElementStyleBase, "toc 3"),
+                ("TOC4", StyleType.Paragraph, Resources.TocElementStyleBase, "toc 4"),
+                ("Hyperlink", StyleType.Character, Resources.TocHyperLinkStyleBase, "")
             };
+
+            document.AddDefaultStyles();
+            var mgr = document.Styles;
 
             foreach (var (style, applyTo, template, name) in availableStyles)
             {
-                if (!document.HasStyle(style, applyTo))
+                if (!mgr.HasStyle(style, applyTo))
                 {
                     var xml = template.Invoke(style, name);
-                    document.AddStyle(xml);
+                    mgr.Add(xml);
                 }
             }
         }

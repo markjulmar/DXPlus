@@ -12,7 +12,7 @@ namespace DXPlus
         /// <summary>
         /// XML fragment in parent Run
         /// </summary>
-        public XElement Xml { get; }
+        internal XElement Xml { get; }
 
         /// <summary>
         /// The text value of this text element

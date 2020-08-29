@@ -11,8 +11,10 @@ namespace DXPlus
     /// of a set of numbered paragraphs in a Word document. This is persisted as a w:abstractNum object
     /// in the /word/numbering.xml document.
     /// </summary>
-    public sealed class NumberingStyle : DocXBase
+    public sealed class NumberingStyle
     {
+        internal XElement Xml { get; }
+
         /// <summary>
         /// Specifies a unique number which will be used as the identifier for the numbering definition.
         /// The value is referenced by numbering instances (num) via the num's abstractNumId child element.
@@ -85,31 +87,23 @@ namespace DXPlus
             set => Xml.AddElementVal(Namespace.Main + "styleLink", string.IsNullOrWhiteSpace(value) ? null : value);
         }
 
-        private List<NumberingLevel> levelsCache;
-
         /// <summary>
         /// The levels
         /// </summary>
-        public IReadOnlyList<NumberingLevel> Levels
+        public IEnumerable<NumberingLevel> Levels
         {
-            get
-            {
-                levelsCache ??= Xml.Elements(Namespace.Main + "lvl")
-                    .Select(e => new NumberingLevel(e)).OrderBy(nl => nl.Level)
-                    .ToList();
-                return levelsCache.AsReadOnly();
-            }
+            get => Xml.Elements(Namespace.Main + "lvl")
+                    .Select(e => new NumberingLevel(e))
+                    .OrderBy(nl => nl.Level);
         }
 
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="document">Document owner</param>
         /// <param name="xml">XML definition (abstractNum)</param>
-        public NumberingStyle(IDocument document, XElement xml) : base(document, xml)
+        public NumberingStyle(XElement xml)
         {
-            if (xml == null)
-                throw new ArgumentNullException(nameof(xml));
+            Xml = xml ?? throw new ArgumentNullException(nameof(xml));
         }
     }
 }

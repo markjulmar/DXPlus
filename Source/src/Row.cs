@@ -19,15 +19,6 @@ namespace DXPlus
         public Table Table { get; }
 
         /// <summary>
-        /// PackagePart (file) this element is stored in.
-        /// </summary>
-        internal override PackagePart PackagePart
-        {
-            get => Table.PackagePart;
-            set => throw new InvalidOperationException("Cannot set packagePart for Row.");
-        }
-
-        /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="table"></param>
@@ -212,6 +203,16 @@ namespace DXPlus
             base.OnDocumentOwnerChanged(previousValue, newValue);
             foreach (var cell in Cells)
                 cell.Document = (DocX) newValue;
+        }
+
+        /// <summary>
+        /// Called when the package part is changed.
+        /// </summary>
+        protected override void OnPackagePartChanged(PackagePart previousValue, PackagePart newValue)
+        {
+            base.OnPackagePartChanged(previousValue, newValue);
+            foreach (var cell in Cells)
+                cell.PackagePart = newValue;
         }
     }
 }

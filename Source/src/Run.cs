@@ -15,7 +15,7 @@ namespace DXPlus
         /// <summary>
         /// XML backing storage
         /// </summary>
-        public XElement Xml { get; }
+        internal XElement Xml { get; }
 
         /// <summary>
         /// Gets the start index of this Text (text length before this text)

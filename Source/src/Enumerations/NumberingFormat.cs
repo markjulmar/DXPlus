@@ -7,7 +7,10 @@ namespace DXPlus
     /// </summary>
     public enum NumberingFormat
     {
-        Decimal,
+        [XmlAttribute("bullet")]
+        Bulleted,
+        [XmlAttribute("decimal")]
+        Numbered,
         UpperRoman,
         LowerRoman,
         UpperLetter,
@@ -30,7 +33,6 @@ namespace DXPlus
         AiueoFullWidth,
         IrohaFullWidth,
         DecimalZero,
-        Bullet,
         Ganada,
         Chosung,
         DecimalEnclosedFullstop,

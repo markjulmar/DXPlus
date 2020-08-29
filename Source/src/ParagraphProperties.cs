@@ -11,7 +11,7 @@ namespace DXPlus
     {
         private const string DefaultStyle = "Normal";
 
-        public XElement Xml { get; }
+        internal XElement Xml { get; }
 
         /// <summary>
         /// True to keep with the next element on the page.

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Packaging;
 using System.Linq;
@@ -33,25 +34,17 @@ namespace DXPlus
         /// XML documents representing loaded sections of the DOCX file.
         /// These have possible unsaved edits
         /// </summary>
-        private XDocument fontTableDoc;
         private XDocument footnotesDoc;
         private XDocument endnotesDoc;
-        private XDocument stylesWithEffectsDoc;
         private XDocument mainDoc;
         private XDocument settingsDoc;
-        private XDocument stylesDoc;
-        internal XDocument numberingDoc;
 
         /// <summary>
         /// Package sections in the above Package object. These are specific read/write points in the ZIP file
         /// </summary>
-        private PackagePart fontTablePart;
         private PackagePart footnotesPart;
-        private PackagePart numberingPart;
         private PackagePart endnotesPart;
         private PackagePart settingsPart;
-        private PackagePart stylesPart;
-        private PackagePart stylesWithEffectsPart;
 
         /// <summary>
         /// Document revision
@@ -110,43 +103,14 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Returns whether the given style exists in the style catalog
+        /// Numbering styles in this document.
         /// </summary>
-        /// <param name="styleId"></param>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        public bool HasStyle(string styleId, string type)
-        {
-            ThrowIfObjectDisposed();
-
-            return stylesDoc.Descendants(Namespace.Main + "style").Any(x =>
-                    x.AttributeValue(Namespace.Main + "type").Equals(type)
-                    && x.AttributeValue(Namespace.Main + "styleId").Equals(styleId));
-        }
+        public NumberingStyleManager NumberingStyles { get; private set; }
 
         /// <summary>
-        /// This method retrieves the XML block associated with a style.
+        /// The style manager for this document.
         /// </summary>
-        /// <param name="styleId"></param>
-        /// <returns></returns>
-        internal XElement GetStyle(string styleId) => Document.stylesDoc.Descendants().FindByAttrVal(Namespace.Main + "styleId", styleId);
-
-        /// <summary>
-        /// This method adds a new Style XML block to the /word/styles.xml document
-        /// </summary>
-        /// <param name="xml">XML to add</param>
-        internal void AddStyle(XElement xml)
-        {
-            ThrowIfObjectDisposed();
-
-            if (xml == null)
-                throw new ArgumentNullException(nameof(xml));
-
-            if (xml.Name.LocalName != "style")
-                throw new ArgumentException("Passed element is not a <style> object.", nameof(xml));
-
-            stylesDoc.Root!.Add(xml);
-        }
+        public StyleManager Styles { get; private set; }
 
         /// <summary>
         /// Should the Document use different Headers and Footers for odd and even pages?
@@ -1008,13 +972,12 @@ namespace DXPlus
             // Save all the sections
             Headers.Save();
             Footers.Save();
+            Styles?.Save();
+            NumberingStyles?.Save();
+
             settingsPart.Save(settingsDoc);
             endnotesPart?.Save(endnotesDoc);
             footnotesPart?.Save(footnotesDoc);
-            stylesPart?.Save(stylesDoc);
-            stylesWithEffectsPart?.Save(stylesWithEffectsDoc);
-            numberingPart?.Save(numberingDoc);
-            fontTablePart?.Save(fontTableDoc);
 
             // Close the package and commit changes to the memory stream.
             // Note that .NET core requires we close the package - not just flush it.
@@ -1078,28 +1041,28 @@ namespace DXPlus
             return document;
         }
 
-        internal void AddHyperlinkStyleIfNotPresent()
+        internal void AddDefaultStyles()
         {
-            ThrowIfObjectDisposed();
-
             // If the document contains no /word/styles.xml create one and associate it
             if (!Package.PartExists(Relations.Styles.Uri))
             {
-                HelperFunctions.AddDefaultStylesXml(Package, out stylesPart, out stylesDoc);
+                HelperFunctions.AddDefaultStylesXml(Package, out var stylesPart, out var stylesDoc);
+                if (stylesDoc.Element(Namespace.Main + "styles") == null)
+                    throw new Exception("Missing root styles collection.");
+
+                Styles = new StyleManager(this, stylesPart);
             }
 
-            var rootStyles = stylesDoc.Element(Namespace.Main + "styles");
-            if (rootStyles == null)
-                throw new Exception("Missing root styles collection.");
+            Debug.Assert(Styles != null);
+        }
 
-            // Check for the "hyperlinkStyle" and add it if it's missing.
-            bool hyperlinkStyleExists = rootStyles.Elements()
-                .Any(e => e.AttributeValue(Namespace.Main + "styleId") == "Hyperlink");
+        internal void AddHyperlinkStyleIfNotPresent()
+        {
+            ThrowIfObjectDisposed();
+            AddDefaultStyles();
 
-            if (!hyperlinkStyleExists)
-            {
-                rootStyles.Add(Resources.HyperlinkStyle(RevisionId));
-            }
+            if (!Styles.HasStyle("Hyperlink", StyleType.Character))
+                Styles.Add(Resources.HyperlinkStyle(RevisionId));
         }
 
         /// <summary>
@@ -1125,13 +1088,9 @@ namespace DXPlus
                 else if (rel.RelationshipType == Relations.Footnotes.RelType)
                     footnotesPart = Package.GetPart(Relations.Footnotes.Uri);
                 else if (rel.RelationshipType == Relations.Styles.RelType)
-                    stylesPart = Package.GetPart(Relations.Styles.Uri);
-                else if (rel.RelationshipType == Relations.StylesWithEffects.RelType)
-                    stylesWithEffectsPart = Package.GetPart(Relations.StylesWithEffects.Uri);
-                else if (rel.RelationshipType == Relations.FontTable.RelType)
-                    fontTablePart = Package.GetPart(Relations.FontTable.Uri);
+                    Styles = new StyleManager(this, Package.GetPart(Relations.Styles.Uri));
                 else if (rel.RelationshipType == Relations.Numbering.RelType)
-                    numberingPart = Package.GetPart(Relations.Numbering.Uri);
+                    NumberingStyles = new NumberingStyleManager(this, Package.GetPart(Relations.Numbering.Uri));
             }
         }
 
@@ -1167,39 +1126,28 @@ namespace DXPlus
             settingsDoc = settingsPart?.Load();
             endnotesDoc = endnotesPart?.Load();
             footnotesDoc = footnotesPart?.Load();
-            stylesDoc = stylesPart?.Load();
-            stylesWithEffectsDoc = stylesWithEffectsPart?.Load();
-            fontTableDoc = fontTablePart?.Load();
-            numberingDoc = numberingPart?.Load();
         }
 
+        /// <summary>
+        /// This adds the default numbering.xml to the document if it doesn't exist.
+        /// </summary>
         internal void AddDefaultNumberingPart()
         {
-            if (numberingPart == null)
+            // If we don't have any numbering styles in this document, add a default document.
+            if (NumberingStyles == null)
             {
-                numberingPart = Package.CreatePart(Relations.Numbering.Uri, Relations.Numbering.ContentType, CompressionOption.Maximum);
-                numberingDoc = Resources.NumberingXml();
-                numberingPart.Save(numberingDoc);
-                PackagePart.CreateRelationship(numberingPart.Uri, TargetMode.Internal, Relations.Numbering.RelType);
+                var packagePart = Package.CreatePart(Relations.Numbering.Uri, Relations.Numbering.ContentType, CompressionOption.Maximum);
+                var template = Resources.NumberingXml();
+                packagePart.Save(template);
+                PackagePart.CreateRelationship(packagePart.Uri, TargetMode.Internal, Relations.Numbering.RelType);
+                NumberingStyles = new NumberingStyleManager(this, packagePart);
             }
-
-            // If the document contains no /word/styles.xml create one and associate it
-            if (!Package.PartExists(Relations.Styles.Uri))
-            {
-                HelperFunctions.AddDefaultStylesXml(Package, out stylesPart, out stylesDoc);
-            }
-
-            var rootStyleNode = stylesDoc.Element(Namespace.Main + "styles");
-            if (rootStyleNode == null)
-                throw new InvalidOperationException("Missing root style node after creation.");
 
             // See if we have the list style
-            bool listStyleExists = rootStyleNode.Elements()
-                .Any(e => e.AttributeValue(Namespace.Main + "styleId") == "ListParagraph");
-
-            if (!listStyleExists)
+            AddDefaultStyles();
+            if (Styles.HasStyle("ListParagraph", StyleType.Paragraph))
             {
-                rootStyleNode.Add(Resources.ListParagraphStyle(RevisionId));
+                Styles.Add(Resources.ListParagraphStyle(RevisionId));
             }
         }
 

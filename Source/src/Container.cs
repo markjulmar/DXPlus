@@ -185,9 +185,9 @@ namespace DXPlus
                         {
                             if (list.Items.Count == 0)
                             {
-                                list.ListType = paragraph.GetListItemType();
-                                list.StartNumber = NumberingHelpers.GetStartingNumber(Document, paragraph.GetListNumId(), 
-                                    paragraph.GetListLevel());
+                                list.ListType = paragraph.GetNumberingFormat();
+                                list.StartNumber = Document.NumberingStyles.GetStartingNumber(
+                                    paragraph.GetListNumId(), paragraph.GetListLevel());
                             }
 
                             list.AddItem(paragraph);
@@ -199,8 +199,9 @@ namespace DXPlus
                             list.PackagePart = PackagePart;
                             yield return list;
 
-                            list = new List(paragraph.GetListItemType(),
-                                NumberingHelpers.GetStartingNumber(Document, paragraph.GetListNumId(), paragraph.GetListLevel()));
+                            list = new List(paragraph.GetNumberingFormat(),
+                                Document.NumberingStyles.GetStartingNumber(
+                                    paragraph.GetListNumId(), paragraph.GetListLevel()));
                             list.AddItem(paragraph);
                         }
                     }

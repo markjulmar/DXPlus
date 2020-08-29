@@ -91,13 +91,13 @@ namespace DXPlus
         /// Default bullet style for bulleted lists - added when a new bulleted list is used.
         /// </summary>
         /// <returns></returns>
-        public static XDocument DefaultBulletNumberingXml(string nsid) => GetDocument("DXPlus.Resources.numbering.bullets.xml", new { nsid });
+        public static XElement DefaultBulletNumberingXml(string nsid) => GetElement("DXPlus.Resources.numbering.bullets.xml", new { nsid });
 
         /// <summary>
         /// Default numbering style for numbered lists - added when a numbered list is used
         /// </summary>
         /// <returns></returns>
-        public static XDocument DefaultDecimalNumberingXml(string nsid) => GetDocument("DXPlus.Resources.numbering.decimal.xml", new { nsid });
+        public static XElement DefaultDecimalNumberingXml(string nsid) => GetElement("DXPlus.Resources.numbering.decimal.xml", new { nsid });
 
         /// <summary>
         /// Default styles used for tables - added when a table is used

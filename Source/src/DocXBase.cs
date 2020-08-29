@@ -11,6 +11,7 @@ namespace DXPlus
     {
         private XElement xml;
         private DocX document;
+        private PackagePart packagePart;
 
         /// <summary>
         /// The document owner
@@ -32,7 +33,19 @@ namespace DXPlus
         /// <summary>
         /// PackagePart (file) this element is stored in.
         /// </summary>
-        internal virtual PackagePart PackagePart { get; set; }
+        internal PackagePart PackagePart
+        {
+            get => packagePart;
+            set
+            {
+                if (packagePart != value)
+                {
+                    var previousValue = packagePart;
+                    packagePart = value;
+                    OnPackagePartChanged(previousValue, packagePart);
+                }
+            }
+        }
 
         /// <summary>
         /// Default constructor
@@ -55,7 +68,7 @@ namespace DXPlus
         /// <summary>
         /// This is the actual Xml that gives this element substance.
         /// </summary>
-        public XElement Xml
+        internal XElement Xml
         {
             get => xml;
             set
@@ -83,6 +96,13 @@ namespace DXPlus
         /// Called when the document owner is changed.
         /// </summary>
         protected virtual void OnDocumentOwnerChanged(IDocument previousValue, IDocument newValue)
+        {
+        }
+
+        /// <summary>
+        /// Called when the package part is changed.
+        /// </summary>
+        protected virtual void OnPackagePartChanged(PackagePart previousValue, PackagePart newValue)
         {
         }
     }

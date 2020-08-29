@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Linq;
 using Xunit;
 
 namespace DXPlus.Tests
@@ -13,7 +10,7 @@ namespace DXPlus.Tests
         [Fact]
         public void ListHasEnumerableItems()
         {
-            var list = new List(ListItemType.Bulleted);
+            var list = new List(NumberingFormat.Bulleted);
             list.AddItem("1")
                 .AddItem("2")
                 .AddItem("3");
@@ -25,7 +22,7 @@ namespace DXPlus.Tests
         [Fact]
         public void PackagePartSetWhenAddedToDoc()
         {
-            List list = new List(ListItemType.Bulleted);
+            List list = new List(NumberingFormat.Bulleted);
             Assert.Null(list.PackagePart);
 
             var doc = Document.Create();
@@ -40,7 +37,7 @@ namespace DXPlus.Tests
         [Fact]
         public void ListAddsElementsToDoc()
         {
-            List list = new List(ListItemType.Bulleted);
+            List list = new List(NumberingFormat.Bulleted);
             list.AddItem("Item 1");
 
             var doc = Document.Create();
@@ -54,7 +51,7 @@ namespace DXPlus.Tests
         [Fact]
         public void ListAddsElementsToDocAfterInsert()
         {
-            List list = new List(ListItemType.Bulleted);
+            List list = new List(NumberingFormat.Bulleted);
             var doc = Document.Create();
             var l2 = doc.AddList(list);
             Assert.Empty(doc.Lists);
@@ -66,7 +63,7 @@ namespace DXPlus.Tests
         [Fact]
         public void ListAddsToHeaderPart()
         {
-            List list = new List(ListItemType.Bulleted)
+            List list = new List(NumberingFormat.Bulleted)
                             .AddItem("Test");
             Assert.Null(list.PackagePart);
 

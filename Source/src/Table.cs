@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
 using DXPlus.Helpers;
@@ -245,6 +246,15 @@ namespace DXPlus
         }
 
         /// <summary>
+        /// Called when the package part is changed.
+        /// </summary>
+        protected override void OnPackagePartChanged(PackagePart previousValue, PackagePart newValue)
+        {
+            base.OnPackagePartChanged(previousValue, newValue);
+            Rows.ForEach(r => r.PackagePart = newValue);
+        }
+
+        /// <summary>
         /// This ensures the owning document has the table style applied.
         /// </summary>
         private void ApplyTableStyleToDocumentOwner()
@@ -256,12 +266,14 @@ namespace DXPlus
             if (string.IsNullOrWhiteSpace(designName))
                 return;
 
-            var tableStyle = Document.GetStyle(designName);
-            if (tableStyle == null)
+            bool hasStyle = Document.Styles?.HasStyle(designName, StyleType.Table) ?? false;
+            if (!hasStyle)
             {
                 var externalStyleDoc = Resources.DefaultTableStyles();
                 var styleElement = externalStyleDoc.Descendants().FindByAttrVal(Namespace.Main + "styleId", designName);
-                Document.AddStyle(styleElement);
+                
+                Document.AddDefaultStyles();
+                Document.Styles.Add(styleElement);
             }
         }
 

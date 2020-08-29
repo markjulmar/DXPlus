@@ -52,7 +52,7 @@ namespace DXPlus
         }
 
         public string Text => Paragraph.Text;
-        public XElement Xml => Paragraph.Xml;
+        internal XElement Xml => Paragraph.Xml;
         
     }
 
@@ -72,7 +72,7 @@ namespace DXPlus
         /// <summary>
         /// The ListItemType (bullet or numbered) of the list.
         /// </summary>
-        public ListItemType ListType { get; internal set; }
+        public NumberingFormat ListType { get; internal set; }
 
         /// <summary>
         /// Start number
@@ -94,9 +94,9 @@ namespace DXPlus
         /// <summary>
         /// Public constructor
         /// </summary>
-        public List(ListItemType listType, int startNumber = 1) : this()
+        public List(NumberingFormat listType, int startNumber = 1) : this()
         {
-            if (listType == ListItemType.None)
+            if (listType == NumberingFormat.None)
                 throw new ArgumentException("Cannot use None as the ListType.", nameof(listType));
 
             ListType = listType;
@@ -231,7 +231,7 @@ namespace DXPlus
 
                 // Create a numbering section if needed.
                 if (NumId == 0)
-                    NumId = NumberingHelpers.CreateNewNumberingSection(doc, ListType, StartNumber);
+                    NumId = doc.NumberingStyles.Create(ListType, StartNumber).Id;
 
                 // Wire up the paragraphs
                 foreach (var item in Items)
@@ -243,19 +243,13 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Get/Set the package owner -- pass it down to the child paragraphs
+        /// Called when the package part is changed.
         /// </summary>
-        internal override PackagePart PackagePart
+        protected override void OnPackagePartChanged(PackagePart previousValue, PackagePart newValue)
         {
-            get => base.PackagePart;
-            set
-            {
-                base.PackagePart = value;
-                foreach (var item in Items)
-                {
-                    item.Paragraph.PackagePart = value;
-                }
-            }
+            base.OnPackagePartChanged(previousValue, newValue);
+            foreach (var item in Items)
+                item.Paragraph.PackagePart = newValue;
         }
     }
 }

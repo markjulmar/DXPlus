@@ -13,15 +13,6 @@ namespace DXPlus
     public class Cell : Container
     {
         /// <summary>
-        /// PackagePart (file) this element is stored in.
-        /// </summary>
-        internal override PackagePart PackagePart
-        {
-            get => Row.PackagePart;
-            set => throw new InvalidOperationException("Cannot set packagePart for Cell.");
-        }
-
-        /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="row">Owner Row</param>

@@ -263,6 +263,16 @@ namespace DXPlus.Helpers
             return attr != null ? attr.Value : defaultValue;
         }
 
+        public static bool BoolAttributeValue(this XElement el, XName name, bool defaultValue = false)
+        {
+            var attr = el?.Attribute(name);
+            if (attr == null) 
+                return defaultValue;
+
+            string val = attr.Value.Trim();
+            return string.Equals(val, "true", StringComparison.OrdinalIgnoreCase) || val == "1";
+        }
+
         public static IEnumerable<XElement> LocalNameElements(this XContainer xml, string localName)
         {
             return xml.Elements().Where(e => e.Name.LocalName.Equals(localName));
