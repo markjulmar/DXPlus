@@ -236,8 +236,8 @@ namespace DXPlus
         /// </summary>
         public double IndentationLeft
         {
-            get => double.Parse(Xml.AttributeValue(Name.ParagraphProperties, Name.Indent, Name.Left) ?? "0") * 20.0;
-            set => Xml.SetAttributeValue(Name.ParagraphProperties, Name.Indent, Name.Left, value / 20.0);
+            get => GetDefaultFormatting().IndentationLeft;
+            set => GetDefaultFormatting(true).IndentationLeft = value;
         }
 
         /// <summary>
@@ -245,8 +245,8 @@ namespace DXPlus
         /// </summary>
         public double IndentationRight
         {
-            get => double.Parse(Xml.AttributeValue(Name.ParagraphProperties, Name.Indent, Name.Right) ?? "0") * 20.0;
-            set => Xml.SetAttributeValue(Name.ParagraphProperties, Name.Indent, Name.Right, value / 20.0);
+            get => GetDefaultFormatting().IndentationRight;
+            set => GetDefaultFormatting(true).IndentationRight = value;
         }
 
         /// <summary>
@@ -254,15 +254,8 @@ namespace DXPlus
         /// </summary>
         public double IndentationFirstLine
         {
-            get => double.Parse(Xml.AttributeValue(Name.ParagraphProperties, Name.Indent, Name.FirstLine) ?? "0") * 20.0;
-
-            set
-            {
-                // Remove any hanging indentation and set the firstLine indent.
-                var ind = Xml.GetOrCreateElement(Name.ParagraphProperties, Name.Indent);
-                ind.Attribute(Name.Hanging)?.Remove();
-                ind.SetAttributeValue(Name.FirstLine, value / 20.0);
-            }
+            get => GetDefaultFormatting().IndentationFirstLine;
+            set => GetDefaultFormatting(true).IndentationFirstLine = value;
         }
 
         /// <summary>
@@ -270,15 +263,8 @@ namespace DXPlus
         /// </summary>
         public double IndentationHanging
         {
-            get => double.Parse(Xml.AttributeValue(Name.ParagraphProperties, Name.Indent, Name.Hanging) ?? "0") * 20.0;
-
-            set
-            {
-                // Remove any firstLine indent and set hanging.
-                var ind = Xml.GetOrCreateElement(Name.ParagraphProperties, Name.Indent);
-                ind.Attribute(Name.FirstLine)?.Remove();
-                ind.SetAttributeValue(Name.Hanging, value / 20.0);
-            }
+            get => GetDefaultFormatting().IndentationHanging;
+            set => GetDefaultFormatting(true).IndentationHanging = value;
         }
 
         /// <summary>

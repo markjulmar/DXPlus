@@ -2,7 +2,6 @@ using System;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using Xunit;

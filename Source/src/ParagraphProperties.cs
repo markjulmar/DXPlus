@@ -4,6 +4,9 @@ using DXPlus.Helpers;
 
 namespace DXPlus
 {
+    /// <summary>
+    /// This manages the [pPr] element in a Word document structure which holds all paragraph-level properties.
+    /// </summary>
     public sealed class ParagraphProperties
     {
         private const string DefaultStyle = "Normal";
@@ -53,6 +56,7 @@ namespace DXPlus
             }
             set
             {
+                //TODO: should this be case-sensitive?
                 if (string.IsNullOrWhiteSpace(value))
                     value = DefaultStyle;
                 Xml.AddElementVal(Name.ParagraphStyle, value != DefaultStyle ? value : null);
@@ -94,7 +98,7 @@ namespace DXPlus
         private double? GetLineSpacing(string type)
         {
             var value = Xml.Element(Name.Spacing).AttributeValue(Namespace.Main + type, null);
-            return value != null ? (double?)Math.Round(double.Parse(value) / 20.0, 1) : null;
+            return value != null ? (double?)Math.Round(double.Parse(value) / 20.0, 2) : null;
         }
 
         /// <summary>
@@ -107,7 +111,7 @@ namespace DXPlus
             if (value != null)
             {
                 Xml.GetOrCreateElement(Name.Spacing)
-                   .SetAttributeValue(Namespace.Main + type, Math.Round(value.Value*20.0, 1));
+                   .SetAttributeValue(Namespace.Main + type, Math.Round(value.Value*20.0, 2));
             }
             else
             {
@@ -121,6 +125,96 @@ namespace DXPlus
             }
         }
 
+        /// <summary>
+        /// Set the left indentation in 1/20th pt for this Paragraph.
+        /// </summary>
+        public double IndentationLeft
+        {
+            get => Math.Round(double.Parse(Xml.AttributeValue(Name.Indent, Name.Left) ?? "0") / 20.0, 2);
+            set
+            {
+                if (value == 0)
+                {
+                    var e = Xml.Element(Name.Indent);
+                    e?.Attribute(Name.Left)?.Remove();
+                    if (e?.HasAttributes == false)
+                        e.Remove();
+                }
+                else
+                {
+                    Xml.SetAttributeValue(Name.Indent, Name.Left, Math.Round(value * 20.0, 2));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Set the right indentation in 1/20th pt for this Paragraph.
+        /// </summary>
+        public double IndentationRight
+        {
+            get => Math.Round(double.Parse(Xml.AttributeValue(Name.Indent, Name.Right) ?? "0") / 20.0, 2);
+            set
+            {
+                if (value == 0)
+                {
+                    var e = Xml.Element(Name.Indent);
+                    e?.Attribute(Name.Right)?.Remove();
+                    if (e?.HasAttributes == false)
+                        e.Remove();
+                }
+                else
+                {
+                    Xml.SetAttributeValue(Name.Indent, Name.Right, Math.Round(value * 20.0, 2));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get or set the indentation of the first line of this Paragraph.
+        /// </summary>
+        public double IndentationFirstLine
+        {
+            get => Math.Round(double.Parse(Xml.AttributeValue(Name.Indent, Name.FirstLine) ?? "0") / 20.0, 2);
+            set
+            {
+                var e = Xml.Element(Name.Indent);
+                if (value == 0)
+                {
+                    e?.Attribute(Name.FirstLine)?.Remove();
+                    if (e?.HasAttributes == false)
+                        e.Remove();
+                }
+                else
+                {
+                    e?.Attribute(Name.Hanging)?.Remove();
+                    Xml.SetAttributeValue(Name.Indent, Name.FirstLine, Math.Round(value * 20.0, 2));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get or set the indentation of all but the first line of this Paragraph.
+        /// </summary>
+        public double IndentationHanging
+        {
+            get => Math.Round(double.Parse(Xml.AttributeValue(Name.Indent, Name.Hanging) ?? "0") / 20.0, 2);
+
+            set
+            {
+                var e = Xml.Element(Name.Indent);
+                if (value == 0)
+                {
+                    e?.Attribute(Name.Hanging)?.Remove();
+                    if (e?.HasAttributes == false)
+                        e.Remove();
+                }
+                else
+                {
+                    e?.Attribute(Name.FirstLine)?.Remove();
+                    Xml.SetAttributeValue(Name.Indent, Name.Hanging, Math.Round(value * 20.0, 2));
+                }
+            }
+        }
 
         /// <summary>
         /// Formatting properties for the paragraph
