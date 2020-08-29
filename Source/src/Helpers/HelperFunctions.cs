@@ -529,5 +529,58 @@ namespace DXPlus.Helpers
             
             return val.ToString("X8");
         }
+
+        /// <summary>
+        /// Get the rPr element from a parent, or create it if it doesn't exist.
+        /// </summary>
+        /// <param name="owner"></param>
+        /// <param name="create">True to create it if it doesn't exist</param>
+        /// <returns></returns>
+        internal static XElement GetRunProps(this XElement owner, bool create = true)
+        {
+            var rPr = owner.Element(Name.RunProperties);
+            if (rPr == null && create)
+            {
+                rPr = new XElement(Name.RunProperties);
+                owner.AddFirst(rPr); // must always be first.
+            }
+            return rPr;
+        }
+
+        /// <summary>
+        /// If a text element or delText element, starts or ends with a space,
+        /// it must have the attribute space, otherwise it must not have it.
+        /// </summary>
+        /// <param name="e">The (t or delText) element check</param>
+        public static XElement PreserveSpace(this XElement e)
+        {
+            if (!e.Name.Equals(Name.Text)
+                && !e.Name.Equals(Namespace.Main + "delText"))
+            {
+                throw new ArgumentException($"{nameof(PreserveSpace)} can only work with elements of type 't' or 'delText'", nameof(e));
+            }
+
+            // Check if this w:t contains a space attribute
+            var space = e.Attributes().SingleOrDefault(a => a.Name.Equals(XNamespace.Xml + "space"));
+
+            // This w:t's text begins or ends with whitespace
+            if (e.Value.StartsWith(" ") || e.Value.EndsWith(" "))
+            {
+                // If this w:t contains no space attribute, add one.
+                if (space == null)
+                {
+                    e.Add(new XAttribute(XNamespace.Xml + "space", "preserve"));
+                }
+            }
+
+            // This w:t's text does not begin or end with a space
+            else
+            {
+                // If this w:r contains a space attribute, remove it.
+                space?.Remove();
+            }
+
+            return e;
+        }
     }
 }

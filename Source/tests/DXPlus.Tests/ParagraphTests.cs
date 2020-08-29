@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Xml.Linq;
 using System.Xml.XPath;
+using DXPlus.Helpers;
 using Xunit;
 
 namespace DXPlus.Tests
@@ -616,9 +617,9 @@ namespace DXPlus.Tests
         public void SetTextReplacesContents()
         {
             var p = new Paragraph();
-            p.InsertText("This is a test.");
+            p.InsertText("This is a test. ");
             p.AppendLine("Will it work?").Bold();
-            Assert.Equal("This is a test.\nWill it work?", p.Text);
+            Assert.Equal("This is a test. Will it work?\n", p.Text);
 
             p.SetText("of the emergency broadcast system.");
             Assert.Equal("of the emergency broadcast system.", p.Text);
@@ -761,6 +762,73 @@ namespace DXPlus.Tests
 
             p.RemoveText(4, 6);
             Assert.Equal("Somegoes here.", p.Text);
+        }
+
+        [Fact]
+        public void ParagraphPropertiesAlwaysInsertFirst()
+        {
+            Paragraph p = new Paragraph();
+
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("pPr"));
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr"));
+
+            p.GetFormatting(true);
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("pPr"));
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//r/rPr"));
+
+            var pPr = p.Xml.Element(Name.ParagraphProperties);
+            Assert.Equal(p.Xml, pPr.Parent);
+            Assert.Equal(p.Xml.Descendants().First(), pPr);
+        }
+
+        [Fact]
+        public void ParagraphRunPropertiesAlwaysInsertFirst()
+        {
+            Paragraph p = new Paragraph();
+
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("pPr"));
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr"));
+
+            p.SetText("This is a test");
+
+            p.GetFormatting(true);
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("pPr"));
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//r/rPr"));
+
+            var lastRun = p.Xml.Elements(Name.Run).Last();
+            Assert.NotNull(lastRun);
+
+            var rPr = p.Xml.XPathSelectElements("//w:r/w:rPr", Namespace.NamespaceManager()).Single();
+            Assert.NotNull(rPr);
+
+            Assert.Equal("r", rPr.Parent.Name.LocalName);
+            Assert.Equal(lastRun, rPr.Parent);
+        }
+
+        [Fact]
+        public void FormattingChangesPreviousTextRun()
+        {
+            var p = new Paragraph();
+
+            p.Append("This is a test").Bold();
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//r"));
+
+            var lastRun = p.Xml.Elements(Name.Run).Last();
+            var properties = lastRun.Element(Name.RunProperties);
+            Assert.Single(properties.Elements(Name.Bold));
+        }
+
+        [Fact]
+        public void FormattingChangesSkipLineBreaks()
+        {
+            var p = new Paragraph();
+
+            p.AppendLine("This is a test").Bold();
+            Assert.Equal(2, p.Xml.RemoveNamespaces().XPathSelectElements("//r").Count());
+
+            var textRun = p.Xml.Elements(Name.Run).First();
+            var properties = textRun.Element(Name.RunProperties);
+            Assert.Single(properties.Elements(Name.Bold));
         }
 
     }

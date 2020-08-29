@@ -138,7 +138,7 @@ namespace DXPlus
             // Add the relationship to the newly created header/footer
             var relationship = documentOwner.PackagePart.CreateRelationship(packagePart.Uri, TargetMode.Internal, relationTemplate.RelType);
 
-            documentOwner.Xml.GetOrCreateElement(Namespace.Main + "sectPr")
+            documentOwner.Xml.GetOrCreateElement(Name.SectionProperties)
                              .Add(new XElement(Namespace.Main + $"{typeName}Reference",
                                     new XAttribute(Namespace.Main + "type", headerType.GetEnumName()),
                                     new XAttribute(Namespace.RelatedDoc + "id", relationship.Id)));

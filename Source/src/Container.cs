@@ -120,7 +120,7 @@ namespace DXPlus
                 }
 
                 var baseSectionXml = Xml.Element(Namespace.Main + "body")?
-                                             .Element(Namespace.Main + "sectPr");
+                                             .Element(Name.SectionProperties);
                 if (baseSectionXml != null)
                 {
                     sections.Add(new Section(Document, baseSectionXml) { SectionParagraphs = parasInASection, PackagePart = PackagePart });
@@ -505,7 +505,7 @@ namespace DXPlus
         /// </summary>
         public void AddSection() => Xml.Add(new XElement(Name.Paragraph,
                                                 new XElement(Name.ParagraphProperties,
-                                                    new XElement(Namespace.Main + "sectPr",
+                                                    new XElement(Name.SectionProperties,
                                                         new XElement(Namespace.Main + "type",
                                                             new XAttribute(Name.MainVal, "continuous"))))));
 
@@ -514,7 +514,7 @@ namespace DXPlus
         /// </summary>
         public void AddPageBreak() => Xml.Add(new XElement(Name.Paragraph,
                                                 new XElement(Name.ParagraphProperties,
-                                                    new XElement(Namespace.Main + "sectPr"))));
+                                                    new XElement(Name.SectionProperties))));
 
         /// <summary>
         /// Add a paragraph with the given text to the end of the container

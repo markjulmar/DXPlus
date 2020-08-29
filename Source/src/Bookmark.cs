@@ -77,7 +77,6 @@ namespace DXPlus
         {
             var run = HelperFunctions.FormatInput(text, null);
             bookmark.AddAfterSelf(run);
-            Paragraph.Runs = Paragraph.Xml.Elements(DXPlus.Name.Run).ToList();
             Paragraph.Document.RenumberIds();
         }
     }

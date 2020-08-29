@@ -45,6 +45,7 @@ namespace DXPlus
         public static XName BookmarkEnd = Namespace.Main + "bookmarkEnd";
         public static XName MathParagraph = Namespace.Math + "oMathPara";
         public static XName OfficeMath = Namespace.Math + "oMath";
+        public static XName SectionProperties = Namespace.Main + "sectPr";
         public static XName NoProof => Namespace.Main + "noProof";
     }
 

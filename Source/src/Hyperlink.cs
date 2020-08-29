@@ -42,7 +42,7 @@ namespace DXPlus
                 var newRuns = HelperFunctions.FormatInput(value, rPr);
                 if (type == 0)
                 {
-                    Xml.LocalNameElements("r").Remove();
+                    Xml.Elements(Name.Run).Remove();
                     Xml.Add(newRuns);
                 }
                 else

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Xml.Linq;
@@ -30,9 +29,7 @@ namespace DXPlus.Helpers
                     xml = xml.Element(path[i]);
             }
 
-            var e = xml as XElement;
-            var attr = e?.Attribute(path[^1]);
-            return attr != null ? attr.Value : null;
+            return (xml as XElement)?.Attribute(path[^1])?.Value;
         }
 
         /// <summary>
@@ -80,7 +77,7 @@ namespace DXPlus.Helpers
         /// <summary>
         /// Gets or creates an element based on a path.
         /// </summary>
-        /// <param name="el">Starting container element</param>
+        /// <param name="node">Starting container element</param>
         /// <param name="path">Path to create/follow</param>
         /// <returns>Final node created</returns>
         public static XElement GetOrCreateElement(this XContainer node, params XName[] path)
@@ -91,12 +88,12 @@ namespace DXPlus.Helpers
             if (path == null || path.Length == 0)
                 throw new ArgumentException("Must supply the path to follow.", nameof(path));
 
-            for (int i = 0; i < path.Length; i++)
+            foreach (var name in path)
             {
-                var child = node.Element(path[i]);
+                var child = node.Element(name);
                 if (child == null)
                 {
-                    child = new XElement(path[i]);
+                    child = new XElement(name);
                     node.Add(child);
                 }
                 node = child;
@@ -182,66 +179,14 @@ namespace DXPlus.Helpers
         }
 
         /// <summary>
-        /// Get the rPr element from a parent, or create it if it doesn't exist.
+        /// Find an element by an attribute value
         /// </summary>
-        /// <param name="owner"></param>
-        /// <param name="create">True to create it if it doesn't exist</param>
+        /// <param name="nodes">Nodes to search</param>
+        /// <param name="name">Attribute name to look for</param>
+        /// <param name="attributeValue">Value to match</param>
         /// <returns></returns>
-        internal static XElement GetRunProps(this XElement owner, bool create = true)
-        {
-            var rPr = owner.Element(Name.RunProperties);
-            if (rPr == null && create)
-            {
-                rPr = new XElement(Name.RunProperties);
-                owner.AddFirst(rPr);
-            }
-
-            return rPr;
-        }
-
-        /// <summary>
-        /// If a text element or delText element, starts or ends with a space,
-        /// it must have the attribute space, otherwise it must not have it.
-        /// </summary>
-        /// <param name="e">The (t or delText) element check</param>
-        public static XElement PreserveSpace(this XElement e)
-        {
-            if (!e.Name.Equals(Name.Text)
-                && !e.Name.Equals(Namespace.Main + "delText"))
-            {
-                throw new ArgumentException($"{nameof(PreserveSpace)} can only work with elements of type 't' or 'delText'", nameof(e));
-            }
-
-            // Check if this w:t contains a space attribute
-            var space = e.Attributes().SingleOrDefault(a => a.Name.Equals(XNamespace.Xml + "space"));
-
-            // This w:t's text begins or ends with whitespace
-            if (e.Value.StartsWith(" ") || e.Value.EndsWith(" "))
-            {
-                // If this w:t contains no space attribute, add one.
-                if (space == null)
-                {
-                    e.Add(new XAttribute(XNamespace.Xml + "space", "preserve"));
-                }
-            }
-
-            // This w:t's text does not begin or end with a space
-            else
-            {
-                // If this w:r contains a space attribute, remove it.
-                space?.Remove();
-            }
-
-            return e;
-        }
-
-        public static XElement FindByAttrVal(this IEnumerable<XElement> nodes, XName name, string attributeValue)
-        {
-            if (nodes == null)
-                throw new ArgumentNullException(nameof(nodes));
-
-            return nodes.FirstOrDefault(node => node.AttributeValue(name).Equals(attributeValue));
-        }
+        public static XElement FindByAttrVal(this IEnumerable<XElement> nodes, XName name, string attributeValue) => 
+            nodes?.FirstOrDefault(node => node.AttributeValue(name).Equals(attributeValue));
 
         public static XAttribute GetValAttr(this XElement el)
         {

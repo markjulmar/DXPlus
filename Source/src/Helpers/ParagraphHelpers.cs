@@ -60,7 +60,7 @@ namespace DXPlus
             if (text == null) 
                 throw new ArgumentNullException(nameof(text));
             
-            return paragraph.Append("\n" + text);
+            return paragraph.Append(text + "\n");
         }
 
         /// <summary>

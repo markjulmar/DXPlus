@@ -76,7 +76,7 @@ namespace DXPlus
             get
             {
                 ThrowIfObjectDisposed();
-                return Xml.GetOrCreateElement(Namespace.Main + "sectPr");
+                return Xml.GetOrCreateElement(Name.SectionProperties);
             }
         }
 
@@ -823,7 +823,8 @@ namespace DXPlus
             var paragraphs = new List<Paragraph>();
             foreach (var para in Paragraphs)
             {
-                var sectionInPara = para.Xml.Descendants().FirstOrDefault(s => s.Name.LocalName == "sectPr");
+                var sectionInPara = para.Xml.Descendants()
+                                                    .FirstOrDefault(s => s.Name == Name.SectionProperties);
                 if (sectionInPara == null)
                 {
                     paragraphs.Add(para);

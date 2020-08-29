@@ -20,7 +20,7 @@ namespace DXPlus
         /// <summary>
         /// Text runs (r) that make up this paragraph
         /// </summary>
-        internal List<XElement> Runs { get; set; }
+        internal IEnumerable<XElement> Runs => Xml.Elements(Name.Run);
 
         /// <summary>
         /// Styles in this paragraph
@@ -57,7 +57,6 @@ namespace DXPlus
             ParentContainerType = parentContainerType;
             StartIndex = startIndex;
             EndIndex = startIndex + GetElementTextLength(Xml);
-            Runs = Xml.Elements(Name.Run).ToList();
         }
 
         /// <summary>
@@ -75,21 +74,36 @@ namespace DXPlus
         /// <returns></returns>
         internal Formatting GetFormatting(bool create = false)
         {
-            XElement rp;
-            if (Runs.Count == 0)
+            XElement rPr;
+
+            // If we don't have any text runs yet, consider this to be the default properties.
+            if (!Runs.Any())
             {
-                rp = create
-                    ? Xml.GetOrCreateElement(Name.ParagraphProperties, Name.RunProperties)
-                    : Xml.Element(Name.ParagraphProperties, Name.RunProperties);
+                if (create)
+                {
+                    var pPr = Xml.Element(Name.ParagraphProperties);
+                    if (pPr == null)
+                    {
+                        pPr = new XElement(Name.ParagraphProperties);
+                        Xml.AddFirst(pPr);
+                    }
+                    rPr = pPr.GetRunProps(true);
+                }
+                else
+                {
+                    rPr = Xml.Element(Name.ParagraphProperties, Name.RunProperties);
+                }
             }
             else
             {
-                var run = Runs.Last();
-                rp = create
-                    ? run.GetOrCreateElement(Name.RunProperties)
-                    : run.Element(Name.RunProperties);
+                // Otherwise get/create on the last text run. If we don't have any text
+                // runs, use the last run available.
+                var runs = Runs.Reverse().ToList();
+                rPr = (runs.FirstOrDefault(r => r.Element(Name.Text) != null)
+                           ?? runs[0]).GetRunProps(create);
             }
-            return new Formatting(rp);
+
+            return new Formatting(rPr);
         }
 
         /// <summary>
@@ -272,9 +286,14 @@ namespace DXPlus
         /// </summary>
         ParagraphProperties GetDefaultFormatting(bool create = false)
         {
-            return new ParagraphProperties(create
-                ? Xml.GetOrCreateElement(Name.ParagraphProperties)
-                : Xml.Element(Name.ParagraphProperties));
+            XElement pPr = Xml.Element(Name.ParagraphProperties);
+            if (create && pPr == null)
+            {
+                pPr = new XElement(Name.ParagraphProperties);
+                Xml.AddFirst(pPr);
+            }
+
+            return new ParagraphProperties(pPr);
         }
 
         /// <summary>
@@ -422,13 +441,7 @@ namespace DXPlus
         /// <returns>This Paragraph with the new text appended.</returns>
         public Paragraph Append(string text)
         {
-            var newRuns = HelperFunctions.FormatInput(text, null);
-            Xml.Add(newRuns);
-            Runs = Xml.Elements(Name.Run)
-                      .Reverse()
-                      .Take(newRuns.Count)
-                      .ToList();
-
+            Xml.Add(HelperFunctions.FormatInput(text, null));
             return this;
         }
 
@@ -467,11 +480,8 @@ namespace DXPlus
                     )
                 );
 
-            // Add equation element into paragraph xml and update runs collection
             Xml.Add(oMathPara);
-            Runs = Xml.Elements(Name.MathParagraph).ToList();
 
-            // Return paragraph with equation
             return this;
         }
 
@@ -563,11 +573,9 @@ namespace DXPlus
 
             // Check to see if the rels file exists and create it if not.
             _ = EnsureRelsPathExists();
-
-            // Check to see if a rel for this Hyperlink exists, create it if not.
             _ = hyperlink.GetOrCreateRelationship();
+
             Xml.Add(hyperlink.Xml);
-            Runs = Xml.Elements().Last().Elements(Name.Run).ToList();
 
             return this;
         }
@@ -669,12 +677,6 @@ namespace DXPlus
 
             // Set its value to the Pictures relationships id.
             attributeId.SetValue(id);
-
-            // For formatting such as .Bold()
-            Runs = Xml.Elements(Name.Run).Reverse()
-                      .Take(p.Xml.Elements(Name.Run)
-                      .Count()).ToList();
-
             return this;
         }
 
@@ -1151,16 +1153,7 @@ namespace DXPlus
         {
             foreach (var run in Runs)
             {
-                var rPr = run.GetRunProps();
-                var u = rPr.Element(Name.Underline);
-                if (u == null)
-                {
-                    rPr.SetElementValue(Name.Underline, string.Empty);
-                    u = rPr.GetOrCreateElement(Name.Underline);
-                    u.SetAttributeValue(Name.MainVal, "single");
-                }
-
-                u.SetAttributeValue(Name.Color, underlineColor.ToHex());
+                _ = new Formatting(run.GetRunProps()) {UnderlineColor = underlineColor};
             }
 
             return this;
