@@ -36,6 +36,7 @@ namespace DXPlus
         public static XName FirstLine = Namespace.Main + "firstLine";
         public static XName Hanging = Namespace.Main + "hanging";
         public static XName KeepNext = Namespace.Main + "keepNext";
+        public static XName KeepLines = Namespace.Main + "keepLines";
         public static XName Position = Namespace.Main + "position";
         public static XName RunProperties = Namespace.Main + "rPr";
         public static XName Spacing = Namespace.Main + "spacing";

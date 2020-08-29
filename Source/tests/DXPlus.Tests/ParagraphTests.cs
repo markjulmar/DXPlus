@@ -491,11 +491,11 @@ namespace DXPlus.Tests
 
             p.LineSpacing = 12.5;
             Assert.Equal(12.5, p.LineSpacing);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/spacing"));
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
 
             p.LineSpacing = null;
             Assert.Null(p.LineSpacing);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/spacing"));
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
         }
 
         [Fact]
@@ -507,11 +507,11 @@ namespace DXPlus.Tests
 
             p.LineSpacingBefore = 12.5;
             Assert.Equal(12.5, p.LineSpacingBefore);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/spacing"));
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
 
             p.LineSpacingBefore = null;
             Assert.Null(p.LineSpacingBefore);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/spacing"));
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
         }
 
         [Fact]
@@ -523,11 +523,11 @@ namespace DXPlus.Tests
 
             p.LineSpacingAfter = 12.5;
             Assert.Equal(12.5, p.LineSpacingAfter);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/spacing"));
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
 
             p.LineSpacingAfter = null;
             Assert.Null(p.LineSpacingAfter);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/spacing"));
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
         }
 
         [Fact]
@@ -538,32 +538,19 @@ namespace DXPlus.Tests
             Assert.Equal(10, p.LineSpacing);
             Assert.Equal(12, p.LineSpacingBefore);
             Assert.Equal(15, p.LineSpacingAfter);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/spacing"));
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
 
             p.LineSpacingAfter = null;
             Assert.Null(p.LineSpacingAfter);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/spacing"));
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
 
             p.LineSpacingBefore = null;
             Assert.Null(p.LineSpacingBefore);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/spacing"));
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
 
             p.LineSpacing = null;
             Assert.Null(p.LineSpacing);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/spacing"));
-        }
-
-        [Fact]
-        public void LineSpacingConstrainsValues()
-        {
-            var p = new Paragraph {LineSpacing = 0};
-            Assert.Equal(0, p.LineSpacing);
-
-            p.LineSpacing = -100;
-            Assert.Equal(0, p.LineSpacing);
-
-            p.LineSpacing = 1585;
-            Assert.Equal(1584, p.LineSpacing);
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
         }
 
         [Fact]

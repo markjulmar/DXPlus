@@ -407,6 +407,32 @@ namespace DXPlus
         }
 
         /// <summary>
+        /// This paragraph will be kept on the same page as the next paragraph
+        /// </summary>
+        /// <param name="paragraph">Paragraph</param>
+        /// <param name="keepWithNext"></param>
+        public static Paragraph KeepWithNext(this Paragraph paragraph, bool keepWithNext = true)
+        {
+            if (paragraph == null)
+                throw new ArgumentNullException(nameof(paragraph));
+
+            paragraph.KeepWithNext = keepWithNext;
+            return paragraph;
+        }
+
+        /// <summary>
+        /// Keep all lines in this paragraph together on a page
+        /// </summary>
+        public static Paragraph KeepLinesTogether(this Paragraph paragraph, bool keepTogether = true)
+        {
+            if (paragraph == null)
+                throw new ArgumentNullException(nameof(paragraph));
+
+            paragraph.KeepLinesTogether = keepTogether;
+            return paragraph;
+        }
+
+        /// <summary>
         /// Validate that a bookmark exists
         /// </summary>
         /// <param name="paragraph"></param>

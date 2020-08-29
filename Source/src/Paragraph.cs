@@ -65,20 +65,8 @@ namespace DXPlus
         /// </summary>
         public Alignment Alignment
         {
-            get => Xml.AttributeValue(Name.ParagraphProperties, Name.ParagraphAlignment, Name.MainVal)
-                    .TryGetEnumValue<Alignment>(out var result) ? result : Alignment.Left;
-
-            set
-            {
-                if (value == Alignment.Left)
-                {
-                    Xml.Element(Name.ParagraphProperties, Name.ParagraphAlignment)?.Remove();
-                }
-                else
-                {
-                    Xml.SetAttributeValue(Name.ParagraphProperties, Name.ParagraphAlignment, Name.MainVal, value.GetEnumName());
-                }
-            }
+            get => GetDefaultFormatting().Alignment;
+            set => GetDefaultFormatting(true).Alignment = value;
         }
 
         /// <summary>
@@ -294,9 +282,32 @@ namespace DXPlus
         }
 
         /// <summary>
+        /// Paragraph formatting
+        /// </summary>
+        ParagraphProperties GetDefaultFormatting(bool create = false)
+        {
+            return new ParagraphProperties(create
+                ? Xml.GetOrCreateElement(Name.ParagraphProperties)
+                : Xml.Element(Name.ParagraphProperties));
+        }
+
+        /// <summary>
         /// True to keep with the next element on the page.
         /// </summary>
-        public bool ShouldKeepWithNext => ParagraphProperties().Element(Name.KeepNext) != null;
+        public bool KeepWithNext
+        {
+            get => GetDefaultFormatting().KeepWithNext;
+            set => GetDefaultFormatting(true).KeepWithNext = value;
+        }
+
+        /// <summary>
+        /// Keep lines together on the page
+        /// </summary>
+        public bool KeepLinesTogether
+        {
+            get => GetDefaultFormatting().KeepLinesTogether;
+            set => GetDefaultFormatting(true).KeepLinesTogether = value;
+        }
 
         /// <summary>
         /// Container owner type.
@@ -311,6 +322,33 @@ namespace DXPlus
         {
             get => GetFormatting().ExpansionScale;
             set => GetFormatting(true).ExpansionScale = value;
+        }
+
+        /// <summary>
+        /// Set the spacing between lines in this paragraph
+        /// </summary>
+        public double? LineSpacing
+        {
+            get => GetDefaultFormatting().LineSpacing;
+            set => GetDefaultFormatting(true).LineSpacing = value;
+        }
+
+        /// <summary>
+        /// Set the spacing after lines in this paragraph
+        /// </summary>
+        public double? LineSpacingAfter
+        {
+            get => GetDefaultFormatting().LineSpacingAfter;
+            set => GetDefaultFormatting(true).LineSpacingAfter = value;
+        }
+
+        /// <summary>
+        /// Set the spacing before lines in this paragraph
+        /// </summary>
+        public double? LineSpacingBefore
+        {
+            get => GetDefaultFormatting().LineSpacingBefore;
+            set => GetDefaultFormatting(true).LineSpacingBefore = value;
         }
 
         /// <summary>
@@ -359,34 +397,13 @@ namespace DXPlus
             set => GetFormatting(true).Superscript = value;
         }
 
-        private const string DefaultStyle = "Normal";
-
         ///<summary>
         /// The style name of the paragraph.
         ///</summary>
         public string StyleName
         {
-            get
-            {
-                var styleElement = ParagraphProperties().Element(Name.ParagraphStyle);
-                var attr = styleElement?.Attribute(Name.MainVal);
-                return attr != null && !string.IsNullOrEmpty(attr.Value) ? attr.Value : DefaultStyle;
-            }
-            set
-            {
-                if (string.IsNullOrWhiteSpace(value))
-                    value = DefaultStyle;
-
-                if (value != DefaultStyle)
-                {
-                    ParagraphProperties().GetOrCreateElement(Name.ParagraphStyle)
-                        .SetAttributeValue(Name.MainVal, value);
-                }
-                else
-                {
-                    ParagraphProperties().Element(Name.ParagraphStyle)?.Remove();
-                }
-            }
+            get => GetDefaultFormatting().StyleName;
+            set => GetDefaultFormatting(true).StyleName = value;
         }
 
         /// <summary>
@@ -888,43 +905,6 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Keep all lines in this paragraph together on a page
-        /// </summary>
-        public Paragraph KeepLinesTogether(bool keepTogether = true)
-        {
-            var pPr = ParagraphProperties();
-            var keepLinesElement = pPr.Element(Namespace.Main + "keepLines");
-            if (keepLinesElement == null && keepTogether)
-            {
-                pPr.Add(new XElement(Namespace.Main + "keepLines"));
-            }
-            else if (!keepTogether)
-            {
-                keepLinesElement?.Remove();
-            }
-            return this;
-        }
-
-        /// <summary>
-        /// This paragraph will be kept on the same page as the next paragraph
-        /// </summary>
-        /// <param name="keepWithNext"></param>
-        public Paragraph KeepWithNext(bool keepWithNext = true)
-        {
-            var pPr = ParagraphProperties();
-            var keepWithNextElement = pPr.Element(Name.KeepNext);
-            if (keepWithNextElement == null && keepWithNext)
-            {
-                pPr.Add(new XElement(Name.KeepNext));
-            }
-            else if (!keepWithNext)
-            {
-                keepWithNextElement?.Remove();
-            }
-            return this;
-        }
-
-        /// <summary>
         /// Remove this Paragraph from the document.
         /// </summary>
         public void Remove()
@@ -1167,94 +1147,13 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Set the spacing between lines in this paragraph
-        /// </summary>
-        public double? LineSpacing
-        {
-            get => GetLineSpacing("line");
-            set => SetLineSpacing("line", value);
-        }
-
-        /// <summary>
-        /// Set the spacing between lines in this paragraph
-        /// </summary>
-        public double? LineSpacingAfter
-        {
-            get => GetLineSpacing("after");
-            set => SetLineSpacing("after", value);
-        }
-
-        /// <summary>
-        /// Set the spacing between lines in this paragraph
-        /// </summary>
-        public double? LineSpacingBefore
-        {
-            get => GetLineSpacing("before");
-            set => SetLineSpacing("before", value);
-        }
-
-        /// <summary>
-        /// Helper method to get spacing/xyz
-        /// </summary>
-        /// <param name="type">type of line spacing to retrieve</param>
-        /// <returns>Value or null if not set</returns>
-        private double? GetLineSpacing(string type)
-        {
-            var value = GetTextFormattingProperties(Name.Spacing)
-                .SingleOrDefault()?
-                .AttributeValue(Namespace.Main + type, null);
-            return value != null ? (double?)Math.Round(double.Parse(value) / 20.0, 1) : null;
-        }
-
-        /// <summary>
-        /// Helper method to set spacing/xyz
-        /// </summary>
-        /// <param name="type">type of line spacing to adjust</param>
-        /// <param name="value">New value</param>
-        private void SetLineSpacing(string type, double? value)
-        {
-            if (value != null)
-            {
-                double spacing = value.Value;
-                spacing = Math.Round(Math.Min(Math.Max(0, spacing), 1584.0), 1);
-                spacing *= 20.0; // spacing is in 20ths of a pt
-                ApplyTextFormattingProperty(Name.Spacing, string.Empty,
-                    new XAttribute(Namespace.Main + type, spacing));
-            }
-            else
-            {
-                // Remove the 'spacing' element if it only specifies line spacing
-                var el = GetTextFormattingProperties(Name.Spacing).SingleOrDefault();
-                el?.Attribute(Namespace.Main + type)?.Remove();
-                if (el?.HasAttributes == false)
-                {
-                    el.Remove();
-                }
-            }
-        }
-
-        /// <summary>
         /// Specifies that the text in this paragraph should be displayed with a single or double-line
         /// strikethrough
         /// </summary>
         public Strikethrough StrikeThrough
         {
-            get => GetTextFormattingProperties(Namespace.Main + Strikethrough.Strike.GetEnumName()).Any()
-                    ? Strikethrough.Strike
-                    : GetTextFormattingProperties(Namespace.Main + Strikethrough.DoubleStrike.GetEnumName()).Any()
-                        ? Strikethrough.DoubleStrike
-                        : Strikethrough.None;
-            set
-            {
-                RemoveTextFormattingProperty(Namespace.Main + Strikethrough.Strike.GetEnumName());
-                RemoveTextFormattingProperty(Namespace.Main + Strikethrough.DoubleStrike.GetEnumName());
-
-                if (value != Strikethrough.None)
-                {
-                    ApplyTextFormattingProperty(Namespace.Main + value.GetEnumName(), string.Empty,
-                                                new XAttribute(Name.MainVal, true));
-                }
-            }
+            get => GetFormatting().StrikeThrough;
+            set => GetFormatting(true).StrikeThrough = value;
         }
 
         /// <summary>
@@ -1395,61 +1294,6 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Retrieves the named text formatting property from the run property definitions.
-        /// </summary>
-        /// <param name="propertyName">Text property name</param>
-        /// <returns></returns>
-        internal IEnumerable<XElement> GetTextFormattingProperties(XName propertyName)
-        {
-            return (Runs.Count == 0
-                    ? new[] { ParagraphProperties().GetRunProps() } 
-                    : Runs.Select(run => run.GetRunProps()))
-                        .SelectMany(rPr => rPr.Elements(propertyName));
-        }
-
-        /// <summary>
-        /// Removes the specified text formatting property from all run property definitions in this paragraph.
-        /// </summary>
-        /// <param name="propertyName">Text property name</param>
-        internal void RemoveTextFormattingProperty(XName propertyName)
-        {
-            foreach (var rPr in Runs.Count == 0 ? new[] {ParagraphProperties().GetRunProps()} : Runs.Select(run => run.GetRunProps()))
-            {
-                rPr.Elements(propertyName).Remove();
-            }
-        }
-
-        /// <summary>
-        /// Sets a specific text property with a value and child content
-        /// </summary>
-        /// <param name="propertyName">Element name</param>
-        /// <param name="value">Value to apply to new element</param>
-        /// <param name="content">Child content. Can be null, an attribute, or a set of attributes to add to the new element.</param>
-        internal void ApplyTextFormattingProperty(XName propertyName, string value = "", object content = null)
-        {
-            foreach (var rPr in Runs.Count == 0 ? new[] { ParagraphProperties().GetRunProps() } : Runs.Select(run => run.GetRunProps()))
-            {
-                rPr.SetElementValue(propertyName, value);
-                var last = rPr.Elements(propertyName).Last();
-
-                switch (content)
-                {
-                    case IEnumerable<XAttribute> properties:
-                        foreach (var property in properties)
-                            last.SetAttributeValue(property.Name, property.Value);
-                        break;
-                    case XAttribute attribute:
-                        last.SetAttributeValue(attribute.Name, attribute.Value);
-                        break;
-                    default:
-                        if (content != null)
-                            throw new NotSupportedException($"Unsupported content type {content.GetType().Name}: '{content}' for text formatting.");
-                        break;
-                }
-            }
-        }
-
-        /// <summary>
         /// Walk all the text runs in the paragraph and find the one containing a specific index.
         /// </summary>
         /// <param name="index">Index to look for</param>
@@ -1509,43 +1353,6 @@ namespace DXPlus
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// If the pPr element doesn't exist it is created, either way it is returned by this function.
-        /// </summary>
-        /// <returns>The pPr element for this Paragraph.</returns>
-        internal XElement ParagraphProperties()
-        {
-            // Get the element.
-            var pPr = Xml.Element(Name.ParagraphProperties);
-
-            // If it doesn't exist, create it.
-            if (pPr == null)
-            {
-                Xml.AddFirst(new XElement(Name.ParagraphProperties));
-                pPr = Xml.Element(Name.ParagraphProperties);
-            }
-
-            // Return the pPr element for this Paragraph.
-            return pPr;
-        }
-
-        /// <summary>
-        /// If the pPr/ind element doesn't exist it is created, either way it is returned by this function.
-        /// </summary>
-        /// <returns>The ind element for this Paragraphs pPr.</returns>
-        internal XElement ParagraphIndentation()
-        {
-            // Get the element.
-            var pPr = ParagraphProperties();
-            var ind = pPr.Element(Name.Indent);
-            if (ind == null)
-            {
-                pPr.Add(new XElement(Name.Indent));
-                ind = pPr.Element(Name.Indent);
-            }
-            return ind;
         }
 
         /// <summary>

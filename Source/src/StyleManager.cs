@@ -7,7 +7,7 @@ namespace DXPlus
     /// <summary>
     /// Represents a single level in a numbering definition style.
     /// </summary>
-    public class NumberingLevel
+    public sealed class NumberingLevel
     {
         /// <summary>
         /// The XML fragment making up this object (w:lvl)
@@ -29,12 +29,18 @@ namespace DXPlus
         public int Start
         {
             get => int.Parse(Xml.Element(Namespace.Main + "start")?.GetVal() ?? "0");
-            set
-            {
-                Xml.GetOrCreateElement(Namespace.Main + "start")
-                   .SetAttributeValue(Name.MainVal, value);
-            }
+            set => Xml.AddElementVal(Namespace.Main + "start", value);
         }
+
+        /// <summary>
+        /// Retrieve the formatting options
+        /// </summary>
+        public Formatting Formatting => new Formatting(Xml.GetOrCreateElement(Name.RunProperties));
+
+        /// <summary>
+        /// Paragraph properties
+        /// </summary>
+        public ParagraphProperties ParagraphFormatting => new ParagraphProperties(Xml.GetOrCreateElement(Name.ParagraphProperties));
 
         /// <summary>
         /// Number format used to display all the values at this level.
@@ -43,11 +49,7 @@ namespace DXPlus
         {
             get => Xml.Element(Namespace.Main + "numFmt")
                       .GetVal().TryGetEnumValue<NumberingFormat>(out var result) ? result : NumberingFormat.None;
-            set
-            {
-                Xml.GetOrCreateElement(Namespace.Main + "numFmt")
-                    .SetAttributeValue(Name.MainVal, value.GetEnumName());
-            }
+            set => Xml.AddElementVal(Namespace.Main + "numFmt", value.GetEnumName());
         }
 
         /// <summary>
@@ -68,11 +70,7 @@ namespace DXPlus
         {
             get => Xml.Element(Namespace.Main + "lvlJc")
                       .GetVal().TryGetEnumValue<Alignment>(out var result) ? result : Alignment.Left;
-            set
-            {
-                Xml.GetOrCreateElement(Namespace.Main + "lvlJc")
-                   .SetAttributeValue(Name.MainVal, value.GetEnumName());
-            }
+            set => Xml.AddElementVal(Namespace.Main + "lvlJc", value.GetEnumName());
         }
 
         /// <summary>
@@ -90,7 +88,7 @@ namespace DXPlus
     /// of a set of numbered paragraphs in a Word document. This is persisted as a w:abstractNum object
     /// in the /word/numbering.xml document.
     /// </summary>
-    public class NumberingStyle : DocXBase
+    public sealed class NumberingStyle : DocXBase
     {
         /// <summary>
         /// Specifies a unique number which will be used as the identifier for the numbering definition.
@@ -103,7 +101,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Unique hexidecimal identifier for the numbering definition. This value will be
+        /// Unique hexadecimal identifier for the numbering definition. This value will be
         /// the same for two numbering definitions based on the same initial definition (e.g.
         /// where a new definition is created from an existing one). This is persisted as w:nsid.
         /// </summary>
@@ -120,9 +118,7 @@ namespace DXPlus
                 {
                     if (!HelperFunctions.IsValidHexNumber(value))
                         throw new ArgumentException("Invalid hex value.", nameof(CreatorId));
-
-                    Xml.GetOrCreateElement(Namespace.Main + "nsid")
-                       .SetAttributeValue(DXPlus.Name.MainVal, value);
+                    Xml.AddElementVal(Namespace.Main + "nsid", value);
                 }
             }
         }
@@ -134,18 +130,8 @@ namespace DXPlus
         {
             get => Xml.Element(Namespace.Main + "multiLevelType").GetVal()
                       .TryGetEnumValue<NumberingLevelType>(out var result) ? result : NumberingLevelType.None;
-            set
-            {
-                if (value == NumberingLevelType.None)
-                {
-                    Xml.Element(Namespace.Main + "multiLevelType")?.Remove();
-                }
-                else
-                {
-                    Xml.GetOrCreateElement(Namespace.Main + "multiLevelType")
-                        .SetAttributeValue(DXPlus.Name.MainVal, value.GetEnumName());
-                }
-            }
+            set => Xml.AddElementVal(Namespace.Main + "multiLevelType",
+                    value == NumberingLevelType.None ? null : value.GetEnumName());
         }
 
         /// <summary>
@@ -154,18 +140,7 @@ namespace DXPlus
         public string Name
         {
             get => Xml.Element(DXPlus.Name.NameId).GetVal(null);
-            set
-            {
-                if (string.IsNullOrWhiteSpace(value))
-                {
-                    Xml.Element(DXPlus.Name.NameId)?.Remove();
-                }
-                else
-                {
-                    Xml.GetOrCreateElement(DXPlus.Name.NameId)
-                       .SetAttributeValue(DXPlus.Name.MainVal, value);
-                }
-            }
+            set => Xml.AddElementVal(DXPlus.Name.NameId, string.IsNullOrWhiteSpace(value) ? null : value);
         }
 
         /// <summary>
@@ -175,18 +150,7 @@ namespace DXPlus
         public string NumStyleLink
         {
             get => Xml.Element(Namespace.Main + "numStyleLink").GetVal(null);
-            set
-            {
-                if (string.IsNullOrWhiteSpace(value))
-                {
-                    Xml.Element(Namespace.Main + "numStyleLink")?.Remove();
-                }
-                else
-                {
-                    Xml.GetOrCreateElement(Namespace.Main + "numStyleLink")
-                       .SetAttributeValue(DXPlus.Name.MainVal, value);
-                }
-            }
+            set => Xml.AddElementVal(Namespace.Main + "numStyleLink", string.IsNullOrWhiteSpace(value) ? null : value);
         }
 
         /// <summary>
@@ -195,18 +159,7 @@ namespace DXPlus
         public string StyleLink
         {
             get => Xml.Element(Namespace.Main + "styleLink").GetVal(null);
-            set
-            {
-                if (string.IsNullOrWhiteSpace(value))
-                {
-                    Xml.Element(Namespace.Main + "styleLink")?.Remove();
-                }
-                else
-                {
-                    Xml.GetOrCreateElement(Namespace.Main + "styleLink")
-                       .SetAttributeValue(DXPlus.Name.MainVal, value);
-                }
-            }
+            set => Xml.AddElementVal(Namespace.Main + "styleLink", string.IsNullOrWhiteSpace(value) ? null : value);
         }
 
         /// <summary>
