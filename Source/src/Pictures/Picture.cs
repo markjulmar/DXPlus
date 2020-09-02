@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Buffers.Binary;
 using System.Globalization;
 using System.IO.Packaging;
 using System.Linq;
@@ -8,8 +7,7 @@ using System.Xml.Linq;
 namespace DXPlus
 {
     /// <summary>
-    /// Represents a Picture in this document, a Picture is a customized view of an Image.
-    /// The XML can either be a [a:drawing] or [a:pict] element.
+    /// Represents a drawing (vector or image) in this document.
     /// </summary>
     public class Picture : DocXElement
     {
@@ -25,10 +23,13 @@ namespace DXPlus
         /// Wraps a drawing or pict element in Word XML.
         /// </summary>
         /// <param name="document">Document owner</param>
-        /// <param name="imageDefinition">The XElement to wrap</param>
+        /// <param name="xml">The XElement to wrap</param>
         /// <param name="image">The image to display</param>
-        internal Picture(IDocument document, XElement imageDefinition, Image image) : base(document, imageDefinition)
+        internal Picture(IDocument document, XElement xml, Image image) : base(document, xml)
         {
+            if (xml.Name.LocalName != "drawing")
+                throw new ArgumentException("Root element must be <drawing> for picture.");
+
             Image = image;
         }
 
@@ -117,22 +118,8 @@ namespace DXPlus
         /// </summary>
         public string Id
         {
-            get => Xml.FirstLocalNameDescendant("blip")?.AttributeValue(Namespace.DrawingMain + "embed", null)
-                   ?? Xml.FirstLocalNameDescendant("imagedata").AttributeValue(Namespace.DrawingMain + "id");
-
-            set
-            {
-                var blip = Xml.FirstLocalNameDescendant("blip");
-                if (blip != null)
-                {
-                    blip.SetAttributeValue(Namespace.DrawingMain + "embed", value);
-                }
-                else
-                {
-                    Xml.FirstLocalNameDescendant("imagedata")?
-                       .SetAttributeValue(Namespace.DrawingMain + "id", value);
-                }
-            }
+            get => Xml.FirstLocalNameDescendant("blip").AttributeValue(Namespace.RelatedDoc + "embed");
+            set => Xml.FirstLocalNameDescendant("blip").SetAttributeValue(Namespace.RelatedDoc + "embed", value);
         }
 
         /// <summary>
@@ -176,8 +163,7 @@ namespace DXPlus
         /// </summary>
         public string Name
         {
-            get => Xml.DescendantAttributeValues("name").FirstOrDefault()
-                ?? Xml.DescendantAttributeValues("title").FirstOrDefault();
+            get => Xml.DescendantAttributeValues("name").FirstOrDefault();
             set => Xml.DescendantAttributes("name").ToList().ForEach(a => a.Value = value ?? string.Empty);
         }
 

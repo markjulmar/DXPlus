@@ -1,7 +1,7 @@
-﻿using System;
+﻿using DXPlus.Charts;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using DXPlus.Charts;
 
 namespace DXPlus
 {

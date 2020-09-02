@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Drawing;
 using System.Xml.Linq;
-using DXPlus.Helpers;
 
 namespace DXPlus.Charts
 {

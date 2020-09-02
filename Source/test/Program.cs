@@ -1,10 +1,10 @@
 ﻿using DXPlus;
+using DXPlus.Charts;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using DXPlus.Charts;
 
 namespace TestDXPlus
 {

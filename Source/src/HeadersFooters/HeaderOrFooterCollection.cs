@@ -75,18 +75,10 @@ namespace DXPlus
                 };
             }
 
-            // Get the Xml file for this Header or Footer.
-            Uri partUri = documentOwner.PackagePart.GetRelationship(id).TargetUri;
-            if (!partUri.OriginalString.StartsWith("/word/"))
-            {
-                partUri = new Uri("/word/" + partUri.OriginalString, UriKind.Relative);
-            }
+            // Load the header/footer
+            documentOwner.FindHeaderFooterById(id, out var part, out var doc);
 
-            // Get the PackagePart and load the XML
-            PackagePart part = documentOwner.Package.GetPart(partUri);
-            XDocument doc = part.Load();
-
-            // Create the header/footer from the loaded information
+            // Create the header/footer wrapper object from the loaded information
             return new T
             {
                 Document = documentOwner,
@@ -166,6 +158,9 @@ namespace DXPlus
                                     new XAttribute(Namespace.RelatedDoc + "id", relationship.Id)));
 
             documentOwner.Package.Flush();
+
+            // Let the document cache off the document.
+            documentOwner.AdjustHeaderFooterCache(relationship.Id, xmlFragment);
 
             // Fill in the details.
             headerFooter.Document = documentOwner;
@@ -251,6 +246,7 @@ namespace DXPlus
 
             // Delete the Relationship.
             documentOwner.Package.DeleteRelationship(rel.Id);
+            documentOwner.AdjustHeaderFooterCache(rel.Id, null);
         }
 
         /// <summary>

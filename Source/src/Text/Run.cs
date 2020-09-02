@@ -1,8 +1,8 @@
-﻿using System;
+﻿using DXPlus.Helpers;
+using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Xml.Linq;
-using DXPlus.Helpers;
 
 namespace DXPlus
 {

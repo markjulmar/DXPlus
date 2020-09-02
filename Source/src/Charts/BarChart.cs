@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Xml.Linq;
 using System.Xml.Serialization;
-using DXPlus.Helpers;
 
 namespace DXPlus.Charts
 {

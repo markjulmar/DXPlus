@@ -1,4 +1,7 @@
-﻿using System;
+﻿using DXPlus.Charts;
+using DXPlus.Helpers;
+using DXPlus.Resources;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -10,9 +13,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
-using DXPlus.Charts;
-using DXPlus.Helpers;
-using DXPlus.Resources;
 
 namespace DXPlus
 {
@@ -39,6 +39,7 @@ namespace DXPlus
         private XDocument endnotesDoc;
         private XDocument mainDoc;
         private XDocument settingsDoc;
+        private readonly Dictionary<string, XDocument> headerFooterCache = new Dictionary<string, XDocument>();
 
         /// <summary>
         /// Package sections in the above Package object. These are specific read/write points in the ZIP file
@@ -1285,6 +1286,13 @@ namespace DXPlus
                                 new Image(this, relationship));
         }
 
+        /// <summary>
+        /// Ensure a _rels XML file has been created for the given package part.
+        /// Most documents just have document.rels, but more complex documents can
+        /// include other relationship files.
+        /// </summary>
+        /// <param name="part">Part to lookup</param>
+        /// <returns>URI for the given part</returns>
         internal Uri EnsureRelsPathExists(PackagePart part)
         {
             // Convert the path of this mainPart to its equivalent rels file path.
@@ -1302,6 +1310,47 @@ namespace DXPlus
             }
 
             return relationshipPath;
+        }
+
+        /// <summary>
+        /// Loads a header/footer document from the related package.
+        /// </summary>
+        /// <param name="id">Relationship id</param>
+        /// <param name="part">Returned packagePart document is loaded from</param>
+        /// <param name="doc">Document</param>
+        internal void FindHeaderFooterById(string id, out PackagePart part, out XDocument doc)
+        {
+            // Get the Xml file for this Header or Footer. Each one is saved into a different
+            // document and kept as a relationship in the document.
+            Uri partUri = PackagePart.GetRelationship(id).TargetUri;
+            if (!partUri.OriginalString.StartsWith("/word/"))
+            {
+                partUri = new Uri("/word/" + partUri.OriginalString, UriKind.Relative);
+            }
+
+            // Get the PackagePart and return the XM document.
+            part = Package.GetPart(partUri);
+
+            // We keep the header/footer XML documents in memory so we don' thave
+            // to save them back to the package every time a change is made.
+            if (!headerFooterCache.TryGetValue(id, out doc))
+            {
+                doc = part.Load();
+                AdjustHeaderFooterCache(id, doc);
+            }
+        }
+
+        /// <summary>
+        /// Add or remove a header/footer to/from the cache
+        /// </summary>
+        /// <param name="id">Relationship id in the main document</param>
+        /// <param name="doc">XML document for the header/footer</param>
+        internal void AdjustHeaderFooterCache(string id, XDocument doc)
+        {
+            if (doc != null)
+                headerFooterCache.Add(id, doc);
+            else
+                headerFooterCache.Remove(id);
         }
     }
 }

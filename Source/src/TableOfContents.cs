@@ -1,7 +1,7 @@
-﻿using System;
+﻿using DXPlus.Resources;
+using System;
 using System.Linq;
 using System.Xml.Linq;
-using DXPlus.Resources;
 
 namespace DXPlus
 {

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DXPlus.Resources;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -8,7 +9,6 @@ using System.Linq;
 using System.Text;
 using System.Xml.Linq;
 using System.Xml.XPath;
-using DXPlus.Resources;
 
 namespace DXPlus.Helpers
 {

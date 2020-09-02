@@ -1,11 +1,11 @@
 ﻿using DXPlus.Helpers;
+using DXPlus.Resources;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
-using DXPlus.Resources;
 
 namespace DXPlus
 {
