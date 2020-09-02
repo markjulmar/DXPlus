@@ -1,9 +1,7 @@
-﻿using System;
+﻿using DXPlus.Helpers;
 using System.Drawing;
-using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
-using DXPlus.Helpers;
 
 namespace DXPlus
 {
@@ -40,8 +38,8 @@ namespace DXPlus
 
             set
             {
-                var tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
-                var shd = tcPr.GetOrCreateElement(Namespace.Main + "shd");
+                XElement tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
+                XElement shd = tcPr.GetOrCreateElement(Namespace.Main + "shd");
 
                 shd.SetAttributeValue(Name.MainVal, "clear");
                 shd.SetAttributeValue(Name.Color, "auto");
@@ -99,7 +97,7 @@ namespace DXPlus
         {
             get
             {
-                var fill = Xml.Element(Namespace.Main + "tcPr")?
+                XAttribute fill = Xml.Element(Namespace.Main + "tcPr")?
                     .Element(Namespace.Main + "shd")?
                     .Attribute(Namespace.Main + "fill");
 
@@ -110,8 +108,8 @@ namespace DXPlus
 
             set
             {
-                var tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
-                var shd = tcPr.GetOrCreateElement(Namespace.Main + "shd");
+                XElement tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
+                XElement shd = tcPr.GetOrCreateElement(Namespace.Main + "shd");
 
                 // The val attribute needs to be set to clear
                 shd.SetAttributeValue(Name.MainVal, "clear");
@@ -133,16 +131,19 @@ namespace DXPlus
                 string val = value ?? "";
                 switch (Paragraphs.Count)
                 {
-                    case 0: this.AddParagraph(val);
+                    case 0:
+                        this.AddParagraph(val);
                         break;
-                    case 1: Paragraphs[0].SetText(val);
+
+                    case 1:
+                        Paragraphs[0].SetText(val);
                         break;
+
                     default:
                         Xml.Elements(Name.Paragraph).Remove();
                         this.AddParagraph(val);
                         break;
                 }
-
             }
         }
 
@@ -153,7 +154,7 @@ namespace DXPlus
         {
             get
             {
-                var val = Xml.Element(Namespace.Main + "tcPr")?
+                XAttribute val = Xml.Element(Namespace.Main + "tcPr")?
                     .Element(Namespace.Main + "textDirection")?
                     .GetValAttr();
 
@@ -167,8 +168,8 @@ namespace DXPlus
             }
             set
             {
-                var tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
-                var textDirection = tcPr.GetOrCreateElement(Namespace.Main + "textDirection");
+                XElement tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
+                XElement textDirection = tcPr.GetOrCreateElement(Namespace.Main + "textDirection");
                 textDirection.SetAttributeValue(Name.MainVal, value.GetEnumName());
             }
         }
@@ -180,7 +181,7 @@ namespace DXPlus
         {
             get
             {
-                var val = Xml.Element(Namespace.Main + "tcPr")?
+                XAttribute val = Xml.Element(Namespace.Main + "tcPr")?
                     .Element(Namespace.Main + "vAlign")?
                     .GetValAttr();
 
@@ -194,8 +195,8 @@ namespace DXPlus
 
             set
             {
-                var tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
-                var vAlign = tcPr.GetOrCreateElement(Namespace.Main + "vAlign");
+                XElement tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
+                XElement vAlign = tcPr.GetOrCreateElement(Namespace.Main + "vAlign");
                 vAlign.SetAttributeValue(Name.MainVal, value.GetEnumName());
             }
         }
@@ -207,11 +208,11 @@ namespace DXPlus
         {
             get
             {
-                var value = Xml.Element(Namespace.Main + "tcPr")?
+                XAttribute value = Xml.Element(Namespace.Main + "tcPr")?
                     .Element(Namespace.Main + "tcW")?
                     .Attribute(Namespace.Main + "w");
 
-                if (value == null || !double.TryParse(value.Value, out var widthUnits))
+                if (value == null || !double.TryParse(value.Value, out double widthUnits))
                 {
                     value?.Remove();
                     return null;
@@ -222,8 +223,8 @@ namespace DXPlus
 
             set
             {
-                var tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
-                var tcW = tcPr.GetOrCreateElement(Namespace.Main + "tcW");
+                XElement tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
+                XElement tcW = tcPr.GetOrCreateElement(Namespace.Main + "tcW");
 
                 if (value < 0)
                 {
@@ -237,14 +238,23 @@ namespace DXPlus
             }
         }
 
+        /// <summary>
+        /// Method to set all margins for the cell.
+        /// </summary>
+        /// <param name="margin"></param>
+        public void SetMargins(double? margin)
+        {
+            LeftMargin = RightMargin = TopMargin = BottomMargin = margin;
+        }
+
         private double? GetMargin(string name)
         {
-            var w = Xml.Element(Namespace.Main + "tcPr")?
+            XAttribute w = Xml.Element(Namespace.Main + "tcPr")?
                 .Element(Namespace.Main + "tcMar")?
                 .Element(Namespace.Main + name)?
                 .Attribute(Namespace.Main + "w");
 
-            if (w == null || !double.TryParse(w.Value, out var margin))
+            if (w == null || !double.TryParse(w.Value, out double margin))
             {
                 w?.Remove();
                 return null;
@@ -256,12 +266,12 @@ namespace DXPlus
 
         private void SetMargin(string name, double? value)
         {
-            var tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
+            XElement tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
 
             if (value != null)
             {
-                var tcMar = tcPr.GetOrCreateElement(Namespace.Main + "tcMar");
-                var margin = tcMar.GetOrCreateElement(Namespace.Main + name);
+                XElement tcMar = tcPr.GetOrCreateElement(Namespace.Main + "tcMar");
+                XElement margin = tcMar.GetOrCreateElement(Namespace.Main + name);
 
                 margin.SetAttributeValue(Namespace.Main + "type", "dxa");
                 margin.SetAttributeValue(Namespace.Main + "w", value * TableHelpers.UnitConversion);
@@ -278,11 +288,14 @@ namespace DXPlus
         /// <param name="borderType">The table cell border to get</param>
         public TableBorder GetBorder(TableCellBorderType borderType)
         {
-            var border = new TableBorder();
-            var tcBorder = Xml.Element(Namespace.Main + "tcPr")?
+            TableBorder border = new TableBorder();
+            XElement tcBorder = Xml.Element(Namespace.Main + "tcPr")?
                 .Element(Namespace.Main + "tcBorders")?
                 .Element(Namespace.Main + borderType.GetEnumName());
-            if (tcBorder != null) border.GetDetails(tcBorder);
+            if (tcBorder != null)
+            {
+                border.GetDetails(tcBorder);
+            }
 
             return border;
         }
@@ -294,15 +307,15 @@ namespace DXPlus
         /// <param name="tableBorder">Border object to set the table cell border</param>
         public void SetBorder(TableCellBorderType borderType, TableBorder tableBorder)
         {
-            var tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
-            var tcBorders = tcPr.GetOrCreateElement(Namespace.Main + "tcBorders");
-            var tcBorderType =
+            XElement tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
+            XElement tcBorders = tcPr.GetOrCreateElement(Namespace.Main + "tcBorders");
+            XElement tcBorderType =
                 tcBorders.GetOrCreateElement(Namespace.Main.NamespaceName + borderType.GetEnumName());
 
             // The val attribute is used for the style
             tcBorderType.SetAttributeValue(Name.MainVal, tableBorder.Style.GetEnumName());
 
-            var size = tableBorder.Size switch
+            int size = tableBorder.Size switch
             {
                 BorderSize.One => 2,
                 BorderSize.Two => 4,

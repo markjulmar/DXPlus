@@ -1,8 +1,10 @@
-﻿using System;
+﻿using DXPlus.Helpers;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
-using DXPlus.Helpers;
 
 namespace DXPlus
 {
@@ -10,8 +12,10 @@ namespace DXPlus
     /// Base class for header/footer collection
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public abstract class HeaderOrFooterCollection<T> where T : HeaderOrFooter, new()
+    public abstract class HeaderOrFooterCollection<T> : IEnumerable<T>
+        where T : HeaderOrFooter, new()
     {
+        private readonly Section sectionOwner;
         private readonly DocX documentOwner;
         private readonly string rootElementName;
         private readonly Relationship relationTemplate;
@@ -20,15 +24,17 @@ namespace DXPlus
         /// <summary>
         /// Constructor used to create the header collection
         /// </summary>
-        /// <param name="documentOwner"></param>
-        /// <param name="rootElementName"></param>
-        /// <param name="relation"></param>
-        /// <param name="typeName"></param>
-        internal HeaderOrFooterCollection(DocX documentOwner, string rootElementName, Relationship relation, string typeName)
+        /// <param name="documentOwner">Document owner</param>
+        /// <param name="sectionOwner">Section owner</param>
+        /// <param name="rootElementName">Root XML element name</param>
+        /// <param name="relation">Relation name</param>
+        /// <param name="typeName">Type name</param>
+        internal HeaderOrFooterCollection(DocX documentOwner, Section sectionOwner, string rootElementName, Relationship relation, string typeName)
         {
             this.documentOwner = documentOwner;
+            this.sectionOwner = sectionOwner;
             this.rootElementName = rootElementName;
-            this.relationTemplate = relation;
+            relationTemplate = relation;
             this.typeName = typeName;
 
             First = LoadFromPackage(HeaderFooterType.First);
@@ -60,32 +66,48 @@ namespace DXPlus
             string id = GetReferenceId(headerType);
             if (id == null)
             {
-                return new T() {
+                return new T
+                {
                     Type = headerType,
-                    CreateFunc = this.Create,
-                    DeleteFunc = this.Delete
+                    CreateFunc = Create,
+                    DeleteFunc = Delete,
+                    ExistsFunc = Exists
                 };
             }
 
             // Get the Xml file for this Header or Footer.
             Uri partUri = documentOwner.PackagePart.GetRelationship(id).TargetUri;
             if (!partUri.OriginalString.StartsWith("/word/"))
+            {
                 partUri = new Uri("/word/" + partUri.OriginalString, UriKind.Relative);
+            }
 
             // Get the PackagePart and load the XML
-            var part = documentOwner.Package.GetPart(partUri);
-            var doc = part.Load();
+            PackagePart part = documentOwner.Package.GetPart(partUri);
+            XDocument doc = part.Load();
 
             // Create the header/footer from the loaded information
-            return new T {
+            return new T
+            {
                 Document = documentOwner,
                 Xml = doc.Element(Namespace.Main + rootElementName),
                 Id = id,
                 Type = headerType,
                 PackagePart = part,
-                CreateFunc = this.Create,
-                DeleteFunc = this.Delete
+                CreateFunc = Create,
+                DeleteFunc = Delete,
+                ExistsFunc = Exists
             };
+        }
+
+        /// <summary>
+        /// Looks up a header/footer using the ID and returns whether the relationship still exists.
+        /// </summary>
+        /// <param name="id">Header or footer id</param>
+        /// <returns>True/False</returns>
+        private bool Exists(string id)
+        {
+            return documentOwner.PackagePart.GetRelationship(id) != null;
         }
 
         /// <summary>
@@ -94,7 +116,7 @@ namespace DXPlus
         /// </summary>
         internal void Create(HeaderOrFooter headerFooter)
         {
-            var headerType = headerFooter.Type;
+            HeaderFooterType headerType = headerFooter.Type;
 
             // Delete any existing object; we have an id on the passed object
             if (headerFooter.Id != null)
@@ -103,7 +125,7 @@ namespace DXPlus
             }
 
             // Create the hdr/ftr definition
-            var xmlFragment = XDocument.Parse(
+            XDocument xmlFragment = XDocument.Parse(
             $@"<?xml version=""1.0"" encoding=""utf-16"" standalone=""yes""?>
                 <w:{rootElementName} xmlns:ve=""http://schemas.openxmlformats.org/markup-compatibility/2006"" xmlns:o=""urn:schemas-microsoft-com:office:office"" xmlns:r=""{Namespace.RelatedDoc.NamespaceName}"" xmlns:m=""{Namespace.Math.NamespaceName}"" xmlns:v=""{Namespace.VML.NamespaceName}"" xmlns:wp=""{Namespace.WordProcessingDrawing.NamespaceName}"" xmlns:w10=""urn:schemas-microsoft-com:office:word"" xmlns:w=""{Namespace.Main.NamespaceName}"" xmlns:wne=""http://schemas.microsoft.com/office/word/2006/wordml"">
                     <w:p w:rsidR=""{documentOwner.RevisionId}"" w:rsidRDefault=""{documentOwner.RevisionId}"">
@@ -115,7 +137,7 @@ namespace DXPlus
             );
 
             // Get the next header/footer index.
-            var relations = documentOwner.PackagePart.GetRelationships()
+            List<string> relations = documentOwner.PackagePart.GetRelationships()
                                          .Where(rel => rel.RelationshipType == relationTemplate.RelType)
                                          .Select(rel => rel.TargetUri.OriginalString)
                                          .Select(name => name.StartsWith("/word/") ? name : "/word/" + name)
@@ -129,17 +151,17 @@ namespace DXPlus
                 filename = string.Format(relationTemplate.Path, ++index);
             }
 
-            var packagePart = documentOwner.Package.CreatePart(new Uri(filename, UriKind.Relative), 
+            PackagePart packagePart = documentOwner.Package.CreatePart(new Uri(filename, UriKind.Relative),
                                                     relationTemplate.ContentType, CompressionOption.Normal);
 
             // Save the main document
             packagePart.Save(xmlFragment);
 
             // Add the relationship to the newly created header/footer
-            var relationship = documentOwner.PackagePart.CreateRelationship(packagePart.Uri, TargetMode.Internal, relationTemplate.RelType);
+            PackageRelationship relationship = documentOwner.PackagePart.CreateRelationship(packagePart.Uri, TargetMode.Internal, relationTemplate.RelType);
 
-            documentOwner.Xml.GetOrCreateElement(Name.SectionProperties)
-                             .Add(new XElement(Namespace.Main + $"{typeName}Reference",
+            // Add the relationship to the owning section.
+            sectionOwner.Properties.Xml.Add(new XElement(Namespace.Main + $"{typeName}Reference",
                                     new XAttribute(Namespace.Main + "type", headerType.GetEnumName()),
                                     new XAttribute(Namespace.RelatedDoc + "id", relationship.Id)));
 
@@ -154,12 +176,12 @@ namespace DXPlus
             // If this is the first page header, then set the document.titlePg element
             if (headerFooter == First)
             {
-                documentOwner.DifferentFirstPage = true;
+                sectionOwner.Properties.DifferentFirstPage = true;
             }
             // Do the same for even page header
             else if (headerFooter == Even)
             {
-                documentOwner.DifferentOddAndEvenPages = true;
+                documentOwner.DifferentEvenOddHeadersFooters = true;
             }
         }
 
@@ -169,9 +191,9 @@ namespace DXPlus
         /// <param name="headerType"></param>
         private string GetReferenceId(HeaderFooterType headerType)
         {
-            return documentOwner.QueryDocument($@"//w:sectPr/w:{typeName}Reference[@w:type='{headerType.GetEnumName()}']")
-                .Select(e => e.AttributeValue(Namespace.RelatedDoc + "id"))
-                .FirstOrDefault();
+            return sectionOwner.Properties.Xml
+                .QueryElement($"w:{typeName}Reference[@w:type='{headerType.GetEnumName()}']")
+                .AttributeValue(Namespace.RelatedDoc + "id", null);
         }
 
         /// <summary>
@@ -187,12 +209,12 @@ namespace DXPlus
             // If this is the first page header, then remove the document.titlePg element
             if (headerFooter == First)
             {
-                documentOwner.DifferentFirstPage = false;
+                sectionOwner.Properties.DifferentFirstPage = false;
             }
             // Do the same for even page header
             else if (headerFooter == Even)
             {
-                documentOwner.DifferentOddAndEvenPages = false;
+                documentOwner.DifferentEvenOddHeadersFooters = false;
             }
         }
 
@@ -200,13 +222,21 @@ namespace DXPlus
         /// Delete the specified header or footer
         /// </summary>
         /// <param name="id"></param>
+        /// <param name="headerType"></param>
         private void Delete(string id, HeaderFooterType headerType)
         {
             // Get this relationship.
-            var rel = documentOwner.PackagePart.GetRelationship(id);
-            var uri = rel.TargetUri;
+            PackageRelationship rel = documentOwner.PackagePart.GetRelationship(id);
+            if (rel == null)
+            {
+                return;
+            }
+
+            Uri uri = rel.TargetUri;
             if (!uri.OriginalString.StartsWith("/word/"))
+            {
                 uri = new Uri("/word/" + uri.OriginalString, UriKind.Relative);
+            }
 
             // Check to see if the document actually contains the Part.
             if (documentOwner.Package.PartExists(uri))
@@ -215,8 +245,8 @@ namespace DXPlus
                 documentOwner.Package.DeletePart(uri);
 
                 // Get all references to this relationship in the document and remove them.
-                documentOwner.QueryDocument($@"//w:sectPr/w:{typeName}Reference[@w:type='{headerType.GetEnumName()}' and @r:id='{id}']")
-                             .SingleOrDefault()?.Remove();
+                sectionOwner.Properties.Xml.QueryElement($"w:{typeName}Reference[@w:type='{headerType.GetEnumName()}' and @r:id='{id}']")
+                                .Remove();
             }
 
             // Delete the Relationship.
@@ -231,6 +261,37 @@ namespace DXPlus
             Default.Save();
             First.Save();
             Even.Save();
+        }
+
+        /// <summary>
+        /// Returns an enumerator that iterates through the collection.
+        /// </summary>
+        /// <returns>An enumerator that can be used to iterate through the collection.</returns>
+        public IEnumerator<T> GetEnumerator()
+        {
+            if (Default.Exists)
+            {
+                yield return Default;
+            }
+
+            if (First.Exists)
+            {
+                yield return First;
+            }
+
+            if (Even.Exists)
+            {
+                yield return Even;
+            }
+        }
+
+        /// <summary>
+        /// Returns the enumerator for the header/footers.
+        /// </summary>
+        /// <returns></returns>
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

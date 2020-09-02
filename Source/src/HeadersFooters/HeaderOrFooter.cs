@@ -27,7 +27,7 @@ namespace DXPlus
         /// True/False whether the header/footer has been created and exists.
         /// Setting this property will create/destroy the header/footer
         /// </summary>
-        public bool Exists => Id != null && Xml != null;
+        public bool Exists => Id != null && Xml != null && ExistsFunc(Id);
 
         /// <summary>
         /// Relationship id for the header/footer
@@ -54,6 +54,7 @@ namespace DXPlus
         // Methods used to create/delete this header/footer.
         internal Action<HeaderOrFooter> CreateFunc;
         internal Action<HeaderOrFooter> DeleteFunc;
+        internal Func<string, bool> ExistsFunc;
 
         /// <summary>
         /// Creates the header/footer and returns the generated paragraph.

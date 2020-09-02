@@ -1,6 +1,7 @@
-﻿using System.Buffers;
+﻿using System;
 using System.Linq;
 using System.Xml.Linq;
+using DXPlus.Helpers;
 
 namespace DXPlus
 {
@@ -8,7 +9,7 @@ namespace DXPlus
     /// This class is the basis for Paragraphs, Lists, and Table elements. It provides helper methods to
     /// insert/add other elements before and after in the element tree.
     /// </summary>
-    public abstract class InsertBeforeOrAfter : DocXBase
+    public abstract class InsertBeforeOrAfter : DocXElement
     {
         private Container owner;
 
@@ -31,29 +32,24 @@ namespace DXPlus
         /// <summary>
         /// Add a page break after the current element.
         /// </summary>
-        public void AddPageBreakAfterSelf() => Xml.AddAfterSelf(PageBreak);
+        public void AddPageBreak() => Xml.AddAfterSelf(PageBreak);
 
         /// <summary>
         /// Insert a page break before the current element.
         /// </summary>
-        public void InsertPageBreakBeforeSelf() => Xml.AddBeforeSelf(PageBreak);
+        public void InsertPageBreakBefore() => Xml.AddBeforeSelf(PageBreak);
 
         /// <summary>
         /// Add a new paragraph after the current element.
         /// </summary>
         /// <param name="paragraph">Paragraph to insert</param>
-        public Paragraph AddParagraphAfterSelf(Paragraph paragraph)
+        public void AddParagraph(Paragraph paragraph)
         {
+            if (paragraph.Container != null)
+                throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
+
             Xml.AddAfterSelf(paragraph.Xml);
-            var newlyInserted = Xml.ElementsAfterSelf().First();
-
-            if (this is Paragraph me)
-            {
-                return new Paragraph(Document, newlyInserted, me.EndIndex);
-            }
-
-            paragraph.Xml = newlyInserted;
-            return paragraph;
+            paragraph.Container = this.Container;
         }
 
         /// <summary>
@@ -62,24 +58,25 @@ namespace DXPlus
         /// <param name="text">Text for new paragraph</param>
         /// <param name="formatting">Formatting for the paragraph</param>
         /// <returns>Newly created paragraph</returns>
-        public Paragraph AddParagraphAfterSelf(string text, Formatting formatting)
+        public Paragraph AddParagraph(string text, Formatting formatting)
         {
-            var newParagraph = ParagraphHelpers.Create(text, formatting);
+            XElement newParagraph = Paragraph.Create(text, formatting);
             Xml.AddAfterSelf(newParagraph);
-            var newlyInserted = Xml.ElementsAfterSelf().First();
-            
-            return new Paragraph(Document, newlyInserted, -1);
+            XElement newlyInserted = Xml.ElementsAfterSelf().First();
+            return new Paragraph(Document, newlyInserted, -1) {Container = Container};
         }
 
         /// <summary>
         /// Insert a paragraph before the current element
         /// </summary>
         /// <param name="paragraph"></param>
-        public Paragraph InsertParagraphBeforeSelf(Paragraph paragraph)
+        public void InsertParagraphBefore(Paragraph paragraph)
         {
+            if (paragraph.Container != null)
+                throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
+
             Xml.AddBeforeSelf(paragraph.Xml);
-            paragraph.Xml = Xml.ElementsBeforeSelf().First();
-            return paragraph;
+            paragraph.Container = Container;
         }
 
         /// <summary>
@@ -88,53 +85,41 @@ namespace DXPlus
         /// <param name="text">Text to use for new paragraph</param>
         /// <param name="formatting">Formatting to use</param>
         /// <returns></returns>
-        public Paragraph InsertParagraphBeforeSelf(string text, Formatting formatting)
+        public Paragraph InsertParagraphBefore(string text, Formatting formatting)
         {
-            var newParagraph = ParagraphHelpers.Create(text, formatting);
-            Xml.AddBeforeSelf(newParagraph);
-            var newlyInserted = Xml.ElementsBeforeSelf().Last();
-            
-            return new Paragraph(Document, newlyInserted, -1);
+            XElement paragraph = Paragraph.Create(text, formatting);
+            Xml.AddBeforeSelf(paragraph);
+
+            string id = paragraph.AttributeValue(Name.ParagraphId);
+            return Container != null
+                ? Container.Paragraphs.Single(p => p.Id == id)
+                : new Paragraph(Document, paragraph, -1);
         }
 
         /// <summary>
         /// Add a new table after this container
         /// </summary>
         /// <param name="table">Table to add</param>
-        public Table AddTableAfterSelf(Table table)
+        public void AddTable(Table table)
         {
-            if (table.Document == null)
-            {
-                Xml.AddAfterSelf(table.Xml);
-                table.Document = Document;
-                return table;
-            }
+            if (table.Container != null)
+                throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
+            table.Container = this.Container;
             Xml.AddAfterSelf(table.Xml);
-            XElement newlyInserted = Xml.ElementsAfterSelf().First();
-
-            // Already owned by another document -- clone it.
-            return new Table(Document, newlyInserted) { Design = table.Design };
         }
 
         /// <summary>
         /// Insert a table before this element
         /// </summary>
         /// <param name="table"></param>
-        public Table InsertTableBeforeSelf(Table table)
+        public void InsertTableBefore(Table table)
         {
-            if (table.Document == null)
-            {
-                Xml.AddBeforeSelf(table.Xml);
-                table.Document = Document;
-                return table;
-            }
+            if (table.Container != null)
+                throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
+            table.Container = Container;
             Xml.AddBeforeSelf(table.Xml);
-            XElement newlyInserted = Xml.ElementsBeforeSelf().Last();
-
-            // Already owned by another document -- clone it.
-            return new Table(Document, newlyInserted) { Design = table.Design };
         }
 
         /// <summary>
@@ -147,10 +132,10 @@ namespace DXPlus
             {
                 if (owner == value)
                     return;
-                
+
                 if (owner != null)
                     OnRemovedFromContainer(owner);
-                    
+
                 owner = value;
                 PackagePart = owner?.PackagePart;
                 Document = owner?.Document;
@@ -180,6 +165,7 @@ namespace DXPlus
         /// Page break element
         /// </summary>
         private static XElement PageBreak => new XElement(Name.Paragraph,
+            new XAttribute(Name.ParagraphId, HelperFunctions.GenerateHexId()),
             new XElement(Name.Run,
                 new XElement(Namespace.Main + "br",
                     new XAttribute(Namespace.Main + "type", "page"))));

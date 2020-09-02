@@ -1,18 +1,17 @@
-﻿using System;
+﻿using DXPlus.Helpers;
+using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO.Packaging;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using DXPlus.Helpers;
 
 namespace DXPlus
 {
     /// <summary>
     /// Base container object - this is used to represent all DOCX elements that contain child elements
     /// </summary>
-    public abstract class Container : DocXBase, IContainer
+    public abstract class Container : DocXElement, IContainer
     {
         /// <summary>
         /// Constructor
@@ -27,36 +26,24 @@ namespace DXPlus
         /// <summary>
         /// Returns a list of all Paragraphs inside this container.
         /// </summary>
-        public virtual ReadOnlyCollection<Paragraph> Paragraphs
+        public virtual IReadOnlyList<Paragraph> Paragraphs
         {
             get
             {
-                var paragraphs = new List<Paragraph>();
-                GetParagraphs(Xml, 0, paragraphs, false);
+                List<Paragraph> paragraphs = new List<Paragraph>();
+                GetParagraphs(Xml, 0, paragraphs, deepSearch: false);
 
-                foreach (var p in paragraphs)
+                foreach (Paragraph p in paragraphs)
                 {
                     // If the next sibling node is a table, then link it up to this
                     // paragraph node.
-                    var nextNode = p.Xml.ElementsAfterSelf().FirstOrDefault();
+                    XElement nextNode = p.Xml.ElementsAfterSelf().FirstOrDefault();
                     if (nextNode?.Name.Equals(Namespace.Main + "tbl") == true)
                     {
                         p.FollowingTable = new Table(Document, nextNode);
                     }
-
-                    // Set the parent container type
-                    p.ParentContainerType = p.Xml.Ancestors().First().Name.LocalName switch
-                    {
-                        "body" => ContainerType.Body,
-                        "p" => ContainerType.Paragraph,
-                        "tbl" => ContainerType.Table,
-                        "sectPr" => ContainerType.Section,
-                        "tc" => ContainerType.Cell,
-                        _ => ContainerType.None,
-                    };
                 }
-
-                return paragraphs.AsReadOnly();
+                return paragraphs;
             }
         }
 
@@ -68,7 +55,7 @@ namespace DXPlus
         public bool RemoveParagraph(int index)
         {
             int i = 0;
-            foreach (var paragraph in Xml.Descendants(Name.Paragraph))
+            foreach (XElement paragraph in Xml.Descendants(Name.Paragraph))
             {
                 if (i == index)
                 {
@@ -88,10 +75,9 @@ namespace DXPlus
         /// <returns>True if removed</returns>
         public bool RemoveParagraph(Paragraph paragraph)
         {
-            var paraXml = Xml.Descendants(Name.Paragraph).FirstOrDefault(p => p.Equals(paragraph.Xml));
-            if (paraXml != null)
+            if (paragraph.Container == this)
             {
-                paraXml.Remove();
+                paragraph.Xml.Remove();
                 return true;
             }
             return false;
@@ -100,36 +86,24 @@ namespace DXPlus
         /// <summary>
         /// Returns all the sections associated with this container.
         /// </summary>
-        public List<Section> Sections
+        public IReadOnlyList<Section> Sections
         {
             get
             {
-                var parasInASection = new List<Paragraph>();
-                var sections = new List<Section>();
+                List<Section> sections = (
+                    from para in Paragraphs
+                    where para.Xml.Element(Name.ParagraphProperties, Name.SectionProperties) != null
+                    select new Section(Document, para.Xml) {PackagePart = PackagePart}).ToList();
 
-                foreach (var para in Paragraphs)
+                // Return the final section if this is the mainDoc.
+                if (Xml.Element(Name.SectionProperties) != null)
                 {
-                    parasInASection.Add(para);
-
-                    var sectionInPara = para.Xml.FirstLocalNameDescendant("sectPr");
-                    if (sectionInPara != null)
-                    {
-                        sections.Add(new Section(Document, sectionInPara) { SectionParagraphs = parasInASection, PackagePart = PackagePart });
-                        parasInASection = new List<Paragraph>();
-                    }
+                    sections.Add(new Section(Document, Xml) { PackagePart = PackagePart });
                 }
 
-                var baseSectionXml = Xml.Element(Namespace.Main + "body")?
-                                             .Element(Name.SectionProperties);
-                if (baseSectionXml != null)
-                {
-                    sections.Add(new Section(Document, baseSectionXml) { SectionParagraphs = parasInASection, PackagePart = PackagePart });
-                }
-
-                return sections;
+                return sections.AsReadOnly();
             }
         }
-
 
         /// <summary>
         /// Get all paragraphs in the document recursively.
@@ -139,15 +113,17 @@ namespace DXPlus
         /// <param name="paragraphs">Found paragraphs</param>
         /// <param name="deepSearch">True to search inside paragraphs</param>
         /// <returns></returns>
-        internal int GetParagraphs(XElement xml, int index, List<Paragraph> paragraphs, bool deepSearch = false)
+        private int GetParagraphs(XElement xml, int index, List<Paragraph> paragraphs, bool deepSearch = false)
         {
             if (xml == null)
-                throw new ArgumentNullException(nameof(xml), "Paragraph collection not created.");
+            {
+                throw new ArgumentNullException(nameof(xml));
+            }
 
             bool keepSearching = true;
-            if (xml.Name.LocalName == "p")
+            if (xml.Name == Name.Paragraph)
             {
-                paragraphs.Add(SetParentContainerBasedOnType(new Paragraph(Document, xml, index)));
+                paragraphs.Add(new Paragraph(Document, xml, index) { Container = this });
                 index += HelperFunctions.GetText(xml).Length;
                 if (!deepSearch)
                 {
@@ -170,14 +146,14 @@ namespace DXPlus
                           .Select(t => new Table(Document, t));
 
         /// <summary>
-        /// Retrieve a list of all Lists in the container (numbered or bulleted)
+        /// Retrieve a list of all Lists in the container (numbered or bullet)
         /// </summary>
         public IEnumerable<List> Lists
         {
             get
             {
-                var list = new List();
-                foreach (var paragraph in Paragraphs)
+                List list = new List();
+                foreach (Paragraph paragraph in Paragraphs)
                 {
                     if (paragraph.IsListItem())
                     {
@@ -232,7 +208,7 @@ namespace DXPlus
         /// <param name="direction">Direction either LeftToRight or RightToLeft</param>
         public void SetDirection(Direction direction)
         {
-            foreach (var p in Paragraphs)
+            foreach (Paragraph p in Paragraphs)
             {
                 p.Direction = direction;
             }
@@ -250,34 +226,31 @@ namespace DXPlus
         /// <param name="escapeRegEx">True to escape Regex expression</param>
         /// <param name="useRegExSubstitutions">True to use RegEx in substitution</param>
         public void ReplaceText(string searchValue, string newValue,
-                RegexOptions options = RegexOptions.None, Formatting newFormatting = null, Formatting matchFormatting = null, 
-                MatchFormattingOptions formattingOptions = MatchFormattingOptions.SubsetMatch, 
+                RegexOptions options = RegexOptions.None, Formatting newFormatting = null, Formatting matchFormatting = null,
+                MatchFormattingOptions formattingOptions = MatchFormattingOptions.SubsetMatch,
                 bool escapeRegEx = true, bool useRegExSubstitutions = false)
         {
             if (string.IsNullOrEmpty(searchValue))
-                throw new ArgumentNullException(nameof(searchValue));
-            if (newValue == null)
-                throw new ArgumentNullException(nameof(newValue));
-
-            // ReplaceText in Headers of the document.
-            if (Document != null)
             {
-                foreach (var header in new List<Header> { Document.Headers.First, Document.Headers.Even, Document.Headers.Default })
-                {
-                    if (header.Exists)
-                    {
-                        foreach (var paragraph in header.Paragraphs)
-                        {
-                            paragraph.ReplaceText(searchValue, newValue, options,
-                                newFormatting, matchFormatting, formattingOptions,
-                                escapeRegEx, useRegExSubstitutions);
-                        }
-                    }
-                }
+                throw new ArgumentNullException(nameof(searchValue));
+            }
+
+            if (newValue == null)
+            {
+                throw new ArgumentNullException(nameof(newValue));
+            }
+
+            // ReplaceText in Headers of all sections.
+            foreach (Paragraph paragraph in Sections.SelectMany(s => s.Headers)
+                                              .SelectMany(header => header.Paragraphs))
+            {
+                paragraph.ReplaceText(searchValue, newValue, options,
+                    newFormatting, matchFormatting, formattingOptions,
+                    escapeRegEx, useRegExSubstitutions);
             }
 
             // ReplaceText int main body of document.
-            foreach (var paragraph in Paragraphs)
+            foreach (Paragraph paragraph in Paragraphs)
             {
                 paragraph.ReplaceText(searchValue, newValue, options,
                     newFormatting, matchFormatting, formattingOptions,
@@ -285,20 +258,12 @@ namespace DXPlus
             }
 
             // ReplaceText in Footers of the document.
-            if (Document != null)
+            foreach (Paragraph paragraph in Sections.SelectMany(s => s.Footers)
+                                              .SelectMany(footer => footer.Paragraphs))
             {
-                foreach (var footer in new List<Footer> { Document.Footers.First, Document.Footers.Even, Document.Footers.Default })
-                {
-                    if (footer.Exists)
-                    {
-                        foreach (var paragraph in footer.Paragraphs)
-                        {
-                            paragraph.ReplaceText(searchValue, newValue, options,
-                                newFormatting, matchFormatting, formattingOptions,
-                                escapeRegEx, useRegExSubstitutions);
-                        }
-                    }
-                }
+                paragraph.ReplaceText(searchValue, newValue, options,
+                    newFormatting, matchFormatting, formattingOptions,
+                    escapeRegEx, useRegExSubstitutions);
             }
         }
 
@@ -310,107 +275,116 @@ namespace DXPlus
         public bool InsertAtBookmark(string bookmarkName, string toInsert)
         {
             if (string.IsNullOrWhiteSpace(bookmarkName))
+            {
                 throw new ArgumentException("bookmark cannot be null or empty", nameof(bookmarkName));
+            }
 
             // Try headers first
-            if (Document != null)
-            {
-                var headerCollection = Document.Headers;
-                var headers = new List<Header> {headerCollection.First, headerCollection.Even, headerCollection.Default};
-                if (headers.Where(hdr => hdr.Exists).SelectMany(header => header.Paragraphs)
+            if (Sections.SelectMany(s => s.Headers)
+                    .SelectMany(header => header.Paragraphs)
                     .Any(paragraph => paragraph.InsertAtBookmark(bookmarkName, toInsert)))
-                    return true;
+            {
+                return true;
             }
 
             // Body
             if (Paragraphs.Any(paragraph => paragraph.InsertAtBookmark(bookmarkName, toInsert)))
-                return true;
-
-            // Footers
-            if (Document != null)
             {
-                var footerCollection = Document.Footers;
-                var footers = new List<Footer> { footerCollection.First, footerCollection.Even, footerCollection.Default };
-                return footers.Where(ftr => ftr.Exists).SelectMany(footer => footer.Paragraphs)
-                    .Any(paragraph => paragraph.InsertAtBookmark(bookmarkName, toInsert));
+                return true;
             }
 
-            return false;
+            // Footers
+            return Sections.SelectMany(s => s.Footers)
+                .SelectMany(header => header.Paragraphs)
+                .Any(paragraph => paragraph.InsertAtBookmark(bookmarkName, toInsert));
         }
 
         /// <summary>
         /// Insert a paragraph into this container at a specific index
         /// </summary>
         /// <param name="index">Character index to insert into</param>
-        /// <param name="p">Paragraph to insert</param>
+        /// <param name="paragraph">Paragraph to insert</param>
         /// <returns>Inserted paragraph</returns>
-        public Paragraph InsertParagraph(int index, Paragraph p)
+        public Paragraph InsertParagraph(int index, Paragraph paragraph)
         {
-            InsertMissingStyles(p);
+            if (paragraph.Container != null)
+                throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
-            // Clone the element in case this is already in the document
-            var newXElement = new XElement(p.Xml);
-            p.Xml = newXElement;
+            InsertMissingStyles(paragraph);
 
-            var paragraph = HelperFunctions.GetFirstParagraphAffectedByInsert(Document, index);
-            if (paragraph == null)
+            Paragraph insertPos = HelperFunctions.GetFirstParagraphAffectedByInsert(Document, index);
+            if (insertPos == null)
             {
-                Xml.Add(p.Xml);
+                AddParagraphToDocument(paragraph.Xml);
             }
             else
             {
-                var split = HelperFunctions.SplitParagraph(paragraph, index - paragraph.StartIndex);
-                paragraph.Xml.ReplaceWith(split[0], newXElement, split[1]);
+                XElement[] split = HelperFunctions.SplitParagraph(insertPos, index - insertPos.StartIndex);
+                insertPos.Xml.ReplaceWith(split[0], paragraph.Xml, split[1]);
             }
 
-            return SetParentContainerBasedOnType(p);
+            return OnAddParagraph(paragraph);
         }
-
-        internal Dictionary<int, Paragraph> GetParagraphIndexes() => Paragraphs.ToDictionary(paragraph => paragraph.EndIndex);
 
         /// <summary>
         /// Add a paragraph at the end of the container
         /// </summary>
         public Paragraph AddParagraph(Paragraph paragraph)
         {
+            if (paragraph.Container != null)
+                throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
+
             InsertMissingStyles(paragraph);
+            AddParagraphToDocument(paragraph.Xml);
 
-            // Clone the element in case this is already in the document
-            var newXElement = new XElement(paragraph.Xml);
-            Xml.Add(newXElement);
+            return OnAddParagraph(paragraph);
+        }
 
-            var lookup = GetParagraphIndexes();
-            int index = 0;
-            if (lookup.Keys.Count > 0)
+        private Paragraph OnAddParagraph(Paragraph paragraph)
+        {
+            paragraph.SetStartIndex(Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
+            paragraph.Container = this;
+
+            return paragraph;
+        }
+
+        /// <summary>
+        /// Adds a new paragraph into the document structure
+        /// </summary>
+        /// <param name="paragraphXml"></param>
+        private void AddParagraphToDocument(XElement paragraphXml)
+        {
+            // Add an ID if it's missing.
+            if (paragraphXml.Attribute(Name.ParagraphId) == null)
             {
-                index = lookup.Last().Key;
-                if (lookup.Last().Value.Text.Length == 0)
-                {
-                    index++;
-                }
-                else
-                {
-                    index += lookup.Last().Value.Text.Length;
-                }
+                paragraphXml.SetAttributeValue(Name.ParagraphId, HelperFunctions.GenerateHexId());
             }
 
-            return SetParentContainerBasedOnType(new Paragraph(Document, newXElement, index));
+            XElement sectPr = Xml.Elements(Name.SectionProperties).SingleOrDefault();
+            if (sectPr != null)
+            {
+                sectPr.AddBeforeSelf(paragraphXml);
+            }
+            else
+            {
+                Xml.Add(paragraphXml);
+            }
         }
 
         /// <summary>
         /// Insert any missing styles associated with the passed paragraph
         /// </summary>
-        /// <param name="p"></param>
-        private void InsertMissingStyles(Paragraph p)
+        /// <param name="paragraph"></param>
+        private void InsertMissingStyles(Paragraph paragraph)
         {
             if (Document == null)
                 return;
 
             // Make sure the document has all the styles associated to the
             // paragraph we are inserting.
-            if (p.Styles.Count > 0)
+            if (paragraph.Styles.Count > 0)
             {
-                var stylePackage = Relations.Styles.Uri;
+                Uri stylePackage = Relations.Styles.Uri;
                 XDocument styleDoc;
                 PackagePart stylePackagePart;
                 if (!Document.Package.PartExists(stylePackage))
@@ -426,14 +400,14 @@ namespace DXPlus
                 }
 
                 // Get all the styleId values from the current style
-                var styles = styleDoc.GetOrCreateElement(Namespace.Main + "styles");
-                var ids = styles.Descendants(Namespace.Main + "style")
+                XElement styles = styleDoc.GetOrCreateElement(Namespace.Main + "styles");
+                List<string> ids = styles.Descendants(Namespace.Main + "style")
                                 .Select(e => e.AttributeValue(Namespace.Main + "styleId", null))
                                 .Where(v => v != null)
                                 .ToList();
 
                 // Go through the new paragraph and make sure all the styles are present
-                foreach (var style in p.Styles.Where(s => !ids.Contains(s.AttributeValue(Namespace.Main + "styleId"))))
+                foreach (XElement style in paragraph.Styles.Where(s => !ids.Contains(s.AttributeValue(Namespace.Main + "styleId"))))
                 {
                     styles.Add(style);
                 }
@@ -441,7 +415,6 @@ namespace DXPlus
                 // Save back to the package
                 stylePackagePart.Save(styleDoc);
             }
-
         }
 
         /// <summary>
@@ -453,10 +426,8 @@ namespace DXPlus
         /// <returns></returns>
         public Paragraph InsertParagraph(int index, string text, Formatting formatting)
         {
-            var newParagraph = new Paragraph(Document, new XElement(Name.Paragraph), index);
-            newParagraph.InsertText(0, text, formatting);
-
-            var firstPar = HelperFunctions.GetFirstParagraphAffectedByInsert(Document, index);
+            Paragraph newParagraph = new Paragraph(Document, Paragraph.Create(text, formatting), index);
+            Paragraph firstPar = HelperFunctions.GetFirstParagraphAffectedByInsert(Document, index);
             if (firstPar != null)
             {
                 int splitIndex = index - firstPar.StartIndex;
@@ -466,55 +437,41 @@ namespace DXPlus
                 }
                 else
                 {
-                    var splitParagraph = HelperFunctions.SplitParagraph(firstPar, splitIndex);
+                    XElement[] splitParagraph = HelperFunctions.SplitParagraph(firstPar, splitIndex);
                     firstPar.Xml.ReplaceWith(splitParagraph[0], newParagraph.Xml, splitParagraph[1]);
                 }
             }
             else
             {
-                Xml.Add(newParagraph);
+                AddParagraphToDocument(newParagraph.Xml);
             }
 
-            return SetParentContainerBasedOnType(newParagraph);
-        }
-
-        /// <summary>
-        /// Determine the container parent type for the given paragraph
-        /// </summary>
-        /// <param name="paragraph">Paragraph</param>
-        private Paragraph SetParentContainerBasedOnType(Paragraph paragraph)
-        {
-            paragraph.Container = this;
-            paragraph.ParentContainerType = GetType().Name switch
-            {
-                nameof(Table) => ContainerType.Table,
-                nameof(Section) => ContainerType.Section,
-                nameof(Cell) => ContainerType.Cell,
-                nameof(Header) => ContainerType.Header,
-                nameof(Footer) => ContainerType.Footer,
-                nameof(Paragraph) => ContainerType.Paragraph,
-                nameof(DocX) => ContainerType.Body,
-                _ => ContainerType.None
-            };
-
-            return paragraph;
+            return OnAddParagraph(newParagraph);
         }
 
         /// <summary>
         /// Add a new section to the container
         /// </summary>
-        public void AddSection() => Xml.Add(new XElement(Name.Paragraph,
-                                                new XElement(Name.ParagraphProperties,
-                                                    new XElement(Name.SectionProperties,
-                                                        new XElement(Namespace.Main + "type",
-                                                            new XAttribute(Name.MainVal, "continuous"))))));
+        public void AddSection()
+        {
+            AddParagraphToDocument(new XElement(Name.Paragraph,
+                          new XAttribute(Name.ParagraphId, HelperFunctions.GenerateHexId()),
+                          new XElement(Name.ParagraphProperties,
+                              new XElement(Name.SectionProperties,
+                                  new XElement(Namespace.Main + "type",
+                                      new XAttribute(Name.MainVal, SectionBreakType.Continuous.GetEnumName()))))));
+        }
 
         /// <summary>
         /// Add a new page break to the container
         /// </summary>
-        public void AddPageBreak() => Xml.Add(new XElement(Name.Paragraph,
-                                                new XElement(Name.ParagraphProperties,
-                                                    new XElement(Name.SectionProperties))));
+        public void AddPageBreak()
+        {
+            AddParagraphToDocument(new XElement(Name.Paragraph,
+                        new XAttribute(Name.ParagraphId, HelperFunctions.GenerateHexId()),
+                        new XElement(Name.ParagraphProperties,
+                            new XElement(Name.SectionProperties))));
+        }
 
         /// <summary>
         /// Add a paragraph with the given text to the end of the container
@@ -525,12 +482,13 @@ namespace DXPlus
         public Paragraph AddParagraph(string text, Formatting formatting)
         {
             if (text == null)
+            {
                 throw new ArgumentNullException(nameof(text));
+            }
 
-            var paragraph = ParagraphHelpers.Create(text, formatting);
-            Xml.Add(paragraph);
-
-            return SetParentContainerBasedOnType(new Paragraph(Document, paragraph, 0));
+            XElement paragraph = Paragraph.Create(text, formatting);
+            AddParagraphToDocument(paragraph);
+            return OnAddParagraph(new Paragraph(Document, paragraph, 0));
         }
 
         /// <summary>
@@ -540,12 +498,11 @@ namespace DXPlus
         /// <returns>Table reference - may be copied if original table was already in document.</returns>
         public Table AddTable(Table table)
         {
-            if (table.Document != null)
-                table = new Table(Document, new XElement(table.Xml)) { Design = table.Design };
+            if (table.Container != null)
+                throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
             table.Container = this;
-
-            Xml.Add(table.Xml);
+            AddParagraphToDocument(table.Xml);
 
             return table;
         }
@@ -553,18 +510,18 @@ namespace DXPlus
         /// <summary>
         /// Insert a Table into this document. The Table's source can be a completely different document.
         /// </summary>
-        /// <param name="table">The Table to insert.</param>
         /// <param name="index">The index to insert this Table at.</param>
+        /// <param name="table">The Table to insert.</param>
         /// <returns>The Table now associated with this document.</returns>
         public Table InsertTable(int index, Table table)
         {
-            if (table.Document != null)
-                table = new Table(Document, new XElement(table.Xml)) { Design = table.Design };
+            if (table.Container != null)
+                throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
             table.Container = this;
 
-            var firstParagraph = HelperFunctions.GetFirstParagraphAffectedByInsert(Document, index);
-            var split = HelperFunctions.SplitParagraph(firstParagraph, index - firstParagraph.StartIndex);
+            Paragraph firstParagraph = HelperFunctions.GetFirstParagraphAffectedByInsert(Document, index);
+            XElement[] split = HelperFunctions.SplitParagraph(firstParagraph, index - firstParagraph.StartIndex);
             firstParagraph.Xml.ReplaceWith(split[0], table.Xml, split[1]);
 
             return table;
@@ -572,68 +529,21 @@ namespace DXPlus
 
         /// <summary>
         /// Insert a List into this document.
-        /// The List's source can be a completely different document.
         /// </summary>
         /// <param name="list">The List to insert</param>
         /// <returns>The List now associated with this document.</returns>
         public List AddList(List list)
         {
             if (list.Container != null)
-                list = new List(list);
+                throw new ArgumentException("Cannot add list multiple times.", nameof(list));
 
-            foreach (var item in list.Items)
+            foreach (ListItem item in list.Items)
             {
-                Xml.Add(item.Paragraph.Xml);
+                AddParagraphToDocument(item.Paragraph.Xml);
             }
 
             list.Container = this;
 
-            return list;
-        }
-
-        /// <summary>
-        /// Insert a List with a specific font size into this document.
-        /// The List's source can be a completely different document.
-        /// </summary>
-        /// <param name="list">The List to insert</param>
-        /// <param name="fontSize">Font size</param>
-        /// <returns>The List now associated with this document.</returns>
-        public List AddList(List list, double fontSize)
-        {
-            if (list.Container != null)
-                list = new List(list);
-
-            foreach (var item in list.Items)
-            {
-                item.Paragraph.FontSize(fontSize);
-                Xml.Add(item.Paragraph.Xml);
-            }
-
-            list.Container = this;
-            return list;
-        }
-
-        /// <summary>
-        /// Insert a List with a specific font size/family into this document.
-        /// The List's source can be a completely different document.
-        /// </summary>
-        /// <param name="list">The List to insert</param>
-        /// <param name="fontFamily">Font family</param>
-        /// <param name="fontSize">Font size</param>
-        /// <returns>The List now associated with this document.</returns>
-        public List AddList(List list, System.Drawing.FontFamily fontFamily, double fontSize)
-        {
-            if (list.Container != null)
-                list = new List(list);
-
-            foreach (var item in list.Items)
-            {
-                item.Paragraph.Font(fontFamily);
-                item.Paragraph.FontSize(fontSize);
-                Xml.Add(item.Paragraph.Xml);
-            }
-
-            list.Container = this;
             return list;
         }
 
@@ -646,16 +556,16 @@ namespace DXPlus
         public List InsertList(int index, List list)
         {
             if (list.Container != null)
-                list = new List(list);
+                throw new ArgumentException("Cannot add list multiple times.", nameof(list));
 
             list.Container = this;
 
             if (list.Items.Count > 0)
             {
-                var firstParagraph = HelperFunctions.GetFirstParagraphAffectedByInsert(Document, index);
-                var split = HelperFunctions.SplitParagraph(firstParagraph, index - firstParagraph.StartIndex);
+                Paragraph firstParagraph = HelperFunctions.GetFirstParagraphAffectedByInsert(Document, index);
+                XElement[] split = HelperFunctions.SplitParagraph(firstParagraph, index - firstParagraph.StartIndex);
 
-                var elements = new List<XElement> { split[0] };
+                List<XElement> elements = new List<XElement> { split[0] };
                 elements.AddRange(list.Items.Select(item => item.Xml));
                 elements.Add(split[1]);
                 firstParagraph.Xml.ReplaceWith(elements.ToArray<object>());
@@ -674,7 +584,7 @@ namespace DXPlus
             // Make sure we have all the styles in our document owner.
             if (newValue != null && Xml != null)
             {
-                foreach (var paragraph in Paragraphs)
+                foreach (Paragraph paragraph in Paragraphs)
                 {
                     InsertMissingStyles(paragraph);
                 }

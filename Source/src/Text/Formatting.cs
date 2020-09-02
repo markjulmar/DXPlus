@@ -11,7 +11,7 @@ namespace DXPlus
     /// This holds all the formatting properties for a run of text.
     /// This is typically contained in a (rPr) element.
     /// </summary>
-    public sealed class Formatting
+    public sealed class Formatting : IEquatable<Formatting>
     {
         internal XElement Xml { get; set; }
 
@@ -254,8 +254,8 @@ namespace DXPlus
         {
             // Measured in half-pts (1/144")
             get => double.TryParse(Xml.Element(Name.Position).GetVal(), out var value) ? (double?) value/2.0 : null;
-            set => Xml.AddElementVal(Name.Position, value != null 
-                    ? Math.Round(value.Value * 2, 2).ToString(CultureInfo.InvariantCulture) 
+            set => Xml.AddElementVal(Name.Position, value != null
+                    ? Math.Round(value.Value * 2, 2).ToString(CultureInfo.InvariantCulture)
                     : null);
         }
 
@@ -311,7 +311,7 @@ namespace DXPlus
         /// </summary>
         public UnderlineStyle UnderlineStyle
         {
-            get => Xml.Element(Name.Underline).GetVal().TryGetEnumValue<UnderlineStyle>(out var result) 
+            get => Xml.Element(Name.Underline).GetVal().TryGetEnumValue<UnderlineStyle>(out var result)
                 ? result : UnderlineStyle.None;
             set => Xml.AddElementVal(Name.Underline, value != UnderlineStyle.None ? value.GetEnumName() : null);
         }
@@ -389,6 +389,17 @@ namespace DXPlus
         public Formatting(XElement element = null)
         {
             Xml = element ?? new XElement(Name.RunProperties);
+        }
+
+        /// <summary>
+        /// Equals method to compare to another formatting object.
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool Equals(Formatting other)
+        {
+            return ReferenceEquals(this, other) || (other != null
+                && XNode.DeepEquals(Xml.Normalize(), other.Xml.Normalize()));
         }
     }
 }

@@ -5,9 +5,9 @@ using System.Text.RegularExpressions;
 namespace DXPlus
 {
     /// <summary>
-    /// Extension methods for Containers
+    /// Extension methods for the IContainer type.
     /// </summary>
-    public static class ContainerHelpers
+    public static class ContainerExtensions
     {
         /// <summary>
         /// Add an empty paragraph at the end of this container.
@@ -62,7 +62,7 @@ namespace DXPlus
         /// <param name="text"></param>
         /// <param name="ignoreCase"></param>
         /// <returns></returns>
-        public static IEnumerable<int> FindAll(this IContainer container, string text, bool ignoreCase = false)
+        public static IEnumerable<int> FindText(this IContainer container, string text, bool ignoreCase = false)
         {
             return from p in container.Paragraphs
                 from index in p.FindAll(text, ignoreCase)
@@ -76,7 +76,7 @@ namespace DXPlus
         /// <param name="container"></param>
         /// <param name="regex">Pattern to search for</param>
         /// <returns>Index and matched strings</returns>
-        public static IEnumerable<(int index, string text)> FindPattern(this IContainer container, Regex regex)
+        public static IEnumerable<(int index, string text)> FindText(this IContainer container, Regex regex)
         {
             foreach (var p in container.Paragraphs)
             {
@@ -86,7 +86,5 @@ namespace DXPlus
                 }
             }
         }
-
-
     }
 }

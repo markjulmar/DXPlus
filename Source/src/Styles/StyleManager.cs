@@ -10,7 +10,7 @@ namespace DXPlus
     /// <summary>
     /// Manager for the named styles (styles.xml) in the document.
     /// </summary>
-    public sealed class StyleManager : DocXBase
+    public sealed class StyleManager : DocXElement
     {
         private readonly XDocument stylesDoc;
 
@@ -59,7 +59,7 @@ namespace DXPlus
         /// <param name="styleId">Id</param>
         /// <param name="type">Style type</param>
         /// <returns>Style if present</returns>
-        internal Style GetStyle(string styleId, StyleType type) => 
+        internal Style GetStyle(string styleId, StyleType type) =>
             Styles.SingleOrDefault(s => s.Id == styleId && s.Type == type);
 
         /// <summary>

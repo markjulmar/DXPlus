@@ -31,14 +31,9 @@ namespace DXPlus
         BookmarkCollection Bookmarks { get; }
 
         /// <summary>
-        /// Should the Document use an independent Header and Footer for the first page?
-        /// </summary>
-        bool DifferentFirstPage { get; set; }
-
-        /// <summary>
         /// Should the Document use different Headers and Footers for odd and even pages?
         /// </summary>
-        bool DifferentOddAndEvenPages { get; set; }
+        bool DifferentEvenOddHeadersFooters { get; set; }
 
         /// <summary>
         /// Get the text of each endnote from this document
@@ -46,60 +41,14 @@ namespace DXPlus
         IEnumerable<string> EndnotesText { get; }
 
         /// <summary>
-        /// Returns a collection of Footers in this Document.
-        /// A document typically contains three Footers.
-        /// A default one (odd), one for the first page and one for even pages.
-        /// </summary>
-        FooterCollection Footers { get; }
-
-        /// <summary>
         /// Get the text of each footnote from this document
         /// </summary>
         IEnumerable<string> FootnotesText { get; }
 
         /// <summary>
-        /// Returns a collection of Headers in this Document.
-        /// A document typically contains three Headers.
-        /// A default one (odd), one for the first page and one for even pages.
-        /// </summary>
-        HeaderCollection Headers { get; }
-
-        /// <summary>
         /// Returns a list of Images in this document.
         /// </summary>
         List<Image> Images { get; }
-
-        /// <summary>
-        /// Bottom margin value in points. 1pt = 1/72 of an inch. Word internally writes docx using units = 1/20th of a point.
-        /// </summary>
-        double MarginBottom { get; set; }
-
-        /// <summary>
-        /// Left margin value in points. 1pt = 1/72 of an inch. Word internally writes docx using units = 1/20th of a point.
-        /// </summary>
-        double MarginLeft { get; set; }
-
-        /// <summary>
-        /// Right margin value in points. 1pt = 1/72 of an inch. Word internally writes docx using units = 1/20th of a point.
-        /// </summary>
-        double MarginRight { get; set; }
-
-        /// <summary>
-        /// Top margin value in points. 1pt = 1/72 of an inch. Word internally writes docx using units = 1/20th of a point.
-        /// </summary>
-        double MarginTop { get; set; }
-
-        /// <summary>
-        /// Page height value in points. 1pt = 1/72 of an inch. Word internally writes docx using units = 1/20th of a point.
-        /// </summary>
-        double PageHeight { get; set; }
-
-        PageLayout PageLayout { get; }
-
-        /// <summary>
-        /// Page width value in points. 1pt = 1/72 of an inch. Word internally writes docx using units = 1/20th of a point.
-        /// </summary>
-        double PageWidth { get; set; }
 
         ///<summary>
         /// Returns the list of document core properties with corresponding values.
@@ -195,12 +144,6 @@ namespace DXPlus
         ///<param name="templateStream">The stream of the document template file.</param>
         ///<param name="includeContent">Whether to copy the document template text content to document.</param>
         void ApplyTemplate(Stream templateStream, bool includeContent);
-
-        /// <summary>
-        /// Retrieve the sections of the document
-        /// </summary>
-        /// <returns>Located sections in the document</returns>
-        IEnumerable<Section> GetSections();
 
         /// <summary>
         /// Insert a chart in document

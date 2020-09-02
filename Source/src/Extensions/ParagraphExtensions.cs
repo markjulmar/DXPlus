@@ -2,34 +2,25 @@
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
-using System.Xml.Linq;
-using DXPlus.Helpers;
 
 namespace DXPlus
 {
     /// <summary>
-    /// Fluent methods for the paragraph type
+    /// Extension methods to work with the Paragraph type.
     /// </summary>
-    public static class ParagraphHelpers
+    public static class ParagraphExtensions
     {
-        /// <summary>
-        /// Create a new paragraph from some text
-        /// </summary>
-        /// <param name="text"></param>
-        /// <param name="formatting"></param>
-        /// <returns>New paragraph</returns>
-        internal static XElement Create(string text, Formatting formatting) => 
-            new XElement(Name.Paragraph, HelperFunctions.FormatInput(text, formatting?.Xml));
-
         /// <summary>
         /// Fluent method to set alignment
         /// </summary>
         /// <param name="paragraph">Paragraph</param>
         /// <param name="alignment">Desired alignment</param>
-        public static Paragraph Align(this Paragraph paragraph, Alignment alignment)
+        public static Paragraph Alignment(this Paragraph paragraph, Alignment alignment)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.Alignment = alignment;
             return paragraph;
@@ -41,8 +32,10 @@ namespace DXPlus
         /// <returns>This Paragraph with a new line appended.</returns>
         public static Paragraph AppendLine(this Paragraph paragraph)
         {
-            if (paragraph == null) 
+            if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             return paragraph.Append("\n");
         }
@@ -55,11 +48,16 @@ namespace DXPlus
         /// <returns>This Paragraph with the new text appended.</returns>
         public static Paragraph AppendLine(this Paragraph paragraph, string text)
         {
-            if (paragraph == null) 
+            if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
-            if (text == null) 
+            }
+
+            if (text == null)
+            {
                 throw new ArgumentNullException(nameof(text));
-            
+            }
+
             return paragraph.Append(text + "\n");
         }
 
@@ -71,7 +69,9 @@ namespace DXPlus
         public static Paragraph Bold(this Paragraph paragraph)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.Bold = true;
             return paragraph;
@@ -86,7 +86,9 @@ namespace DXPlus
         public static Paragraph CapsStyle(this Paragraph paragraph, CapsStyle capsStyle)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.CapsStyle = capsStyle;
             return paragraph;
@@ -101,7 +103,9 @@ namespace DXPlus
         public static Paragraph Color(this Paragraph paragraph, Color color)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.Color = color;
             return paragraph;
@@ -116,7 +120,9 @@ namespace DXPlus
         public static Paragraph Culture(this Paragraph paragraph, CultureInfo culture)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.Culture = culture;
             return paragraph;
@@ -127,7 +133,10 @@ namespace DXPlus
         /// </summary>
         /// <param name="paragraph"></param>
         /// <returns>This Paragraph in current culture</returns>
-        public static Paragraph Culture(this Paragraph paragraph) => Culture(paragraph, CultureInfo.CurrentCulture);
+        public static Paragraph Culture(this Paragraph paragraph)
+        {
+            return Culture(paragraph, CultureInfo.CurrentCulture);
+        }
 
         /// <summary>
         /// Set the font for the preceding text.
@@ -138,7 +147,9 @@ namespace DXPlus
         public static Paragraph Font(this Paragraph paragraph, FontFamily fontFamily)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.Font = fontFamily;
             return paragraph;
@@ -153,7 +164,9 @@ namespace DXPlus
         public static Paragraph FontSize(this Paragraph paragraph, double fontSize)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.FontSize = fontSize;
             return paragraph;
@@ -167,7 +180,9 @@ namespace DXPlus
         public static Paragraph Heading(this Paragraph paragraph, HeadingType headingType)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.StyleName = headingType.GetEnumName();
             return paragraph;
@@ -180,7 +195,9 @@ namespace DXPlus
         public static Paragraph Italic(this Paragraph paragraph)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.Italic = true;
             return paragraph;
@@ -195,7 +212,9 @@ namespace DXPlus
         public static Paragraph Hide(this Paragraph paragraph, bool hide = true)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.IsHidden = hide;
             return paragraph;
@@ -210,7 +229,9 @@ namespace DXPlus
         public static Paragraph Highlight(this Paragraph paragraph, Highlight highlight)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.Highlight = highlight;
             return paragraph;
@@ -225,7 +246,9 @@ namespace DXPlus
         public static Paragraph Kerning(this Paragraph paragraph, int kerning)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.Kerning = kerning;
             return paragraph;
@@ -240,7 +263,9 @@ namespace DXPlus
         public static Paragraph Effect(this Paragraph paragraph, Effect effect)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.Effect = effect;
             return paragraph;
@@ -255,7 +280,9 @@ namespace DXPlus
         public static Paragraph ExpansionScale(this Paragraph paragraph, int scale)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.ExpansionScale = scale;
             return paragraph;
@@ -270,8 +297,10 @@ namespace DXPlus
         public static Paragraph Position(this Paragraph paragraph, double position)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
-            
+            }
+
             paragraph.Position = position;
             return paragraph;
         }
@@ -284,7 +313,9 @@ namespace DXPlus
         public static void RemoveText(this Paragraph paragraph, int index)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.RemoveText(index, paragraph.Text.Length - index);
         }
@@ -297,7 +328,9 @@ namespace DXPlus
         public static Paragraph Superscript(this Paragraph paragraph)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.Superscript = true;
             return paragraph;
@@ -311,7 +344,9 @@ namespace DXPlus
         public static Paragraph Subscript(this Paragraph paragraph)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.Subscript = true;
             return paragraph;
@@ -326,7 +361,9 @@ namespace DXPlus
         public static Paragraph LineSpacing(this Paragraph paragraph, double spacing)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.LineSpacing = spacing;
             return paragraph;
@@ -341,8 +378,10 @@ namespace DXPlus
         public static Paragraph LineSpacingAfter(this Paragraph paragraph, double spacing)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
-            
+            }
+
             paragraph.LineSpacingAfter = spacing;
             return paragraph;
         }
@@ -356,9 +395,79 @@ namespace DXPlus
         public static Paragraph LineSpacingBefore(this Paragraph paragraph, double spacing)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.LineSpacingBefore = spacing;
+            return paragraph;
+        }
+
+        /// <summary>
+        /// Set the left indent for the paragraph
+        /// </summary>
+        /// <param name="paragraph"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static Paragraph LeftIndent(this Paragraph paragraph, double value)
+        {
+            if (paragraph == null)
+            {
+                throw new ArgumentNullException(nameof(paragraph));
+            }
+
+            paragraph.LeftIndent = value;
+            return paragraph;
+        }
+
+        /// <summary>
+        /// Set the right indent for the paragraph
+        /// </summary>
+        /// <param name="paragraph"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static Paragraph RightIndent(this Paragraph paragraph, double value)
+        {
+            if (paragraph == null)
+            {
+                throw new ArgumentNullException(nameof(paragraph));
+            }
+
+            paragraph.RightIndent = value;
+            return paragraph;
+        }
+
+        /// <summary>
+        /// Set the first line indent for the paragraph
+        /// </summary>
+        /// <param name="paragraph"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static Paragraph FirstLineIndent(this Paragraph paragraph, double value)
+        {
+            if (paragraph == null)
+            {
+                throw new ArgumentNullException(nameof(paragraph));
+            }
+
+            paragraph.FirstLineIndent = value;
+            return paragraph;
+        }
+
+        /// <summary>
+        /// Set the hanging indent for the paragraph
+        /// </summary>
+        /// <param name="paragraph"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static Paragraph HangingIndent(this Paragraph paragraph, double value)
+        {
+            if (paragraph == null)
+            {
+                throw new ArgumentNullException(nameof(paragraph));
+            }
+
+            paragraph.HangingIndent = value;
             return paragraph;
         }
 
@@ -371,7 +480,9 @@ namespace DXPlus
         public static Paragraph StrikeThrough(this Paragraph paragraph, Strikethrough strike)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.StrikeThrough = strike;
             return paragraph;
@@ -385,7 +496,9 @@ namespace DXPlus
         public static Paragraph Style(this Paragraph paragraph, string styleName)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.StyleName = styleName;
             return paragraph;
@@ -400,7 +513,9 @@ namespace DXPlus
         public static Paragraph UnderlineStyle(this Paragraph paragraph, UnderlineStyle underlineStyle)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.UnderlineStyle = underlineStyle;
             return paragraph;
@@ -414,7 +529,9 @@ namespace DXPlus
         public static Paragraph KeepWithNext(this Paragraph paragraph, bool keepWithNext = true)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.KeepWithNext = keepWithNext;
             return paragraph;
@@ -426,7 +543,9 @@ namespace DXPlus
         public static Paragraph KeepLinesTogether(this Paragraph paragraph, bool keepTogether = true)
         {
             if (paragraph == null)
+            {
                 throw new ArgumentNullException(nameof(paragraph));
+            }
 
             paragraph.KeepLinesTogether = keepTogether;
             return paragraph;
@@ -438,8 +557,15 @@ namespace DXPlus
         /// <param name="paragraph"></param>
         /// <param name="bookmarkName">Bookmark name</param>
         /// <returns></returns>
-        public static bool BookmarkExists(this Paragraph paragraph, string bookmarkName) 
-            => paragraph.GetBookmarks().Any(b => b.Name.Equals(bookmarkName));
+        public static bool BookmarkExists(this Paragraph paragraph, string bookmarkName)
+        {
+            if (paragraph == null)
+            {
+                throw new ArgumentNullException(nameof(paragraph));
+            }
+
+            return paragraph.GetBookmarks().Any(b => b.Name.Equals(bookmarkName));
+        }
 
         /// <summary>
         /// Add a paragraph after the current element using the passed text
@@ -447,7 +573,15 @@ namespace DXPlus
         /// <param name="container">Container owner</param>
         /// <param name="text">Text for new paragraph</param>
         /// <returns>Newly created paragraph</returns>
-        public static Paragraph AddParagraphAfterSelf(this InsertBeforeOrAfter container, string text) => container.AddParagraphAfterSelf(text, null);
+        public static Paragraph AddParagraph(this InsertBeforeOrAfter container, string text)
+        {
+            if (container == null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
+
+            return container.AddParagraph(text, null);
+        }
 
         /// <summary>
         /// Insert a paragraph before this container.
@@ -455,6 +589,14 @@ namespace DXPlus
         /// <param name="container">Container owner</param>
         /// <param name="text">Text for new paragraph</param>
         /// <returns>Newly created paragraph</returns>
-        public static Paragraph InsertParagraphBeforeSelf(this InsertBeforeOrAfter container, string text) => container.InsertParagraphBeforeSelf(text, null);
+        public static Paragraph InsertParagraphBefore(this InsertBeforeOrAfter container, string text)
+        {
+            if (container == null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
+
+            return container.InsertParagraphBefore(text, null);
+        }
     }
 }

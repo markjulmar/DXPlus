@@ -10,9 +10,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
-using System.Xml.XPath;
 using DXPlus.Charts;
 using DXPlus.Helpers;
+using DXPlus.Resources;
 
 namespace DXPlus
 {
@@ -24,6 +24,7 @@ namespace DXPlus
         private string filename;               // The filename that this document was loaded from; can be null;
         private Stream stream;                 // The stream that this document was loaded from; can be null.
         private MemoryStream memoryStream;     // The in-memory document (with changes)
+        private long nextDocumentId;           // Next document id for pictures, bookmarks, etc.
 
         /// <summary>
         /// The ZIP package holding this DocX structure
@@ -69,40 +70,6 @@ namespace DXPlus
         public BookmarkCollection Bookmarks => new BookmarkCollection(Paragraphs.SelectMany(p => p.GetBookmarks()));
 
         /// <summary>
-        /// Retrieve the section properties for the document
-        /// </summary>
-        private XElement SectPr
-        {
-            get
-            {
-                ThrowIfObjectDisposed();
-                return Xml.GetOrCreateElement(Name.SectionProperties);
-            }
-        }
-
-        /// <summary>
-        /// Indicates that Headers.First should be used on the first page.
-        /// If this is FALSE, then Headers.First is not used in the doc.
-        /// </summary>
-        public bool DifferentFirstPage
-        {
-            get => SectPr.Element(Namespace.Main + "titlePg") != null;
-
-            set
-            {
-                var titlePg = SectPr.Element(Namespace.Main + "titlePg");
-                if (titlePg == null && value)
-                {
-                    SectPr.Add(new XElement(Namespace.Main + "titlePg", string.Empty));
-                }
-                else if (titlePg != null && !value)
-                {
-                    titlePg.Remove();
-                }
-            }
-        }
-
-        /// <summary>
         /// Numbering styles in this document.
         /// </summary>
         public NumberingStyleManager NumberingStyles { get; private set; }
@@ -113,9 +80,9 @@ namespace DXPlus
         public StyleManager Styles { get; private set; }
 
         /// <summary>
-        /// Should the Document use different Headers and Footers for odd and even pages?
+        /// True if the Document use different Headers and Footers for odd and even pages.
         /// </summary>
-        public bool DifferentOddAndEvenPages
+        public bool DifferentEvenOddHeadersFooters
         {
             get
             {
@@ -145,24 +112,10 @@ namespace DXPlus
             => endnotesDoc.Root?.Elements(Namespace.Main + "endnote").Select(HelperFunctions.GetText);
 
         /// <summary>
-        /// Returns a collection of Footers in this Document.
-        /// A document typically contains three Footers.
-        /// A default one (odd), one for the first page and one for even pages.
-        /// </summary>
-        public FooterCollection Footers { get; private set; }
-
-        /// <summary>
         /// Get the text of each footnote from this document
         /// </summary>
         public IEnumerable<string> FootnotesText
             => footnotesDoc.Root?.Elements(Namespace.Main + "footnote").Select(HelperFunctions.GetText);
-
-        /// <summary>
-        /// Returns a collection of Headers in this Document.
-        /// A document typically contains three Headers.
-        /// A default one (odd), one for the first page and one for even pages.
-        /// </summary>
-        public HeaderCollection Headers { get; private set; }
 
         /// <summary>
         /// Returns a list of Images in this document.
@@ -177,76 +130,6 @@ namespace DXPlus
                     ? imageRelationships.Select(i => new Image(this, i)).ToList()
                     : new List<Image>();
             }
-        }
-
-        /// <summary>
-        /// Bottom margin value in points. 1pt = 1/72 of an inch. Word internally writes docx using units = 1/20th of a point.
-        /// </summary>
-        public double MarginBottom
-        {
-            get => GetMarginAttribute(Name.Bottom);
-            set => SetMarginAttribute(Name.Bottom, value);
-        }
-
-        /// <summary>
-        /// Left margin value in points. 1pt = 1/72 of an inch. Word internally writes docx using units = 1/20th of a point.
-        /// </summary>
-        public double MarginLeft
-        {
-            get => GetMarginAttribute(Name.Left);
-            set => SetMarginAttribute(Name.Left, value);
-        }
-
-        /// <summary>
-        /// Right margin value in points. 1pt = 1/72 of an inch. Word internally writes docx using units = 1/20th of a point.
-        /// </summary>
-        public double MarginRight
-        {
-            get => GetMarginAttribute(Name.Right);
-            set => SetMarginAttribute(Name.Right, value);
-        }
-
-        /// <summary>
-        /// Top margin value in points. 1pt = 1/72 of an inch. Word internally writes docx using units = 1/20th of a point.
-        /// </summary>
-        public double MarginTop
-        {
-            get => GetMarginAttribute(Name.Top);
-            set => SetMarginAttribute(Name.Top, value);
-        }
-
-        /// <summary>
-        /// Page height value in points. 1pt = 1/72 of an inch. Word internally writes docx using units = 1/20th of a point.
-        /// </summary>
-        public double PageHeight
-        {
-            get
-            {
-                var pgSz = SectPr.Element(Namespace.Main + "pgSz");
-                var w = pgSz?.Attribute(Namespace.Main + "h");
-                return w != null && double.TryParse(w.Value, out double value) ? Math.Round(value / 20.0) : 15840.0 / 20.0;
-            }
-
-            set => SectPr.GetOrCreateElement(Namespace.Main + "pgSz")
-                         .SetAttributeValue(Namespace.Main + "h", value * 20);
-        }
-
-        public PageLayout PageLayout => new PageLayout(this, SectPr);
-
-        /// <summary>
-        /// Page width value in points. 1pt = 1/72 of an inch. Word internally writes docx using units = 1/20th of a point.
-        /// </summary>
-        public double PageWidth
-        {
-            get
-            {
-                var pgSz = SectPr.Element(Namespace.Main + "pgSz");
-                var w = pgSz?.Attribute(Namespace.Main + "w");
-                return w != null && double.TryParse(w.Value, out var value) ? Math.Round(value / 20.0) : 12240.0 / 20.0;
-            }
-
-            set => SectPr.Element(Namespace.Main + "pgSz")?
-                      .SetAttributeValue(Namespace.Main + "w", value * 20.0);
         }
 
         /// <summary>
@@ -408,7 +291,7 @@ namespace DXPlus
                         .ToList();
 
             foreach (var relsPart in Package.GetParts().Where(part => part.Uri.ToString().Contains("/word/")
-                                                                      && part.ContentType.Equals("application/vnd.openxmlformats-package.relationships+xml")))
+                                            && part.ContentType.Equals(DocxContentType.Relationships)))
             {
                 var relsPartContent = relsPart.Load();
                 if (relsPartContent.Root == null)
@@ -441,7 +324,8 @@ namespace DXPlus
             {
                 using var existingImageStream = pp.GetStream(FileMode.Open, FileAccess.Read);
 
-                // Compare this image to the new image being added.
+                // Compare this image to the new image being added. If it's the same file,
+                // then reuse the existing Image resource rather than adding it again.
                 if (HelperFunctions.IsSameFile(existingImageStream, imageStream))
                 {
                     // Get the image object for this image part
@@ -813,33 +697,6 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Retrieve the sections of the document
-        /// </summary>
-        /// <returns>List of sections</returns>
-        public IEnumerable<Section> GetSections()
-        {
-            ThrowIfObjectDisposed();
-
-            var paragraphs = new List<Paragraph>();
-            foreach (var para in Paragraphs)
-            {
-                var sectionInPara = para.Xml.Descendants()
-                                                    .FirstOrDefault(s => s.Name == Name.SectionProperties);
-                if (sectionInPara == null)
-                {
-                    paragraphs.Add(para);
-                }
-                else
-                {
-                    paragraphs.Add(para);
-                    yield return new Section(this, sectionInPara) { SectionParagraphs = paragraphs, PackagePart = PackagePart };
-                    paragraphs = new List<Paragraph>();
-                }
-            }
-            yield return new Section(this, SectPr) { SectionParagraphs = paragraphs, PackagePart = PackagePart };
-        }
-
-        /// <summary>
         /// Insert a chart in document
         /// </summary>
         public void InsertChart(Chart chart)
@@ -971,8 +828,12 @@ namespace DXPlus
                                  new XAttribute(Name.MainVal, HelperFunctions.GenerateRevisionStamp(RevisionId, out revision))));
 
             // Save all the sections
-            Headers.Save();
-            Footers.Save();
+            Sections.ToList().ForEach(s =>
+            {
+                s.Headers.Save();
+                s.Footers.Save();
+            });
+
             Styles?.Save();
             NumberingStyles?.Save();
 
@@ -1063,7 +924,7 @@ namespace DXPlus
             AddDefaultStyles();
 
             if (!Styles.HasStyle("Hyperlink", StyleType.Character))
-                Styles.Add(Resources.HyperlinkStyle(RevisionId));
+                Styles.Add(Resource.HyperlinkStyle(RevisionId));
         }
 
         /// <summary>
@@ -1115,13 +976,9 @@ namespace DXPlus
                 throw new InvalidOperationException($"Missing {Namespace.Main + "body"} expected content.");
 
             // Get the last revision id
-            string revValue = SectPr.AttributeValue(Namespace.Main + "rsidR");
+            string revValue = Xml.GetSectionProperties().RevisionId;
             revision = uint.Parse(revValue, System.Globalization.NumberStyles.AllowHexSpecifier);
             revision++; // bump revision
-
-            // Load headers/footers
-            Headers = new HeaderCollection(this);
-            Footers = new FooterCollection(this);
 
             // Load all the XML files
             settingsDoc = settingsPart?.Load();
@@ -1138,7 +995,7 @@ namespace DXPlus
             if (NumberingStyles == null)
             {
                 var packagePart = Package.CreatePart(Relations.Numbering.Uri, Relations.Numbering.ContentType, CompressionOption.Maximum);
-                var template = Resources.NumberingXml();
+                var template = Resource.NumberingXml();
                 packagePart.Save(template);
                 PackagePart.CreateRelationship(packagePart.Uri, TargetMode.Internal, Relations.Numbering.RelType);
                 NumberingStyles = new NumberingStyleManager(this, packagePart);
@@ -1148,34 +1005,8 @@ namespace DXPlus
             AddDefaultStyles();
             if (Styles.HasStyle("ListParagraph", StyleType.Paragraph))
             {
-                Styles.Add(Resources.ListParagraphStyle(RevisionId));
+                Styles.Add(Resource.ListParagraphStyle(RevisionId));
             }
-        }
-
-        /// <summary>
-        /// Get a margin
-        /// </summary>
-        /// <param name="name">Margin to get</param>
-        /// <returns>Value in 1/20th pt.</returns>
-        private double GetMarginAttribute(XName name)
-        {
-            ThrowIfObjectDisposed();
-
-            var top = SectPr.Element(Namespace.Main + "pgMar")?.Attribute(name);
-            return top != null && double.TryParse(top.Value, out double value) ? (int)(value / 20.0) : 0;
-        }
-
-        /// <summary>
-        /// Set a margin
-        /// </summary>
-        /// <param name="name">Margin to set</param>
-        /// <param name="value">Value in 1/20th pt</param>
-        private void SetMarginAttribute(XName name, double value)
-        {
-            ThrowIfObjectDisposed();
-
-            SectPr.GetOrCreateElement(Namespace.Main + "pgMar")
-                  .SetAttributeValue(name, value * 20.0);
         }
 
         /// <summary>
@@ -1259,7 +1090,7 @@ namespace DXPlus
                     }
                 }
 
-                Action<IEnumerable<PackagePart>> processHeaderFooterParts = packageParts =>
+                void ProcessHeaderFooterParts(IEnumerable<PackagePart> packageParts)
                 {
                     foreach (var pp in packageParts)
                     {
@@ -1286,16 +1117,15 @@ namespace DXPlus
 
                         pp.Save(section);
                     }
-                };
+                }
 
-                processHeaderFooterParts.Invoke(Package.GetParts()
+                ProcessHeaderFooterParts(Package.GetParts()
                     .Where(headerPart => Regex.IsMatch(headerPart.Uri.ToString(), @"/word/header\d?.xml")));
 
-                processHeaderFooterParts.Invoke(Package.GetParts()
+                ProcessHeaderFooterParts(Package.GetParts()
                     .Where(footerPart => (Regex.IsMatch(footerPart.Uri.ToString(), @"/word/footer\d?.xml"))));
             }
         }
-
 
         /// <summary>
         /// Update the custom properties inside the document
@@ -1312,18 +1142,21 @@ namespace DXPlus
             var documents = new List<XElement> { mainDoc.Root };
             var value = property.Value?.ToString() ?? string.Empty;
 
-            if (Headers.First.Exists)
-                documents.Add(Headers.First.Xml);
-            if (Headers.Default.Exists)
-                documents.Add(Headers.Default.Xml);
-            if (Headers.Even.Exists)
-                documents.Add(Headers.Even.Xml);
-            if (Footers.First.Exists)
-                documents.Add(Footers.First.Xml);
-            if (Footers.Default.Exists)
-                documents.Add(Footers.Default.Xml);
-            if (Footers.Even.Exists)
-                documents.Add(Footers.Even.Xml);
+            Sections.ToList().ForEach(s =>
+            {
+                if (s.Headers.First.Exists)
+                    documents.Add(s.Headers.First.Xml);
+                if (s.Headers.Default.Exists)
+                    documents.Add(s.Headers.Default.Xml);
+                if (s.Headers.Even.Exists)
+                    documents.Add(s.Headers.Even.Xml);
+                if (s.Footers.First.Exists)
+                    documents.Add(s.Footers.First.Xml);
+                if (s.Footers.Default.Exists)
+                    documents.Add(s.Footers.Default.Xml);
+                if (s.Footers.Even.Exists)
+                    documents.Add(s.Footers.Even.Xml);
+            });
 
             string matchCustomPropertyName = property.Name;
             if (property.Name.Contains(" "))
@@ -1340,19 +1173,19 @@ namespace DXPlus
 
                     if (attrValue.Equals(propertyMatchValue, StringComparison.CurrentCultureIgnoreCase))
                     {
-                        var nextNode = e.Parent.NextNode;
+                        var nextNode = e.Parent?.NextNode;
                         bool found = false;
-                        while (true)
+                        while (nextNode != null)
                         {
                             if (nextNode.NodeType == XmlNodeType.Element)
                             {
                                 var ele = (XElement)nextNode;
-                                var match = ele.Descendants(Name.Text);
-                                if (match.Any())
+                                var match = ele.Descendants(Name.Text).ToList();
+                                if (match.Count > 0)
                                 {
                                     if (!found)
                                     {
-                                        match.First().Value = value;
+                                        match[0].Value = value;
                                         found = true;
                                     }
                                     else
@@ -1362,10 +1195,10 @@ namespace DXPlus
                                 }
                                 else
                                 {
-                                    match = ele.Descendants(Namespace.Main + "fldChar");
-                                    if (match.Any())
+                                    match = ele.Descendants(Namespace.Main + "fldChar").ToList();
+                                    if (match.Count > 0)
                                     {
-                                        var endMatch = match.First().Attribute(Namespace.Main + "fldCharType");
+                                        var endMatch = match[0].Attribute(Namespace.Main + "fldCharType");
                                         if (endMatch?.Value == "end")
                                             break;
                                     }
@@ -1401,14 +1234,6 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Enumerate the elements in the w:doc
-        /// </summary>
-        internal IEnumerable<XElement> QueryDocument(string expression)
-        {
-            return mainDoc.XPathSelectElements(expression, Namespace.NamespaceManager());
-        }
-
-        /// <summary>
         /// This method marks the placeholder fields as invalid and ensures Word updates them
         /// when it next loads the document.
         /// </summary>
@@ -1419,6 +1244,64 @@ namespace DXPlus
                 settingsDoc.Root!.Add(new XElement(Namespace.Main + "updateFields",
                                            new XAttribute(Name.MainVal, true)));
             }
+        }
+
+        /// <summary>
+        /// Get a document ID to use with inserted XML. This should always be unique within the document.
+        /// </summary>
+        /// <returns>New document id</returns>
+        internal long GetNextDocumentId()
+        {
+            if (nextDocumentId == 0)
+                nextDocumentId = HelperFunctions.FindLastUsedDocId(mainDoc);
+            return ++nextDocumentId;
+        }
+
+        /// <summary>
+        /// Create a new Picture.
+        /// </summary>
+        /// <param name="rid">A unique id that identifies an Image embedded in this document.</param>
+        /// <param name="name">The name of this Picture.</param>
+        /// <param name="description">The description of this Picture.</param>
+        internal Picture CreatePicture(string rid, string name, string description)
+        {
+            if (string.IsNullOrWhiteSpace(rid))
+            {
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(rid));
+            }
+
+            long id = GetNextDocumentId();
+            int cx, cy;
+
+            var relationship = PackagePart.GetRelationship(rid);
+            using (var partStream = Package.GetPart(relationship.TargetUri).GetStream())
+            using (var img = System.Drawing.Image.FromStream(partStream))
+            {
+                cx = img.Width * 9526;
+                cy = img.Height * 9526;
+            }
+
+            return new Picture(this, Resource.DrawingElement(id, name, description, cx, cy, rid),
+                                new Image(this, relationship));
+        }
+
+        internal Uri EnsureRelsPathExists(PackagePart part)
+        {
+            // Convert the path of this mainPart to its equivalent rels file path.
+            string path = part.Uri.OriginalString.Replace("/word/", "");
+            Uri relationshipPath = new Uri($"/word/_rels/{path}.rels", UriKind.Relative);
+
+            // Check to see if the rels file exists and create it if not.
+            if (!Document.Package.PartExists(relationshipPath))
+            {
+                PackagePart pp = Document.Package.CreatePart(relationshipPath, DocxContentType.Relationships, CompressionOption.Maximum);
+                pp.Save(new XDocument(
+                    new XDeclaration("1.0", "UTF-8", "yes"),
+                    new XElement(Namespace.RelatedPackage + "Relationships")
+                ));
+            }
+
+            return relationshipPath;
         }
     }
 }

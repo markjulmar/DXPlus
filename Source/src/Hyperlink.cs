@@ -1,16 +1,16 @@
-﻿using System;
+﻿using DXPlus.Helpers;
+using System;
 using System.Collections.Generic;
 using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
-using DXPlus.Helpers;
 
 namespace DXPlus
 {
     /// <summary>
     /// Represents a Hyperlink in a document.
     /// </summary>
-    public class Hyperlink : DocXBase
+    public class Hyperlink : DocXElement
     {
         private Uri uri;
         private string text;
@@ -23,7 +23,10 @@ namespace DXPlus
         /// <summary>
         /// Remove a Hyperlink from this Paragraph only.
         /// </summary>
-        public void Remove() => Xml.Remove();
+        public void Remove()
+        {
+            Xml.Remove();
+        }
 
         /// <summary>
         /// Change the Text of a Hyperlink.
@@ -34,12 +37,12 @@ namespace DXPlus
 
             set
             {
-                var rPr = new XElement(Name.RunProperties,
+                XElement rPr = new XElement(Name.RunProperties,
                                 new XElement(Namespace.Main + "rStyle",
                                     new XAttribute(Name.MainVal, "Hyperlink")));
 
                 // Format and add the new text.
-                var newRuns = HelperFunctions.FormatInput(value, rPr);
+                List<XElement> newRuns = HelperFunctions.FormatInput(value, rPr);
                 if (type == 0)
                 {
                     Xml.Elements(Name.Run).Remove();
@@ -47,12 +50,12 @@ namespace DXPlus
                 }
                 else
                 {
-                    var separate = XElement.Parse(@"
+                    XElement separate = XElement.Parse(@"
                     <w:r xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'>
                         <w:fldChar w:fldCharType='separate'/>
                     </w:r>");
 
-                    var end = XElement.Parse(@"
+                    XElement end = XElement.Parse(@"
                     <w:r xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'>
                         <w:fldChar w:fldCharType='end' />
                     </w:r>");
@@ -70,8 +73,8 @@ namespace DXPlus
         /// </summary>
         public Uri Uri
         {
-            get => type == 0 && !string.IsNullOrEmpty(Id) 
-                ? PackagePart.GetRelationship(Id).TargetUri 
+            get => type == 0 && !string.IsNullOrEmpty(Id)
+                ? PackagePart.GetRelationship(Id).TargetUri
                 : uri;
 
             set
@@ -82,10 +85,10 @@ namespace DXPlus
                 {
                     if (!string.IsNullOrEmpty(Id))
                     {
-                        var r = PackagePart.GetRelationship(Id);
+                        PackageRelationship r = PackagePart.GetRelationship(Id);
 
                         // Get all of the information about this relationship.
-                        var targetMode = r.TargetMode;
+                        TargetMode targetMode = r.TargetMode;
                         string relationshipType = r.RelationshipType;
                         string id = r.Id;
 
@@ -141,7 +144,7 @@ namespace DXPlus
             if (id == null)
             {
                 // Check to see if a relationship for this Hyperlink exists and create it if not.
-                var pr = PackagePart.CreateRelationship(Uri, TargetMode.External,
+                PackageRelationship pr = PackagePart.CreateRelationship(Uri, TargetMode.External,
                     $"{Namespace.RelatedDoc.NamespaceName}/hyperlink");
                 id = pr.Id;
             }
@@ -190,37 +193,41 @@ namespace DXPlus
         /// </summary>
         /// <param name="owner"></param>
         /// <returns></returns>
-        internal static IEnumerable<Hyperlink> Enumerate(DocXBase owner)
+        internal static IEnumerable<Hyperlink> Enumerate(DocXElement owner)
         {
-            foreach (var he in owner.Xml.Descendants()
-                                .Where(h => h.Name.LocalName == "hyperlink" 
+            foreach (XElement he in owner.Xml.Descendants()
+                                .Where(h => h.Name.LocalName == "hyperlink"
                                     || h.Name.LocalName == "instrText").ToList())
             {
                 if (he.Name.LocalName == "hyperlink")
                 {
-                    yield return new Hyperlink(owner.Document, he) {PackagePart = owner.PackagePart};
+                    yield return new Hyperlink(owner.Document, he) { PackagePart = owner.PackagePart };
                 }
                 else
                 {
                     // Find the parent run, no matter how deeply nested we are.
-                    var e = he;
+                    XElement e = he;
                     while (e != null && e.Name.LocalName != "r")
+                    {
                         e = e.Parent;
+                    }
 
                     if (e == null)
+                    {
                         throw new Exception("Failed to locate the parent in a run.");
+                    }
 
                     // Take every element until we reach w:fldCharType="end"
-                    var hyperLinkRuns = new List<XElement>();
-                    foreach (var run in e.ElementsAfterSelf(Name.Run))
+                    List<XElement> hyperLinkRuns = new List<XElement>();
+                    foreach (XElement run in e.ElementsAfterSelf(Name.Run))
                     {
                         // Add this run to the list.
                         hyperLinkRuns.Add(run);
 
-                        var fldChar = run.Descendants(Namespace.Main + "fldChar").SingleOrDefault();
+                        XElement fldChar = run.Descendants(Namespace.Main + "fldChar").SingleOrDefault();
                         if (fldChar != null)
                         {
-                            var fldCharType = fldChar.Attribute(Namespace.Main + "fldCharType");
+                            XAttribute fldCharType = fldChar.Attribute(Namespace.Main + "fldCharType");
                             if (fldCharType?.Value.Equals("end", StringComparison.CurrentCultureIgnoreCase) == true)
                             {
                                 yield return new Hyperlink(owner.Document, he, hyperLinkRuns) { PackagePart = owner.PackagePart };

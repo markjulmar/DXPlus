@@ -8,8 +8,10 @@
         /// <summary>
         /// Constructor used to create the header collection
         /// </summary>
-        /// <param name="documentOwner"></param>
-        internal HeaderCollection(DocX documentOwner) : base(documentOwner, "hdr", Relations.Header, "header")
+        /// <param name="documentOwner">Document</param>
+        /// <param name="sectionOwner">Section owner</param>
+        internal HeaderCollection(DocX documentOwner, Section sectionOwner)
+            : base(documentOwner, sectionOwner, "hdr", Relations.Header, "header")
         {
         }
     }

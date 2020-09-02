@@ -5,9 +5,12 @@ using System.Reflection;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 
-namespace DXPlus.Helpers
+namespace DXPlus
 {
-    internal static class XElementHelpers
+    /// <summary>
+    /// Internal helpers to work with XElement/XDocument types.
+    /// </summary>
+    internal static class XLinqExtensions
     {
         /// <summary>
         /// Retrieves a specific attribute value by following a path of XNames
@@ -18,15 +21,21 @@ namespace DXPlus.Helpers
         public static string AttributeValue(this XContainer xml, params XName[] path)
         {
             if (xml == null)
+            {
                 return null;
+            }
 
             if (path == null || path.Length == 0)
+            {
                 throw new ArgumentException("Must supply the path to follow.", nameof(path));
+            }
 
             if (path.Length > 1)
             {
                 for (int i = 0; i < path.Length - 1 && xml != null; i++)
+                {
                     xml = xml.Element(path[i]);
+                }
             }
 
             return (xml as XElement)?.Attribute(path[^1])?.Value;
@@ -38,19 +47,25 @@ namespace DXPlus.Helpers
         /// <param name="xml">Root XML element to start with</param>
         /// <param name="path">Path to follow</param>
         /// <returns>String value of the attribute, or null if any part of the path doesn't exist.</returns>
-        internal static XElement Element(this XContainer xml, params XName[] path)
+        public static XElement Element(this XContainer xml, params XName[] path)
         {
             if (xml == null)
+            {
                 return null;
+            }
 
             if (path == null || path.Length == 0)
+            {
                 throw new ArgumentException("Must supply the path to follow.", nameof(path));
+            }
 
             // Walk the elements
             for (int i = 0; i < path.Length && xml != null; i++)
+            {
                 xml = xml.Element(path[i]);
+            }
 
-            return (XElement) xml;
+            return (XElement)xml;
         }
 
         /// <summary>
@@ -59,17 +74,23 @@ namespace DXPlus.Helpers
         /// <param name="xml">Root XML element to start with</param>
         /// <param name="path">Path to follow</param>
         /// <returns>String value of the attribute, or null if any part of the path doesn't exist.</returns>
-        internal static IEnumerable<XElement> Elements(this XContainer xml, params XName[] path)
+        public static IEnumerable<XElement> Elements(this XContainer xml, params XName[] path)
         {
             if (xml == null)
+            {
                 return null;
+            }
 
             if (path == null || path.Length == 0)
+            {
                 throw new ArgumentException("Must supply the path to follow.", nameof(path));
+            }
 
             // Walk the elements
             for (int i = 0; i < path.Length && xml != null; i++)
+            {
                 xml = xml.Element(path[i]);
+            }
 
             return (xml as XElement)?.Elements() ?? Enumerable.Empty<XElement>();
         }
@@ -83,14 +104,18 @@ namespace DXPlus.Helpers
         public static XElement GetOrCreateElement(this XContainer node, params XName[] path)
         {
             if (node == null)
+            {
                 throw new ArgumentNullException(nameof(node));
+            }
 
             if (path == null || path.Length == 0)
-                throw new ArgumentException("Must supply the path to follow.", nameof(path));
-
-            foreach (var name in path)
             {
-                var child = node.Element(name);
+                throw new ArgumentException("Must supply the path to follow.", nameof(path));
+            }
+
+            foreach (XName name in path)
+            {
+                XElement child = node.Element(name);
                 if (child == null)
                 {
                     child = new XElement(name);
@@ -99,7 +124,7 @@ namespace DXPlus.Helpers
                 node = child;
             }
 
-            return (XElement) node;
+            return (XElement)node;
         }
 
         /// <summary>
@@ -117,7 +142,7 @@ namespace DXPlus.Helpers
                 return null;
             }
 
-            var e = node.Element(name);
+            XElement e = node.Element(name);
             if (e == null)
             {
                 e = new XElement(name);
@@ -137,11 +162,19 @@ namespace DXPlus.Helpers
         public static XAttribute SetAttributeValue(this XElement node, XName name, params object[] pathAndValue)
         {
             if (node == null)
+            {
                 throw new ArgumentNullException(nameof(node));
+            }
+
             if (name == null)
+            {
                 throw new ArgumentNullException(nameof(name));
+            }
+
             if (pathAndValue == null || pathAndValue.Length < 1)
+            {
                 throw new ArgumentException("Must include a value for the attribute.", nameof(pathAndValue));
+            }
 
             if (pathAndValue.Length == 1)
             {
@@ -156,10 +189,11 @@ namespace DXPlus.Helpers
             XName part; object val; int index;
 
             // Use all but the last two elements -- that's always the attrName + value.
-            for (index = 0; index < pathAndValue.Length-2 && node != null; index++)
+            for (index = 0; index < pathAndValue.Length - 2 && node != null; index++)
             {
                 val = pathAndValue[index];
-                part = val switch {
+                part = val switch
+                {
                     XName xn => xn,
                     string sn => sn,
                     _ => throw new ArgumentException($"Path cannot include {val.GetType().Name} types.", nameof(pathAndValue)),
@@ -168,7 +202,8 @@ namespace DXPlus.Helpers
             }
 
             val = pathAndValue[index++];
-            part = val switch {
+            part = val switch
+            {
                 XName xn => xn,
                 string sn => sn,
                 _ => throw new ArgumentException($"Path cannot include {val.GetType().Name} types.", nameof(pathAndValue)),
@@ -185,15 +220,19 @@ namespace DXPlus.Helpers
         /// <param name="name">Attribute name to look for</param>
         /// <param name="attributeValue">Value to match</param>
         /// <returns></returns>
-        public static XElement FindByAttrVal(this IEnumerable<XElement> nodes, XName name, string attributeValue) => 
-            nodes?.FirstOrDefault(node => node.AttributeValue(name).Equals(attributeValue));
+        public static XElement FindByAttrVal(this IEnumerable<XElement> nodes, XName name, string attributeValue)
+        {
+            return nodes?.FirstOrDefault(node => node.AttributeValue(name).Equals(attributeValue));
+        }
 
         public static XAttribute GetValAttr(this XElement el)
         {
             if (el == null)
+            {
                 return null;
+            }
 
-            var valAttr = el.Attribute("val");
+            XAttribute valAttr = el.Attribute("val");
             return valAttr ?? el.Attribute(Name.MainVal);
         }
 
@@ -204,15 +243,17 @@ namespace DXPlus.Helpers
 
         public static string AttributeValue(this XElement el, XName name, string defaultValue = "")
         {
-            var attr = el?.Attribute(name);
+            XAttribute attr = el?.Attribute(name);
             return attr != null ? attr.Value : defaultValue;
         }
 
         public static bool BoolAttributeValue(this XElement el, XName name, bool defaultValue = false)
         {
-            var attr = el?.Attribute(name);
-            if (attr == null) 
+            XAttribute attr = el?.Attribute(name);
+            if (attr == null)
+            {
                 return defaultValue;
+            }
 
             string val = attr.Value.Trim();
             return string.Equals(val, "true", StringComparison.OrdinalIgnoreCase) || val == "1";
@@ -246,9 +287,9 @@ namespace DXPlus.Helpers
                 string name = localName.Substring(0, pos);
                 localName = localName.Substring(pos + 1);
 
-                foreach (var item in xml.Descendants().Where(e => e.Name.LocalName == name))
+                foreach (XElement item in xml.Descendants().Where(e => e.Name.LocalName == name))
                 {
-                    foreach (var child in LocalNameDescendants(item, localName))
+                    foreach (XElement child in LocalNameDescendants(item, localName))
                     {
                         yield return child;
                     }
@@ -256,7 +297,7 @@ namespace DXPlus.Helpers
             }
             else
             {
-                foreach (var item in xml.Descendants().Where(e => e.Name.LocalName == localName))
+                foreach (XElement item in xml.Descendants().Where(e => e.Name.LocalName == localName))
                 {
                     yield return item;
                 }
@@ -277,11 +318,13 @@ namespace DXPlus.Helpers
         /// Get value from XElement and convert it to enum
         /// </summary>
         /// <typeparam name="T">Enum type</typeparam>
-        internal static T GetEnumValue<T>(this XElement element)
+        public static T GetEnumValue<T>(this XElement element)
         {
             if (element == null)
+            {
                 throw new ArgumentNullException(nameof(element));
-            
+            }
+
             if (!TryGetEnumValue(element, out T result))
             {
                 throw new ArgumentException($"{element.GetVal()} could not be matched to enum {typeof(T).Name}.");
@@ -294,7 +337,7 @@ namespace DXPlus.Helpers
         /// Get value from XElement and convert it to enum
         /// </summary>
         /// <typeparam name="T">Enum type</typeparam>
-        internal static T GetEnumValue<T>(this XAttribute attr)
+        public static T GetEnumValue<T>(this XAttribute attr)
         {
             if (!TryGetEnumValue(attr, out T result))
             {
@@ -308,7 +351,7 @@ namespace DXPlus.Helpers
         /// Convert value to xml string and set it into XElement
         /// </summary>
         /// <typeparam name="T">Enum type</typeparam>
-        internal static void SetEnumValue<T>(this XElement element, T value)
+        public static void SetEnumValue<T>(this XElement element, T value)
         {
             if (element == null)
             {
@@ -325,7 +368,7 @@ namespace DXPlus.Helpers
         /// <param name="attr"></param>
         /// <param name="result"></param>
         /// <returns></returns>
-        internal static bool TryGetEnumValue<T>(this XAttribute attr, out T result)
+        public static bool TryGetEnumValue<T>(this XAttribute attr, out T result)
         {
             if (attr != null && !string.IsNullOrWhiteSpace(attr.Value))
             {
@@ -334,7 +377,7 @@ namespace DXPlus.Helpers
                 {
                     FieldInfo fi = typeof(T).GetField(e.ToString());
                     string name = fi.GetCustomAttribute<XmlAttributeAttribute>()?.AttributeName ?? e.ToString();
-                    if (string.Compare(name, value, StringComparison.OrdinalIgnoreCase) == 0)
+                    if (string.Equals(name, value, StringComparison.OrdinalIgnoreCase))
                     {
                         result = e;
                         return true;
@@ -353,7 +396,7 @@ namespace DXPlus.Helpers
         /// <param name="value"></param>
         /// <param name="result"></param>
         /// <returns></returns>
-        internal static bool TryGetEnumValue<T>(this string value, out T result)
+        public static bool TryGetEnumValue<T>(this string value, out T result)
         {
             if (!string.IsNullOrWhiteSpace(value))
             {
@@ -361,7 +404,7 @@ namespace DXPlus.Helpers
                 {
                     FieldInfo fi = typeof(T).GetField(e.ToString());
                     string name = fi.GetCustomAttribute<XmlAttributeAttribute>()?.AttributeName ?? e.ToString();
-                    if (string.Compare(name, value, StringComparison.OrdinalIgnoreCase) == 0)
+                    if (string.Equals(name, value, StringComparison.OrdinalIgnoreCase))
                     {
                         result = e;
                         return true;
@@ -380,7 +423,7 @@ namespace DXPlus.Helpers
         /// <param name="element"></param>
         /// <param name="result"></param>
         /// <returns></returns>
-        internal static bool TryGetEnumValue<T>(this XElement element, out T result)
+        public static bool TryGetEnumValue<T>(this XElement element, out T result)
         {
             return TryGetEnumValue(element?.GetVal(), out result);
         }
@@ -389,7 +432,7 @@ namespace DXPlus.Helpers
         /// Return xml string for this value
         /// </summary>
         /// <typeparam name="T">Enum type</typeparam>
-        internal static string GetEnumName<T>(this T value)
+        public static string GetEnumName<T>(this T value)
         {
             if (value == null)
             {
@@ -398,6 +441,38 @@ namespace DXPlus.Helpers
 
             FieldInfo fi = typeof(T).GetField(value.ToString());
             return fi.GetCustomAttribute<XmlAttributeAttribute>()?.AttributeName ?? value.ToCamelCase();
+        }
+
+        /// <summary>
+        /// Normalize an XML element graph by recursively ordering attribute values and child elements
+        /// based on name and value.
+        /// </summary>
+        /// <param name="element">Element to normalize</param>
+        /// <returns>New copy of element with ordered attributes and children</returns>
+        public static XElement Normalize(this XElement element)
+        {
+            if (element.HasElements)
+            {
+                return new XElement(
+                    element.Name,
+                    element.Attributes().OrderBy(a => a.Name.ToString()),
+                    element.Elements()
+                        .Select(Normalize)
+                            .OrderBy(e => e.Name.ToString())
+                                .ThenBy(e => e.Attributes().Count())
+                                .ThenBy(e => string.Join(',', e.Attributes().OrderBy(a => a.Name.ToString()).Select(a => $"{a.Name}:{a.Value}")))
+                                .ThenBy(e => e.Value));
+            }
+
+            if (element.IsEmpty || string.IsNullOrEmpty(element.Value))
+            {
+                return new XElement(element.Name,
+                    element.Attributes().OrderBy(a => a.Name.ToString()));
+            }
+
+            return new XElement(element.Name,
+                element.Attributes().OrderBy(a => a.Name.ToString()),
+                element.Value);
         }
     }
 }

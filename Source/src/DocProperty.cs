@@ -8,7 +8,7 @@ namespace DXPlus
     /// <summary>
     /// Represents a field of type document property. This field displays the value stored in a custom property.
     /// </summary>
-    public class DocProperty : DocXBase
+    public class DocProperty : DocXElement
     {
         /// <summary>
         /// Name of the property

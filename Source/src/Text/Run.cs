@@ -28,14 +28,19 @@ namespace DXPlus
         public int EndIndex { get; }
 
         /// <summary>
-        /// The raw text value of this text element
+        /// The raw text value of this run
         /// </summary>
         public string Text { get; }
 
         /// <summary>
+        /// True if this Run has a text block
+        /// </summary>
+        public bool HasText => Xml.Element(Name.Text) != null;
+
+        /// <summary>
         /// The run properties for this text run
         /// </summary>
-        public Formatting Formatting => new Formatting(Xml.Element(Name.RunProperties));
+        public Formatting Properties => new Formatting(Xml.Element(Name.RunProperties));
 
         /// <summary>
         /// Constructor for a run of text
@@ -66,9 +71,7 @@ namespace DXPlus
             index -= StartIndex;
 
             TextBlock text = GetFirstTextAffectedByEdit(index, editType);
-            
             var splitText = text.Split(index);
-
             var splitLeft = new XElement(Xml.Name,
                                         Xml.Attributes(),
                                         Xml.Element(Name.RunProperties),

@@ -8,8 +8,10 @@
         /// <summary>
         /// Constructor used to create the footers collection
         /// </summary>
-        /// <param name="documentOwner"></param>
-        internal FooterCollection(DocX documentOwner) : base(documentOwner, "ftr", Relations.Footer, "footer")
+        /// <param name="documentOwner">Document</param>
+        /// <param name="sectionOwner">Section owner</param>
+        internal FooterCollection(DocX documentOwner, Section sectionOwner)
+            : base(documentOwner, sectionOwner, "ftr", Relations.Footer, "footer")
         {
         }
     }

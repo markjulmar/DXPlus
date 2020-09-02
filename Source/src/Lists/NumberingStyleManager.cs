@@ -1,16 +1,17 @@
-﻿using System;
+﻿using DXPlus.Helpers;
+using System;
 using System.Collections.Generic;
 using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
-using DXPlus.Helpers;
+using DXPlus.Resources;
 
 namespace DXPlus
 {
     /// <summary>
     /// Manager for the numbering styles (numbering.xml) in the document.
     /// </summary>
-    public sealed class NumberingStyleManager : DocXBase
+    public sealed class NumberingStyleManager : DocXElement
     {
         private readonly XDocument numberingDoc;
 
@@ -27,12 +28,12 @@ namespace DXPlus
         {
             get
             {
-                var definitionsCache = Xml.Elements(Namespace.Main + "num")
+                List<NumberingDefinition> definitionsCache = Xml.Elements(Namespace.Main + "num")
                     .Select(e => new NumberingDefinition(e))
                     .ToList();
-                    
-                var styles = Styles.ToList();
-                foreach (var item in definitionsCache)
+
+                List<NumberingStyle> styles = Styles.ToList();
+                foreach (NumberingDefinition item in definitionsCache)
                 {
                     int id = item.StyleId;
                     item.Style = styles.Single(s => s.Id == id);
@@ -64,23 +65,25 @@ namespace DXPlus
         public NumberingDefinition Create(NumberingFormat listType, int startNumber)
         {
             if (startNumber < 0)
-                throw new ArgumentOutOfRangeException(nameof(startNumber));
-
-            var template = listType switch
             {
-                NumberingFormat.Bulleted => Resources.DefaultBulletNumberingXml(HelperFunctions.GenerateHexId()),
-                NumberingFormat.Numbered => Resources.DefaultDecimalNumberingXml(HelperFunctions.GenerateHexId()),
+                throw new ArgumentOutOfRangeException(nameof(startNumber));
+            }
+
+            XElement template = listType switch
+            {
+                NumberingFormat.Bulleted => Resource.DefaultBulletNumberingXml(HelperFunctions.GenerateHexId()),
+                NumberingFormat.Numbered => Resource.DefaultDecimalNumberingXml(HelperFunctions.GenerateHexId()),
                 _ => throw new InvalidOperationException($"Unable to create {nameof(NumberingFormat)}: {listType}."),
             };
 
-            var definitions = Definitions.ToList();
-            var styles = Styles.ToList();
+            List<NumberingDefinition> definitions = Definitions.ToList();
+            List<NumberingStyle> styles = Styles.ToList();
 
             int numId = definitions.Count > 0 ? definitions.Max(d => d.Id) + 1 : 1;
             int abstractNumId = styles.Count > 0 ? styles.Max(s => s.Id) + 1 : 0;
 
-            var style = new NumberingStyle(template) {Id = abstractNumId};
-            var definition = new NumberingDefinition(numId, abstractNumId) { Style = style };
+            NumberingStyle style = new NumberingStyle(template) { Id = abstractNumId };
+            NumberingDefinition definition = new NumberingDefinition(numId, abstractNumId) { Style = style };
 
             if (startNumber != 1)
             {
@@ -88,7 +91,7 @@ namespace DXPlus
             }
 
             // Style definition goes first -- this new one should be at the end of the existing styles
-            var lastStyle = numberingDoc.Root!.Descendants().LastOrDefault(e => e.Name == Namespace.Main + "abstractNum");
+            XElement lastStyle = numberingDoc.Root!.Descendants().LastOrDefault(e => e.Name == Namespace.Main + "abstractNum");
             if (lastStyle != null)
             {
                 lastStyle.AddAfterSelf(style.Xml);
@@ -121,14 +124,15 @@ namespace DXPlus
         /// <returns></returns>
         internal int GetStartingNumber(int numId, int level = 0)
         {
-            var definition = Definitions.SingleOrDefault(n => n.Id == numId);
+            NumberingDefinition definition = Definitions.SingleOrDefault(n => n.Id == numId);
             if (definition == null)
+            {
                 throw new ArgumentException("No numbering definition found.", nameof(numId));
+            }
 
-            var levelOverride = definition.GetOverrideForLevel(level);
-            return levelOverride?.Start ?? 
+            LevelOverride levelOverride = definition.GetOverrideForLevel(level);
+            return levelOverride?.Start ??
                    definition.Style.Levels.Single(l => l.Level == level).Start;
         }
-
     }
 }

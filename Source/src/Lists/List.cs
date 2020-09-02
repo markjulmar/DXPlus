@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
@@ -53,7 +54,6 @@ namespace DXPlus
 
         public string Text => Paragraph.Text;
         internal XElement Xml => Paragraph.Xml;
-        
     }
 
     /// <summary>
@@ -61,7 +61,9 @@ namespace DXPlus
     /// </summary>
     public class List : InsertBeforeOrAfter
     {
-        private List<ListItem> items = new List<ListItem>();
+        private readonly List<ListItem> items = new List<ListItem>();
+        private FontFamily fontFamily;
+        private double? fontSize;
 
         /// <summary>
         /// List of items to add - these will create paragraph objects in the document
@@ -85,6 +87,34 @@ namespace DXPlus
         public int NumId { get; private set; }
 
         /// <summary>
+        /// Default font family to use
+        /// </summary>
+        public FontFamily Font
+        {
+            get => fontFamily;
+            set
+            {
+                fontFamily = value;
+                foreach (var item in Items)
+                    item.Paragraph.Font = value;
+            }
+        }
+
+        /// <summary>
+        /// Default font size to use
+        /// </summary>
+        public double? FontSize
+        {
+            get => fontSize;
+            set
+            {
+                fontSize = value;
+                foreach (var item in Items)
+                    item.Paragraph.FontSize = value;
+            }
+        }
+
+        /// <summary>
         /// Internal constructor when building List from paragraphs
         /// </summary>
         internal List()
@@ -94,6 +124,8 @@ namespace DXPlus
         /// <summary>
         /// Public constructor
         /// </summary>
+        /// <param name="listType">List type</param>
+        /// <param name="startNumber">Starting number</param>
         public List(NumberingFormat listType, int startNumber = 1) : this()
         {
             if (listType == NumberingFormat.None)
@@ -101,21 +133,37 @@ namespace DXPlus
 
             ListType = listType;
             StartNumber = startNumber;
+            NumId = 0;
         }
 
         /// <summary>
-        /// Method to clone a list
+        /// Constructor to load a set of items into the list.
+        /// </summary>
+        /// <param name="listType">List type</param>
+        /// <param name="items">Items to add</param>
+        /// <param name="startNumber">Starting number</param>
+        public List(NumberingFormat listType, IEnumerable<string> items, int startNumber = 1) : this(listType, startNumber)
+        {
+            foreach (var text in items)
+            {
+                AddItem(text);
+            }
+        }
+
+        /// <summary>
+        /// Method to clone a list into a new unowned list.
         /// </summary>
         /// <param name="otherList">Other list</param>
         /// <returns>Copy of the list</returns>
-        internal List(List otherList) : this()
+        public static List Clone(List otherList)
         {
-            ListType = otherList.ListType;
-            StartNumber = otherList.StartNumber;
+            List list = new List(otherList.ListType, otherList.StartNumber);
             foreach (var item in otherList.Items)
             {
-                items.Add(new ListItem {Paragraph = new Paragraph {Xml = item.Xml}});
+                list.items.Add(new ListItem {Paragraph = Paragraph.Clone(item.Paragraph)});
             }
+
+            return list;
         }
 
         /// <summary>
@@ -126,10 +174,11 @@ namespace DXPlus
         /// <returns></returns>
         public List AddItem(string text, int level = 0)
         {
-            if (text == null) 
+            if (text == null)
                 throw new ArgumentNullException(nameof(text));
 
             var newParagraphSection = new XElement(Name.Paragraph,
+                new XAttribute(Name.ParagraphId, HelperFunctions.GenerateHexId()),
                 new XElement(Name.ParagraphProperties,
                     new XElement(Name.ParagraphStyle, new XAttribute(Name.MainVal, "ListParagraph")),
                     new XElement(Namespace.Main + "numPr",
@@ -139,7 +188,15 @@ namespace DXPlus
             );
 
             var newItem = new ListItem
-                {Paragraph = new Paragraph(Document, newParagraphSection, 0, ContainerType.Paragraph) { Container = Container }};
+            {
+                Paragraph = new Paragraph(Document, newParagraphSection, 0, ContainerType.Paragraph)
+                {
+                    Document = Document,
+                    Container = Container,
+                    Font = Font,
+                    FontSize = FontSize
+                }
+            };
             Container?.Xml.Add(newParagraphSection);
 
             items.Add(newItem);
@@ -154,11 +211,6 @@ namespace DXPlus
         /// <param name="level"></param>
         public List AddItem(Paragraph paragraph, int level = 0)
         {
-            if (paragraph.Container != null)
-            {
-                paragraph = new Paragraph(Document, paragraph.Xml.Clone(), 0, ContainerType.Paragraph);
-            }
-
             var paraProps = paragraph.ParagraphNumberProperties();
             if (paraProps == null)
             {
@@ -190,10 +242,18 @@ namespace DXPlus
                     "New list items can only be added to this list if they are have the same numId.");
             }
 
-            paragraph.Document = Document;
-            paragraph.Container = Container;
+            if (paragraph.Container == null)
+            {
+                paragraph.Document = Document;
+                paragraph.Container = Container;
+                paragraph.Font = Font;
+                paragraph.FontSize = FontSize;
+            }
+
+            if (paragraph.Xml.Parent == null)
+                Container?.Xml.Add(paragraph);
+
             items.Add(new ListItem { Paragraph = paragraph });
-            Container?.Xml.Add(paragraph);
 
             return this;
         }
@@ -209,9 +269,9 @@ namespace DXPlus
         /// </returns>
         public bool CanAddListItem(Paragraph paragraph)
         {
-            if (!paragraph.IsListItem()) 
+            if (!paragraph.IsListItem())
                 return false;
-            
+
             var numIdNode = paragraph.Xml.FirstLocalNameDescendant("numId");
             if (numIdNode == null || !int.TryParse(numIdNode.GetVal(), out int numId))
                 return false;

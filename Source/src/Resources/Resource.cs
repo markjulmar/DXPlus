@@ -6,12 +6,12 @@ using System.Reflection;
 using System.Text;
 using System.Xml.Linq;
 
-namespace DXPlus
+namespace DXPlus.Resources
 {
     /// <summary>
     /// Provides access to embedded resources in the assembly.
     /// </summary>
-    internal static class Resources
+    internal static class Resource
     {
         /// <summary>
         /// Base hyperlink style
@@ -27,6 +27,19 @@ namespace DXPlus
         /// <returns></returns>
         public static XDocument BodyDocument(string rsid)
                 => GetDocument("DXPlus.Resources.document.xml", new {rsid});
+
+        /// <summary>
+        /// Get a basic drawing element which represents a vector drawing
+        /// </summary>
+        /// <param name="id">Unique id within the document</param>
+        /// <param name="name">Optional name for the picture</param>
+        /// <param name="description">Optional description for the picture</param>
+        /// <param name="cx">width</param>
+        /// <param name="cy">height</param>
+        /// <param name="rid">BLIP relationship id</param>
+        /// <returns></returns>
+        public static XElement DrawingElement(long id, string name, string description, int cx, int cy, string rid)
+                => GetElement("DXPlus.Resources.drawing.xml", new { id, name, description, cx, cy, rid });
 
         /// <summary>
         /// The TOC base XML element inserted when a new TOC is created.
@@ -77,7 +90,6 @@ namespace DXPlus
         /// <summary>
         /// Numbering document.
         /// </summary>
-        /// <param name="nsid">unique identifier</param>
         /// <returns></returns>
         public static XDocument NumberingXml() => GetDocument("DXPlus.Resources.numbering.xml");
 
@@ -88,7 +100,7 @@ namespace DXPlus
         public static XDocument DefaultStylesXml() => GetDocument("DXPlus.Resources.styles.xml");
 
         /// <summary>
-        /// Default bullet style for bulleted lists - added when a new bulleted list is used.
+        /// Default bullet style for bullet lists - added when a new bullet list is used.
         /// </summary>
         /// <returns></returns>
         public static XElement DefaultBulletNumberingXml(string nsid) => GetElement("DXPlus.Resources.numbering.bullets.xml", new { nsid });

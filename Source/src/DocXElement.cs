@@ -7,7 +7,7 @@ namespace DXPlus
     /// All DocX types are derived from DocXElement.
     /// This class contains properties which every element of a DocX must contain.
     /// </summary>
-    public abstract class DocXBase : IDocumentBase
+    public abstract class DocXElement
     {
         private XElement xml;
         private DocX document;
@@ -50,7 +50,7 @@ namespace DXPlus
         /// <summary>
         /// Default constructor
         /// </summary>
-        internal DocXBase()
+        internal DocXElement()
         {
         }
 
@@ -59,7 +59,7 @@ namespace DXPlus
         /// </summary>
         /// <param name="document">The document that this element belongs to.</param>
         /// <param name="xml">The Xml that gives this element substance</param>
-        internal DocXBase(IDocument document, XElement xml)
+        internal DocXElement(IDocument document, XElement xml)
         {
             this.xml = xml;
             this.document = (DocX) document;

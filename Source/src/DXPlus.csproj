@@ -10,12 +10,9 @@
       <_Parameter1>DXPlus.Tests</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
-  
-  <ItemGroup>
-    <Compile Remove="Helpers\InsertDocumentHelper.cs" />
-  </ItemGroup>
   <ItemGroup>
     <None Remove="Resources\document.xml" />
+    <None Remove="Resources\drawing.xml" />
     <None Remove="Resources\hyperlinkStyle.xml" />
     <None Remove="Resources\ListParagraphStyle.xml" />
     <None Remove="Resources\numbering.bullets.xml" />
@@ -36,6 +33,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\document.xml" />
+    <EmbeddedResource Include="Resources\drawing.xml" />
     <EmbeddedResource Include="Resources\hyperlinkStyle.xml" />
     <EmbeddedResource Include="Resources\ListParagraphStyle.xml" />
     <EmbeddedResource Include="Resources\styles.xml" />
@@ -48,9 +46,6 @@
     <EmbeddedResource Include="Resources\TocXmlBase.xml" />
     <EmbeddedResource Include="Resources\TocHyperLinkStyleBase.xml" />
     <EmbeddedResource Include="Resources\settings.xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Helpers\InsertDocumentHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.IO.Packaging" Version="4.7.0" />

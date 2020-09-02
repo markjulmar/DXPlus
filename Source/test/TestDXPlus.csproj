@@ -9,12 +9,6 @@
     <ProjectReference Include="..\src\DXPlus.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="DocumentWithBookmarks.docx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Input.docx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="images\logo_template.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

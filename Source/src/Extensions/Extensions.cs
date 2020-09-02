@@ -2,8 +2,11 @@
 using System.Globalization;
 using System.Xml.Linq;
 
-namespace DXPlus.Helpers
+namespace DXPlus
 {
+    /// <summary>
+    /// Misc. .NET extensions to common types.
+    /// </summary>
     internal static class Extensions
     {
         /// <summary>
@@ -43,7 +46,6 @@ namespace DXPlus.Helpers
             {
                 var rgb = int.Parse(color.Value.Replace("#", ""), NumberStyles.HexNumber) | 0xff000000;
                 return Color.FromArgb((int) rgb);
-
             }
 
             return Color.Empty;

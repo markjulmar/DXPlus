@@ -33,7 +33,7 @@ namespace DXPlus
             var nextNode = bookmark.NextNode;
             var nextElement = nextNode as XElement;
             while (nextElement == null
-                   || (nextElement.Name != DXPlus.Name.Run 
+                   || (nextElement.Name != DXPlus.Name.Run
                    && nextElement.Name != DXPlus.Name.BookmarkEnd))
             {
                 nextNode = nextNode.NextNode;

@@ -1,6 +1,7 @@
 ﻿using DXPlus.Helpers;
 using System.Linq;
 using System.Xml.Linq;
+using System.Xml.XPath;
 using Xunit;
 
 namespace DXPlus.Tests
@@ -141,6 +142,82 @@ namespace DXPlus.Tests
             Assert.NotNull(attr);
             Assert.Equal("value", attr.Name.LocalName);
             Assert.Equal("10", attr.Value);
+        }
+
+        [Fact]
+        public void NormalizeOrdersElements()
+        {
+            XElement e1 = XElement.Parse(
+                @"<root>
+                  <a>
+                    <margin val='2'></margin>
+                    <value val='1' />
+                  </a>
+                  <a>
+                    <value val='2' />
+                    <margin val='3'></margin>
+                  </a> 
+                  <a>
+                    <value val='3' />
+                    <margin val='4'></margin>
+                  </a>
+            </root>");
+
+            XElement e2 = XElement.Parse(
+                @"<root>
+                  <a>
+                    <value val='1' />
+                    <margin val='2'></margin>
+                  </a>
+                  <a>
+                    <margin val='3'></margin>
+                    <value val='2' />
+                  </a>
+                  <a>
+                    <value val='3' />
+                    <margin val='4'></margin>
+                  </a> 
+            </root>");
+
+            var ne = e1.Normalize();
+            var ne2 = e2.Normalize();
+            Assert.True(XNode.DeepEquals(ne, ne2));
+        }
+
+        [Fact]
+        public void FindLastUsedIdReturnsZeroWhenNone()
+        {
+            var doc = XDocument.Parse(
+                @"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
+                <root xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"" xmlns:wp=""http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"">
+                </root>");
+
+            long id = HelperFunctions.FindLastUsedDocId(doc);
+            Assert.Equal(0, id);
+        }
+
+        [Fact]
+        public void FindLastUsedIdReturnsHighestValue()
+        {
+            var doc = XDocument.Parse(
+                @"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
+                <w:root xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"" xmlns:wp=""http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"">
+                    <w:item>
+                        <w:bookmarkStart w:id=""20"" />
+                    </w:item>
+                    <w:item>
+                        <w:bookmarkStart w:id=""2"" />
+                    </w:item>
+                    <w:item>
+                        <w:bookmarkStart w:id=""15"">
+                            <wp:docPr id=""16"" />
+                        </w:bookmarkStart>
+                    </w:item>
+                </w:root>");
+
+            Assert.Equal(20, HelperFunctions.FindLastUsedDocId(doc));
+            doc.XPathSelectElement("//w:bookmarkStart[@w:id='20']", Namespace.NamespaceManager()).Remove();
+            Assert.Equal(16, HelperFunctions.FindLastUsedDocId(doc));
         }
     }
 }

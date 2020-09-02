@@ -47,6 +47,8 @@ namespace DXPlus
         public static XName OfficeMath = Namespace.Math + "oMath";
         public static XName SectionProperties = Namespace.Main + "sectPr";
         public static XName NoProof => Namespace.Main + "noProof";
+        public static XName ParagraphId = Namespace.W2010 + "paraId";
+        public static XName DrawingProperties = Namespace.WordProcessingDrawing + "docPr";
     }
 
     internal static class Relations
@@ -95,8 +97,9 @@ namespace DXPlus
         internal static XNamespace Chart = "http://schemas.openxmlformats.org/drawingml/2006/chart";
         internal static XNamespace VML = "urn:schemas-microsoft-com:vml";
         internal static XNamespace RelatedDoc = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+        internal static XNamespace W2010 = "http://schemas.microsoft.com/office/word/2010/wordml";
 
-        static XmlNamespaceManager _manager;
+        private static XmlNamespaceManager _manager;
         internal static XmlNamespaceManager NamespaceManager()
         {
             if (_manager == null) {
@@ -106,6 +109,7 @@ namespace DXPlus
                 _manager.AddNamespace("v", VML.NamespaceName);
                 _manager.AddNamespace("a", DrawingMain.NamespaceName);
                 _manager.AddNamespace("c", Chart.NamespaceName);
+                _manager.AddNamespace("w14", W2010.NamespaceName);
                 _manager.AddNamespace("wp", WordProcessingDrawing.NamespaceName);
             }
             return _manager;

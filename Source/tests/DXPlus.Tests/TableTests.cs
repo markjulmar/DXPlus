@@ -303,12 +303,12 @@ namespace DXPlus.Tests
             Assert.Null(t.PackagePart);
 
             var doc = Document.Create();
-            var t2 = doc.AddTable(t);
+            doc.AddTable(t);
+            Assert.NotNull(t.PackagePart);
+
+            var t2 = doc.AddTable(new Table(1, 1));
             Assert.NotNull(t2.PackagePart);
-
-            var t3 = doc.AddTable(t);
-            Assert.NotNull(t3.PackagePart);
-
+            Assert.Equal(t2.PackagePart, t.PackagePart);
             Assert.Equal(2, doc.Tables.Count());
         }
     }

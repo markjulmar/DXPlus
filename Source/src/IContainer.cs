@@ -1,20 +1,28 @@
 ﻿using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 
 namespace DXPlus
 {
-    public interface IContainer : IDocumentBase
+    /// <summary>
+    /// This interface provides basic methods to insert/add/remove items from a Paragraph, TableCell, Header or Footer.
+    /// </summary>
+    public interface IContainer
     {
+        /// <summary>
+        /// This is a reference to the document object that this element belongs to.
+        /// Every DocX element is connected to a document.
+        /// </summary>
+        IDocument Owner { get; }
+
         /// <summary>
         /// Returns a list of all Paragraphs inside this container.
         /// </summary>
-        ReadOnlyCollection<Paragraph> Paragraphs { get; }
+        IReadOnlyList<Paragraph> Paragraphs { get; }
 
         /// <summary>
         /// Returns all the sections associated with this container.
         /// </summary>
-        List<Section> Sections { get; }
+        IReadOnlyList<Section> Sections { get; }
 
         /// <summary>
         /// Retrieve a list of all Table objects in the document
@@ -68,8 +76,8 @@ namespace DXPlus
         /// <param name="escapeRegEx">True to escape Regex expression</param>
         /// <param name="useRegExSubstitutions">True to use RegEx in substitution</param>
         void ReplaceText(string searchValue, string newValue,
-            RegexOptions options = RegexOptions.None, Formatting newFormatting = null, Formatting matchFormatting = null, 
-            MatchFormattingOptions formattingOptions = MatchFormattingOptions.SubsetMatch, 
+            RegexOptions options = RegexOptions.None, Formatting newFormatting = null, Formatting matchFormatting = null,
+            MatchFormattingOptions formattingOptions = MatchFormattingOptions.SubsetMatch,
             bool escapeRegEx = true, bool useRegExSubstitutions = false);
 
         /// <summary>
@@ -83,9 +91,9 @@ namespace DXPlus
         /// Insert a paragraph into this container at a specific index
         /// </summary>
         /// <param name="index">Index to insert into</param>
-        /// <param name="p">Paragraph to insert</param>
+        /// <param name="paragraph">Paragraph to insert</param>
         /// <returns>Inserted paragraph</returns>
-        Paragraph InsertParagraph(int index, Paragraph p);
+        Paragraph InsertParagraph(int index, Paragraph paragraph);
 
         /// <summary>
         /// Add a paragraph at the end of the container
@@ -127,39 +135,19 @@ namespace DXPlus
         Table AddTable(Table table);
 
         /// <summary>
-        /// Insert a Table into this document. The Table's source can be a completely different document.
+        /// Insert a Table into this document.
         /// </summary>
-        /// <param name="table">The Table to insert.</param>
         /// <param name="index">The index to insert this Table at.</param>
+        /// <param name="table">The Table to insert.</param>
         /// <returns>The Table now associated with this document.</returns>
         Table InsertTable(int index, Table table);
 
         /// <summary>
-        /// Insert a List into this document.
-        /// The List's source can be a completely different document.
+        /// Add a List into this document.
         /// </summary>
         /// <param name="list">The List to insert</param>
         /// <returns>The List now associated with this document.</returns>
         List AddList(List list);
-
-        /// <summary>
-        /// Insert a List with a specific font size into this document.
-        /// The List's source can be a completely different document.
-        /// </summary>
-        /// <param name="list">The List to insert</param>
-        /// <param name="fontSize">Font size</param>
-        /// <returns>The List now associated with this document.</returns>
-        List AddList(List list, double fontSize);
-
-        /// <summary>
-        /// Insert a List with a specific font size/family into this document.
-        /// The List's source can be a completely different document.
-        /// </summary>
-        /// <param name="list">The List to insert</param>
-        /// <param name="fontFamily">Font family</param>
-        /// <param name="fontSize">Font size</param>
-        /// <returns>The List now associated with this document.</returns>
-        List AddList(List list, System.Drawing.FontFamily fontFamily, double fontSize);
 
         /// <summary>
         /// Insert a List at a specific position.

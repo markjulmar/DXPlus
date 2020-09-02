@@ -65,7 +65,6 @@ namespace DXPlus.Tests
             Assert.Null(rPr.Xml.RemoveNamespaces().XPathSelectElement("caps"));
         }
 
-
         [Fact]
         public void ColorAddsRemovesElement()
         {
@@ -432,5 +431,28 @@ namespace DXPlus.Tests
             Assert.Null(rPr.Xml.RemoveNamespaces().XPathSelectElement("u[@color='FF0000']"));
         }
 
+        [Fact]
+        public void NewFormattingIsEqual()
+        {
+            var f1 = new Formatting();
+            var f2 = new Formatting();
+            Assert.True(f1.Equals(f2));
+        }
+
+        [Fact]
+        public void BasicFormattingIsEqual()
+        {
+            var f1 = new Formatting { Bold = true, IsHidden =  true };
+            var f2 = new Formatting { Bold = true, IsHidden = true };
+            Assert.True(f1.Equals(f2));
+        }
+
+        [Fact]
+        public void DifferentFormattingIsNotEqual()
+        {
+            var f1 = new Formatting { Bold = true, IsHidden = true, Italic = true };
+            var f2 = new Formatting { Bold = true, IsHidden = true };
+            Assert.False(f1.Equals(f2));
+        }
     }
 }

@@ -1,17 +1,16 @@
-﻿using System;
+﻿using DXPlus.Helpers;
+using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
-using DXPlus.Helpers;
 
 namespace DXPlus
 {
     /// <summary>
     /// Represents a single row in a Table.
     /// </summary>
-    public class Row : DocXBase
+    public class Row : DocXElement
     {
         /// <summary>
         /// Table owner
@@ -55,8 +54,8 @@ namespace DXPlus
         {
             get
             {
-                var cells = Cells;
-                return cells.Count + cells.Select(cell => cell.GridSpan-1).Sum();
+                IReadOnlyList<Cell> cells = Cells;
+                return cells.Count + cells.Select(cell => cell.GridSpan - 1).Sum();
             }
         }
 
@@ -67,7 +66,7 @@ namespace DXPlus
         {
             get
             {
-                var value = Xml.Element(Namespace.Main + "trPr")?
+                XAttribute value = Xml.Element(Namespace.Main + "trPr")?
                                .Element(Namespace.Main + "trHeight")?
                                .GetValAttr();
 
@@ -91,8 +90,8 @@ namespace DXPlus
                       .Element(Namespace.Main + "tblHeader") != null;
             set
             {
-                var trPr = Xml.GetOrCreateElement(Namespace.Main + "trPr");
-                var tblHeader = trPr.Element(Namespace.Main + "tblHeader");
+                XElement trPr = Xml.GetOrCreateElement(Namespace.Main + "trPr");
+                XElement tblHeader = trPr.Element(Namespace.Main + "tblHeader");
 
                 if (tblHeader == null && value)
                 {
@@ -114,19 +113,24 @@ namespace DXPlus
 
             // Check for valid start and end indexes.
             if (startIndex < 0 || startIndex >= endIndex)
+            {
                 throw new IndexOutOfRangeException(nameof(startIndex));
-            if (endIndex >= Cells.Count)
-                throw new IndexOutOfRangeException(nameof(count));
+            }
 
-            var cells = Cells;
-            var startCell = cells[startIndex];
+            if (endIndex >= Cells.Count)
+            {
+                throw new IndexOutOfRangeException(nameof(count));
+            }
+
+            IReadOnlyList<Cell> cells = Cells;
+            Cell startCell = cells[startIndex];
             int gridSpanSum = 0;
 
             // Merge all the cells beyond startIndex up to the ending index.
             for (int i = startIndex; i <= endIndex; i++)
             {
-                var cell = cells[i];
-                gridSpanSum += cell.GridSpan-1;
+                Cell cell = cells[i];
+                gridSpanSum += cell.GridSpan - 1;
 
                 // Add the contents of the cell to the starting cell and remove it.
                 if (cell != startCell)
@@ -147,7 +151,7 @@ namespace DXPlus
         /// </summary>
         public void Remove()
         {
-            var tableOwner = Xml.Parent;
+            XElement tableOwner = Xml.Parent;
             Xml.Remove();
             if (tableOwner?.Elements(Namespace.Main + "tr").Any() == false)
             {
@@ -165,8 +169,8 @@ namespace DXPlus
         {
             if (height != null)
             {
-                var trPr = Xml.GetOrCreateElement(Namespace.Main + "trPr");
-                var trHeight = trPr.GetOrCreateElement(Namespace.Main + "trHeight");
+                XElement trPr = Xml.GetOrCreateElement(Namespace.Main + "trPr");
+                XElement trHeight = trPr.GetOrCreateElement(Namespace.Main + "trHeight");
                 trHeight.SetAttributeValue(Namespace.Main + "hRule", exact ? "exact" : "atLeast");
                 trHeight.SetAttributeValue(Name.MainVal, height * TableHelpers.UnitConversion);
             }
@@ -175,9 +179,7 @@ namespace DXPlus
                 Xml.Element(Namespace.Main + "trPr")?
                     .Element(Namespace.Main + "trHeight")?
                     .Remove();
-
             }
-
         }
 
         /// <summary>
@@ -186,13 +188,17 @@ namespace DXPlus
         /// <param name="columnWidths">New column widths</param>
         internal void SetColumnWidths(IList<double> columnWidths)
         {
-            var cells = Cells;
+            IReadOnlyList<Cell> cells = Cells;
             if (cells.Count != columnWidths.Count)
+            {
                 throw new Exception($"Row column count {cells.Count} doesn't match passed column count {columnWidths.Count}.");
+            }
 
             int index = 0;
-            foreach (var cell in cells)
+            foreach (Cell cell in cells)
+            {
                 cell.Width = columnWidths[index++];
+            }
         }
 
         /// <summary>
@@ -201,8 +207,10 @@ namespace DXPlus
         protected override void OnDocumentOwnerChanged(IDocument previousValue, IDocument newValue)
         {
             base.OnDocumentOwnerChanged(previousValue, newValue);
-            foreach (var cell in Cells)
-                cell.Document = (DocX) newValue;
+            foreach (Cell cell in Cells)
+            {
+                cell.Document = (DocX)newValue;
+            }
         }
 
         /// <summary>
@@ -211,8 +219,10 @@ namespace DXPlus
         protected override void OnPackagePartChanged(PackagePart previousValue, PackagePart newValue)
         {
             base.OnPackagePartChanged(previousValue, newValue);
-            foreach (var cell in Cells)
+            foreach (Cell cell in Cells)
+            {
                 cell.PackagePart = newValue;
+            }
         }
     }
 }

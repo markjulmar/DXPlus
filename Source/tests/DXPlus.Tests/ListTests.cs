@@ -1,12 +1,11 @@
 ﻿using System.Linq;
+using Newtonsoft.Json.Serialization;
 using Xunit;
 
 namespace DXPlus.Tests
 {
     public class ListTests
     {
-        private const string Filename = "test.docx";
-
         [Fact]
         public void ListHasEnumerableItems()
         {
@@ -26,25 +25,19 @@ namespace DXPlus.Tests
             Assert.Null(list.PackagePart);
 
             var doc = Document.Create();
-            var l2 = doc.AddList(list);
-            Assert.NotNull(l2.PackagePart);
-
-            var l3 = doc.InsertList(1, list);
-            Assert.NotNull(l3.PackagePart);
+            doc.AddList(list);
+            Assert.NotNull(list.PackagePart);
             Assert.Empty(doc.Lists);
         }
 
         [Fact]
         public void ListAddsElementsToDoc()
         {
-            List list = new List(NumberingFormat.Bulleted);
-            list.AddItem("Item 1");
-
             var doc = Document.Create();
-            var l2 = doc.AddList(list);
+            doc.AddList(new List(NumberingFormat.Bulleted, new[] { "Item 1", "Item 2", "Item 3" }));
             Assert.Single(doc.Lists);
 
-            var l3 = doc.AddList(list);
+            doc.AddList(new List(NumberingFormat.Numbered, new [] { "One" }));
             Assert.Equal(2, doc.Lists.Count());
         }
 
@@ -63,23 +56,18 @@ namespace DXPlus.Tests
         [Fact]
         public void ListAddsToHeaderPart()
         {
-            List list = new List(NumberingFormat.Bulleted)
-                            .AddItem("Test");
+            List list = new List(NumberingFormat.Bulleted, new [] { "Test"} );
             Assert.Null(list.PackagePart);
 
             var doc = Document.Create();
+            var section = doc.Sections.Single();
 
-            doc.Headers.Default.Add();
-            var header = doc.Headers.Default;
+            section.Headers.Default.Add();
+            var header = section.Headers.Default;
 
-            var l2 = header.AddList(list);
-            Assert.NotNull(l2.PackagePart);
-
-            var l3 = doc.AddList(list);
-
-            Assert.Single(doc.Lists);
+            header.AddList(list);
+            Assert.NotNull(list.PackagePart);
             Assert.Single(header.Lists);
-            Assert.NotEqual(l2.PackagePart, l3.PackagePart);
         }
     }
 }

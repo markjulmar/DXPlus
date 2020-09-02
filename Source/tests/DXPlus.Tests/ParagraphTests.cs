@@ -4,7 +4,6 @@ using System.Globalization;
 using System.Linq;
 using System.Xml.Linq;
 using System.Xml.XPath;
-using DXPlus.Helpers;
 using Xunit;
 
 namespace DXPlus.Tests
@@ -17,7 +16,7 @@ namespace DXPlus.Tests
         public void AlignmentGetAndSetAreAligned()
         {
             using var doc = Document.Create(Filename);
-            doc.AddParagraph("This is a test.").Align(Alignment.Center);
+            doc.AddParagraph("This is a test.").Alignment(Alignment.Center);
             Assert.Equal(Alignment.Center, doc.Paragraphs[0].Alignment);
         }
 
@@ -100,17 +99,19 @@ namespace DXPlus.Tests
         {
             using var doc = (DocX) Document.Create();
 
-            Assert.NotNull(doc.Headers);
-            Assert.False(doc.Headers.Even.Exists);
-            Assert.False(doc.Headers.Default.Exists);
-            Assert.False(doc.Headers.First.Exists);
-            Assert.False(doc.DifferentFirstPage);
+            var section = doc.Sections.Single();
 
-            doc.Headers.First.Add().SetText("Page Header 1");
-            Assert.False(doc.Headers.Even.Exists);
-            Assert.False(doc.Headers.Default.Exists);
-            Assert.True(doc.Headers.First.Exists);
-            Assert.True(doc.DifferentFirstPage);
+            Assert.NotNull(section.Headers);
+            Assert.False(section.Headers.Even.Exists);
+            Assert.False(section.Headers.Default.Exists);
+            Assert.False(section.Headers.First.Exists);
+            Assert.False(section.Properties.DifferentFirstPage);
+
+            section.Headers.First.Add().SetText("Page Header 1");
+            Assert.False(section.Headers.Even.Exists);
+            Assert.False(section.Headers.Default.Exists);
+            Assert.True(section.Headers.First.Exists);
+            Assert.True(section.Properties.DifferentFirstPage);
 
             Assert.Single(doc.Xml.RemoveNamespaces().XPathSelectElements("//sectPr/headerReference"));
             Assert.Empty(doc.Xml.RemoveNamespaces().XPathSelectElements("//sectPr/footerReference"));
@@ -120,20 +121,20 @@ namespace DXPlus.Tests
         public void FirstHeaderRemovesElements()
         {
             using var doc = (DocX)Document.Create();
+            var section = doc.Sections.Single();
+            Assert.NotNull(section.Headers);
 
-            Assert.NotNull(doc.Headers);
+            section.Headers.First.Add().SetText("Page Header 1");
+            Assert.False(section.Headers.Even.Exists);
+            Assert.False(section.Headers.Default.Exists);
+            Assert.True(section.Headers.First.Exists);
+            Assert.True(section.Properties.DifferentFirstPage);
 
-            doc.Headers.First.Add().SetText("Page Header 1");
-            Assert.False(doc.Headers.Even.Exists);
-            Assert.False(doc.Headers.Default.Exists);
-            Assert.True(doc.Headers.First.Exists);
-            Assert.True(doc.DifferentFirstPage);
-
-            doc.Headers.First.Remove();
-            Assert.False(doc.Headers.Even.Exists);
-            Assert.False(doc.Headers.Default.Exists);
-            Assert.False(doc.Headers.First.Exists);
-            Assert.False(doc.DifferentFirstPage);
+            section.Headers.First.Remove();
+            Assert.False(section.Headers.Even.Exists);
+            Assert.False(section.Headers.Default.Exists);
+            Assert.False(section.Headers.First.Exists);
+            Assert.False(section.Properties.DifferentFirstPage);
 
             Assert.Empty(doc.Xml.RemoveNamespaces().XPathSelectElements("//sectPr/headerReference"));
             Assert.Empty(doc.Xml.RemoveNamespaces().XPathSelectElements("//sectPr/footerReference"));
@@ -143,20 +144,21 @@ namespace DXPlus.Tests
         public void SecondHeaderIncrementsCorrectly()
         {
             using var doc = (DocX)Document.Create();
+            var section = doc.Sections.Single();
 
-            Assert.NotNull(doc.Headers);
-            Assert.False(doc.Headers.Even.Exists);
-            Assert.False(doc.Headers.Default.Exists);
-            Assert.False(doc.Headers.First.Exists);
+            Assert.NotNull(section.Headers);
+            Assert.False(section.Headers.Even.Exists);
+            Assert.False(section.Headers.Default.Exists);
+            Assert.False(section.Headers.First.Exists);
 
-            doc.Headers.First.Add();
-            Assert.Equal("/word/header1.xml", doc.Headers.First.Uri.OriginalString);
-            doc.Headers.Even.Add();
-            Assert.Equal("/word/header2.xml", doc.Headers.Even.Uri.OriginalString);
+            section.Headers.First.Add();
+            Assert.Equal("/word/header1.xml", section.Headers.First.Uri.OriginalString);
+            section.Headers.Even.Add();
+            Assert.Equal("/word/header2.xml", section.Headers.Even.Uri.OriginalString);
 
-            Assert.True(doc.Headers.Even.Exists);
-            Assert.False(doc.Headers.Default.Exists);
-            Assert.True(doc.Headers.First.Exists);
+            Assert.True(section.Headers.Even.Exists);
+            Assert.False(section.Headers.Default.Exists);
+            Assert.True(section.Headers.First.Exists);
 
             Assert.Equal(2, doc.Xml.RemoveNamespaces().XPathSelectElements("//sectPr/headerReference").Count());
             Assert.Empty(doc.Xml.RemoveNamespaces().XPathSelectElements("//sectPr/footerReference"));
@@ -632,22 +634,13 @@ namespace DXPlus.Tests
             using DocX doc = (DocX) Document.Create();
             Assert.NotNull(doc.PackagePart);
 
-            Paragraph p = new Paragraph();
-            p.SetText("Test");
-            p.Bold = true;
-
+            Paragraph p = new Paragraph("Test").Bold();
             Assert.Null(p.PackagePart);
 
-            var p2 = doc.AddParagraph(p);
-            Assert.NotNull(p2.PackagePart);
-            Assert.Equal(doc.PackagePart, p2.PackagePart);
-
-            Assert.Null(p.PackagePart);
-            var p3 = doc.InsertParagraph(0, p);
-            Assert.NotNull(p3.PackagePart);
-            Assert.Equal(doc.PackagePart, p3.PackagePart);
+            doc.AddParagraph(p);
+            Assert.NotNull(p.PackagePart);
+            Assert.Equal(doc.PackagePart, p.PackagePart);
         }
-
 
         [Fact]
         public void InsertParagraphAtZeroAddsToBeginning()
@@ -667,7 +660,7 @@ namespace DXPlus.Tests
             Assert.Equal(" Inserted Text ", doc.Paragraphs[0].Text);
         }
 
-        [Fact] 
+        [Fact]
         public void InsertParagraphInMiddleSplitsParagraph()
         {
             using var doc = Document.Create(Filename);
@@ -686,7 +679,7 @@ namespace DXPlus.Tests
         [Fact]
         public void RemoveTextEditsParagraph()
         {
-            string text = "This is a paragraph in a document where we are looking to remove some text.";
+            const string text = "This is a paragraph in a document where we are looking to remove some text.";
             using var doc = Document.Create(Filename);
             var p = doc.AddParagraph(text);
             Assert.Single(doc.Paragraphs);
@@ -699,7 +692,7 @@ namespace DXPlus.Tests
         [Fact]
         public void RemoveTextRemovesEmptyParagraph()
         {
-            string text = "Test";
+            const string text = "Test";
             using var doc = Document.Create(Filename);
             var p = doc.AddParagraph(text);
             Assert.Single(doc.Paragraphs);
@@ -831,5 +824,16 @@ namespace DXPlus.Tests
             Assert.Single(properties.Elements(Name.Bold));
         }
 
+        [Fact]
+        public void TwoParagraphsFromSameSectionAreTheSame()
+        {
+            var doc = Document.Create();
+
+            var p1 = doc.AddParagraph("This is a test");
+            var p2 = doc.Paragraphs[0];
+
+            Assert.Equal(p1,p2);  // value equality
+            Assert.False(p1==p2); // not reference equality
+        }
     }
 }
