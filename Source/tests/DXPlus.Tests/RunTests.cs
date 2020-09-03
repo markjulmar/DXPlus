@@ -6,7 +6,7 @@ namespace DXPlus.Tests
     public class RunTests
     {
         [Fact]
-        public void SplitRunReturnsBothSides()
+        public void SplitInsertRunReturnsBothSides()
         {
             string text = "This is a test.";
             var e = new XElement(Name.Run, new XElement(Name.Text, text));
@@ -20,7 +20,7 @@ namespace DXPlus.Tests
         }
 
         [Fact]
-        public void SplitAtZeroRunReturnsRightSide()
+        public void SplitInsertAtZeroRunReturnsRightSide()
         {
             string text = "This is a test.";
             var e = new XElement(Name.Run, new XElement(Name.Text, text));
@@ -34,7 +34,7 @@ namespace DXPlus.Tests
         }
 
         [Fact]
-        public void SplitAtLengthRunReturnsLeftSide()
+        public void SplitInsertAtLengthRunReturnsLeftSide()
         {
             string text = "This is a test.";
             var e = new XElement(Name.Run, new XElement(Name.Text, text));
@@ -45,6 +45,20 @@ namespace DXPlus.Tests
 
             Assert.Null(results[1]);
             Assert.Equal("This is a test.", results[0].Value);
+        }
+
+        [Fact]
+        public void FirstRunSplitInsertAtLengthReturnsLeftSide()
+        {
+            string text = "Test";
+            var e = new XElement(Name.Run, new XElement(Name.Text, text));
+
+            Run r = new Run(e, 0);
+            Assert.Equal(text, r.Text);
+            var results = r.SplitRun(text.Length);
+
+            Assert.Null(results[1]);
+            Assert.Equal("Test", results[0].Value);
         }
 
     }

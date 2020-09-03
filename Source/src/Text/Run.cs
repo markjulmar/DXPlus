@@ -7,10 +7,10 @@ using System.Xml.Linq;
 namespace DXPlus
 {
     /// <summary>
-    /// Represents a single run of text in a paragraph
+    /// Represents a single run of text with optional formatting in a paragraph
     /// </summary>
-    [DebuggerDisplay("{Text}")]
-    internal class Run
+    [DebuggerDisplay("{" + nameof(Text) + "}")]
+    public class Run
     {
         /// <summary>
         /// XML backing storage
@@ -33,14 +33,9 @@ namespace DXPlus
         public string Text { get; }
 
         /// <summary>
-        /// True if this Run has a text block
-        /// </summary>
-        public bool HasText => Xml.Element(Name.Text) != null;
-
-        /// <summary>
         /// The run properties for this text run
         /// </summary>
-        public Formatting Properties => new Formatting(Xml.Element(Name.RunProperties));
+        public Formatting Properties => new Formatting(Xml.GetRunProps(true));
 
         /// <summary>
         /// Constructor for a run of text
@@ -66,11 +61,17 @@ namespace DXPlus
             EndIndex = currentPos;
         }
 
+        /// <summary>
+        /// Split a run at a given index.
+        /// </summary>
+        /// <param name="index">Index to split this run at</param>
+        /// <param name="editType">Type of editing being performed</param>
+        /// <returns></returns>
         internal XElement[] SplitRun(int index, EditType editType = EditType.Insert)
         {
             index -= StartIndex;
 
-            TextBlock text = GetFirstTextAffectedByEdit(index, editType);
+            TextBlock text = FindTextAffectedByEdit(editType, index);
             var splitText = text.Split(index);
             var splitLeft = new XElement(Xml.Name,
                                         Xml.Attributes(),
@@ -97,27 +98,42 @@ namespace DXPlus
             return new[] { splitLeft, splitRight };
         }
 
-        internal TextBlock GetFirstTextAffectedByEdit(int index, EditType type = EditType.Insert)
+        /// <summary>
+        /// Walk the run and identify the first (w:t) text element affected by an insert or delete
+        /// </summary>
+        /// <param name="type">Type of edit being performed</param>
+        /// <param name="index">Position of edit</param>
+        /// <returns></returns>
+        private TextBlock FindTextAffectedByEdit(EditType type, int index)
         {
             // Make sure we are looking within an acceptable index range.
             if (index < 0 || index > HelperFunctions.GetText(Xml).Length)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            // Need some memory that can be updated by the recursive search for the XElement to Split.
-            int count = 0;
-            TextBlock theOne = null;
+            // Start the recursive search
+            int count = 0; TextBlock locatedBlock = null;
+            RecursiveSearchForTextByIndex(Xml, type, index, ref count, ref locatedBlock);
 
-            GetFirstTextEffectedByEditRecursive(Xml, index, ref count, ref theOne, type);
-
-            return theOne;
+            return locatedBlock;
         }
 
-        internal void GetFirstTextEffectedByEditRecursive(XElement element, int index, ref int count, ref TextBlock theOne, EditType type = EditType.Insert)
+        /// <summary>
+        /// Internal method to recursively walk all (w:t) elements in this run and find the spot
+        /// where an edit (insert/delete) would occur.
+        /// </summary>
+        /// <param name="element">XML graph to examine</param>
+        /// <param name="type">Insert or delete</param>
+        /// <param name="index">Position where edit is being performed</param>
+        /// <param name="count">Number of text characters encountered so far</param>
+        /// <param name="textBlock">The identified text block</param>
+        private static void RecursiveSearchForTextByIndex(XElement element, EditType type, int index, ref int count, ref TextBlock textBlock)
         {
             count += HelperFunctions.GetSize(element);
-            if (count > 0 && ((type == EditType.Delete && count > index) || (type == EditType.Insert && count >= index)))
+            if (count > 0
+                && ((type == EditType.Delete && count > index)
+                    || (type == EditType.Insert && count >= index)))
             {
-                theOne = new TextBlock(element, count - HelperFunctions.GetSize(element));
+                textBlock = new TextBlock(element, count - HelperFunctions.GetSize(element));
                 return;
             }
 
@@ -125,10 +141,9 @@ namespace DXPlus
             {
                 foreach (var e in element.Elements())
                 {
-                    if (theOne == null)
-                    {
-                        GetFirstTextEffectedByEditRecursive(e, index, ref count, ref theOne);
-                    }
+                    RecursiveSearchForTextByIndex(e, type, index, ref count, ref textBlock);
+                    if (textBlock != null)
+                        return;
                 }
             }
         }

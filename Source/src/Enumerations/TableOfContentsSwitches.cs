@@ -3,7 +3,6 @@ using System.ComponentModel;
 
 namespace DXPlus
 {
-
     /// <summary>
     /// Represents the switches set on a TOC.
     /// See https://c-rex.net/projects/samples/ooxml/e1/Part4/OOXML_P4_DOCX_TOCTOC_topic_ID0ELZO1.html

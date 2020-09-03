@@ -31,10 +31,8 @@ namespace DXPlus.Tests
         [Fact]
         public void DirectionGetAndSetAreAligned()
         {
-            using var doc = Document.Create(Filename);
-            var p = doc.AddParagraph("This is a test.");
-            p.Direction = Direction.RightToLeft;
-            Assert.Equal(Direction.RightToLeft, doc.Paragraphs[0].Direction);
+            var p = new Paragraph("This is a test.") {Direction = Direction.RightToLeft};
+            Assert.Equal(Direction.RightToLeft, p.Direction);
         }
 
         [Fact]
@@ -693,7 +691,7 @@ namespace DXPlus.Tests
         public void RemoveTextRemovesEmptyParagraph()
         {
             const string text = "Test";
-            using var doc = Document.Create(Filename);
+            using var doc = Document.Create();
             var p = doc.AddParagraph(text);
             Assert.Single(doc.Paragraphs);
             Assert.Equal(text, p.Text);

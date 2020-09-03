@@ -65,18 +65,18 @@ namespace DXPlus
         /// Create a new picture with specific dimensions and insert it into a paragraph.
         /// </summary>
         /// <returns>New picture</returns>
-        public Picture CreatePicture(int height, int width) =>
-            CreatePicture(string.Empty, string.Empty, height, width);
+        public Picture CreatePicture(int width, int height) =>
+            CreatePicture(string.Empty, string.Empty, width, height);
 
         /// <summary>
         /// Create a new picture with specific dimensions and insert it into a paragraph.
         /// </summary>
         /// <returns>New picture</returns>
-        public Picture CreatePicture(string name, string description, int height, int width)
+        public Picture CreatePicture(string name, string description, int width, int height)
         {
             var picture = CreatePicture(name, description);
-            picture.Height = height;
             picture.Width = width;
+            picture.Height = height;
             return picture;
         }
     }

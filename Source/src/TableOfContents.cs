@@ -43,7 +43,7 @@ namespace DXPlus
             => new TableOfContents(document,
                     Resource.TocXmlBase(
                     headerStyle ?? HeaderStyle,
-                    title,
+                    title ?? "",
                     rightTabPos ?? RightTabPos,
                     BuildSwitchString(switches, lastIncludeLevel)),
                 headerStyle);

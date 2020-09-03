@@ -13,13 +13,25 @@ namespace DXPlus
     /// <summary>
     /// Represents a document paragraph.
     /// </summary>
-    [DebuggerDisplay("{xml}")]
+    [DebuggerDisplay("{" + nameof(Xml) + "}")]
     public class Paragraph : InsertBeforeOrAfter, IEquatable<Paragraph>
     {
         /// <summary>
         /// Text runs (r) that make up this paragraph
         /// </summary>
-        internal IEnumerable<XElement> Runs => Xml.Elements(Name.Run);
+        internal IEnumerable<Run> Runs
+        {
+            get
+            {
+                int start = 0;
+                foreach (var runXml in Xml.Elements(Name.Run))
+                {
+                    var run = new Run(runXml, start);
+                    yield return run;
+                    start = run.EndIndex;
+                }
+            }
+        }
 
         /// <summary>
         /// Styles in this paragraph
@@ -114,7 +126,7 @@ namespace DXPlus
             {
                 // Otherwise get/create on the last text run. If we don't have any text
                 // runs, use the last run available.
-                List<XElement> runs = Runs.Reverse().ToList();
+                List<XElement> runs = Runs.Reverse().Select(r => r.Xml).ToList();
                 rPr = (runs.Find(r => r.Element(Name.Text) != null) ?? runs[0]).GetRunProps(create);
             }
 
@@ -189,19 +201,8 @@ namespace DXPlus
         /// </summary>
         public Direction Direction
         {
-            get => Xml.Element(Name.ParagraphProperties, Name.RTL) == null ? Direction.LeftToRight : Direction.RightToLeft;
-
-            set
-            {
-                if (value == Direction.RightToLeft)
-                {
-                    Xml.GetOrCreateElement(Name.ParagraphProperties, Name.RTL);
-                }
-                else
-                {
-                    Xml.Element(Name.ParagraphProperties, Name.RTL)?.Remove();
-                }
-            }
+            get => GetDefaultFormatting().Direction;
+            set => GetDefaultFormatting(true).Direction = value;
         }
 
         /// <summary>
@@ -529,7 +530,7 @@ namespace DXPlus
             else
             {
                 // Get the first run effected by this Insert
-                Run run = GetFirstRunAffectedByEdit(charIndex);
+                Run run = FindRunAffectedByEdit(EditType.Insert, charIndex);
                 if (run == null)
                 {
                     // Add this hyperlink as the last element.
@@ -657,7 +658,7 @@ namespace DXPlus
             }
             else
             {
-                Run r = GetFirstRunAffectedByEdit(index.Value);
+                Run r = FindRunAffectedByEdit(EditType.Insert, index.Value);
                 XElement[] splitEdit = SplitEdit(r.Xml, index.Value, EditType.Insert);
                 r.Xml.ReplaceWith(splitEdit[0], fldSimple, splitEdit[1]);
             }
@@ -678,7 +679,7 @@ namespace DXPlus
 
             // Check to see if a rel for this Picture exists, create it if not.
             picture.PackagePart = this.PackagePart;
-            picture.Id = picture.GetOrCreateRelationship();
+            picture.RelationshipId = picture.GetOrCreateRelationship();
 
             // Add a new run with the given drawing to the paragraph.
             var run = new XElement(Name.Run,
@@ -786,7 +787,7 @@ namespace DXPlus
 
             // Check to see if a rel for this Picture exists, create it if not.
             picture.PackagePart = this.PackagePart;
-            picture.Id = picture.GetOrCreateRelationship();
+            picture.RelationshipId = picture.GetOrCreateRelationship();
 
             // Create a run for the picture
             var xml = new XElement(Name.Run,
@@ -802,7 +803,7 @@ namespace DXPlus
             else
             {
                 // Get the first run effected by this Insert
-                Run run = GetFirstRunAffectedByEdit(index);
+                Run run = FindRunAffectedByEdit(EditType.Insert, index);
                 if (run == null)
                 {
                     // Add this picture as the last element.
@@ -858,7 +859,7 @@ namespace DXPlus
         public void InsertText(int index, string value, Formatting formatting = null)
         {
             // Get the first run effected by this Insert
-            Run run = GetFirstRunAffectedByEdit(index);
+            Run run = FindRunAffectedByEdit(EditType.Insert, index);
             if (run == null)
             {
                 Xml.Add(HelperFunctions.FormatInput(value, formatting?.Xml));
@@ -936,7 +937,7 @@ namespace DXPlus
             do
             {
                 // Get the first run effected by this Remove
-                Run run = GetFirstRunAffectedByEdit(index, EditType.Delete);
+                Run run = FindRunAffectedByEdit(EditType.Delete, index);
 
                 // The parent of this Run
                 XElement parentElement = run.Xml.Parent;
@@ -1019,7 +1020,7 @@ namespace DXPlus
                     do
                     {
                         // Get the next run effected
-                        Run run = GetFirstRunAffectedByEdit(m.Index + processed);
+                        Run run = FindRunAffectedByEdit(EditType.Insert, m.Index + processed);
 
                         // Get this runs properties
                         XElement rPr = run.Xml.GetRunProps(false) ?? new Formatting().Xml;
@@ -1114,7 +1115,7 @@ namespace DXPlus
                     do
                     {
                         // Get the next run effected
-                        Run run = GetFirstRunAffectedByEdit(match.Index + processed);
+                        Run run = FindRunAffectedByEdit(EditType.Insert, match.Index + processed);
 
                         // Get this runs properties
                         XElement rPr = run.Xml.GetRunProps(false) ?? new Formatting().Xml;
@@ -1159,21 +1160,6 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Append text to this Paragraph and then underline it using a color.
-        /// </summary>
-        /// <param name="underlineColor">The underline color to use, if no underline is set, a single line will be used.</param>
-        /// <returns>This Paragraph with the last appended text underlined in a color.</returns>
-        public Paragraph UnderlineColor(Color underlineColor)
-        {
-            foreach (XElement run in Runs)
-            {
-                _ = new Formatting(run.GetRunProps(true)) { UnderlineColor = underlineColor };
-            }
-
-            return this;
-        }
-
-        /// <summary>
         /// Retrieve the text length of the passed element
         /// </summary>
         /// <param name="textElement"></param>
@@ -1212,10 +1198,10 @@ namespace DXPlus
         /// <summary>
         /// Walk all the text runs in the paragraph and find the one containing a specific index.
         /// </summary>
-        /// <param name="index">Index to look for</param>
         /// <param name="editType">Type of edit being performed (insert or delete)</param>
+        /// <param name="index">Index to look for</param>
         /// <returns>Run containing index</returns>
-        internal Run GetFirstRunAffectedByEdit(int index, EditType editType = EditType.Insert)
+        internal Run FindRunAffectedByEdit(EditType editType, int index)
         {
             int len = HelperFunctions.GetText(Xml).Length;
             if (index < 0 || (editType == EditType.Insert && index > len) || (editType == EditType.Delete && index >= len))
@@ -1223,22 +1209,21 @@ namespace DXPlus
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
 
-            int count = 0;
-            Run theOne = null;
-            GetFirstRunAffectedByEditRecursive(Xml, index, ref count, ref theOne, editType);
+            int count = 0; Run run = null;
+            RecursiveSearchForRunByIndex(Xml, editType, index, ref count, ref run);
 
-            return theOne;
+            return run;
         }
 
         /// <summary>
         /// Recursive method to identify a text run from a starting element and index.
         /// </summary>
         /// <param name="el">Element to search</param>
+        /// <param name="editType">Type of edit being performed (insert or delete)</param>
         /// <param name="index">Index to look for</param>
         /// <param name="count">Total searched</param>
-        /// <param name="theOne">The located text run</param>
-        /// <param name="editType">Type of edit being performed (insert or delete)</param>
-        private void GetFirstRunAffectedByEditRecursive(XElement el, int index, ref int count, ref Run theOne, EditType editType)
+        /// <param name="run">The located text run</param>
+        private static void RecursiveSearchForRunByIndex(XElement el, EditType editType, int index, ref int count, ref Run run)
         {
             count += HelperFunctions.GetSize(el);
 
@@ -1261,15 +1246,15 @@ namespace DXPlus
                     return;
                 }
 
-                theOne = new Run(el, count);
+                run = new Run(el, count);
             }
             else if (el.HasElements)
             {
                 foreach (XElement e in el.Elements())
                 {
-                    if (theOne == null)
+                    if (run == null)
                     {
-                        GetFirstRunAffectedByEditRecursive(e, index, ref count, ref theOne, editType);
+                        RecursiveSearchForRunByIndex(e, editType, index, ref count, ref run);
                     }
                 }
             }
@@ -1317,7 +1302,7 @@ namespace DXPlus
         internal XElement[] SplitEdit(XElement element, int index, EditType type)
         {
             // Find the run containing the index
-            Run run = GetFirstRunAffectedByEdit(index, type);
+            Run run = FindRunAffectedByEdit(type, index);
             XElement[] splitRun = run.SplitRun(index, type);
 
             XElement splitLeft = new XElement(element.Name, element.Attributes(), run.Xml.ElementsBeforeSelf(), splitRun[0]);

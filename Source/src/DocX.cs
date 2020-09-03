@@ -762,11 +762,15 @@ namespace DXPlus
         public TableOfContents InsertDefaultTableOfContents()
         {
             return InsertTableOfContents("Table of contents",
-                TableOfContentsSwitches.O | TableOfContentsSwitches.H | TableOfContentsSwitches.Z | TableOfContentsSwitches.U);
+                TableOfContentsSwitches.O
+              | TableOfContentsSwitches.H
+              | TableOfContentsSwitches.Z
+              | TableOfContentsSwitches.U,
+                HeadingType.Heading1.GetEnumName());
         }
 
         /// <summary>
-        /// Inserts a TOC into the current document.
+        /// Inserts a table of contents into the document.
         /// </summary>
         /// <param name="title">The title of the TOC</param>
         /// <param name="switches">Switches to be applied, see: http://officeopenxml.com/WPtableOfContents.php </param>
@@ -779,27 +783,39 @@ namespace DXPlus
             ThrowIfObjectDisposed();
 
             var toc = TableOfContents.CreateTableOfContents(this, title, switches, headerStyle, maxIncludeLevel, rightTabPos);
-            Xml.Add(toc.Xml);
+
+            XElement sectPr = Xml.Elements(Name.SectionProperties).SingleOrDefault();
+            if (sectPr != null)
+            {
+                sectPr.AddBeforeSelf(toc.Xml);
+            }
+            else
+            {
+                Xml.Add(toc.Xml);
+            }
 
             return toc;
         }
 
         /// <summary>
-        /// Inserts at TOC into the current document before the provided <paramref name="reference"/>
+        /// Inserts at TOC into the current document before the provided paragraph.
         /// </summary>
-        /// <param name="reference">The paragraph to use as reference</param>
+        /// <param name="beforeMe">The paragraph to insert the ToC before</param>
         /// <param name="title">The title of the TOC</param>
         /// <param name="switches">Switches to be applied, see: http://officeopenxml.com/WPtableOfContents.php </param>
         /// <param name="headerStyle">Lets you set the style name of the TOC header</param>
         /// <param name="maxIncludeLevel">Lets you specify how many header levels should be included - default is 1-3</param>
         /// <param name="rightTabPos">Lets you override the right tab position - this is not common</param>
         /// <returns>The inserted TableOfContents</returns>
-        public TableOfContents InsertTableOfContents(Paragraph reference, string title, TableOfContentsSwitches switches, string headerStyle = null, int maxIncludeLevel = 3, int? rightTabPos = null)
+        public TableOfContents InsertTableOfContents(Paragraph beforeMe, string title, TableOfContentsSwitches switches, string headerStyle = null, int maxIncludeLevel = 3, int? rightTabPos = null)
         {
             ThrowIfObjectDisposed();
 
+            if (beforeMe == null)
+                throw new ArgumentNullException(nameof(beforeMe));
+
             var toc = TableOfContents.CreateTableOfContents(this, title, switches, headerStyle, maxIncludeLevel, rightTabPos);
-            reference.Xml.AddBeforeSelf(toc.Xml);
+            beforeMe.Xml.AddBeforeSelf(toc.Xml);
 
             return toc;
         }

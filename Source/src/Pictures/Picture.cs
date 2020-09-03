@@ -11,13 +11,28 @@ namespace DXPlus
     /// </summary>
     public class Picture : DocXElement
     {
+        /// <summary>
+        /// GUID for the decorative image extension
+        /// </summary>
+        private const string decorativeImageId = "{C183D7F6-B498-43B3-948B-1728B52AA6E4}";
+
         // English Metric Units are used for coordinates and sizes of drawings/pictures.
         // 1in == 914400 EMUs. Pixels are measured at 72dpi.
         private const int EmusInPixel = 914400 / 72;
 
         // The binary image being rendered by this Picture element. Note that images can be 
         // shared across different pictures.
-        internal Image Image;
+        private readonly Image image;
+
+        /// <summary>
+        /// The non-visual properties for the drawing object. This should always be present.
+        /// </summary>
+        private XElement DocPr => Xml.Descendants(Namespace.WordProcessingDrawing + "docPr").Single();
+
+        /// <summary>
+        /// The non-visual properties for the picture contained in the drawing object.
+        /// </summary>
+        private XElement CNvPr => Xml.Descendants(Namespace.WordProcessingDrawing + "cNvPr").SingleOrDefault();
 
         /// <summary>
         /// Wraps a drawing or pict element in Word XML.
@@ -30,7 +45,7 @@ namespace DXPlus
             if (xml.Name.LocalName != "drawing")
                 throw new ArgumentException("Root element must be <drawing> for picture.");
 
-            Image = image;
+            this.image = image;
         }
 
         /// <summary>
@@ -116,11 +131,16 @@ namespace DXPlus
         /// <summary>
         /// A unique id that identifies an Image embedded in this document.
         /// </summary>
-        public string Id
+        public string RelationshipId
         {
             get => Xml.FirstLocalNameDescendant("blip").AttributeValue(Namespace.RelatedDoc + "embed");
             set => Xml.FirstLocalNameDescendant("blip").SetAttributeValue(Namespace.RelatedDoc + "embed", value);
         }
+
+        /// <summary>
+        /// The unique id assigned to this drawing within the document.
+        /// </summary>
+        public int DrawingId => int.Parse(DocPr.AttributeValue("id"));
 
         /// <summary>
         /// Flip this Picture Horizontally.
@@ -163,23 +183,112 @@ namespace DXPlus
         /// </summary>
         public string Name
         {
-            get => Xml.DescendantAttributeValues("name").FirstOrDefault();
-            set => Xml.DescendantAttributes("name").ToList().ForEach(a => a.Value = value ?? string.Empty);
+            get => DocPr.AttributeValue("name");
+            set
+            {
+                DocPr.SetAttributeValue("name", value ?? "");
+                CNvPr?.SetAttributeValue("name", value ?? "");
+            }
         }
 
         /// <summary>
-        /// Gets or sets the description for this Image.
+        /// Specifies whether this DrawingML object shall be displayed.
+        /// </summary>
+        public bool Hidden
+        {
+            get => DocPr.BoolAttributeValue("hidden");
+            set
+            {
+                DocPr.SetAttributeValue("hidden", value ? "1" : null);
+                CNvPr?.SetAttributeValue("hidden", value ? "1" : null);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the description (alt-tag) for this picture.
         /// </summary>
         public string Description
         {
-            get => Xml.DescendantAttributeValues("descr").FirstOrDefault();
-            set => Xml.DescendantAttributes("descr").ToList().ForEach(a => a.Value = value ?? string.Empty);
+            get => DocPr.AttributeValue("descr");
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                    value = null;
+
+                DocPr.SetAttributeValue("descr", value);
+                CNvPr?.SetAttributeValue("descr", value);
+            }
+        }
+
+        /// <summary>
+        /// Returns whether the picture is decorative.
+        /// </summary>
+        public bool IsDecorative
+        {
+            get => Xml.Descendants(Namespace.ADec + "decorative").FirstOrDefault()?.BoolAttributeValue("val") == true;
+            set => SetDecorativeExtension(value);
+        }
+
+        /// <summary>
+        /// Method to change the [adec:decorative] extension value.
+        /// </summary>
+        /// <param name="value">True/False to add/remove</param>
+        private void SetDecorativeExtension(in bool value)
+        {
+            if (value)
+            {
+                FindDrawingExtension(DocPr, decorativeImageId, true)
+                    .GetOrCreateElement(Namespace.ADec + "decorative")
+                    .SetElementValue("val", "1");
+
+                FindDrawingExtension(CNvPr, decorativeImageId, true)?
+                    .GetOrCreateElement(Namespace.ADec + "decorative")
+                    .SetElementValue("val", "1");
+            }
+            else
+            {
+                // Remove the extension.
+                FindDrawingExtension(DocPr, decorativeImageId, false)?.Remove();
+                FindDrawingExtension(CNvPr, decorativeImageId, false)?.Remove();
+            }
+        }
+
+        /// <summary>
+        /// Method to scan an extension list for a specific extension id
+        /// </summary>
+        /// <param name="owner">List owner</param>
+        /// <param name="id">ID to look for</param>
+        /// <param name="create">True to create it</param>
+        /// <returns>XElement of [a:ext]</returns>
+        private XElement FindDrawingExtension(XElement owner, string id, bool create)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+                throw new ArgumentException("Value cannot be null or empty.", nameof(id));
+            if (owner == null)
+                return null;
+
+            var extList = owner.Element(Namespace.DrawingMain + "extLst");
+            if (extList == null && create)
+            {
+                extList = new XElement(Namespace.DrawingMain + "extLst");
+                owner.Add(extList);
+            }
+
+            var extension = extList?.Elements(Namespace.DrawingMain + "ext")
+                .SingleOrDefault(e => e.AttributeValue("uri") == id);
+            if (extension == null && create)
+            {
+                extension = new XElement(Namespace.DrawingMain + "ext",
+                    new XAttribute("uri", id));
+            }
+
+            return extension;
         }
 
         ///<summary>
         /// Returns the name of the image file for the picture.
         ///</summary>
-        public string FileName => Image.FileName;
+        public string FileName => image.FileName;
 
         /// <summary>
         /// Get or sets the width of the rendered picture in pixels.
@@ -247,13 +356,13 @@ namespace DXPlus
         /// <returns>Relationship id</returns>
         internal string GetOrCreateRelationship()
         {
-            string uri = Image.PackageRelationship.TargetUri.OriginalString;
+            string uri = image.PackageRelationship.TargetUri.OriginalString;
 
             return PackagePart.GetRelationshipsByType(Namespace.RelatedDoc.NamespaceName + "/image")
                        .Where(r => r.TargetUri.OriginalString == uri)
                        .Select(r => r.Id)
                        .SingleOrDefault() ??
-                   PackagePart.CreateRelationship(Image.PackageRelationship.TargetUri,
+                   PackagePart.CreateRelationship(image.PackageRelationship.TargetUri,
                        TargetMode.Internal, Namespace.RelatedDoc.NamespaceName + "/image").Id;
         }
     }

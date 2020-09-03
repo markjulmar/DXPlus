@@ -306,7 +306,8 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Removes characters from a DXPlus.DocX.Paragraph.
+        /// Removes characters from a paragraph at a starting index. All
+        /// text following that index is removed from the paragraph.
         /// </summary>
         /// <param name="paragraph"></param>
         /// <param name="index">The position to begin deleting characters.</param>

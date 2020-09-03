@@ -403,7 +403,7 @@ namespace DXPlus.Helpers
                 throw new ArgumentNullException(nameof(p));
             }
 
-            Run r = p.GetFirstRunAffectedByEdit(index);
+            Run r = p.FindRunAffectedByEdit(EditType.Insert, index);
             XElement[] split;
             XElement before, after;
 

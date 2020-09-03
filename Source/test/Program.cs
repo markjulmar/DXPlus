@@ -20,12 +20,15 @@ namespace TestDXPlus
 
             var document = Document.Create("testDocument.docx");
 
-            AddHeader(document);
-
             // Add a title.
-            document.AddParagraph("Welcome")
+            document.AddParagraph("Welcome to the Sample Document")
+                .Alignment(Alignment.Center)
                 .Heading(HeadingType.Title)
-                .AppendLine();
+                .AddPageBreak();
+
+            // Add ToC
+            document.InsertDefaultTableOfContents();
+            document.AddPageBreak();
 
             AddBasicText(document);
             AddPicture(document);
@@ -39,9 +42,8 @@ namespace TestDXPlus
             AddTables(document);
             ShowAllHeaderStyles(document);
 
-            //// Add ToC
-            document.InsertTableOfContents("Table of Contents",
-                TableOfContentsSwitches.O | TableOfContentsSwitches.U | TableOfContentsSwitches.Z | TableOfContentsSwitches.H, "Heading1");
+            // Add header on the first and odd pages.
+            AddHeader(document);
 
             document.Save();
         }
@@ -49,15 +51,16 @@ namespace TestDXPlus
         private static void AddHeader(IDocument document)
         {
             // Add a first page header
-            var section = document.Sections.Single();
+            var section = document.Sections.First();
             section.Headers.First
                 .Add().Append("First page header").Bold();
 
             // Add an image into the document.    
-            var image = document.AddImage(Path.Combine("..", "images", "logo_the_happy_builder.png"));
+            var image = document.AddImage(Path.Combine("..", "images", "bulb.png"));
 
             // Create a picture and add it to the document.
-            Picture picture = image.CreatePicture();
+            Picture picture = image.CreatePicture(15, 15);
+            picture.IsDecorative = true;
 
             section.Headers.Default.Add()
                 .Append(picture);
@@ -65,22 +68,20 @@ namespace TestDXPlus
 
         private static void ShowAllHeaderStyles(IDocument document)
         {
-            document.AddPageBreak();
-            document.AddParagraph("All the header styles")
-                .Heading(HeadingType.Heading1)
-                .AppendLine();
+            document.AddParagraph("All the header styles").Heading(HeadingType.Heading1);
 
             foreach (var heading in (HeadingType[]) Enum.GetValues(typeof(HeadingType)))
             {
                 document.AddParagraph($"{heading} - The quick brown fox jumps over the lazy dog")
                     .Heading(heading);
             }
+
+            document.AddPageBreak();
         }
 
         private static void AddTables(IDocument document)
         {
-            document.AddPageBreak();
-            document.AddParagraph("Tables").Heading(HeadingType.Heading1).AppendLine();
+            document.AddParagraph("Tables").Heading(HeadingType.Heading1);
 
             document.AddParagraph("Basic Table").Heading(HeadingType.Heading2).AppendLine();
 
@@ -109,7 +110,7 @@ namespace TestDXPlus
 
             AddLargeTable(document);
 
-            document.AddParagraph("Table with merged/centered cells").Heading(HeadingType.Heading2).AppendLine(); ;
+            document.AddParagraph("Table with merged/centered cells").Heading(HeadingType.Heading2);
 
             table = new Table(new[,] {{"1", "2", "3"}, {"4", "5", "6"}, {"7", "8", "9"}, {"10", "11", "12"},});
 
@@ -117,7 +118,7 @@ namespace TestDXPlus
             table.Rows[1].Cells.SelectMany(c => c.Paragraphs).ToList().ForEach(p => p.Alignment(Alignment.Center));
             document.AddTable(table);
 
-            document.AddParagraph("Table with merged/centered rows").Heading(HeadingType.Heading2).AppendLine();
+            document.AddParagraph("Table with merged/centered rows").Heading(HeadingType.Heading2);
 
             table = new Table(new[,]
             {
@@ -130,42 +131,52 @@ namespace TestDXPlus
             document.AddTable(table);
             table.MergeCellsInColumn(1, 0, table.Rows.Count);
 
-            document.AddParagraph("Empty 2x1 table").Heading(HeadingType.Heading2).AppendLine();
+            document.AddParagraph("Empty 2x1 table").Heading(HeadingType.Heading2);
             document.AddTable(new Table(2, 1));
+
+            document.AddPageBreak();
         }
 
         private static void AddCharts(IDocument document)
         {
-            document.AddPageBreak();
-            document.AddParagraph("Charts").Heading(HeadingType.Heading1).AppendLine();
+            document.AddParagraph("Charts").Heading(HeadingType.Heading1);
+            
             BarChart(document);
             PieChart(document);
             LineChart(document);
             Chart3D(document);
+
+            document.AddPageBreak();
         }
 
         private static void AddBookmarks(IDocument document)
         {
-            document.AddParagraph("Bookmarks").Heading(HeadingType.Heading1).AppendLine();
-            Paragraph p;
-            p = document.AddParagraph("This is a paragraph which contains a ")
+            document.AddParagraph("Bookmarks").Heading(HeadingType.Heading1);
+            var p = document.AddParagraph("This is a paragraph which contains a ")
                 .AppendBookmark("secondBookmark").Append("bookmark");
+
             p.InsertAtBookmark("secondBookmark", "handy ");
+
+            document.AddPageBreak();
         }
 
         private static void AddEquations(IDocument document)
         {
-            document.AddParagraph("Equations").Heading(HeadingType.Heading1).AppendLine();
+            document.AddParagraph("Equations").Heading(HeadingType.Heading1);
             document.AddEquation("x = y+z");
+
+            document.AddParagraph("Blue Larger Equation").Heading(HeadingType.Heading2);
             document.AddEquation("x = (y+z)/t").FontSize(18).Color(Color.Blue);
+
+            document.AddPageBreak();
         }
 
         private static void AddLists(IDocument document)
         {
             // Add two lists.
-            document.AddParagraph("Lists").Heading(HeadingType.Heading1).AppendLine();
-            document.AddParagraph("Numbered List").Heading(HeadingType.Heading2).AppendLine();
-
+            document.AddParagraph("Lists").Heading(HeadingType.Heading1);
+            
+            document.AddParagraph("Numbered List").Heading(HeadingType.Heading2);
             List numberedList = new List(NumberingFormat.Numbered)
                 .AddItem("First item.")
                 .AddItem("First sub list item", level: 1)
@@ -175,7 +186,7 @@ namespace TestDXPlus
                 .AddItem("Second nested item.", level: 1);
             document.AddList(numberedList);
 
-            document.AddParagraph("Bullet List").Heading(HeadingType.Heading2).AppendLine();
+            document.AddParagraph("Bullet List").Heading(HeadingType.Heading2);
             List bulletedList = new List(NumberingFormat.Bulleted)
                 .AddItem("First item.")
                 .AddItem("Second item")
@@ -184,7 +195,7 @@ namespace TestDXPlus
                 .AddItem("Third item");
             document.AddList(bulletedList);
 
-            document.AddParagraph("Lists with fonts").Heading(HeadingType.Heading2).AppendLine();
+            document.AddParagraph("Lists with fonts").Heading(HeadingType.Heading2);
             foreach (var fontFamily in FontFamily.Families.Take(5))
             {
                 const double fontSize = 15;
@@ -195,52 +206,63 @@ namespace TestDXPlus
                     .AddItem("Four");
                 document.AddList(bulletedList);
             }
+            document.AddPageBreak();
         }
 
         private static void AddHyperlinks(IDocument document)
         {
             // Add two hyperlinks to the document.
-            Paragraph p;
-            document.AddParagraph("Hyperlinks").Heading(HeadingType.Heading2).AppendLine();
-            p = document.AddParagraph()
-                .AppendLine("This line contains a ")
+            document.AddParagraph("Hyperlinks").Heading(HeadingType.Heading1);
+
+            var p = document.AddParagraph("This line contains a ")
                 .Append(new Hyperlink("link", new Uri("http://www.microsoft.com")))
                 .Append(". With a few lines of text to read.")
-                .AppendLine("And a final line with a .");
-            p.InsertHyperlink(new Hyperlink("second link", new Uri("http://docs.microsoft.com/")), p.Text.Length - 1);
+                .AppendLine(" And a final line with a .");
+            
+            p.InsertHyperlink(new Hyperlink("second link", new Uri("http://docs.microsoft.com/")), p.Text.Length - 2);
+
+            document.AddPageBreak();
         }
 
         private static void AddIndentedParagraph(IDocument document)
         {
-            // Indentation.
-            document.AddParagraph("Indented text").Heading(HeadingType.Heading2).AppendLine();
+            document.AddParagraph("Indented text").Heading(HeadingType.Heading1);
+
             document.AddParagraph("This paragraph has the first sentence indented. "
                                   + "It shows how you can use the Intent property to control how paragraphs are lined up.")
                 .FirstLineIndent(20)
+                .AppendLine()
                 .AppendLine("This line shouldn't be indented - instead, it should start over on the left side.");
+
+            document.AddPageBreak();
         }
 
         private static void AddRTLText(IDocument document)
         {
             // Try RTL text
-            Paragraph p;
-            document.AddParagraph("RTL text").Heading(HeadingType.Heading2).AppendLine();
-            p = document.AddParagraph("Hello World - RightToLeft (should be RTL).");
+            document.AddParagraph("RTL text").Heading(HeadingType.Heading1);
+            
+            var p = document.AddParagraph("Hello World - RightToLeft (should be RTL).");
             p.Direction = Direction.RightToLeft;
+            document.AddPageBreak();
         }
 
         private static void AddPicture(IDocument document)
         {
+            document.AddParagraph("Pictures!").Heading(HeadingType.Heading1);
+
             // Add an image into the document.    
-            var image = document.AddImage(Path.Combine("..", "images", "logo_template.png"));
+            var image = document.AddImage(Path.Combine("..", "images", "comic.jpg"));
 
             // Create a picture and add it to the document.
-            Picture picture = image.CreatePicture()
+            Picture picture = image.CreatePicture(189, 128)
                 .SetPictureShape(BasicShapes.Ellipse)
-                .SetRotation(45);
+                .SetRotation(20)
+                .IsDecorative(true)
+                .SetName("Bat-Man!");
 
             // Insert a new Paragraph into the document.
-            document.AddParagraph("Pictures").Heading(HeadingType.Heading2).AppendLine();
+            document.AddParagraph("Pictures").Heading(HeadingType.Heading2);
             document.AddParagraph()
                 .AppendLine("Just below there should be a picture rotated 10 degrees.")
                 .Append(picture)
@@ -249,11 +271,17 @@ namespace TestDXPlus
             // Add a second copy of the same image
             document.AddParagraph()
                 .AppendLine("Lets add another picture (without the fancy  rotation stuff)")
-                .Append(image.CreatePicture());
+                .Append(image.CreatePicture("My Favorite Superhero", "This is a comic book"));
+
+            document.AddPageBreak();
         }
 
         private static void AddBasicText(IDocument document)
         {
+            document.AddParagraph("Basic text").Heading(HeadingType.Heading1);
+
+            document.AddParagraph("Hello World Text").Heading(HeadingType.Heading2);
+
             // Start with some hello world text.
             document.AddParagraph("Hello, World! This is the first paragraph.")
                 .AppendLine()
@@ -268,27 +296,32 @@ namespace TestDXPlus
                 .AppendLine()
                 .AppendLine("And finally some normal text.");
 
-            // Use a paragraph object directly.
-            var p = document.AddParagraph().Append("Styled Text").Heading(HeadingType.Heading2).AppendLine();
+            document.AddParagraph();
 
-            p.Append("I am ").Append("bold").Bold()
+            document.AddParagraph("Styled Text").Heading(HeadingType.Heading2);
+
+            document.AddParagraph()
+                .Append("I am ")
+                .Append("bold").Bold()
                 .Append(" and I am ")
-                .Append("italic").Italic().Append(".")
+                .Append("italic").Italic()
+                .Append(".").AppendLine()
                 .AppendLine("I am ")
-                .Append("Arial Black")
-                .Font(new FontFamily("Arial Black"))
-                .Append(" and I am not.")
-                .AppendLine("I am centered 20pt Comic Sans")
-                .FontSize(20)
-                .Font(new FontFamily("Comic Sans MS"))
-                .Alignment(Alignment.Center).Append(" and I am not.")
-                .AppendLine("I am ")
+                .Append("Arial Black").Font(new FontFamily("Arial Black"))
+                .Append(" and I am ").AppendLine()
                 .Append("Blue").Color(Color.Blue)
                 .Append(" and I am ")
                 .Append("Red").Color(Color.Red).Append(".");
 
+            document.AddParagraph("I am centered 20pt Comic Sans.")
+                .FontSize(20)
+                .Font(new FontFamily("Comic Sans MS"))
+                .Alignment(Alignment.Center);
+
+            document.AddParagraph();
+
             // Try some highlighted words
-            document.AddParagraph("Highlighted text").Heading(HeadingType.Heading2).AppendLine();
+            document.AddParagraph("Highlighted text").Heading(HeadingType.Heading2);
             document.AddParagraph("First line. ")
                 .Append("This sentence is highlighted")
                 .Highlight(Highlight.Yellow)
@@ -299,7 +332,7 @@ namespace TestDXPlus
 
         private static void BarChart(IDocument document)
         {
-            document.AddParagraph("Bar Chart").Heading(HeadingType.Heading2).AppendLine();
+            document.AddParagraph("Bar Chart").Heading(HeadingType.Heading2);
 
             // Create chart.
             var chart = new BarChart
@@ -330,7 +363,7 @@ namespace TestDXPlus
 
         private static void Chart3D(IDocument document)
         {
-            document.AddParagraph("3D Chart").Heading(HeadingType.Heading2).AppendLine();
+            document.AddParagraph("3D Chart").Heading(HeadingType.Heading2);
 
             var company1 = ChartData.CreateCompanyList1();
             var series = new Series("Microsoft") {Color = Color.GreenYellow};
@@ -345,7 +378,7 @@ namespace TestDXPlus
 
         private static void AddLargeTable(IDocument document)
         {
-            document.AddParagraph("Large 10x10 Table across whole page width").Heading(HeadingType.Heading2).AppendLine();
+            document.AddParagraph("Large 10x10 Table across whole page width").Heading(HeadingType.Heading2);
 
             var section = document.Sections.Last();
             Table table = document.AddTable(10,10);
@@ -367,7 +400,7 @@ namespace TestDXPlus
 
         private static void LineChart(IDocument document)
         {
-            document.AddParagraph("Line Chart").Heading(HeadingType.Heading2).AppendLine();
+            document.AddParagraph("Line Chart").Heading(HeadingType.Heading2);
 
             // Create chart.
             LineChart c = new LineChart();
@@ -395,7 +428,7 @@ namespace TestDXPlus
 
         private static void PieChart(IDocument document)
         {
-            document.AddParagraph("Pie Chart").Heading(HeadingType.Heading2).AppendLine();
+            document.AddParagraph("Pie Chart").Heading(HeadingType.Heading2);
 
             // Create chart.
             PieChart c = new PieChart();

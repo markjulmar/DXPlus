@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Xml.Linq;
+using DXPlus.Helpers;
 
 namespace DXPlus
 {
@@ -29,7 +30,6 @@ namespace DXPlus
             get => Xml.Element(Name.KeepLines) != null;
             set => Xml.SetElementValue(Name.KeepLines, value ? string.Empty : null);
         }
-
 
         /// <summary>
         /// Gets or set this Paragraphs text alignment.
@@ -214,6 +214,20 @@ namespace DXPlus
                 }
             }
         }
+
+        /// <summary>
+        /// Change the Right to Left paragraph layout.
+        /// </summary>
+        public Direction Direction
+        {
+            get => Xml.Element(Name.RTL) == null ? Direction.LeftToRight : Direction.RightToLeft;
+            set => Xml.SetElementValue(Name.RTL, value == Direction.RightToLeft ? string.Empty : null);
+        }
+
+        /// <summary>
+        /// Default formatting options for the paragraph
+        /// </summary>
+        public Formatting DefaultFormatting => new Formatting(Xml.GetRunProps(true));
 
         /// <summary>
         /// Formatting properties for the paragraph

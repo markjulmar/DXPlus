@@ -8,11 +8,16 @@
   <ItemGroup>
     <ProjectReference Include="..\src\DXPlus.csproj" />
   </ItemGroup>
+
   <ItemGroup>
-    <None Update="images\logo_template.png">
+    <Folder Include="images\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="images\bulb.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="images\logo_the_happy_builder.png">
+    <None Update="images\comic.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

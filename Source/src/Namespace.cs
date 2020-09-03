@@ -98,6 +98,8 @@ namespace DXPlus
         internal static XNamespace VML = "urn:schemas-microsoft-com:vml";
         internal static XNamespace RelatedDoc = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
         internal static XNamespace W2010 = "http://schemas.microsoft.com/office/word/2010/wordml";
+        internal static XNamespace ADec = "http://schemas.microsoft.com/office/drawing/2017/decorative";
+        internal static XNamespace Picture = "http://schemas.openxmlformats.org/drawingml/2006/picture";
 
         private static XmlNamespaceManager _manager;
         internal static XmlNamespaceManager NamespaceManager()
