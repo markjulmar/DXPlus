@@ -214,14 +214,24 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Add a core property to this document. If a core property already exists with the same name it will be replaced. Core property names are case insensitive.
+        /// Set a known core property value
         /// </summary>
-        ///<param name="name">The property name.</param>
+        /// <param name="name">Property to set</param>
+        /// <param name="value">Value to assign</param>
+        public void SetCoreProperty(CoreProperty name, string value) => AddCoreProperty(name.GetEnumName(), value);
+
+        /// <summary>
+        /// Add a core property to this document.
+        /// If a core property already exists with the same name it will be replaced.
+        /// Core property names are case insensitive.
+        /// </summary>
+        ///<param name="name">The property name with optional namespace prefix.</param>
         ///<param name="value">The property value.</param>
         public void AddCoreProperty(string name, string value)
         {
             ThrowIfObjectDisposed();
-            CorePropertyHelpers.Add(this, name, value);
+            string localName = CorePropertyHelpers.Add(Package, name, value);
+            UpdateCorePropertyUsages(localName, value);
         }
 
         /// <summary>
@@ -232,7 +242,7 @@ namespace DXPlus
             get
             {
                 ThrowIfObjectDisposed();
-                return CustomPropertyHelpers.Get(this.Package);
+                return CustomPropertyHelpers.Get(Package);
             }
         }
 
@@ -243,7 +253,8 @@ namespace DXPlus
         public void AddCustomProperty(CustomProperty property)
         {
             ThrowIfObjectDisposed();
-            CustomPropertyHelpers.Add(this, property);
+            CustomPropertyHelpers.Add(Package, property);
+            UpdateCustomPropertyUsages(property);
         }
 
         /// <summary>

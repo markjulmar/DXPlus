@@ -24,7 +24,8 @@ namespace DXPlus
             get
             {
                 int start = 0;
-                foreach (var runXml in Xml.Elements(Name.Run))
+                // Only look at the localName so we capture Math.r and Main.r
+                foreach (var runXml in Xml.Descendants().Where(e => e.Name.LocalName == Name.Run.LocalName))
                 {
                     var run = new Run(runXml, start);
                     yield return run;

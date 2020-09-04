@@ -634,5 +634,26 @@ namespace DXPlus.Helpers
 
             return ids.Count > 0 ? ids.Max() : 0;
         }
+
+        /// <summary>
+        /// This helper splits an XML name into a namespace + localName.
+        /// </summary>
+        /// <param name="name">Full name</param>
+        /// <param name="ns">Returning namespace</param>
+        /// <param name="localName">Returning localName</param>
+        public static bool SplitXmlName(string name, out string ns, out string localName)
+        {
+            if (name.Contains(':'))
+            {
+                var parts = name.Split(':');
+                ns = parts[0];
+                localName = parts[1];
+                return true;
+            }
+
+            ns = string.Empty;
+            localName = name;
+            return false;
+        }
     }
 }

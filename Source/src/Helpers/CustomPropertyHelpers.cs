@@ -27,15 +27,15 @@ namespace DXPlus.Helpers
             return new Dictionary<string, CustomProperty>();
         }
 
-        internal static void Add(DocX document, CustomProperty property)
+        internal static void Add(Package package, CustomProperty property)
         {
 			PackagePart customPropertiesPart;
 			XDocument customPropDoc;
 
 			// If this document does not contain a custom properties section create one.
-			if (!document.Package.PartExists(DocxSections.DocPropsCustom))
+			if (!package.PartExists(DocxSections.DocPropsCustom))
 			{
-				customPropertiesPart = document.Package.CreatePart(new Uri("/docProps/custom.xml", UriKind.Relative), "application/vnd.openxmlformats-officedocument.custom-properties+xml", CompressionOption.Maximum);
+				customPropertiesPart = package.CreatePart(Relations.CustomProperties.Uri, Relations.CustomProperties.ContentType, CompressionOption.Maximum);
 				customPropDoc = new XDocument(new XDeclaration("1.0", "UTF-8", "yes"),
 					new XElement(Namespace.CustomPropertiesSchema + "Properties",
 						new XAttribute(XNamespace.Xmlns + "vt", Namespace.CustomVTypesSchema)
@@ -43,11 +43,11 @@ namespace DXPlus.Helpers
 				);
 
 				customPropertiesPart.Save(customPropDoc);
-                document.Package.CreateRelationship(customPropertiesPart.Uri, TargetMode.Internal, $"{Namespace.RelatedDoc.NamespaceName}/custom-properties");
+                package.CreateRelationship(customPropertiesPart.Uri, TargetMode.Internal, Relations.CustomProperties.RelType);
 			}
 			else
 			{
-				customPropertiesPart = document.Package.GetPart(DocxSections.DocPropsCustom);
+				customPropertiesPart = package.GetPart(DocxSections.DocPropsCustom);
 				customPropDoc = customPropertiesPart.Load();
 			}
 
@@ -63,7 +63,7 @@ namespace DXPlus.Helpers
 					?.Remove();
 
 			var propertiesElement = customPropDoc.Element(Namespace.CustomPropertiesSchema + "Properties");
-			propertiesElement.Add(
+			propertiesElement!.Add(
 				new XElement(Namespace.CustomPropertiesSchema + "property",
 					new XAttribute("fmtid", "{D5CDD505-2E9C-101B-9397-08002B2CF9AE}"),
 					new XAttribute("pid", pid),
@@ -74,9 +74,6 @@ namespace DXPlus.Helpers
 
 			// Save the custom properties
 			customPropertiesPart.Save(customPropDoc);
-
-			// Refresh the places using this property.
-            document?.UpdateCustomPropertyUsages(property);
         }
 	}
 }

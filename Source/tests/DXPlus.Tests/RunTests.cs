@@ -20,6 +20,20 @@ namespace DXPlus.Tests
         }
 
         [Fact]
+        public void SplitDeleteRunReturnsBothSides()
+        {
+            string text = "This is a test.";
+            var e = new XElement(Name.Run, new XElement(Name.Text, text));
+
+            Run r = new Run(e, 5);
+            Assert.Equal(text, r.Text);
+            var results = r.SplitRun(10, EditType.Delete);
+
+            Assert.Equal("This ", results[0].Value);
+            Assert.Equal("is a test.", results[1].Value);
+        }
+
+        [Fact]
         public void SplitInsertAtZeroRunReturnsRightSide()
         {
             string text = "This is a test.";
@@ -34,6 +48,20 @@ namespace DXPlus.Tests
         }
 
         [Fact]
+        public void SplitDeleteAtZeroRunReturnsRightSide()
+        {
+            string text = "This is a test.";
+            var e = new XElement(Name.Run, new XElement(Name.Text, text));
+
+            Run r = new Run(e, 5);
+            Assert.Equal(text, r.Text);
+            var results = r.SplitRun(5, EditType.Delete);
+
+            Assert.Null(results[0]);
+            Assert.Equal("This is a test.", results[1].Value);
+        }
+
+        [Fact]
         public void SplitInsertAtLengthRunReturnsLeftSide()
         {
             string text = "This is a test.";
@@ -42,6 +70,20 @@ namespace DXPlus.Tests
             Run r = new Run(e, 5);
             Assert.Equal(text, r.Text);
             var results = r.SplitRun(5 + text.Length);
+
+            Assert.Null(results[1]);
+            Assert.Equal("This is a test.", results[0].Value);
+        }
+
+        [Fact]
+        public void SpliDeleteAtLengthRunReturnsLeftSide()
+        {
+            string text = "This is a test.";
+            var e = new XElement(Name.Run, new XElement(Name.Text, text));
+
+            Run r = new Run(e, 5);
+            Assert.Equal(text, r.Text);
+            var results = r.SplitRun(5 + text.Length, EditType.Delete);
 
             Assert.Null(results[1]);
             Assert.Equal("This is a test.", results[0].Value);

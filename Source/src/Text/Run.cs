@@ -141,7 +141,7 @@ namespace DXPlus
             {
                 foreach (var e in element.Elements())
                 {
-                    RecursiveSearchForTextByIndex(e, type, index, ref count, ref textBlock);
+                    RecursiveSearchForTextByIndex(e, EditType.Insert, index, ref count, ref textBlock);
                     if (textBlock != null)
                         return;
                 }

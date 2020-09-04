@@ -66,6 +66,13 @@ namespace DXPlus
         bool IsProtected { get; }
 
         /// <summary>
+        /// Set a known core property value
+        /// </summary>
+        /// <param name="name">Property to set</param>
+        /// <param name="value">Value to assign</param>
+        void SetCoreProperty(CoreProperty name, string value);
+
+        /// <summary>
         /// Add a core property to this document. If a core property already exists with the same name it will be replaced. Core property names are case insensitive.
         /// </summary>
         ///<param name="name">The property name.</param>

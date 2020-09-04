@@ -61,6 +61,8 @@ namespace DXPlus
         public static Relationship FontTable = new Relationship($"{Namespace.RelatedDoc.NamespaceName}/fontTable", "/word/fontTable.xml", DocxContentType.Base + "fontTable+xml");
         public static Relationship Numbering = new Relationship($"{Namespace.RelatedDoc.NamespaceName}/numbering", "/word/numbering.xml", DocxContentType.Base + "numbering+xml");
         public static Relationship Settings = new Relationship($"{Namespace.RelatedDoc.NamespaceName}/settings", "/word/settings.xml", DocxContentType.Base + "settings+xml");
+        public static Relationship CoreProperties = new Relationship($"{Namespace.RelatedPackage}/metadata/core-properties", "/docProps/core.xml", DocxContentType.CoreProperties);
+        public static Relationship CustomProperties = new Relationship($"{Namespace.RelatedDoc}/custom-properties", "/docProps/custom.xml", DocxContentType.CustomProperties);
     }
 
     internal class Relationship
@@ -124,6 +126,8 @@ namespace DXPlus
         internal const string Document = Base + "document.main+xml";
         internal const string Template = Base + "template.main+xml";
         internal const string Relationships = "application/vnd.openxmlformats-package.relationships+xml";
+        internal const string CoreProperties = "application/vnd.openxmlformats-package.core-properties+xml";
+        internal const string CustomProperties = "application/vnd.openxmlformats-officedocument.custom-properties+xml";
     }
 
     internal static class DocxSections

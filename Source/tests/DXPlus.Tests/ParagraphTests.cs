@@ -833,5 +833,15 @@ namespace DXPlus.Tests
             Assert.Equal(p1,p2);  // value equality
             Assert.False(p1==p2); // not reference equality
         }
+
+        [Fact]
+        public void EquationRunIsReturnedInRunCollection()
+        {
+            var p = new Paragraph("Test paragraph");
+            Assert.Single(p.Runs);
+
+            p.AppendEquation("1 + 2 = 3");
+            Assert.Equal(2, p.Runs.Count());
+        }
     }
 }

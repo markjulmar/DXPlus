@@ -45,6 +45,12 @@ namespace TestDXPlus
             // Add header on the first and odd pages.
             AddHeader(document);
 
+            document.SetCoreProperty(CoreProperty.Creator, "Mark Smith");
+            document.SetCoreProperty(CoreProperty.Title, "Test document created by C#");
+
+            document.AddCustomProperty(new CustomProperty("LastEdit", DateTime.Now));
+            //document.AddCustomProperty(new CustomProperty("wasAutoCreated", true));
+
             document.Save();
         }
 
@@ -55,7 +61,7 @@ namespace TestDXPlus
             section.Headers.First
                 .Add().Append("First page header").Bold();
 
-            // Add an image into the document.    
+            // Add an image into the document.
             var image = document.AddImage(Path.Combine("..", "images", "bulb.png"));
 
             // Create a picture and add it to the document.
@@ -140,7 +146,7 @@ namespace TestDXPlus
         private static void AddCharts(IDocument document)
         {
             document.AddParagraph("Charts").Heading(HeadingType.Heading1);
-            
+
             BarChart(document);
             PieChart(document);
             LineChart(document);
@@ -175,7 +181,7 @@ namespace TestDXPlus
         {
             // Add two lists.
             document.AddParagraph("Lists").Heading(HeadingType.Heading1);
-            
+
             document.AddParagraph("Numbered List").Heading(HeadingType.Heading2);
             List numberedList = new List(NumberingFormat.Numbered)
                 .AddItem("First item.")
@@ -218,7 +224,7 @@ namespace TestDXPlus
                 .Append(new Hyperlink("link", new Uri("http://www.microsoft.com")))
                 .Append(". With a few lines of text to read.")
                 .AppendLine(" And a final line with a .");
-            
+
             p.InsertHyperlink(new Hyperlink("second link", new Uri("http://docs.microsoft.com/")), p.Text.Length - 2);
 
             document.AddPageBreak();
@@ -241,7 +247,7 @@ namespace TestDXPlus
         {
             // Try RTL text
             document.AddParagraph("RTL text").Heading(HeadingType.Heading1);
-            
+
             var p = document.AddParagraph("Hello World - RightToLeft (should be RTL).");
             p.Direction = Direction.RightToLeft;
             document.AddPageBreak();
@@ -251,7 +257,7 @@ namespace TestDXPlus
         {
             document.AddParagraph("Pictures!").Heading(HeadingType.Heading1);
 
-            // Add an image into the document.    
+            // Add an image into the document.
             var image = document.AddImage(Path.Combine("..", "images", "comic.jpg"));
 
             // Create a picture and add it to the document.
