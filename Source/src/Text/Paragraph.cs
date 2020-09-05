@@ -19,7 +19,7 @@ namespace DXPlus
         /// <summary>
         /// Text runs (r) that make up this paragraph
         /// </summary>
-        internal IEnumerable<Run> Runs
+        public IEnumerable<Run> Runs
         {
             get
             {
@@ -98,148 +98,52 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Returns the run properties, or if we don't have any, the paragraph properties.
+        /// The default run properties applied at the paragraph level
         /// </summary>
-        /// <returns></returns>
-        internal Formatting GetFormatting(bool create = false)
+        public Formatting DefaultFormatting
         {
-            XElement rPr;
-
-            // If we don't have any text runs yet, consider this to be the default properties.
-            if (!Runs.Any())
+            get
             {
-                if (create)
+                var e = Xml.Element(Name.ParagraphProperties, Name.RunProperties);
+                return (e != null) ? new Formatting(e) : null;
+            }
+
+            set
+            {
+                var pPr = Xml.Element(Name.ParagraphProperties);
+                if (pPr == null && value != null)
                 {
-                    XElement pPr = Xml.Element(Name.ParagraphProperties);
-                    if (pPr == null)
-                    {
-                        pPr = new XElement(Name.ParagraphProperties);
-                        Xml.AddFirst(pPr);
-                    }
-                    rPr = pPr.GetRunProps(true);
+                    pPr = new XElement(Name.ParagraphProperties);
+                    Xml.AddFirst(pPr);
                 }
-                else
+                var rPr = pPr?.GetRunProps(false);
+                rPr?.Remove();
+                if (value != null)
                 {
-                    rPr = Xml.Element(Name.ParagraphProperties, Name.RunProperties);
+                    pPr.AddFirst(value.Xml);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Apply the specified formatting to the paragraph or last text run
+        /// </summary>
+        /// <param name="formatting">Formatting to apply</param>
+        /// <returns>Paragraph</returns>
+        public Paragraph WithFormatting(Formatting formatting)
+        {
+            if (Runs.Any())
+            {
+                var runs = Runs.Reverse().ToList();
+                var run = runs.Find(r => r.HasText) ?? runs[0];
+                run.Properties = formatting;
             }
             else
             {
-                // Otherwise get/create on the last text run. If we don't have any text
-                // runs, use the last run available.
-                List<XElement> runs = Runs.Reverse().Select(r => r.Xml).ToList();
-                rPr = (runs.Find(r => r.Element(Name.Text) != null) ?? runs[0]).GetRunProps(create);
+                DefaultFormatting = formatting;
             }
 
-            return new Formatting(rPr);
-        }
-
-        /// <summary>
-        /// Returns whether this paragraph is marked as BOLD
-        /// </summary>
-        public bool Bold
-        {
-            get => GetFormatting().Bold;
-            set => GetFormatting(true).Bold = value;
-        }
-
-        /// <summary>
-        /// Change the italic state of this paragraph
-        /// </summary>
-        public bool Italic
-        {
-            get => GetFormatting().Italic;
-            set => GetFormatting(true).Italic = value;
-        }
-
-        /// <summary>
-        /// Change the paragraph to be small caps, capitals or none.
-        /// </summary>
-        public CapsStyle CapsStyle
-        {
-            get => GetFormatting().CapsStyle;
-            set => GetFormatting(true).CapsStyle = value;
-        }
-
-        /// <summary>
-        /// Returns the applied text color, or None for default.
-        /// </summary>
-        public Color Color
-        {
-            get => GetFormatting().Color;
-            set => GetFormatting(true).Color = value;
-        }
-
-        /// <summary>
-        /// Change the culture of the given paragraph.
-        /// </summary>
-        public CultureInfo Culture
-        {
-            get => GetFormatting().Culture;
-            set => GetFormatting(true).Culture = value;
-        }
-
-        /// <summary>
-        /// Change the font for the paragraph
-        /// </summary>
-        public FontFamily Font
-        {
-            get => GetFormatting().Font;
-            set => GetFormatting(true).Font = value;
-        }
-
-        /// <summary>
-        /// Get or set the font size of this paragraph
-        /// </summary>
-        public double? FontSize
-        {
-            get => GetFormatting().FontSize;
-            set => GetFormatting(true).FontSize = value;
-        }
-
-        /// <summary>
-        /// Gets or Sets the Direction of content in this Paragraph.
-        /// </summary>
-        public Direction Direction
-        {
-            get => GetDefaultFormatting().Direction;
-            set => GetDefaultFormatting(true).Direction = value;
-        }
-
-        /// <summary>
-        /// True if this paragraph is hidden.
-        /// </summary>
-        public bool IsHidden
-        {
-            get => GetFormatting().IsHidden;
-            set => GetFormatting(true).IsHidden = value;
-        }
-
-        /// <summary>
-        /// Gets or sets the highlight on this paragraph
-        /// </summary>
-        public Highlight Highlight
-        {
-            get => GetFormatting().Highlight;
-            set => GetFormatting(true).Highlight = value;
-        }
-
-        /// <summary>
-        /// Set the kerning for the paragraph
-        /// </summary>
-        public int? Kerning
-        {
-            get => GetFormatting().Kerning;
-            set => GetFormatting(true).Kerning = value;
-        }
-
-        /// <summary>
-        /// Applied effect on the paragraph
-        /// </summary>
-        public Effect Effect
-        {
-            get => GetFormatting().Effect;
-            set => GetFormatting(true).Effect = value;
+            return this;
         }
 
         /// <summary>
@@ -383,16 +287,6 @@ namespace DXPlus
         public ContainerType ParentContainerType { get; set; }
 
         /// <summary>
-        /// Specifies the amount by which each character shall be expanded or when the character is rendered in the document.
-        /// This property stretches or compresses each character in the run.
-        /// </summary>
-        public int? ExpansionScale
-        {
-            get => GetFormatting().ExpansionScale;
-            set => GetFormatting(true).ExpansionScale = value;
-        }
-
-        /// <summary>
         /// Set the spacing between lines in this paragraph
         /// </summary>
         public double? LineSpacing
@@ -420,17 +314,6 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Specifies the amount by which text shall be raised or lowered for this run in relation to the default
-        /// baseline of the surrounding non-positioned text. This allows the text to be repositioned without
-        /// altering the font size of the contents. This is measured in pts.
-        /// </summary>
-        public double? Position
-        {
-            get => GetFormatting().Position;
-            set => GetFormatting(true).Position = value;
-        }
-
-        /// <summary>
         /// Returns a list of all Pictures in a Paragraph.
         /// </summary>
         public List<Picture> Pictures => (
@@ -447,24 +330,6 @@ namespace DXPlus
                     select new Picture(Document, p, img)
                 ).ToList();
 
-        /// <summary>
-        /// Set the paragraph to subscript. Note this is mutually exclusive with Superscript
-        /// </summary>
-        public bool Subscript
-        {
-            get => GetFormatting().Subscript;
-            set => GetFormatting(true).Subscript = value;
-        }
-
-        /// <summary>
-        /// Set the paragraph to Superscript. Note this is mutually exclusive with Subscript.
-        /// </summary>
-        public bool Superscript
-        {
-            get => GetFormatting().Superscript;
-            set => GetFormatting(true).Superscript = value;
-        }
-
         ///<summary>
         /// The style name of the paragraph.
         ///</summary>
@@ -472,24 +337,6 @@ namespace DXPlus
         {
             get => GetDefaultFormatting().StyleName;
             set => GetDefaultFormatting(true).StyleName = value;
-        }
-
-        /// <summary>
-        /// Get or set the underline style for this paragraph
-        /// </summary>
-        public UnderlineStyle UnderlineStyle
-        {
-            get => GetFormatting().UnderlineStyle;
-            set => GetFormatting(true).UnderlineStyle = value;
-        }
-
-        /// <summary>
-        /// Get or set the emphasis on the last run
-        /// </summary>
-        public Emphasis Emphasis
-        {
-            get => GetFormatting().Emphasis;
-            set => GetFormatting(true).Emphasis = value;
         }
 
         /// <summary>
@@ -1259,16 +1106,6 @@ namespace DXPlus
                     RemoveText(match.Index, match.Value.Length);
                 }
             }
-        }
-
-        /// <summary>
-        /// Specifies that the text in this paragraph should be displayed with a single or double-line
-        /// strikethrough
-        /// </summary>
-        public Strikethrough StrikeThrough
-        {
-            get => GetFormatting().StrikeThrough;
-            set => GetFormatting(true).StrikeThrough = value;
         }
 
         /// <summary>

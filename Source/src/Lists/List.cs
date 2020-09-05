@@ -96,7 +96,12 @@ namespace DXPlus
             {
                 fontFamily = value;
                 foreach (var item in Items)
-                    item.Paragraph.Font = value;
+                {
+                    if (item.Paragraph.DefaultFormatting == null)
+                        item.Paragraph.DefaultFormatting = new Formatting {Font = value};
+                    else
+                        item.Paragraph.DefaultFormatting.Font = value;
+                }
             }
         }
 
@@ -110,7 +115,12 @@ namespace DXPlus
             {
                 fontSize = value;
                 foreach (var item in Items)
-                    item.Paragraph.FontSize = value;
+                {
+                    if (item.Paragraph.DefaultFormatting == null)
+                        item.Paragraph.DefaultFormatting = new Formatting { FontSize = value };
+                    else
+                        item.Paragraph.DefaultFormatting.FontSize = value;
+                }
             }
         }
 
@@ -193,8 +203,7 @@ namespace DXPlus
                 {
                     Document = Document,
                     Container = Container,
-                    Font = Font,
-                    FontSize = FontSize
+                    DefaultFormatting = new Formatting { Font = Font, FontSize = FontSize }
                 }
             };
             Container?.Xml.Add(newParagraphSection);
@@ -246,8 +255,15 @@ namespace DXPlus
             {
                 paragraph.Document = Document;
                 paragraph.Container = Container;
-                paragraph.Font = Font;
-                paragraph.FontSize = FontSize;
+                if (paragraph.DefaultFormatting == null)
+                {
+                    paragraph.DefaultFormatting = new Formatting {Font = Font, FontSize = FontSize};
+                }
+                else
+                {
+                    paragraph.DefaultFormatting.Font = Font;
+                    paragraph.DefaultFormatting.FontSize = FontSize;
+                }
             }
 
             if (paragraph.Xml.Parent == null)

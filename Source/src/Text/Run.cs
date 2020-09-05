@@ -35,7 +35,25 @@ namespace DXPlus
         /// <summary>
         /// The run properties for this text run
         /// </summary>
-        public Formatting Properties => new Formatting(Xml.GetRunProps(true));
+        public Formatting Properties
+        {
+            get => new Formatting(Xml.GetRunProps(true));
+            set
+            {
+                XElement rPr = Xml.Element(Name.RunProperties);
+                rPr?.Remove();
+
+                if (value != null)
+                {
+                    Xml.AddFirst(value.Xml);
+                }
+            }
+        }
+
+        /// <summary>
+        /// True if this run has a text block. False if it's a linebreak, paragraph break, or empty.
+        /// </summary>
+        public bool HasText => Xml.Element(Name.Text) != null;
 
         /// <summary>
         /// Constructor for a run of text

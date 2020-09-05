@@ -29,21 +29,6 @@ namespace DXPlus.Tests
         }
 
         [Fact]
-        public void DirectionGetAndSetAreAligned()
-        {
-            var p = new Paragraph("This is a test.") {Direction = Direction.RightToLeft};
-            Assert.Equal(Direction.RightToLeft, p.Direction);
-        }
-
-        [Fact]
-        public void DefaultDirectionIsLeftToRight()
-        {
-            using var doc = Document.Create(Filename);
-            doc.AddParagraph("This is a test.");
-            Assert.Equal(Direction.LeftToRight, doc.Paragraphs[0].Direction);
-        }
-
-        [Fact]
         public void AddCustomDocumentProperty()
         {
             using var doc = Document.Create();
@@ -190,323 +175,73 @@ namespace DXPlus.Tests
         }
 
         [Fact]
-        public void BoldAddsRemovesElement()
+        public void WithFormattingAddsNewProperties()
         {
-            // Default
             var p = new Paragraph();
-            Assert.False(p.Bold);
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr"));
 
-            p.Bold = true;
-            Assert.True(p.Bold);
-
-            Assert.NotNull(p.Xml.RemoveNamespaces().XPathSelectElement("//rPr/b"));
-
-            p.Bold = false;
-            Assert.False(p.Bold);
-            Assert.Null(p.Xml.RemoveNamespaces().XPathSelectElement("//rPr/b"));
+            p.WithFormatting(new Formatting {Bold = true});
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr"));
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/b"));
         }
 
         [Fact]
-        public void ItalicAddsRemovesElement()
+        public void WithFormattingNullRemovesParagraphProperties()
         {
-            // Default
-            var p = new Paragraph();
-            Assert.False(p.Italic);
+            var p = new Paragraph().WithFormatting(new Formatting());
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr"));
 
-            p.Italic = true;
-            Assert.True(p.Italic);
-
-            Assert.NotNull(p.Xml.RemoveNamespaces().XPathSelectElement("//rPr/i"));
-
-            p.Italic = false;
-            Assert.False(p.Italic);
-            Assert.Null(p.Xml.RemoveNamespaces().XPathSelectElement("//rPr/i"));
+            p.WithFormatting(null);
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr"));
         }
 
         [Fact]
-        public void CapsStyleAddsRemovesElement()
+        public void WithFormattingReplacesProperties()
         {
-            // Default
-            var p = new Paragraph();
-            Assert.Equal(CapsStyle.None, p.CapsStyle);
+            var p = new Paragraph().WithFormatting(new Formatting {Bold = true});
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/rPr"));
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/rPr/b"));
 
-            p.CapsStyle = CapsStyle.Caps;
-            Assert.Equal(CapsStyle.Caps, p.CapsStyle);
-
-            Assert.NotNull(p.Xml.RemoveNamespaces().XPathSelectElement("//rPr/caps"));
-            Assert.Null(p.Xml.RemoveNamespaces().XPathSelectElement("//rPr/smallCaps"));
-
-            p.CapsStyle = CapsStyle.SmallCaps;
-            Assert.Equal(CapsStyle.SmallCaps, p.CapsStyle);
-
-            Assert.NotNull(p.Xml.RemoveNamespaces().XPathSelectElement("//rPr/smallCaps"));
-            Assert.Null(p.Xml.RemoveNamespaces().XPathSelectElement("//rPr/caps"));
-
-            p.CapsStyle = CapsStyle.None;
-            Assert.Equal(CapsStyle.None, p.CapsStyle);
-
-            Assert.Null(p.Xml.RemoveNamespaces().XPathSelectElement("//rPr/smallCaps"));
-            Assert.Null(p.Xml.RemoveNamespaces().XPathSelectElement("//rPr/caps"));
+            p.WithFormatting(new Formatting {Italic = true});
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr"));
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/i"));
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/b"));
         }
 
         [Fact]
-        public void ColorAddsRemovesElement()
+        public void WithFormattingAffectsRun()
         {
-            // Default
-            var p = new Paragraph();
-            Assert.Equal(Color.Empty, p.Color);
-
-            p.Color = Color.Red;
-            Assert.NotStrictEqual(Color.Red, p.Color);
-            Assert.NotNull(p.Xml.RemoveNamespaces().XPathSelectElement("//rPr/color"));
-
-            p.Color = Color.Empty;
-            Assert.Equal(Color.Empty, p.Color);
-            Assert.Null(p.Xml.RemoveNamespaces().XPathSelectElement("//rPr/color"));
+            var p = new Paragraph("This is a test").WithFormatting(new Formatting { Bold = true });
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//r/rPr"));
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//r/rPr/b"));
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/rPr"));
         }
 
         [Fact]
-        public void CultureAddsRemovesElement()
+        public void WithFormattingNullRemovesRunProperties()
         {
-            // Default
-            var p = new Paragraph();
-            Assert.Null(p.Culture);
+            var p = new Paragraph("This is a test").WithFormatting(new Formatting { Bold = true });
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//r/rPr"));
 
-            var spanish = CultureInfo.GetCultureInfo("es-BR");
-
-            p.Culture = spanish;
-            Assert.Equal(spanish, p.Culture);
-            Assert.NotNull(p.Xml.RemoveNamespaces().XPathSelectElement("//rPr/lang"));
-
-            p.Culture = null;
-            Assert.Null(p.Culture);
-            Assert.Null(p.Xml.RemoveNamespaces().XPathSelectElement("//rPr/lang"));
-
-            p.Culture();
-            Assert.Equal(CultureInfo.CurrentCulture, p.Culture);
-            Assert.NotNull(p.Xml.RemoveNamespaces().XPathSelectElement("//rPr/lang"));
+            p.WithFormatting(null);
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//r/rPr"));
         }
 
         [Fact]
-        public void FontAddsRemovesElement()
+        public void WithFormattingAffectsLastRun()
         {
-            // Default
-            var p = new Paragraph();
-            Assert.Null(p.Font);
+            var p = new Paragraph("This is a test")
+                .AppendLine("With a second line")
+                .AppendLine("and a final line")
+                .WithFormatting(new Formatting { Bold = true });
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//r/rPr"));
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//r/rPr/b"));
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/rPr"));
 
-            var ff = new FontFamily("Times New Roman");
-
-            p.Font = ff;
-            Assert.Equal(ff.Name, p.Font.Name);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/rFonts"));
-
-            ff = new FontFamily("Wingdings");
-            p.Font = ff;
-            Assert.Equal(ff.Name, p.Font.Name);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/rFonts"));
-
-            p.Font = null;
-            Assert.Null(p.Font);
-            Assert.Null(p.Xml.RemoveNamespaces().XPathSelectElement("//rPr/rFonts"));
-        }
-
-        [Fact]
-        public void FontSizeAddsRemovesElement()
-        {
-            // Default
-            var p = new Paragraph();
-            Assert.Null(p.FontSize);
-
-            p.FontSize = 32;
-            Assert.Equal(32, p.FontSize);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/sz"));
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/szCs"));
-            Assert.Equal("64", p.Xml.RemoveNamespaces().XPathSelectElement("//rPr/sz").Attribute("val")?.Value);
-
-            p.FontSize = 22;
-            Assert.Equal(22, p.FontSize);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/sz"));
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/szCs"));
-            Assert.Equal("44", p.Xml.RemoveNamespaces().XPathSelectElement("//rPr/sz").Attribute("val")?.Value);
-
-            p.FontSize = null;
-            Assert.Null(p.FontSize);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/sz"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/szCs"));
-        }
-
-        [Fact]
-        public void HideAddsRemovesElement()
-        {
-            // Default
-            var p = new Paragraph();
-            Assert.False(p.IsHidden);
-
-            p.IsHidden = true;
-            Assert.True(p.IsHidden);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/vanish"));
-
-            // Make sure we don't dup the tag
-            p.IsHidden = true;
-            Assert.True(p.IsHidden);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/vanish"));
-
-            p.IsHidden = false;
-            Assert.False(p.IsHidden);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/vanish"));
-        }
-
-        [Fact]
-        public void HighlightAddsRemovesElement()
-        {
-            // Default
-            var p = new Paragraph();
-            Assert.Equal(Highlight.None, p.Highlight);
-
-            p.Highlight = Highlight.Yellow;
-            Assert.Equal(Highlight.Yellow, p.Highlight);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/highlight"));
-
-            // Make sure we don't dup the tag
-            p.Highlight = Highlight.Green;
-            Assert.Equal(Highlight.Green, p.Highlight);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/highlight"));
-
-            p.Highlight = Highlight.None;
-            Assert.Equal(Highlight.None, p.Highlight);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/highlight"));
-        }
-
-        [Fact]
-        public void EffectAddsRemovesElement()
-        {
-            // Default
-            var p = new Paragraph();
-            Assert.Equal(Effect.None, p.Effect);
-
-            p.Effect = Effect.Emboss;
-            Assert.Equal(Effect.Emboss, p.Effect);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/emboss"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/shadow"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/outline"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/outlineShadow"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/imprint"));
-
-            // Make sure we don't dup the tag
-            p.Effect = Effect.Shadow;
-            Assert.Equal(Effect.Shadow, p.Effect);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/emboss"));
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/shadow"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/outline"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/outlineShadow"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/imprint"));
-
-            p.Effect = Effect.None;
-            Assert.Equal(Effect.None, p.Effect);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/emboss"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/shadow"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/outline"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/outlineShadow"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/imprint"));
-
-            p.Effect = Effect.OutlineShadow;
-            Assert.Equal(Effect.OutlineShadow, p.Effect);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/emboss"));
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/shadow"));
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/outline"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/outlineShadow"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/imprint"));
-
-            p.Effect = Effect.Engrave;
-            Assert.Equal(Effect.Engrave, p.Effect);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/emboss"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/shadow"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/outline"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/outlineShadow"));
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/imprint"));
-        }
-
-        [Fact]
-        public void ExpansionAddsRemovesElement()
-        {
-            // Default
-            var p = new Paragraph();
-            Assert.Null(p.ExpansionScale);
-
-            p.ExpansionScale = 200;
-            Assert.Equal(200, p.ExpansionScale);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/w"));
-
-            p.ExpansionScale = null;
-            Assert.Null(p.ExpansionScale);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/w"));
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => p.ExpansionScale = -1);
-        }
-
-        [Fact]
-        public void PositionAddsRemovesElement()
-        {
-            // Default
-            var p = new Paragraph();
-            Assert.Null(p.Position);
-
-            p.Position = 50;
-            Assert.Equal(50, p.Position);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/position"));
-            Assert.Equal("100", p.Xml.RemoveNamespaces().XPathSelectElement("//rPr/position").Attribute("val")?.Value);
-
-            p.Position = null;
-            Assert.Null(p.Position);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/position"));
-        }
-
-        [Fact]
-        public void SuperscriptAddsRemovesElement()
-        {
-            // Default
-            var p = new Paragraph();
-            Assert.False(p.Superscript);
-            Assert.False(p.Subscript);
-
-            p.Superscript = true;
-            Assert.True(p.Superscript);
-            Assert.False(p.Subscript);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/vertAlign"));
-
-            p.Superscript = false;
-            Assert.False(p.Superscript);
-            Assert.False(p.Subscript);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/vertAlign"));
-        }
-
-        [Fact]
-        public void SuperscriptAffectSubscript()
-        {
-            // Default
-            var p = new Paragraph();
-            Assert.False(p.Superscript);
-            Assert.False(p.Subscript);
-
-            p.Superscript = true;
-            Assert.True(p.Superscript);
-            Assert.False(p.Subscript);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/vertAlign"));
-
-            p.Subscript = true;
-            Assert.False(p.Superscript);
-            Assert.True(p.Subscript);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/vertAlign"));
-
-            p.Superscript = false;
-            Assert.False(p.Superscript);
-            Assert.True(p.Subscript);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/vertAlign"));
-
-            p.Subscript = false;
-            Assert.False(p.Superscript);
-            Assert.False(p.Subscript);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/vertAlign"));
+            var runs = p.Runs.Reverse().ToList();
+            Assert.Equal(5, runs.Count);
+            Assert.True(runs[1].Properties.Bold); // skip LF
+            Assert.Equal("and a final line", runs[1].Text);
         }
 
         [Fact]
@@ -581,28 +316,6 @@ namespace DXPlus.Tests
         }
 
         [Fact]
-        public void StrikeThroughAddsRemovesElement()
-        {
-            var p = new Paragraph();
-            Assert.Equal(Strikethrough.None, p.StrikeThrough);
-
-            p.StrikeThrough = Strikethrough.Strike;
-            Assert.Equal(Strikethrough.Strike, p.StrikeThrough);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/strike"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/dstrike"));
-
-            p.StrikeThrough = Strikethrough.DoubleStrike;
-            Assert.Equal(Strikethrough.DoubleStrike, p.StrikeThrough);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/strike"));
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/dstrike"));
-
-            p.StrikeThrough = Strikethrough.None;
-            Assert.Equal(Strikethrough.None, p.StrikeThrough);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/strike"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/dstrike"));
-        }
-
-        [Fact]
         public void StyleAddsRemovesElement()
         {
             var p = new Paragraph();
@@ -622,30 +335,11 @@ namespace DXPlus.Tests
         }
 
         [Fact]
-        public void UnderlineStyleAddsRemovesElement()
-        {
-            var p = new Paragraph();
-            Assert.Equal(UnderlineStyle.None, p.UnderlineStyle);
-
-            p.UnderlineStyle = UnderlineStyle.SingleLine;
-            Assert.Equal(UnderlineStyle.SingleLine, p.UnderlineStyle);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/u"));
-
-            p.UnderlineStyle = UnderlineStyle.DoubleLine;
-            Assert.Equal(UnderlineStyle.DoubleLine, p.UnderlineStyle);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/u"));
-
-            p.UnderlineStyle = UnderlineStyle.None;
-            Assert.Equal(UnderlineStyle.None, p.UnderlineStyle);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/u"));
-        }
-
-        [Fact]
         public void SetTextReplacesContents()
         {
             var p = new Paragraph();
             p.InsertText("This is a test. ");
-            p.AppendLine("Will it work?").Bold();
+            p.AppendLine("Will it work?");
             Assert.Equal("This is a test. Will it work?\n", p.Text);
 
             p.SetText("of the emergency broadcast system.");
@@ -659,7 +353,7 @@ namespace DXPlus.Tests
             using DocX doc = (DocX) Document.Create();
             Assert.NotNull(doc.PackagePart);
 
-            Paragraph p = new Paragraph("Test").Bold();
+            Paragraph p = new Paragraph("Test");
             Assert.Null(p.PackagePart);
 
             doc.AddParagraph(p);
@@ -732,8 +426,8 @@ namespace DXPlus.Tests
         {
             using var doc = Document.Create(Filename);
             var p = doc.AddParagraph("This")
-                .Append(" is ").Bold()
-                .Append("a ").Italic()
+                .Append(" is ").WithFormatting(new Formatting() { Bold = true })
+                .Append("a ").WithFormatting(new Formatting() { Bold = true })
                 .Append("test.");
 
             Assert.Equal("This is a test.", p.Text);
@@ -790,7 +484,7 @@ namespace DXPlus.Tests
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("pPr"));
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr"));
 
-            p.GetFormatting(true);
+            p.WithFormatting(new Formatting());
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("pPr"));
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//r/rPr"));
 
@@ -809,7 +503,7 @@ namespace DXPlus.Tests
 
             p.SetText("This is a test");
 
-            p.GetFormatting(true);
+            p.WithFormatting(new Formatting());
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("pPr"));
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//r/rPr"));
 
@@ -828,7 +522,7 @@ namespace DXPlus.Tests
         {
             var p = new Paragraph();
 
-            p.Append("This is a test").Bold();
+            p.Append("This is a test").WithFormatting(new Formatting { Bold = true });
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//r"));
 
             var lastRun = p.Xml.Elements(Name.Run).Last();
@@ -841,7 +535,7 @@ namespace DXPlus.Tests
         {
             var p = new Paragraph();
 
-            p.AppendLine("This is a test").Bold();
+            p.AppendLine("This is a test").WithFormatting(new Formatting { Bold = true });
             Assert.Equal(2, p.Xml.RemoveNamespaces().XPathSelectElements("//r").Count());
 
             var textRun = p.Xml.Elements(Name.Run).First();

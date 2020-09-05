@@ -32,7 +32,6 @@ namespace TestDXPlus
             AddBasicText(document);
             AddFields(document);
             AddPicture(document);
-            AddRTLText(document);
             AddIndentedParagraph(document);
             AddHyperlinks(document);
             AddLists(document);
@@ -72,7 +71,8 @@ namespace TestDXPlus
             // Add a first page header
             var section = document.Sections.First();
             section.Headers.First
-                .Add().Append("First page header").Bold();
+                .Add().Append("First page header")
+                      .WithFormatting(new Formatting() {Bold = true});
 
             // Add an image into the document.
             var image = document.AddImage(Path.Combine("..", "images", "bulb.png"));
@@ -185,7 +185,7 @@ namespace TestDXPlus
             document.AddEquation("x = y+z");
 
             document.AddParagraph("Blue Larger Equation").Heading(HeadingType.Heading2);
-            document.AddEquation("x = (y+z)/t").FontSize(18).Color(Color.Blue);
+            document.AddEquation("x = (y+z)/t").WithFormatting(new Formatting {FontSize = 18, Color = Color.Blue});
 
             document.AddPageBreak();
         }
@@ -256,16 +256,6 @@ namespace TestDXPlus
             document.AddPageBreak();
         }
 
-        private static void AddRTLText(IDocument document)
-        {
-            // Try RTL text
-            document.AddParagraph("RTL text").Heading(HeadingType.Heading1);
-
-            var p = document.AddParagraph("Hello World - RightToLeft (should be RTL).");
-            p.Direction = Direction.RightToLeft;
-            document.AddPageBreak();
-        }
-
         private static void AddPicture(IDocument document)
         {
             document.AddParagraph("Pictures!").Heading(HeadingType.Heading1);
@@ -305,13 +295,9 @@ namespace TestDXPlus
             document.AddParagraph("Hello, World! This is the first paragraph.")
                 .AppendLine()
                 .Append("It includes some ")
-                .Append("large")
-                .Font(new FontFamily("Times New Roman"))
-                .FontSize(32)
-                .Append(", blue")
-                .Color(Color.Blue)
-                .Append(", bold text.")
-                .Bold()
+                .Append("large").WithFormatting(new Formatting { Font = new FontFamily("Times New Roman"), FontSize = 32 })
+                .Append(", blue").WithFormatting(new Formatting { Color = Color.Blue })
+                .Append(", bold text.").WithFormatting(new Formatting { Bold = true })
                 .AppendLine()
                 .AppendLine("And finally some normal text.");
 
@@ -321,20 +307,20 @@ namespace TestDXPlus
 
             document.AddParagraph()
                 .Append("I am ")
-                .Append("bold").Bold()
+                .Append("bold").WithFormatting(new Formatting { Bold = true })
                 .Append(" and I am ")
-                .Append("italic").Italic()
+                .Append("italic").WithFormatting(new Formatting { Italic = true })
                 .Append(".").AppendLine()
                 .AppendLine("I am ")
-                .Append("Arial Black").Font(new FontFamily("Arial Black"))
+                .Append("Arial Black").WithFormatting(new Formatting { Font = new FontFamily("Arial Black") })
                 .Append(" and I am ").AppendLine()
-                .Append("Blue").Color(Color.Blue)
+                .Append("Blue").WithFormatting(new Formatting { Color = Color.Blue })
                 .Append(" and I am ")
-                .Append("Red").Color(Color.Red).Append(".");
+                .Append("Red").WithFormatting(new Formatting { Color = Color.Red })
+                .Append(".");
 
             document.AddParagraph("I am centered 20pt Comic Sans.")
-                .FontSize(20)
-                .Font(new FontFamily("Comic Sans MS"))
+                .WithFormatting(new Formatting { Font = new FontFamily("Comic Sans MS"), FontSize = 20 })
                 .Alignment(Alignment.Center);
 
             document.AddParagraph();
@@ -342,10 +328,9 @@ namespace TestDXPlus
             // Try some highlighted words
             document.AddParagraph("Highlighted text").Heading(HeadingType.Heading2);
             document.AddParagraph("First line. ")
-                .Append("This sentence is highlighted")
-                .Highlight(Highlight.Yellow)
+                .Append("This sentence is highlighted").WithFormatting(new Formatting { Highlight = Highlight.Yellow })
                 .Append(", but this is ")
-                .Append("not").Italic()
+                .Append("not").WithFormatting(new Formatting { Italic = true })
                 .Append(".");
 
             document.AddPageBreak();

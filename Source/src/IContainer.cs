@@ -59,12 +59,6 @@ namespace DXPlus
         bool RemoveParagraph(Paragraph paragraph);
 
         /// <summary>
-        /// Sets the Direction of content.
-        /// </summary>
-        /// <param name="direction">Direction either LeftToRight or RightToLeft</param>
-        void SetDirection(Direction direction);
-
-        /// <summary>
         /// Replace matched text with a new value
         /// </summary>
         /// <param name="searchValue">Text value to search for</param>

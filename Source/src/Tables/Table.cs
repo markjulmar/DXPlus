@@ -736,19 +736,6 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Set the direction of all content in this Table.
-        /// </summary>
-        /// <param name="direction">(Left to Right) or (Right to Left)</param>
-        public void SetDirection(Direction direction)
-        {
-            TblPr.Add(new XElement(Namespace.Main + "bidiVisual"));
-            foreach (Cell cell in Rows.SelectMany(row => row.Cells))
-            {
-                cell.SetDirection(direction);
-            }
-        }
-
-        /// <summary>
         /// Gets the table margin value in pixels for the specified margin
         /// </summary>
         /// <param name="type">Table margin type</param>
@@ -756,10 +743,10 @@ namespace DXPlus
         public double? GetDefaultCellMargin(TableCellMarginType type)
         {
             return double.TryParse(TblPr.Element(Namespace.Main + "tblCellMar")?
-.Element(Namespace.Main + type.GetEnumName())?
-.AttributeValue(Namespace.Main + "w"), out double result)
-? (double?)result / TableHelpers.UnitConversion
-: null;
+                            .Element(Namespace.Main + type.GetEnumName())?
+                            .AttributeValue(Namespace.Main + "w"), out double result)
+                            ? (double?)result / TableHelpers.UnitConversion
+                            : null;
         }
 
         /// <summary>

@@ -203,18 +203,6 @@ namespace DXPlus
         public IEnumerable<Picture> Pictures => Paragraphs.SelectMany(p => p.Pictures);
 
         /// <summary>
-        /// Sets the Direction of content.
-        /// </summary>
-        /// <param name="direction">Direction either LeftToRight or RightToLeft</param>
-        public void SetDirection(Direction direction)
-        {
-            foreach (Paragraph p in Paragraphs)
-            {
-                p.Direction = direction;
-            }
-        }
-
-        /// <summary>
         /// Replace matched text with a new value
         /// </summary>
         /// <param name="searchValue">Text value to search for</param>
