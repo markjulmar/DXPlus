@@ -246,7 +246,7 @@ namespace DXPlus
         {
             base.OnDocumentOwnerChanged(previousValue, newValue);
             // Add the hyperlink styles to the document if missing.
-            (newValue as DocX)?.AddHyperlinkStyleIfNotPresent();
+            (newValue as DocX)?.AddHyperlinkStyle();
         }
     }
 }

@@ -25,11 +25,18 @@ namespace DXPlus.Helpers
             MemoryStream ms = new MemoryStream();
             using Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
 
+            // Force app/xml to be registered as the default document type
+            Uri appPath = new Uri($"/app.xml", UriKind.Relative);
+            _ = package.CreatePart(appPath, "application/xml");
+
             // Create the main document part for this package
             PackagePart mainDocumentPart = package.CreatePart(new Uri("/word/document.xml", UriKind.Relative),
                 documentType == DocumentTypes.Document ? DocxContentType.Document : DocxContentType.Template,
                 CompressionOption.Normal);
             package.CreateRelationship(mainDocumentPart.Uri, TargetMode.Internal, $"{Namespace.RelatedDoc.NamespaceName}/officeDocument");
+
+            // We don't actually need a real file -- just the <Default/> tag.
+            package.DeletePart(appPath);
 
             // Generate an id for this editing session.
             string startingRevisionId = GenerateRevisionStamp(null, out _);
@@ -38,10 +45,13 @@ namespace DXPlus.Helpers
             XDocument mainDoc = Resource.BodyDocument(startingRevisionId);
 
             // Add the settings.xml + relationship
-            AddDefaultSettingsPart(package, startingRevisionId);
+            _ = AddDefaultSettingsPart(package, startingRevisionId);
 
             // Add the default styles + relationship
-            AddDefaultStylesXml(package, out PackagePart stylesPart, out XDocument stylesDoc);
+            _ = AddDefaultStylesXml(package, out _);
+
+            // Create the document properties.
+            _ = CorePropertyHelpers.CreateCoreProperties(package, out _);
 
             // Save the main new document back to the package.
             mainDocumentPart.Save(mainDoc);
@@ -242,8 +252,7 @@ namespace DXPlus.Helpers
         /// </summary>
         /// <param name="package"></param>
         /// <param name="stylesPart"></param>
-        /// <param name="stylesDoc"></param>
-        public static void AddDefaultStylesXml(Package package, out PackagePart stylesPart, out XDocument stylesDoc)
+        public static XDocument AddDefaultStylesXml(Package package, out PackagePart stylesPart)
         {
             if (package == null)
             {
@@ -256,7 +265,7 @@ namespace DXPlus.Helpers
             }
 
             stylesPart = package.CreatePart(Relations.Styles.Uri, Relations.Styles.ContentType, CompressionOption.Maximum);
-            stylesDoc = Resource.DefaultStylesXml();
+            var stylesDoc = Resource.DefaultStylesXml();
 
             Debug.Assert(stylesDoc.Root != null);
             Debug.Assert(stylesDoc.Root.Element(Namespace.Main + "docDefaults") != null);
@@ -276,6 +285,8 @@ namespace DXPlus.Helpers
                 || p.ContentType.Equals(DocxContentType.Template, StringComparison.CurrentCultureIgnoreCase));
 
             mainDocumentPart.CreateRelationship(stylesPart.Uri, TargetMode.Internal, $"{Namespace.RelatedDoc.NamespaceName}/styles");
+            
+            return stylesDoc;
         }
 
         /// <summary>
@@ -283,7 +294,7 @@ namespace DXPlus.Helpers
         /// </summary>
         /// <param name="package">Package owner</param>
         /// <param name="rsid">Initial document revision id</param>
-        public static void AddDefaultSettingsPart(Package package, string rsid)
+        public static XDocument AddDefaultSettingsPart(Package package, string rsid)
         {
             if (package is null)
             {
@@ -319,6 +330,8 @@ namespace DXPlus.Helpers
                  || p.ContentType.Equals(DocxContentType.Template, StringComparison.CurrentCultureIgnoreCase));
 
             mainDocumentPart.CreateRelationship(Relations.Settings.Uri, TargetMode.Internal, Relations.Settings.RelType);
+
+            return settings;
         }
 
         public static Paragraph GetFirstParagraphAffectedByInsert(DocX document, int index)

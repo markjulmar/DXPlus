@@ -29,6 +29,7 @@ namespace DXPlus
         public static XName Highlight = Namespace.Main + "highlight";
         public static XName Kerning = Namespace.Main + "kern";
         public static XName SimpleField = Namespace.Main + "fldSimple";
+        public static XName ComplexField = Namespace.Main + "fldChar";
         public static XName Left = Namespace.Main + "left";
         public static XName Right = Namespace.Main + "right";
         public static XName Top = Namespace.Main + "top";
@@ -46,7 +47,7 @@ namespace DXPlus
         public static XName MathParagraph = Namespace.Math + "oMathPara";
         public static XName OfficeMath = Namespace.Math + "oMath";
         public static XName SectionProperties = Namespace.Main + "sectPr";
-        public static XName NoProof => Namespace.Main + "noProof";
+        public static XName NoProof = Namespace.Main + "noProof";
         public static XName ParagraphId = Namespace.W2010 + "paraId";
         public static XName DrawingProperties = Namespace.WordProcessingDrawing + "docPr";
     }
@@ -128,11 +129,5 @@ namespace DXPlus
         internal const string Relationships = "application/vnd.openxmlformats-package.relationships+xml";
         internal const string CoreProperties = "application/vnd.openxmlformats-package.core-properties+xml";
         internal const string CustomProperties = "application/vnd.openxmlformats-officedocument.custom-properties+xml";
-    }
-
-    internal static class DocxSections
-    {
-        internal static Uri DocPropsCoreUri = new Uri("/docProps/core.xml", UriKind.Relative);
-        internal static Uri DocPropsCustom = new Uri("/docProps/custom.xml", UriKind.Relative);
     }
 }

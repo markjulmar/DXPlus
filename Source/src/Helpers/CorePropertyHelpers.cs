@@ -11,27 +11,35 @@ namespace DXPlus.Helpers
     /// <summary>
     /// Helper class to deal with DOCX core properties
     /// </summary>
-    public static class CorePropertyHelpers
+    internal static class CorePropertyHelpers
     {
-        internal static Dictionary<string, string> Get(Package package)
-        {
-            if (!package.PartExists(DocxSections.DocPropsCoreUri))
-                return new Dictionary<string, string>();
-
-            // Get all of the core properties in this document
-            var corePropDoc = package.GetPart(DocxSections.DocPropsCoreUri).Load();
-            return corePropDoc.Root!.Elements()
-                .Select(docProperty =>
-                    new KeyValuePair<string, string>(
-                        $"{corePropDoc.Root.GetPrefixOfNamespace(docProperty.Name.Namespace)}:{docProperty.Name.LocalName}",
-                        docProperty.Value))
-                .ToDictionary(p => p.Key, v => v.Value);
-        }
-
-        internal static string Add(Package package, string name, string value)
+        public static IReadOnlyDictionary<DocumentPropertyName, string> Get(Package package)
         {
             if (package == null)
-                throw new ArgumentNullException(nameof(package));
+                throw new ObjectDisposedException("Document has been disposed.");
+
+            var values = new Dictionary<DocumentPropertyName, string>();
+
+            if (package.PartExists(Relations.CoreProperties.Uri))
+            {
+                var doc = package.GetPart(Relations.CoreProperties.Uri).Load();
+                foreach (var e in doc.Root!.Elements())
+                {
+                    var name = $"{doc.Root.GetPrefixOfNamespace(e.Name.Namespace)}:{e.Name.LocalName}";
+                    if (name.TryGetEnumValue(out DocumentPropertyName result))
+                    {
+                        values.Add(result, e.Value);
+                    }
+                }
+            }
+
+            return values;
+        }
+
+        public static string SetValue(Package package, string name, string value)
+        {
+            if (package == null)
+                throw new ObjectDisposedException("Document has been disposed.");
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(name));
             if (string.IsNullOrWhiteSpace(value))
@@ -41,18 +49,13 @@ namespace DXPlus.Helpers
             PackagePart corePropPart;
 
             // Create the core document if it doesn't exist yet.
-            if (!package.PartExists(DocxSections.DocPropsCoreUri))
+            if (!package.PartExists(Relations.CoreProperties.Uri))
             {
-                corePropPart = package.CreatePart(Relations.CoreProperties.Uri, Relations.CoreProperties.ContentType, CompressionOption.Maximum);
-                corePropDoc = Resource.CorePropsXml(Environment.UserName, DateTime.UtcNow);
-                Debug.Assert(corePropDoc.Root != null);
-
-                corePropPart.Save(corePropDoc);
-                package.CreateRelationship(corePropPart.Uri, TargetMode.Internal, Relations.CoreProperties.RelType);
+                corePropPart = CreateCoreProperties(package, out corePropDoc);
             }
             else
             {
-                corePropPart = package.GetPart(DocxSections.DocPropsCoreUri);
+                corePropPart = package.GetPart(Relations.CoreProperties.Uri);
                 corePropDoc = corePropPart.Load();
             }
 
@@ -75,6 +78,17 @@ namespace DXPlus.Helpers
 
             corePropPart.Save(corePropDoc);
             return localName;
+        }
+
+        public static PackagePart CreateCoreProperties(Package package, out XDocument corePropDoc)
+        {
+            var corePropPart = package.CreatePart(Relations.CoreProperties.Uri, Relations.CoreProperties.ContentType, CompressionOption.Maximum);
+            corePropDoc = Resource.CorePropsXml(Environment.UserName, DateTime.UtcNow);
+            Debug.Assert(corePropDoc.Root != null);
+
+            corePropPart.Save(corePropDoc);
+            package.CreateRelationship(corePropPart.Uri, TargetMode.Internal, Relations.CoreProperties.RelType);
+            return corePropPart;
         }
     }
 }

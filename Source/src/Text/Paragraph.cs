@@ -250,12 +250,55 @@ namespace DXPlus
             get
             {
                 if (Document == null)
-                {
                     throw new InvalidOperationException("Cannot use document properties without a document owner.");
-                }
 
-                return Xml.Descendants(Name.SimpleField)
-                    .Select(el => new DocProperty(Document, el));
+                var properties = Xml.Descendants(Name.SimpleField).Select(el => new DocProperty(Document, el, null)).ToList();
+
+                // Look for complex field insertions in the paragraph. These should always be in run elements and
+                // have a start, name, sep, value section.
+                foreach (var field in Xml.Descendants(Name.ComplexField).Where(e => e.AttributeValue(Namespace.Main + "fldCharType") == "begin").ToList())
+                {
+                    // Start of a field. Walk down the tree looking for the name (instrText).
+                    var node = field.Parent;
+                    if (node == null || node.Name != Name.Run || node.Parent != Xml)
+                        continue;
+
+                    XElement nameNode = null;
+                    node = node.NextNode as XElement;
+                    while (node?.Parent == Xml)
+                    {
+                        nameNode = node?.Descendants(Namespace.Main + "instrText").SingleOrDefault();
+                        if (nameNode != null)
+                        {
+                            nameNode = node; // want the run parent
+                            break;
+                        }
+                    }
+
+                    // Never found name.
+                    if (nameNode == null)
+                        continue;
+
+                    // Look for the next [w:t] text element.
+                    XElement valueNode = null;
+                    node = nameNode.NextNode as XElement;
+                    while (node?.Parent == nameNode.Parent)
+                    {
+                        valueNode = node?.Descendants(Name.Text).SingleOrDefault();
+                        if (valueNode != null)
+                        {
+                            valueNode = node;
+                            break;
+                        }
+                        node = node?.NextNode as XElement;
+                    }
+
+                    if (valueNode != null)
+                    {
+                        properties.Add(new DocProperty(Document, nameNode, valueNode));
+                    }
+                }
+                return properties;
             }
         }
 
@@ -568,7 +611,7 @@ namespace DXPlus
             }
 
             // Ensure the owner document has the hyperlink styles.
-            Document.AddHyperlinkStyleIfNotPresent();
+            Document.AddHyperlinkStyle();
 
             // Set the document/package for the hyperlink to be owned by the document
             hyperlink.Document = Document;
@@ -747,27 +790,104 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Insert a field of type document property, this field will display the custom property cp, at the end of this paragraph.
+        /// Insert a field of type document property, this field will display the property in the paragraph.
         /// </summary>
-        /// <param name="cp">The custom property to display.</param>
+        /// <param name="name">Property name</param>
         /// <param name="formatting">The formatting to use for this text.</param>
-        public DocProperty AddDocumentProperty(CustomProperty cp, Formatting formatting = null)
+        public DocProperty AddDocumentPropertyField(DocumentPropertyName name, Formatting formatting = null)
         {
             if (Document == null)
-            {
                 throw new InvalidOperationException("Cannot add document properties without a document owner.");
-            }
 
+            Document.DocumentProperties.TryGetValue(name, out var propertyValue);
+            return AddComplexField(name.ToString().ToUpperInvariant(), propertyValue, formatting);
+        }
+
+        /// <summary>
+        /// Insert a field of type document property, this field will display the property in the paragraph.
+        /// </summary>
+        /// <param name="name">Property name</param>
+        /// <param name="formatting">The formatting to use for this text.</param>
+        public DocProperty AddCustomPropertyField(string name, Formatting formatting = null)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(name));
+            if (Document == null)
+                throw new InvalidOperationException("Cannot add document properties without a document owner.");
+
+            Document.CustomProperties.TryGetValue(name, out var propertyValue);
+            return AddComplexField(name, propertyValue?.ToString(), formatting);
+        }
+
+        /// <summary>
+        /// Inserts a complex field into the paragraph
+        /// </summary>
+        /// <param name="name">Name of field</param>
+        /// <param name="fieldValue">Value of field</param>
+        /// <param name="formatting">Formatting to apply</param>
+        /// <returns>Inserted DocProperty</returns>
+        private DocProperty AddComplexField(string name, string fieldValue, Formatting formatting = null)
+        {
+            // Start of complex field
+            XElement start = new XElement(Name.Run,
+                new XElement(Name.RunProperties, new XElement(Namespace.Main + "noProof")),
+                new XElement(Name.ComplexField, new XAttribute(Namespace.Main + "fldCharType", "begin"))
+            );
+
+            // Property definition
+            XElement pdef = new XElement(Name.Run,
+                new XElement(Name.RunProperties, new XElement(Namespace.Main + "noProof")),
+                new XElement(Namespace.Main + "instrText", new XAttribute(XNamespace.Xml + "space", "preserve"),
+                    $@"{name} \* MERGEFORMAT ")
+            );
+
+            // Separator
+            XElement sep = new XElement(Name.Run,
+                new XElement(Name.RunProperties, new XElement(Namespace.Main + "noProof")),
+                new XElement(Name.ComplexField, new XAttribute(Namespace.Main + "fldCharType", "separate"))
+            );
+
+            // Value
+            formatting ??= new Formatting();
+            formatting.NoProof = true;
+
+            XElement value = new XElement(Name.Run,
+                formatting.Xml,
+                new XElement(Name.Text, fieldValue ?? "")
+            );
+
+            // End marker
+            XElement end = new XElement(Name.Run,
+                new XElement(Name.RunProperties, new XElement(Namespace.Main + "noProof")),
+                new XElement(Name.ComplexField, new XAttribute(Namespace.Main + "fldCharType", "end"))
+            );
+
+            Xml.Add(start, pdef, sep, value, end);
+            return new DocProperty(Document, pdef, value);
+        }
+
+        /*
+        /// <summary>
+        /// Insert a field of type document property, this field will display the custom property cp, at the end of this paragraph.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="formatting">The formatting to use for this text.</param>
+        public DocProperty AddDocumentProperty2(DocumentPropertyName name, Formatting formatting = null)
+        {
+            if (Document == null)
+                throw new InvalidOperationException("Cannot add document properties without a document owner.");
+
+            var p = Document.DocumentProperties.SingleOrDefault(p => p.Name == name);
             XElement xml = new XElement(Name.SimpleField,
-                new XAttribute(Namespace.Main + "instr", $@"DOCPROPERTY {cp.Name} \* MERGEFORMAT"),
-                    new XElement(Name.Run,
-                        new XElement(Name.Text, formatting?.Xml, cp.Value))
+                new XAttribute(Namespace.Main + "instr", $@"DOCPROPERTY {name.GetEnumName()} \* MERGEFORMAT"),
+                new XElement(Name.Run, new XElement(Name.Text, formatting?.Xml, p.Value))
             );
 
             Xml.Add(xml);
 
             return new DocProperty(Document, xml);
         }
+        */
 
         /// <summary>
         /// Insert a Picture into a Paragraph at the given text index.

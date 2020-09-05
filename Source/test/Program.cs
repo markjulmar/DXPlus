@@ -26,11 +26,11 @@ namespace TestDXPlus
                 .Heading(HeadingType.Title)
                 .AddPageBreak();
 
-            // Add ToC
             document.InsertDefaultTableOfContents();
             document.AddPageBreak();
 
             AddBasicText(document);
+            AddFields(document);
             AddPicture(document);
             AddRTLText(document);
             AddIndentedParagraph(document);
@@ -45,13 +45,26 @@ namespace TestDXPlus
             // Add header on the first and odd pages.
             AddHeader(document);
 
-            document.SetCoreProperty(CoreProperty.Creator, "Mark Smith");
-            document.SetCoreProperty(CoreProperty.Title, "Test document created by C#");
-
-            document.AddCustomProperty(new CustomProperty("LastEdit", DateTime.Now));
-            //document.AddCustomProperty(new CustomProperty("wasAutoCreated", true));
-
             document.Save();
+        }
+
+        private static void AddFields(IDocument document)
+        {
+            document.AddParagraph("Fields").Heading(HeadingType.Heading1);
+
+            document.SetPropertyValue(DocumentPropertyName.Creator, "John Smith");
+            document.SetPropertyValue(DocumentPropertyName.Title, "Test document created by C#");
+            document.AddCustomProperty("ReplaceMe", " inserted field ");
+
+            var p = document.AddParagraph("This paragraph has a");
+            p.AddCustomPropertyField("ReplaceMe");
+
+            p.Append("which was added by ");
+            p.AddDocumentPropertyField(DocumentPropertyName.Creator);
+            p.Append(".");
+            p.AppendLine();
+
+            document.AddPageBreak();
         }
 
         private static void AddHeader(IDocument document)
@@ -334,6 +347,8 @@ namespace TestDXPlus
                 .Append(", but this is ")
                 .Append("not").Italic()
                 .Append(".");
+
+            document.AddPageBreak();
         }
 
         private static void BarChart(IDocument document)

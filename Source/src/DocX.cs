@@ -146,6 +146,7 @@ namespace DXPlus
             doc.stream = null;
             doc.filename = filename;
             doc.revision--;
+
             return doc;
         }
 
@@ -202,42 +203,26 @@ namespace DXPlus
         }
 
         ///<summary>
-        /// Returns the list of document core properties with corresponding values.
+        /// Returns the list of document properties with corresponding values.
         ///</summary>
-        public Dictionary<string, string> CoreProperties
-        {
-            get
-            {
-                ThrowIfObjectDisposed();
-                return CorePropertyHelpers.Get(this.Package);
-            }
-        }
+        public IReadOnlyDictionary<DocumentPropertyName, string> DocumentProperties => CorePropertyHelpers.Get(this.Package);
 
         /// <summary>
         /// Set a known core property value
         /// </summary>
         /// <param name="name">Property to set</param>
         /// <param name="value">Value to assign</param>
-        public void SetCoreProperty(CoreProperty name, string value) => AddCoreProperty(name.GetEnumName(), value);
-
-        /// <summary>
-        /// Add a core property to this document.
-        /// If a core property already exists with the same name it will be replaced.
-        /// Core property names are case insensitive.
-        /// </summary>
-        ///<param name="name">The property name with optional namespace prefix.</param>
-        ///<param name="value">The property value.</param>
-        public void AddCoreProperty(string name, string value)
+        public void SetPropertyValue(DocumentPropertyName name, string value)
         {
             ThrowIfObjectDisposed();
-            string localName = CorePropertyHelpers.Add(Package, name, value);
+            string localName = CorePropertyHelpers.SetValue(Package, name.GetEnumName(), value);
             UpdateCorePropertyUsages(localName, value);
         }
 
         /// <summary>
         /// Returns a list of custom properties in this document.
         /// </summary>
-        public Dictionary<string, CustomProperty> CustomProperties
+        public IReadOnlyDictionary<string, object> CustomProperties
         {
             get
             {
@@ -247,14 +232,50 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Add a custom property to this document. If a custom property already exists with the same name it will be replace. CustomProperty names are case insensitive.
+        /// Add a custom property to this document.
+        /// If a custom property already exists with the same name it will be replace.
+        /// CustomProperty names are case insensitive.
         /// </summary>
-        /// <param name="property">The CustomProperty to add to this document.</param>
-        public void AddCustomProperty(CustomProperty property)
+        public void AddCustomProperty(string name, string value) => AddCustomProperty(name, CustomProperty.LPWSTR, value);
+
+        /// <summary>
+        /// Add a custom property to this document.
+        /// If a custom property already exists with the same name it will be replace.
+        /// CustomProperty names are case insensitive.
+        /// </summary>
+        public void AddCustomProperty(string name, double value) => AddCustomProperty(name, CustomProperty.R8, value);
+
+        /// <summary>
+        /// Add a custom property to this document.
+        /// If a custom property already exists with the same name it will be replace.
+        /// CustomProperty names are case insensitive.
+        /// </summary>
+        public void AddCustomProperty(string name, bool value) => AddCustomProperty(name, CustomProperty.BOOL, value);
+
+        /// <summary>
+        /// Add a custom property to this document.
+        /// If a custom property already exists with the same name it will be replace.
+        /// CustomProperty names are case insensitive.
+        /// </summary>
+        public void AddCustomProperty(string name, DateTime value) => AddCustomProperty(name, CustomProperty.FILETIME, value.ToUniversalTime());
+
+        /// <summary>
+        /// Add a custom property to this document.
+        /// If a custom property already exists with the same name it will be replace.
+        /// CustomProperty names are case insensitive.
+        /// </summary>
+        public void AddCustomProperty(string name, int value) => AddCustomProperty(name, CustomProperty.I4, value);
+
+        /// <summary>
+        /// Add a custom property to this document.
+        /// If a custom property already exists with the same name it will be replace.
+        /// CustomProperty names are case insensitive.
+        /// </summary>
+        private void AddCustomProperty(string name, string type, object value)
         {
             ThrowIfObjectDisposed();
-            CustomPropertyHelpers.Add(Package, property);
-            UpdateCustomPropertyUsages(property);
+            CustomPropertyHelpers.Add(Package, name, type, value);
+            //UpdateCustomPropertyUsages(name, value);
         }
 
         /// <summary>
@@ -931,12 +952,15 @@ namespace DXPlus
             return document;
         }
 
+        /// <summary>
+        /// Adds a new styles.xml to the package and relates it to this document.
+        /// </summary>
         internal void AddDefaultStyles()
         {
             // If the document contains no /word/styles.xml create one and associate it
             if (!Package.PartExists(Relations.Styles.Uri))
             {
-                HelperFunctions.AddDefaultStylesXml(Package, out var stylesPart, out var stylesDoc);
+                var stylesDoc = HelperFunctions.AddDefaultStylesXml(Package, out var stylesPart);
                 if (stylesDoc.Element(Namespace.Main + "styles") == null)
                     throw new Exception("Missing root styles collection.");
 
@@ -946,7 +970,11 @@ namespace DXPlus
             Debug.Assert(Styles != null);
         }
 
-        internal void AddHyperlinkStyleIfNotPresent()
+        /// <summary>
+        /// Adds the hyperlink style to the document. This is done the first time
+        /// a hyperlink is added. If the style already exists, this method does nothing.
+        /// </summary>
+        internal void AddHyperlinkStyle()
         {
             ThrowIfObjectDisposed();
             AddDefaultStyles();
@@ -1158,17 +1186,15 @@ namespace DXPlus
         /// <summary>
         /// Update the custom properties inside the document
         /// </summary>
-        /// <param name="property">Custom property</param>
-        /// <remarks>Different version of Word create different Document XML.</remarks>
-        internal void UpdateCustomPropertyUsages(CustomProperty property)
+        internal void UpdateCustomPropertyUsages(string name, object value)
         {
             ThrowIfObjectDisposed();
 
-            if (property == null)
-                throw new ArgumentNullException(nameof(property));
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
 
             var documents = new List<XElement> { mainDoc.Root };
-            var value = property.Value?.ToString() ?? string.Empty;
+            string textValue = value?.ToString() ?? string.Empty;
 
             Sections.ToList().ForEach(s =>
             {
@@ -1186,9 +1212,9 @@ namespace DXPlus
                     documents.Add(s.Footers.Even.Xml);
             });
 
-            string matchCustomPropertyName = property.Name;
-            if (property.Name.Contains(" "))
-                matchCustomPropertyName = "\"" + property.Name + "\"";
+            string matchCustomPropertyName = name.Contains(' ')
+                ? "\"" + name + "\""
+                : name;
 
             string propertyMatchValue = $@"DOCPROPERTY  {matchCustomPropertyName}  \* MERGEFORMAT".Replace(" ", string.Empty);
 
@@ -1213,7 +1239,7 @@ namespace DXPlus
                                 {
                                     if (!found)
                                     {
-                                        match[0].Value = value;
+                                        match[0].Value = textValue;
                                         found = true;
                                     }
                                     else
@@ -1253,7 +1279,7 @@ namespace DXPlus
                         e.Add(new XElement(firstRun.Name,
                                 firstRun.Attributes(),
                                 rPr,
-                                new XElement(Name.Text, value).PreserveSpace()
+                                new XElement(Name.Text, textValue).PreserveSpace()
                             )
                         );
                     }

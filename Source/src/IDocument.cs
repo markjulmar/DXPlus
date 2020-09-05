@@ -53,12 +53,12 @@ namespace DXPlus
         ///<summary>
         /// Returns the list of document core properties with corresponding values.
         ///</summary>
-        Dictionary<string, string> CoreProperties { get; }
+        IReadOnlyDictionary<DocumentPropertyName, string> DocumentProperties { get; }
 
         /// <summary>
         /// Returns a list of custom properties in this document.
         /// </summary>
-        Dictionary<string, CustomProperty> CustomProperties { get; }
+        IReadOnlyDictionary<string, object> CustomProperties { get; }
 
         /// <summary>
         /// Returns true if any editing restrictions are imposed on this document.
@@ -70,20 +70,32 @@ namespace DXPlus
         /// </summary>
         /// <param name="name">Property to set</param>
         /// <param name="value">Value to assign</param>
-        void SetCoreProperty(CoreProperty name, string value);
-
-        /// <summary>
-        /// Add a core property to this document. If a core property already exists with the same name it will be replaced. Core property names are case insensitive.
-        /// </summary>
-        ///<param name="name">The property name.</param>
-        ///<param name="value">The property value.</param>
-        void AddCoreProperty(string name, string value);
+        void SetPropertyValue(DocumentPropertyName name, string value);
 
         /// <summary>
         /// Add a custom property to this document. If a custom property already exists with the same name it will be replace. CustomProperty names are case insensitive.
         /// </summary>
-        /// <param name="property">The CustomProperty to add to this document.</param>
-        void AddCustomProperty(CustomProperty property);
+        void AddCustomProperty(string name, string value);
+
+        /// <summary>
+        /// Add a custom property to this document. If a custom property already exists with the same name it will be replace. CustomProperty names are case insensitive.
+        /// </summary>
+        void AddCustomProperty(string name, double value);
+
+        /// <summary>
+        /// Add a custom property to this document. If a custom property already exists with the same name it will be replace. CustomProperty names are case insensitive.
+        /// </summary>
+        void AddCustomProperty(string name, bool value);
+
+        /// <summary>
+        /// Add a custom property to this document. If a custom property already exists with the same name it will be replace. CustomProperty names are case insensitive.
+        /// </summary>
+        void AddCustomProperty(string name, DateTime value);
+
+        /// <summary>
+        /// Add a custom property to this document. If a custom property already exists with the same name it will be replace. CustomProperty names are case insensitive.
+        /// </summary>
+        void AddCustomProperty(string name, int value);
 
         /// <summary>
         /// Add an Image into this document from a fully qualified or relative filename.

@@ -44,29 +44,56 @@ namespace DXPlus.Tests
         }
 
         [Fact]
-        public void AddDocumentProperty()
+        public void AddCustomDocumentProperty()
         {
-            using var doc = Document.Create(Filename);
+            using var doc = Document.Create();
 
-            var props = new[]
-            {
-                new CustomProperty("intProperty", 100),
-                new CustomProperty("stringProperty", "100"),
-                new CustomProperty("doubleProperty", 100.0),
-                new CustomProperty("dateProperty", new DateTime(2010, 1, 1)),
-                new CustomProperty("boolProperty", true)
-            };
+            doc.AddCustomProperty("intProperty", 100);
+            doc.AddCustomProperty("stringProperty", "100");
+            doc.AddCustomProperty("doubleProperty", 100.5);
+            doc.AddCustomProperty("dateProperty", new DateTime(2010, 1, 1));
+            doc.AddCustomProperty("boolProperty", true);
+
+            Assert.Equal(5, doc.CustomProperties.Count);
 
             var p = doc.AddParagraph();
-            props.ToList().ForEach(prop => p.AddDocumentProperty(prop));
 
-            Assert.Equal(props.Length, p.DocumentProperties.Count());
-            int index = 0;
-            foreach(var prop in p.DocumentProperties)
-            {
-                Assert.Equal(props[index++].Name, prop.Name);
-            }
+            p.AddCustomPropertyField("doubleProperty");
+            Assert.Single(p.DocumentProperties);
+
+            var prop = p.DocumentProperties.Single();
+            Assert.Equal("doubleProperty", prop.Name);
+            Assert.Equal("100.5", prop.Value);
+
+            p.AppendLine();
+
+            p.AddCustomPropertyField("dateProperty");
+            Assert.Equal(2, p.DocumentProperties.Count());
+
+            prop = p.DocumentProperties.Skip(1).Single();
+            Assert.Equal("dateProperty", prop.Name);
+            Assert.Equal(new DateTime(2010, 1, 1).ToString(), prop.Value);
         }
+
+        [Fact]
+        public void AddDocumentProperty()
+        {
+            const string text = "The title.";
+            using var doc = Document.Create();
+
+            doc.SetPropertyValue(DocumentPropertyName.Title, text);
+            Assert.Equal(text, doc.DocumentProperties[DocumentPropertyName.Title]);
+
+            var p = doc.AddParagraph();
+            p.AddDocumentPropertyField(DocumentPropertyName.Title);
+
+            Assert.Single(p.DocumentProperties);
+
+            var prop = p.DocumentProperties.Single();
+            Assert.Equal("TITLE", prop.Name);
+            Assert.Equal(text, prop.Value);
+        }
+
 
         [Fact]
         public void CheckHeading1()
