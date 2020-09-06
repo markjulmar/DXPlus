@@ -13,22 +13,6 @@ namespace DXPlus.Tests
         private const string Filename = "test.docx";
 
         [Fact]
-        public void AlignmentGetAndSetAreAligned()
-        {
-            using var doc = Document.Create(Filename);
-            doc.AddParagraph("This is a test.").Alignment(Alignment.Center);
-            Assert.Equal(Alignment.Center, doc.Paragraphs[0].Alignment);
-        }
-
-        [Fact]
-        public void DefaultAlignmentIsLeft()
-        {
-            using var doc = Document.Create(Filename);
-            doc.AddParagraph("This is a test.");
-            Assert.Equal(Alignment.Left, doc.Paragraphs[0].Alignment);
-        }
-
-        [Fact]
         public void AddCustomDocumentProperty()
         {
             using var doc = Document.Create();
@@ -85,7 +69,7 @@ namespace DXPlus.Tests
         {
             using var doc = Document.Create(Filename);
             doc.AddParagraph("This is a test.").Heading(HeadingType.Heading1);
-            Assert.Equal("Heading1", doc.Paragraphs[0].StyleName);
+            Assert.Equal("Heading1", doc.Paragraphs[0].Properties.StyleName);
         }
 
         [Fact]
@@ -245,92 +229,21 @@ namespace DXPlus.Tests
         }
 
         [Fact]
-        public void LineSpacingAddsRemovesElement()
-        {
-            // Default
-            var p = new Paragraph();
-            Assert.Null(p.LineSpacing);
-
-            p.LineSpacing = 12.5;
-            Assert.Equal(12.5, p.LineSpacing);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
-
-            p.LineSpacing = null;
-            Assert.Null(p.LineSpacing);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
-        }
-
-        [Fact]
-        public void LineSpacingBeforeAddsRemovesElement()
-        {
-            // Default
-            var p = new Paragraph();
-            Assert.Null(p.LineSpacingBefore);
-
-            p.LineSpacingBefore = 12.5;
-            Assert.Equal(12.5, p.LineSpacingBefore);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
-
-            p.LineSpacingBefore = null;
-            Assert.Null(p.LineSpacingBefore);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
-        }
-
-        [Fact]
-        public void LineSpacingAfterAddsRemovesElement()
-        {
-            // Default
-            var p = new Paragraph();
-            Assert.Null(p.LineSpacingAfter);
-
-            p.LineSpacingAfter = 12.5;
-            Assert.Equal(12.5, p.LineSpacingAfter);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
-
-            p.LineSpacingAfter = null;
-            Assert.Null(p.LineSpacingAfter);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
-        }
-
-        [Fact]
-        public void LineSpacingRemovesWhenNoAttributes()
-        {
-            var p = new Paragraph {LineSpacing = 10, LineSpacingBefore = 12, LineSpacingAfter = 15};
-
-            Assert.Equal(10, p.LineSpacing);
-            Assert.Equal(12, p.LineSpacingBefore);
-            Assert.Equal(15, p.LineSpacingAfter);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
-
-            p.LineSpacingAfter = null;
-            Assert.Null(p.LineSpacingAfter);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
-
-            p.LineSpacingBefore = null;
-            Assert.Null(p.LineSpacingBefore);
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
-
-            p.LineSpacing = null;
-            Assert.Null(p.LineSpacing);
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/spacing"));
-        }
-
-        [Fact]
         public void StyleAddsRemovesElement()
         {
             var p = new Paragraph();
-            Assert.Equal("Normal", p.StyleName);
+            Assert.Equal("Normal", p.Properties.StyleName);
 
-            p.StyleName = "Body";
-            Assert.Equal("Body", p.StyleName);
+            p.Properties.StyleName = "Body";
+            Assert.Equal("Body", p.Properties.StyleName);
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/pStyle"));
 
-            p.StyleName = null;
-            Assert.Equal("Normal", p.StyleName);
+            p.Properties.StyleName = null;
+            Assert.Equal("Normal", p.Properties.StyleName);
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/pStyle"));
 
-            p.StyleName = "";
-            Assert.Equal("Normal", p.StyleName);
+            p.Properties.StyleName = "";
+            Assert.Equal("Normal", p.Properties.StyleName);
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/pStyle"));
         }
 

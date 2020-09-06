@@ -127,7 +127,7 @@ namespace DXPlus
         /// <summary>
         /// Set the left indentation in 1/20th pt for this Paragraph.
         /// </summary>
-        public double IndentationLeft
+        public double LeftIndent
         {
             get => Math.Round(double.Parse(Xml.AttributeValue(Name.Indent, Name.Left) ?? "0") / 20.0, 2);
             set
@@ -149,7 +149,7 @@ namespace DXPlus
         /// <summary>
         /// Set the right indentation in 1/20th pt for this Paragraph.
         /// </summary>
-        public double IndentationRight
+        public double RightIndent
         {
             get => Math.Round(double.Parse(Xml.AttributeValue(Name.Indent, Name.Right) ?? "0") / 20.0, 2);
             set
@@ -171,7 +171,7 @@ namespace DXPlus
         /// <summary>
         /// Get or set the indentation of the first line of this Paragraph.
         /// </summary>
-        public double IndentationFirstLine
+        public double FirstLineIndent
         {
             get => Math.Round(double.Parse(Xml.AttributeValue(Name.Indent, Name.FirstLine) ?? "0") / 20.0, 2);
             set
@@ -194,7 +194,7 @@ namespace DXPlus
         /// <summary>
         /// Get or set the indentation of all but the first line of this Paragraph.
         /// </summary>
-        public double IndentationHanging
+        public double HangingIndent
         {
             get => Math.Round(double.Parse(Xml.AttributeValue(Name.Indent, Name.Hanging) ?? "0") / 20.0, 2);
 

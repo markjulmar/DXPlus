@@ -22,7 +22,7 @@ namespace TestDXPlus
 
             // Add a title.
             document.AddParagraph("Welcome to the Sample Document")
-                .Alignment(Alignment.Center)
+                .WithProperties(new ParagraphProperties { Alignment = Alignment.Center })
                 .Heading(HeadingType.Title)
                 .AddPageBreak();
 
@@ -134,7 +134,7 @@ namespace TestDXPlus
             table = new Table(new[,] {{"1", "2", "3"}, {"4", "5", "6"}, {"7", "8", "9"}, {"10", "11", "12"},});
 
             table.Rows[1].MergeCells(0, table.ColumnCount);
-            table.Rows[1].Cells.SelectMany(c => c.Paragraphs).ToList().ForEach(p => p.Alignment(Alignment.Center));
+            table.Rows[1].Cells.SelectMany(c => c.Paragraphs).ToList().ForEach(p => p.WithProperties(new ParagraphProperties { Alignment = Alignment.Center }));
             document.AddTable(table);
 
             document.AddParagraph("Table with merged/centered rows").Heading(HeadingType.Heading2);
@@ -249,7 +249,7 @@ namespace TestDXPlus
 
             document.AddParagraph("This paragraph has the first sentence indented. "
                                   + "It shows how you can use the Intent property to control how paragraphs are lined up.")
-                .FirstLineIndent(20)
+                .WithProperties(new ParagraphProperties { FirstLineIndent = 20 })
                 .AppendLine()
                 .AppendLine("This line shouldn't be indented - instead, it should start over on the left side.");
 
@@ -320,8 +320,8 @@ namespace TestDXPlus
                 .Append(".");
 
             document.AddParagraph("I am centered 20pt Comic Sans.")
-                .WithFormatting(new Formatting { Font = new FontFamily("Comic Sans MS"), FontSize = 20 })
-                .Alignment(Alignment.Center);
+                .WithProperties(new ParagraphProperties {Alignment = Alignment.Center})
+                .WithFormatting(new Formatting {Font = new FontFamily("Comic Sans MS"), FontSize = 20});
 
             document.AddParagraph();
 

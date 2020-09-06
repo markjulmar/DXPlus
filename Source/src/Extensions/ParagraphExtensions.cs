@@ -11,22 +11,6 @@ namespace DXPlus
     public static class ParagraphExtensions
     {
         /// <summary>
-        /// Fluent method to set alignment
-        /// </summary>
-        /// <param name="paragraph">Paragraph</param>
-        /// <param name="alignment">Desired alignment</param>
-        public static Paragraph Alignment(this Paragraph paragraph, Alignment alignment)
-        {
-            if (paragraph == null)
-            {
-                throw new ArgumentNullException(nameof(paragraph));
-            }
-
-            paragraph.Alignment = alignment;
-            return paragraph;
-        }
-
-        /// <summary>
         /// Append a new line to this Paragraph.
         /// </summary>
         /// <returns>This Paragraph with a new line appended.</returns>
@@ -73,7 +57,7 @@ namespace DXPlus
                 throw new ArgumentNullException(nameof(paragraph));
             }
 
-            paragraph.StyleName = headingType.GetEnumName();
+            paragraph.Properties.StyleName = headingType.GetEnumName();
             return paragraph;
         }
 
@@ -94,125 +78,6 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Set the spacing for the paragraph
-        /// </summary>
-        /// <param name="paragraph"></param>
-        /// <param name="spacing"></param>
-        /// <returns></returns>
-        public static Paragraph LineSpacing(this Paragraph paragraph, double spacing)
-        {
-            if (paragraph == null)
-            {
-                throw new ArgumentNullException(nameof(paragraph));
-            }
-
-            paragraph.LineSpacing = spacing;
-            return paragraph;
-        }
-
-        /// <summary>
-        /// Set the spacing after the paragraph
-        /// </summary>
-        /// <param name="paragraph"></param>
-        /// <param name="spacing"></param>
-        /// <returns></returns>
-        public static Paragraph LineSpacingAfter(this Paragraph paragraph, double spacing)
-        {
-            if (paragraph == null)
-            {
-                throw new ArgumentNullException(nameof(paragraph));
-            }
-
-            paragraph.LineSpacingAfter = spacing;
-            return paragraph;
-        }
-
-        /// <summary>
-        /// Set the spacing before the paragraph
-        /// </summary>
-        /// <param name="paragraph"></param>
-        /// <param name="spacing"></param>
-        /// <returns></returns>
-        public static Paragraph LineSpacingBefore(this Paragraph paragraph, double spacing)
-        {
-            if (paragraph == null)
-            {
-                throw new ArgumentNullException(nameof(paragraph));
-            }
-
-            paragraph.LineSpacingBefore = spacing;
-            return paragraph;
-        }
-
-        /// <summary>
-        /// Set the left indent for the paragraph
-        /// </summary>
-        /// <param name="paragraph"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static Paragraph LeftIndent(this Paragraph paragraph, double value)
-        {
-            if (paragraph == null)
-            {
-                throw new ArgumentNullException(nameof(paragraph));
-            }
-
-            paragraph.LeftIndent = value;
-            return paragraph;
-        }
-
-        /// <summary>
-        /// Set the right indent for the paragraph
-        /// </summary>
-        /// <param name="paragraph"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static Paragraph RightIndent(this Paragraph paragraph, double value)
-        {
-            if (paragraph == null)
-            {
-                throw new ArgumentNullException(nameof(paragraph));
-            }
-
-            paragraph.RightIndent = value;
-            return paragraph;
-        }
-
-        /// <summary>
-        /// Set the first line indent for the paragraph
-        /// </summary>
-        /// <param name="paragraph"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static Paragraph FirstLineIndent(this Paragraph paragraph, double value)
-        {
-            if (paragraph == null)
-            {
-                throw new ArgumentNullException(nameof(paragraph));
-            }
-
-            paragraph.FirstLineIndent = value;
-            return paragraph;
-        }
-
-        /// <summary>
-        /// Set the hanging indent for the paragraph
-        /// </summary>
-        /// <param name="paragraph"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static Paragraph HangingIndent(this Paragraph paragraph, double value)
-        {
-            if (paragraph == null)
-            {
-                throw new ArgumentNullException(nameof(paragraph));
-            }
-
-            paragraph.HangingIndent = value;
-            return paragraph;
-        }
-
-        /// <summary>
         /// Fluent method to set StyleName property
         /// </summary>
         /// <param name="paragraph"></param>
@@ -224,37 +89,7 @@ namespace DXPlus
                 throw new ArgumentNullException(nameof(paragraph));
             }
 
-            paragraph.StyleName = styleName;
-            return paragraph;
-        }
-
-        /// <summary>
-        /// This paragraph will be kept on the same page as the next paragraph
-        /// </summary>
-        /// <param name="paragraph">Paragraph</param>
-        /// <param name="keepWithNext"></param>
-        public static Paragraph KeepWithNext(this Paragraph paragraph, bool keepWithNext = true)
-        {
-            if (paragraph == null)
-            {
-                throw new ArgumentNullException(nameof(paragraph));
-            }
-
-            paragraph.KeepWithNext = keepWithNext;
-            return paragraph;
-        }
-
-        /// <summary>
-        /// Keep all lines in this paragraph together on a page
-        /// </summary>
-        public static Paragraph KeepLinesTogether(this Paragraph paragraph, bool keepTogether = true)
-        {
-            if (paragraph == null)
-            {
-                throw new ArgumentNullException(nameof(paragraph));
-            }
-
-            paragraph.KeepLinesTogether = keepTogether;
+            paragraph.Properties.StyleName = styleName;
             return paragraph;
         }
 

@@ -89,15 +89,6 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Gets or set this Paragraphs text alignment.
-        /// </summary>
-        public Alignment Alignment
-        {
-            get => GetDefaultFormatting().Alignment;
-            set => GetDefaultFormatting(true).Alignment = value;
-        }
-
-        /// <summary>
         /// The default run properties applied at the paragraph level
         /// </summary>
         public Formatting DefaultFormatting
@@ -239,43 +230,6 @@ namespace DXPlus
         public Table Table { get; internal set; }
 
         /// <summary>
-        /// Set the left indentation in 1/20th pt for this Paragraph.
-        /// </summary>
-        public double LeftIndent
-        {
-            get => GetDefaultFormatting().IndentationLeft;
-            set => GetDefaultFormatting(true).IndentationLeft = value;
-        }
-
-        /// <summary>
-        /// Set the right indentation in 1/20th pt for this Paragraph.
-        /// </summary>
-        public double RightIndent
-
-        {
-            get => GetDefaultFormatting().IndentationRight;
-            set => GetDefaultFormatting(true).IndentationRight = value;
-        }
-
-        /// <summary>
-        /// Get or set the indentation of the first line of this Paragraph.
-        /// </summary>
-        public double FirstLineIndent
-        {
-            get => GetDefaultFormatting().IndentationFirstLine;
-            set => GetDefaultFormatting(true).IndentationFirstLine = value;
-        }
-
-        /// <summary>
-        /// Get or set the indentation of all but the first line of this Paragraph.
-        /// </summary>
-        public double HangingIndent
-        {
-            get => GetDefaultFormatting().IndentationHanging;
-            set => GetDefaultFormatting(true).IndentationHanging = value;
-        }
-
-        /// <summary>
         /// Properties applied to this paragraph
         /// </summary>
         public ParagraphProperties Properties
@@ -305,69 +259,20 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Paragraph formatting
+        /// Sets the properties on the paragraph with a fluent method.
         /// </summary>
-        private ParagraphProperties GetDefaultFormatting(bool create = false)
+        /// <param name="properties"></param>
+        /// <returns></returns>
+        public Paragraph WithProperties(ParagraphProperties properties)
         {
-            XElement pPr = Xml.Element(Name.ParagraphProperties);
-            if (create && pPr == null)
-            {
-                pPr = new XElement(Name.ParagraphProperties);
-                Xml.AddFirst(pPr);
-            }
-
-            return new ParagraphProperties(pPr);
-        }
-
-        /// <summary>
-        /// True to keep with the next element on the page.
-        /// </summary>
-        public bool KeepWithNext
-        {
-            get => GetDefaultFormatting().KeepWithNext;
-            set => GetDefaultFormatting(true).KeepWithNext = value;
-        }
-
-        /// <summary>
-        /// Keep lines together on the page
-        /// </summary>
-        public bool KeepLinesTogether
-        {
-            get => GetDefaultFormatting().KeepLinesTogether;
-            set => GetDefaultFormatting(true).KeepLinesTogether = value;
+            Properties = properties;
+            return this;
         }
 
         /// <summary>
         /// Container owner type.
         /// </summary>
         public ContainerType ParentContainerType { get; set; }
-
-        /// <summary>
-        /// Set the spacing between lines in this paragraph
-        /// </summary>
-        public double? LineSpacing
-        {
-            get => GetDefaultFormatting().LineSpacing;
-            set => GetDefaultFormatting(true).LineSpacing = value;
-        }
-
-        /// <summary>
-        /// Set the spacing after lines in this paragraph
-        /// </summary>
-        public double? LineSpacingAfter
-        {
-            get => GetDefaultFormatting().LineSpacingAfter;
-            set => GetDefaultFormatting(true).LineSpacingAfter = value;
-        }
-
-        /// <summary>
-        /// Set the spacing before lines in this paragraph
-        /// </summary>
-        public double? LineSpacingBefore
-        {
-            get => GetDefaultFormatting().LineSpacingBefore;
-            set => GetDefaultFormatting(true).LineSpacingBefore = value;
-        }
 
         /// <summary>
         /// Returns a list of all Pictures in a Paragraph.
@@ -385,15 +290,6 @@ namespace DXPlus
                     let img = new Image(Document, Document.PackagePart.GetRelationship(id))
                     select new Picture(Document, p, img)
                 ).ToList();
-
-        ///<summary>
-        /// The style name of the paragraph.
-        ///</summary>
-        public string StyleName
-        {
-            get => GetDefaultFormatting().StyleName;
-            set => GetDefaultFormatting(true).StyleName = value;
-        }
 
         /// <summary>
         /// Gets the text value of this Paragraph.
@@ -520,7 +416,7 @@ namespace DXPlus
             hyperlink.Document = Document;
             hyperlink.PackagePart = PackagePart;
 
-            // Check to see if the rels file exists and create it if not.
+            // Check to see if the .rels file exists and create it if not.
             _ = Document.EnsureRelsPathExists(PackagePart);
             _ = hyperlink.GetOrCreateRelationship();
 
@@ -732,20 +628,20 @@ namespace DXPlus
         private DocProperty AddComplexField(string name, string fieldValue, Formatting formatting = null)
         {
             // Start of complex field
-            XElement start = new XElement(Name.Run,
+            var start = new XElement(Name.Run,
                 new XElement(Name.RunProperties, new XElement(Namespace.Main + "noProof")),
                 new XElement(Name.ComplexField, new XAttribute(Namespace.Main + "fldCharType", "begin"))
             );
 
             // Property definition
-            XElement pdef = new XElement(Name.Run,
+            var pdef = new XElement(Name.Run,
                 new XElement(Name.RunProperties, new XElement(Namespace.Main + "noProof")),
                 new XElement(Namespace.Main + "instrText", new XAttribute(XNamespace.Xml + "space", "preserve"),
                     $@"{name} \* MERGEFORMAT ")
             );
 
             // Separator
-            XElement sep = new XElement(Name.Run,
+            var sep = new XElement(Name.Run,
                 new XElement(Name.RunProperties, new XElement(Namespace.Main + "noProof")),
                 new XElement(Name.ComplexField, new XAttribute(Namespace.Main + "fldCharType", "separate"))
             );
@@ -754,13 +650,13 @@ namespace DXPlus
             formatting ??= new Formatting();
             formatting.NoProof = true;
 
-            XElement value = new XElement(Name.Run,
+            var value = new XElement(Name.Run,
                 formatting.Xml,
                 new XElement(Name.Text, fieldValue ?? "")
             );
 
             // End marker
-            XElement end = new XElement(Name.Run,
+            var end = new XElement(Name.Run,
                 new XElement(Name.RunProperties, new XElement(Namespace.Main + "noProof")),
                 new XElement(Name.ComplexField, new XAttribute(Namespace.Main + "fldCharType", "end"))
             );
@@ -769,6 +665,7 @@ namespace DXPlus
             return new DocProperty(Document, pdef, value);
         }
 
+        //TODO: add simple field property
         /*
         /// <summary>
         /// Insert a field of type document property, this field will display the custom property cp, at the end of this paragraph.

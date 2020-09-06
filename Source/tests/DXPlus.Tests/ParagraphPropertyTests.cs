@@ -153,64 +153,64 @@ namespace DXPlus.Tests
         public void IndentLeftAddsRemovesElement()
         {
             var p = new ParagraphProperties();
-            Assert.Equal(0, p.IndentationLeft);
+            Assert.Equal(0, p.LeftIndent);
 
-            p.IndentationLeft = 15.225;
+            p.LeftIndent = 15.225;
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind[@left='304.5']"));
-            Assert.Equal(15.22, p.IndentationLeft);
+            Assert.Equal(15.22, p.LeftIndent);
 
-            p.IndentationLeft = 0;
+            p.LeftIndent = 0;
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
-            Assert.Equal(0, p.IndentationLeft);
+            Assert.Equal(0, p.LeftIndent);
         }
 
         [Fact]
         public void IndentRightAddsRemovesElement()
         {
             var p = new ParagraphProperties();
-            Assert.Equal(0, p.IndentationRight);
+            Assert.Equal(0, p.RightIndent);
 
-            p.IndentationRight = 15.225;
+            p.RightIndent = 15.225;
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind[@right='304.5']"));
-            Assert.Equal(15.22, p.IndentationRight);
+            Assert.Equal(15.22, p.RightIndent);
 
-            p.IndentationRight = 0;
+            p.RightIndent = 0;
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
-            Assert.Equal(0, p.IndentationRight);
+            Assert.Equal(0, p.RightIndent);
         }
 
         [Fact]
         public void IndentFirstLineAddsRemovesElement()
         {
             var p = new ParagraphProperties();
-            Assert.Equal(0, p.IndentationFirstLine);
+            Assert.Equal(0, p.FirstLineIndent);
 
-            p.IndentationFirstLine = 15.225;
+            p.FirstLineIndent = 15.225;
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind[@firstLine='304.5']"));
-            Assert.Equal(15.22, p.IndentationFirstLine);
+            Assert.Equal(15.22, p.FirstLineIndent);
 
-            p.IndentationFirstLine = 0;
+            p.FirstLineIndent = 0;
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
-            Assert.Equal(0, p.IndentationFirstLine);
+            Assert.Equal(0, p.FirstLineIndent);
         }
 
         [Fact]
         public void IndentHangingAddsRemovesElement()
         {
             var p = new ParagraphProperties();
-            Assert.Equal(0, p.IndentationHanging);
+            Assert.Equal(0, p.HangingIndent);
 
-            p.IndentationHanging = 15.225;
+            p.HangingIndent = 15.225;
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind[@hanging='304.5']"));
-            Assert.Equal(15.22, p.IndentationHanging);
+            Assert.Equal(15.22, p.HangingIndent);
 
-            p.IndentationHanging = 0;
+            p.HangingIndent = 0;
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
-            Assert.Equal(0, p.IndentationHanging);
+            Assert.Equal(0, p.HangingIndent);
         }
 
         [Fact]
@@ -218,16 +218,16 @@ namespace DXPlus.Tests
         {
             var p = new ParagraphProperties();
 
-            p.IndentationHanging = 10;
+            p.HangingIndent = 10;
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
 
-            p.IndentationFirstLine = 12;
+            p.FirstLineIndent = 12;
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
-            Assert.Equal(0, p.IndentationHanging);
+            Assert.Equal(0, p.HangingIndent);
 
-            p.IndentationHanging = 15;
+            p.HangingIndent = 15;
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
-            Assert.Equal(0, p.IndentationFirstLine);
+            Assert.Equal(0, p.FirstLineIndent);
         }
 
         [Fact]
@@ -235,20 +235,20 @@ namespace DXPlus.Tests
         {
             var p = new ParagraphProperties();
 
-            p.IndentationHanging = 10;
-            p.IndentationLeft = 15;
-            p.IndentationRight = 20;
+            p.HangingIndent = 10;
+            p.LeftIndent = 15;
+            p.RightIndent = 20;
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
-            Assert.Equal(10, p.IndentationHanging);
-            Assert.Equal(15, p.IndentationLeft);
-            Assert.Equal(20, p.IndentationRight);
+            Assert.Equal(10, p.HangingIndent);
+            Assert.Equal(15, p.LeftIndent);
+            Assert.Equal(20, p.RightIndent);
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind[@left='300' and @right='400' and @hanging='200']"));
 
-            p.IndentationHanging = 0;
+            p.HangingIndent = 0;
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
-            p.IndentationLeft = 0;
+            p.LeftIndent = 0;
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
-            p.IndentationRight = 0;
+            p.RightIndent = 0;
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
         }
 
