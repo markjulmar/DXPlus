@@ -97,10 +97,7 @@ namespace DXPlus
                 fontFamily = value;
                 foreach (var item in Items)
                 {
-                    if (item.Paragraph.DefaultFormatting == null)
-                        item.Paragraph.DefaultFormatting = new Formatting {Font = value};
-                    else
-                        item.Paragraph.DefaultFormatting.Font = value;
+                    item.Paragraph.AddFormatting(new Formatting {Font = value});
                 }
             }
         }
@@ -116,10 +113,7 @@ namespace DXPlus
                 fontSize = value;
                 foreach (var item in Items)
                 {
-                    if (item.Paragraph.DefaultFormatting == null)
-                        item.Paragraph.DefaultFormatting = new Formatting { FontSize = value };
-                    else
-                        item.Paragraph.DefaultFormatting.FontSize = value;
+                    item.Paragraph.AddFormatting(new Formatting { FontSize = value });
                 }
             }
         }
@@ -203,9 +197,18 @@ namespace DXPlus
                 {
                     Document = Document,
                     Container = Container,
-                    DefaultFormatting = new Formatting { Font = Font, FontSize = FontSize }
                 }
             };
+
+            // Apply the font/size if it's set.
+            if (Font != null || FontSize != null)
+            {
+                var formatting = new Formatting();
+                if (Font != null) formatting.Font = Font;
+                if (FontSize != null) formatting.FontSize = FontSize;
+                newItem.Paragraph.AddFormatting(formatting);
+            }
+
             Container?.Xml.Add(newParagraphSection);
 
             items.Add(newItem);

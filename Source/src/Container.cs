@@ -40,7 +40,7 @@ namespace DXPlus
                     XElement nextNode = p.Xml.ElementsAfterSelf().FirstOrDefault();
                     if (nextNode?.Name.Equals(Namespace.Main + "tbl") == true)
                     {
-                        p.FollowingTable = new Table(Document, nextNode);
+                        p.Table = new Table(Document, nextNode);
                     }
                 }
                 return paragraphs;

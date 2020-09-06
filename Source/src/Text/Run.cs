@@ -45,10 +45,19 @@ namespace DXPlus
 
                 if (value != null)
                 {
-                    Xml.AddFirst(value.Xml);
+                    var xml = value.Xml;
+                    if (xml.Parent != null)
+                        xml = xml.Clone();
+                    Xml.AddFirst(xml);
                 }
             }
         }
+
+        /// <summary>
+        /// Add/Remove the specific formatting specified from this run.
+        /// </summary>
+        /// <param name="other">Formatting to apply</param>
+        public void AddFormatting(Formatting other) => Properties.Merge(other);
 
         /// <summary>
         /// True if this run has a text block. False if it's a linebreak, paragraph break, or empty.

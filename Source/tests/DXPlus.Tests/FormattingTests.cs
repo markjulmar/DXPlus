@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Globalization;
+using System.Linq;
 using System.Xml.XPath;
 using Xunit;
 
@@ -72,7 +73,7 @@ namespace DXPlus.Tests
             Assert.Equal(Color.Empty, rPr.Color);
 
             rPr.Color = Color.Red;
-            Assert.NotStrictEqual(Color.Red, rPr.Color);
+            Assert.Equal(Color.Red, rPr.Color);
             Assert.NotNull(rPr.Xml.RemoveNamespaces().XPathSelectElement("color[@val='FF0000']"));
 
             rPr.Color = Color.Empty;
@@ -422,7 +423,7 @@ namespace DXPlus.Tests
             Assert.Equal(Color.Empty, rPr.UnderlineColor);
 
             rPr.UnderlineColor = Color.Red;
-            Assert.NotStrictEqual(Color.Red, rPr.UnderlineColor);
+            Assert.Equal(Color.Red, rPr.UnderlineColor);
             Assert.Equal(UnderlineStyle.SingleLine, rPr.UnderlineStyle);
             Assert.NotNull(rPr.Xml.RemoveNamespaces().XPathSelectElement("u[@color='FF0000']"));
 
@@ -453,6 +454,55 @@ namespace DXPlus.Tests
             var f1 = new Formatting { Bold = true, IsHidden = true, Italic = true };
             var f2 = new Formatting { Bold = true, IsHidden = true };
             Assert.False(f1.Equals(f2));
+        }
+
+        [Fact]
+        public void MergeAddsNewValues()
+        {
+            var f1 = new Formatting {Bold = true};
+            var f2 = new Formatting {Italic = true};
+
+            f1.Merge(f2);
+            Assert.True(f1.Italic);
+            Assert.Equal(4, f1.Xml.Descendants().Count());
+            Assert.Single(f1.Xml.RemoveNamespaces().XPathSelectElements("b"));
+
+            f2 = new Formatting {Color = Color.Red, Effect = Effect.Emboss };
+            f1.Merge(f2);
+
+            Assert.Equal(Color.Red, f1.Color);
+            Assert.Equal(Effect.Emboss, f1.Effect);
+            Assert.Equal(6, f1.Xml.Descendants().Count());
+        }
+
+        [Fact]
+        public void MergeRemovesValues()
+        {
+            var f1 = new Formatting { Bold = true, Italic = true };
+            var f2 = new Formatting { Bold = false };
+
+            f1.Merge(f2);
+            Assert.True(f1.Italic);
+            Assert.False(f1.Bold);
+            Assert.Equal(2, f1.Xml.Descendants().Count());
+            Assert.Empty(f1.Xml.RemoveNamespaces().XPathSelectElements("b"));
+        }
+
+        [Fact]
+        public void MergeReplacesValues()
+        {
+            var f1 = new Formatting { CapsStyle = CapsStyle.Caps };
+            var f2 = new Formatting { CapsStyle = CapsStyle.SmallCaps};
+
+            f1.Merge(f2);
+            Assert.Equal(CapsStyle.SmallCaps, f1.CapsStyle);
+            Assert.Single(f1.Xml.Descendants());
+            Assert.Single(f1.Xml.RemoveNamespaces().XPathSelectElements("smallCaps"));
+
+            f2 = new Formatting { CapsStyle = CapsStyle.None };
+            f1.Merge(f2);
+            Assert.Equal(CapsStyle.None, f1.CapsStyle);
+            Assert.Empty(f1.Xml.Descendants());
         }
     }
 }

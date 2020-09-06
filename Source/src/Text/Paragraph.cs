@@ -147,6 +147,33 @@ namespace DXPlus
         }
 
         /// <summary>
+        /// Adds to the existing formatting for the paragraph and/or last run.
+        /// </summary>
+        /// <param name="formatting">Formatting to add</param>
+        /// <returns>Paragraph</returns>
+        public Paragraph AddFormatting(Formatting formatting)
+        {
+            if (formatting != null)
+            {
+                if (Runs.Any())
+                {
+                    var runs = Runs.Reverse().ToList();
+                    var run = runs.Find(r => r.HasText) ?? runs[0];
+                    run.Properties.Merge(formatting);
+                }
+                else
+                {
+                    if (DefaultFormatting == null)
+                        DefaultFormatting = formatting;
+                    else
+                        DefaultFormatting.Merge(formatting);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Returns a list of DocProperty elements in this document.
         /// </summary>
         public IEnumerable<DocProperty> DocumentProperties
@@ -207,9 +234,9 @@ namespace DXPlus
         }
 
         ///<summary>
-        /// Returns table following the paragraph. Null if the following element isn't table.
+        /// If a Table (tbl) follows this paragraph, then this property will have a reference to it.
         ///</summary>
-        public Table FollowingTable { get; internal set; }
+        public Table Table { get; internal set; }
 
         /// <summary>
         /// Set the left indentation in 1/20th pt for this Paragraph.
@@ -246,6 +273,35 @@ namespace DXPlus
         {
             get => GetDefaultFormatting().IndentationHanging;
             set => GetDefaultFormatting(true).IndentationHanging = value;
+        }
+
+        /// <summary>
+        /// Properties applied to this paragraph
+        /// </summary>
+        public ParagraphProperties Properties
+        {
+            get
+            {
+                var pPr = Xml.Element(Name.ParagraphProperties);
+                if (pPr == null)
+                {
+                    pPr = new XElement(Name.ParagraphProperties);
+                    Xml.AddFirst(pPr);
+                }
+                return new ParagraphProperties(pPr);
+            }
+            set
+            {
+                var pPr = Xml.Element(Name.ParagraphProperties);
+                pPr?.Remove();
+                if (value != null)
+                {
+                    var xml = value.Xml;
+                    if (xml.Parent != null)
+                        xml = xml.Clone();
+                    Xml.AddFirst(xml);
+                }
+            }
         }
 
         /// <summary>
@@ -1309,7 +1365,7 @@ namespace DXPlus
             {
                 this.ParentContainerType = container.GetType().Name switch
                 {
-                    nameof(Table) => ContainerType.Table,
+                    nameof(DXPlus.Table) => ContainerType.Table,
                     nameof(Section) => ContainerType.Section,
                     nameof(Cell) => ContainerType.Cell,
                     nameof(Header) => ContainerType.Header,
