@@ -76,12 +76,12 @@ namespace DXPlus
 
             var availableStyles = new (string headerStyle, StyleType applyTo, Func<string, string, XElement> template, string name)[]
             {
-                (headerStyle, StyleType.Paragraph, Resources.Resource.TocHeadingStyleBase, headerStyle),
-                ("TOC1", StyleType.Paragraph, Resources.Resource.TocElementStyleBase, "toc 1"),
-                ("TOC2", StyleType.Paragraph, Resources.Resource.TocElementStyleBase, "toc 2"),
-                ("TOC3", StyleType.Paragraph, Resources.Resource.TocElementStyleBase, "toc 3"),
-                ("TOC4", StyleType.Paragraph, Resources.Resource.TocElementStyleBase, "toc 4"),
-                ("Hyperlink", StyleType.Character, Resources.Resource.TocHyperLinkStyleBase, "")
+                (headerStyle, StyleType.Paragraph, Resource.TocHeadingStyleBase, headerStyle),
+                ("TOC1", StyleType.Paragraph, Resource.TocElementStyleBase, "toc 1"),
+                ("TOC2", StyleType.Paragraph, Resource.TocElementStyleBase, "toc 2"),
+                ("TOC3", StyleType.Paragraph, Resource.TocElementStyleBase, "toc 3"),
+                ("TOC4", StyleType.Paragraph, Resource.TocElementStyleBase, "toc 4"),
+                ("Hyperlink", StyleType.Character, Resource.TocHyperLinkStyleBase, "")
             };
 
             document.AddDefaultStyles();

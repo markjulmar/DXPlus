@@ -61,11 +61,6 @@ namespace DXPlus
         IReadOnlyDictionary<string, object> CustomProperties { get; }
 
         /// <summary>
-        /// Returns true if any editing restrictions are imposed on this document.
-        /// </summary>
-        bool IsProtected { get; }
-
-        /// <summary>
         /// Set a known core property value
         /// </summary>
         /// <param name="name">Property to set</param>
@@ -111,30 +106,6 @@ namespace DXPlus
         /// <param name="contentType">Content type - image/jpg</param>
         /// <returns>An Image file.</returns>
         Image AddImage(Stream imageStream, string contentType = "image/jpg");
-
-        /// <summary>
-        /// Add editing protection to this document.
-        /// </summary>
-        /// <param name="editRestrictions">The type of protection to add to this document.</param>
-        void AddProtection(EditRestrictions editRestrictions);
-
-        /// <summary>
-        /// Add edit restrictions with a password
-        /// </summary>
-        /// <param name="editRestrictions"></param>
-        /// <param name="password"></param>
-        void AddProtection(EditRestrictions editRestrictions, string password);
-
-        /// <summary>
-        /// Returns the type of editing protection imposed on this document.
-        /// </summary>
-        /// <returns>The type of editing protection imposed on this document.</returns>
-        EditRestrictions GetProtectionType();
-
-        /// <summary>
-        /// Remove editing protection from this document.
-        /// </summary>
-        void RemoveProtection();
 
         ///<summary>
         /// Applies document template to the document. Document template may include styles, headers, footers, properties, etc. as well as text content.

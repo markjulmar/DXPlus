@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace DXPlus
+﻿namespace DXPlus
 {
     /// <summary>
     /// Custom property value types supported.

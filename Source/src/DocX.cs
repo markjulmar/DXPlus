@@ -8,7 +8,6 @@ using System.IO;
 using System.IO.Packaging;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -215,8 +214,8 @@ namespace DXPlus
         public void SetPropertyValue(DocumentPropertyName name, string value)
         {
             ThrowIfObjectDisposed();
-            string localName = CorePropertyHelpers.SetValue(Package, name.GetEnumName(), value);
-            UpdateCorePropertyUsages(localName, value);
+            _ = CorePropertyHelpers.SetValue(Package, name.GetEnumName(), value);
+            UpdateComplexFieldUsage(name.ToString().ToUpper(), value);
         }
 
         /// <summary>
@@ -274,8 +273,10 @@ namespace DXPlus
         private void AddCustomProperty(string name, string type, object value)
         {
             ThrowIfObjectDisposed();
-            CustomPropertyHelpers.Add(Package, name, type, value);
-            //UpdateCustomPropertyUsages(name, value);
+            if (CustomPropertyHelpers.Add(Package, name, type, value))
+            {
+                UpdateComplexFieldUsage(name.ToUpperInvariant(), value?.ToString()??"");
+            }
         }
 
         /// <summary>
@@ -406,184 +407,6 @@ namespace DXPlus
             }
 
             return new Image(this, imageRelation);
-        }
-
-        /// <summary>
-        /// Returns true if any editing restrictions are imposed on this document.
-        /// </summary>
-        public bool IsProtected => settingsDoc.Descendants(Namespace.Main + "documentProtection").Any();
-
-        /// <summary>
-        /// Add editing protection to this document.
-        /// </summary>
-        /// <param name="editRestrictions">The type of protection to add to this document.</param>
-        public void AddProtection(EditRestrictions editRestrictions)
-        {
-            AddProtection(editRestrictions, null);
-        }
-
-        /// <summary>
-        /// Add edit restrictions with a password
-        /// http://blogs.msdn.com/b/vsod/archive/2010/04/05/how-to-set-the-editing-restrictions-in-word-using-open-xml-sdk-2-0.aspx
-        /// </summary>
-        /// <param name="editRestrictions"></param>
-        /// <param name="password"></param>
-        public void AddProtection(EditRestrictions editRestrictions, string password)
-        {
-            RemoveProtection();
-
-            if (editRestrictions != EditRestrictions.None)
-            {
-                var documentProtection = new XElement(Namespace.Main + "documentProtection",
-                    new XAttribute(Namespace.Main + "edit", editRestrictions.GetEnumName()),
-                    new XAttribute(Namespace.Main + "enforcement", 1));
-
-                if (!string.IsNullOrWhiteSpace(password))
-                {
-                    int[] initialCodeArray = { 0xE1F0, 0x1D0F, 0xCC9C, 0x84C0, 0x110C, 0x0E10, 0xF1CE, 0x313E, 0x1872, 0xE139, 0xD40F, 0x84F9, 0x280C, 0xA96A, 0x4EC3 };
-                    int[,] encryptionMatrix = new int[15, 7]
-                    {
-                         {0xAEFC, 0x4DD9, 0x9BB2, 0x2745, 0x4E8A, 0x9D14, 0x2A09}, /* char 1  */
-                         {0x7B61, 0xF6C2, 0xFDA5, 0xEB6B, 0xC6F7, 0x9DCF, 0x2BBF}, /* char 2  */
-                         {0x4563, 0x8AC6, 0x05AD, 0x0B5A, 0x16B4, 0x2D68, 0x5AD0}, /* char 3  */
-                         {0x0375, 0x06EA, 0x0DD4, 0x1BA8, 0x3750, 0x6EA0, 0xDD40}, /* char 4  */
-                         {0xD849, 0xA0B3, 0x5147, 0xA28E, 0x553D, 0xAA7A, 0x44D5}, /* char 5  */
-                         {0x6F45, 0xDE8A, 0xAD35, 0x4A4B, 0x9496, 0x390D, 0x721A}, /* char 6  */
-                         {0xEB23, 0xC667, 0x9CEF, 0x29FF, 0x53FE, 0xA7FC, 0x5FD9}, /* char 7  */
-                         {0x47D3, 0x8FA6, 0x0F6D, 0x1EDA, 0x3DB4, 0x7B68, 0xF6D0}, /* char 8  */
-                         {0xB861, 0x60E3, 0xC1C6, 0x93AD, 0x377B, 0x6EF6, 0xDDEC}, /* char 9  */
-                         {0x45A0, 0x8B40, 0x06A1, 0x0D42, 0x1A84, 0x3508, 0x6A10}, /* char 10 */
-                         {0xAA51, 0x4483, 0x8906, 0x022D, 0x045A, 0x08B4, 0x1168}, /* char 11 */
-                         {0x76B4, 0xED68, 0xCAF1, 0x85C3, 0x1BA7, 0x374E, 0x6E9C}, /* char 12 */
-                         {0x3730, 0x6E60, 0xDCC0, 0xA9A1, 0x4363, 0x86C6, 0x1DAD}, /* char 13 */
-                         {0x3331, 0x6662, 0xCCC4, 0x89A9, 0x0373, 0x06E6, 0x0DCC}, /* char 14 */
-                         {0x1021, 0x2042, 0x4084, 0x8108, 0x1231, 0x2462, 0x48C4}  /* char 15 */
-                    };
-
-                    // Generate the Salt
-                    byte[] arrSalt = new byte[16];
-                    RandomNumberGenerator rand = new RNGCryptoServiceProvider();
-                    rand.GetNonZeroBytes(arrSalt);
-
-                    const int maxPasswordLength = 15;
-                    byte[] generatedKey = new byte[4];
-
-                    if (!string.IsNullOrEmpty(password))
-                    {
-                        password = password.Substring(0, Math.Min(password.Length, maxPasswordLength));
-
-                        byte[] arrByteChars = new byte[password.Length];
-
-                        for (int intLoop = 0; intLoop < password.Length; intLoop++)
-                        {
-                            int intTemp = Convert.ToInt32(password[intLoop]);
-                            arrByteChars[intLoop] = Convert.ToByte(intTemp & 0x00FF);
-                            if (arrByteChars[intLoop] == 0)
-                            {
-                                arrByteChars[intLoop] = Convert.ToByte((intTemp & 0xFF00) >> 8);
-                            }
-                        }
-
-                        int intHighOrderWord = initialCodeArray[arrByteChars.Length - 1];
-
-                        for (int intLoop = 0; intLoop < arrByteChars.Length; intLoop++)
-                        {
-                            int tmp = maxPasswordLength - arrByteChars.Length + intLoop;
-                            for (int intBit = 0; intBit < 7; intBit++)
-                            {
-                                if ((arrByteChars[intLoop] & (0x0001 << intBit)) != 0)
-                                {
-                                    intHighOrderWord ^= encryptionMatrix[tmp, intBit];
-                                }
-                            }
-                        }
-
-                        int intLowOrderWord = 0;
-
-                        // For each character in the strPassword, going backwards
-                        for (int intLoopChar = arrByteChars.Length - 1; intLoopChar >= 0; intLoopChar--)
-                        {
-                            intLowOrderWord = (((intLowOrderWord >> 14) & 0x0001) | ((intLowOrderWord << 1) & 0x7FFF)) ^ arrByteChars[intLoopChar];
-                        }
-
-                        intLowOrderWord = (((intLowOrderWord >> 14) & 0x0001) | ((intLowOrderWord << 1) & 0x7FFF)) ^ arrByteChars.Length ^ 0xCE4B;
-
-                        // Combine the Low and High Order Word
-                        int intCombinedkey = (intHighOrderWord << 16) + intLowOrderWord;
-
-                        // The byte order of the result shall be reversed [Example: 0x64CEED7E becomes 7EEDCE64. end example],
-                        // and that value shall be hashed as defined by the attribute values.
-                        for (int intTemp = 0; intTemp < 4; intTemp++)
-                        {
-                            generatedKey[intTemp] = Convert.ToByte(((uint)(intCombinedkey & (0x000000FF << (intTemp * 8)))) >> (intTemp * 8));
-                        }
-                    }
-
-                    StringBuilder sb = new StringBuilder();
-                    for (int intTemp = 0; intTemp < 4; intTemp++)
-                    {
-                        sb.Append(Convert.ToString(generatedKey[intTemp], 16));
-                    }
-                    generatedKey = Encoding.Unicode.GetBytes(sb.ToString().ToUpper());
-
-                    byte[] tmpArray1 = generatedKey;
-                    byte[] tmpArray2 = arrSalt;
-                    byte[] tempKey = new byte[tmpArray1.Length + tmpArray2.Length];
-                    Buffer.BlockCopy(tmpArray2, 0, tempKey, 0, tmpArray2.Length);
-                    Buffer.BlockCopy(tmpArray1, 0, tempKey, tmpArray2.Length, tmpArray1.Length);
-                    generatedKey = tempKey;
-
-                    const int iterations = 100000;
-                    HashAlgorithm sha1 = new SHA1Managed();
-                    generatedKey = sha1.ComputeHash(generatedKey);
-                    byte[] iterator = new byte[4];
-                    for (int intTmp = 0; intTmp < iterations; intTmp++)
-                    {
-                        iterator[0] = Convert.ToByte((intTmp & 0x000000FF) >> 0);
-                        iterator[1] = Convert.ToByte((intTmp & 0x0000FF00) >> 8);
-                        iterator[2] = Convert.ToByte((intTmp & 0x00FF0000) >> 16);
-                        iterator[3] = Convert.ToByte((intTmp & 0xFF000000) >> 24);
-
-                        generatedKey = HelperFunctions.ConcatByteArrays(iterator, generatedKey);
-                        generatedKey = sha1.ComputeHash(generatedKey);
-                    }
-
-                    documentProtection.Add(new XAttribute(Namespace.Main + "cryptProviderType", "rsaFull"));
-                    documentProtection.Add(new XAttribute(Namespace.Main + "cryptAlgorithmClass", "hash"));
-                    documentProtection.Add(new XAttribute(Namespace.Main + "cryptAlgorithmType", "typeAny"));
-                    documentProtection.Add(new XAttribute(Namespace.Main + "cryptAlgorithmSid", "4"));          // SHA1
-                    documentProtection.Add(new XAttribute(Namespace.Main + "cryptSpinCount", iterations.ToString()));
-                    documentProtection.Add(new XAttribute(Namespace.Main + "hash", Convert.ToBase64String(generatedKey)));
-                    documentProtection.Add(new XAttribute(Namespace.Main + "salt", Convert.ToBase64String(arrSalt)));
-                }
-
-                settingsDoc.Root!.AddFirst(documentProtection);
-            }
-        }
-
-        /// <summary>
-        /// Returns the type of editing protection imposed on this document.
-        /// </summary>
-        /// <returns>The type of editing protection imposed on this document.</returns>
-        public EditRestrictions GetProtectionType()
-        {
-            return IsProtected
-                   && settingsDoc.Descendants(Namespace.Main + "documentProtection").First()
-                       .Attribute(Namespace.Main + "edit").TryGetEnumValue<EditRestrictions>(out var result)
-                ? result
-                : EditRestrictions.None;
-        }
-
-        /// <summary>
-        /// Remove editing protection from this document.
-        /// </summary>
-        public void RemoveProtection()
-        {
-            ThrowIfObjectDisposed();
-
-            settingsDoc
-                .Descendants(Namespace.Main + "documentProtection")
-                .Remove();
         }
 
         ///<summary>
@@ -1109,180 +932,53 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Update all usages of a given core property
+        /// Update all usages of a complex field.
         /// </summary>
         /// <param name="name">Name of the core property</param>
         /// <param name="value">Value</param>
-        internal void UpdateCorePropertyUsages(string name, string value)
+        private void UpdateComplexFieldUsage(string name, string value)
         {
             ThrowIfObjectDisposed();
 
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(name));
 
-            string matchPattern = $@"(DOCPROPERTY)?{name}\\\*MERGEFORMAT".ToLower();
+            string matchPattern = $@"{name.ToUpperInvariant()} \\\* MERGEFORMAT";
 
-            foreach (var e in mainDoc.Descendants(Name.SimpleField))
-            {
-                string attrValue = e.AttributeValue(Namespace.Main + "instr")
-                    .Replace(" ", string.Empty).Trim()
-                    .ToLower();
+            // Update in all sections.
+            var documents = new[] {mainDoc.Root}
+                .Union(Sections.SelectMany(s => s.Headers).Select(h => h.Xml))
+                .Union(Sections.SelectMany(s => s.Footers).Select(f => f.Xml));
 
-                if (Regex.IsMatch(attrValue, matchPattern))
-                {
-                    var firstRun = e.Element(Name.Run);
-                    var rPr = firstRun?.GetRunProps(false);
-
-                    e.RemoveNodes();
-
-                    if (firstRun != null)
-                    {
-                        e.Add(new XElement(firstRun.Name,
-                                firstRun.Attributes(),
-                                rPr,
-                                new XElement(Name.Text, value).PreserveSpace()
-                            )
-                        );
-                    }
-                }
-
-                void ProcessHeaderFooterParts(IEnumerable<PackagePart> packageParts)
-                {
-                    foreach (var pp in packageParts)
-                    {
-                        var section = pp.Load();
-
-                        foreach (var e in section.Descendants(Name.SimpleField))
-                        {
-                            string attrValue = e.AttributeValue(Namespace.Main + "instr").Replace(" ", string.Empty).Trim().ToLower();
-                            if (Regex.IsMatch(attrValue, matchPattern))
-                            {
-                                var firstRun = e.Element(Name.Run);
-                                e.RemoveNodes();
-                                if (firstRun != null)
-                                {
-                                    e.Add(new XElement(firstRun.Name,
-                                            firstRun.Attributes(),
-                                            firstRun.GetRunProps(false),
-                                            new XElement(Name.Text, value).PreserveSpace()
-                                        )
-                                    );
-                                }
-                            }
-                        }
-
-                        pp.Save(section);
-                    }
-                }
-
-                ProcessHeaderFooterParts(Package.GetParts()
-                    .Where(headerPart => Regex.IsMatch(headerPart.Uri.ToString(), @"/word/header\d?.xml")));
-
-                ProcessHeaderFooterParts(Package.GetParts()
-                    .Where(footerPart => (Regex.IsMatch(footerPart.Uri.ToString(), @"/word/footer\d?.xml"))));
-            }
-        }
-
-        /// <summary>
-        /// Update the custom properties inside the document
-        /// </summary>
-        internal void UpdateCustomPropertyUsages(string name, object value)
-        {
-            ThrowIfObjectDisposed();
-
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            var documents = new List<XElement> { mainDoc.Root };
-            string textValue = value?.ToString() ?? string.Empty;
-
-            Sections.ToList().ForEach(s =>
-            {
-                if (s.Headers.First.Exists)
-                    documents.Add(s.Headers.First.Xml);
-                if (s.Headers.Default.Exists)
-                    documents.Add(s.Headers.Default.Xml);
-                if (s.Headers.Even.Exists)
-                    documents.Add(s.Headers.Even.Xml);
-                if (s.Footers.First.Exists)
-                    documents.Add(s.Footers.First.Xml);
-                if (s.Footers.Default.Exists)
-                    documents.Add(s.Footers.Default.Xml);
-                if (s.Footers.Even.Exists)
-                    documents.Add(s.Footers.Even.Xml);
-            });
-
-            string matchCustomPropertyName = name.Contains(' ')
-                ? "\"" + name + "\""
-                : name;
-
-            string propertyMatchValue = $@"DOCPROPERTY  {matchCustomPropertyName}  \* MERGEFORMAT".Replace(" ", string.Empty);
-
-            // Process each document in the list.
             foreach (var doc in documents)
             {
-                foreach (var e in doc.Descendants(Namespace.Main + "instrText"))
+                // Look for all the instrText fields matching this name.
+                foreach (var e in mainDoc.Descendants(Namespace.Main + "instrText")
+                            .Where(e => Regex.IsMatch(e.Value.ToUpperInvariant(), matchPattern)))
                 {
-                    string attrValue = e.Value.Replace(" ", string.Empty).Trim();
+                    // Back up to <w:r> parent
+                    var node = e.Parent;
+                    if (node?.Name != Name.Run)
+                        continue;
 
-                    if (attrValue.Equals(propertyMatchValue, StringComparison.CurrentCultureIgnoreCase))
+                    var paragraph = node.Parent;
+                    if (paragraph == null)
+                        continue;
+                    
+                    // Walk down to the next w:r/w:t node.
+                    while (node?.Parent == paragraph)
                     {
-                        var nextNode = e.Parent?.NextNode;
-                        bool found = false;
-                        while (nextNode != null)
-                        {
-                            if (nextNode.NodeType == XmlNodeType.Element)
-                            {
-                                var ele = (XElement)nextNode;
-                                var match = ele.Descendants(Name.Text).ToList();
-                                if (match.Count > 0)
-                                {
-                                    if (!found)
-                                    {
-                                        match[0].Value = textValue;
-                                        found = true;
-                                    }
-                                    else
-                                    {
-                                        ele.RemoveNodes();
-                                    }
-                                }
-                                else
-                                {
-                                    match = ele.Descendants(Namespace.Main + "fldChar").ToList();
-                                    if (match.Count > 0)
-                                    {
-                                        var endMatch = match[0].Attribute(Namespace.Main + "fldCharType");
-                                        if (endMatch?.Value == "end")
-                                            break;
-                                    }
-                                }
-                            }
-                            nextNode = nextNode.NextNode;
-                        }
+                        if (node.Element(Name.Text) != null)
+                            break;
+                        node = node.NextNode as XElement;
                     }
-                }
 
-                foreach (var e in doc.Descendants(Name.SimpleField))
-                {
-                    string attrValue = e.Attribute(Namespace.Main + "instr").Value.Replace(" ", string.Empty).Trim();
+                    // Didn't find it.
+                    if (node?.Parent != paragraph)
+                        continue;
 
-                    if (attrValue.Equals(propertyMatchValue, StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        var firstRun = e.Element(Name.Run);
-                        var firstText = firstRun.Element(Name.Text);
-                        var rPr = firstText.GetRunProps(false);
-
-                        // Delete everything and insert updated text value
-                        e.RemoveNodes();
-
-                        e.Add(new XElement(firstRun.Name,
-                                firstRun.Attributes(),
-                                rPr,
-                                new XElement(Name.Text, textValue).PreserveSpace()
-                            )
-                        );
-                    }
+                    // Replace the text.
+                    node.SetElementValue(Name.Text, value);
                 }
             }
         }
@@ -1304,7 +1000,7 @@ namespace DXPlus
         /// Get a document ID to use with inserted XML. This should always be unique within the document.
         /// </summary>
         /// <returns>New document id</returns>
-        internal long GetNextDocumentId()
+        private long GetNextDocumentId()
         {
             if (nextDocumentId == 0)
                 nextDocumentId = HelperFunctions.FindLastUsedDocId(mainDoc);

@@ -49,12 +49,5 @@ namespace DXPlus
                 Xml.AddFirst(e);
             }
         }
-
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        public Header()
-        {
-        }
     }
 }

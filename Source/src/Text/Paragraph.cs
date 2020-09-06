@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -593,13 +592,15 @@ namespace DXPlus
         /// </summary>
         /// <param name="name">Property name</param>
         /// <param name="formatting">The formatting to use for this text.</param>
-        public DocProperty AddDocumentPropertyField(DocumentPropertyName name, Formatting formatting = null)
+        public Paragraph AddDocumentPropertyField(DocumentPropertyName name, Formatting formatting = null)
         {
             if (Document == null)
                 throw new InvalidOperationException("Cannot add document properties without a document owner.");
 
             Document.DocumentProperties.TryGetValue(name, out var propertyValue);
-            return AddComplexField(name.ToString().ToUpperInvariant(), propertyValue, formatting);
+            _ = AddComplexField(name.ToString().ToUpperInvariant(), propertyValue, formatting);
+
+            return this;
         }
 
         /// <summary>
@@ -607,7 +608,7 @@ namespace DXPlus
         /// </summary>
         /// <param name="name">Property name</param>
         /// <param name="formatting">The formatting to use for this text.</param>
-        public DocProperty AddCustomPropertyField(string name, Formatting formatting = null)
+        public Paragraph AddCustomPropertyField(string name, Formatting formatting = null)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(name));
@@ -615,7 +616,9 @@ namespace DXPlus
                 throw new InvalidOperationException("Cannot add document properties without a document owner.");
 
             Document.CustomProperties.TryGetValue(name, out var propertyValue);
-            return AddComplexField(name, propertyValue?.ToString(), formatting);
+            _ = AddComplexField(name, propertyValue?.ToString(), formatting);
+
+            return this;
         }
 
         /// <summary>
@@ -652,7 +655,9 @@ namespace DXPlus
 
             var value = new XElement(Name.Run,
                 formatting.Xml,
-                new XElement(Name.Text, fieldValue ?? "")
+                new XElement(Name.Text,
+                    new XAttribute(XNamespace.Xml + "space", "preserve"),
+                    fieldValue ?? "")
             );
 
             // End marker

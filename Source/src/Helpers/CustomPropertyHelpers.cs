@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
@@ -28,7 +27,7 @@ namespace DXPlus.Helpers
             return new Dictionary<string, object>();
         }
 
-        internal static object CreateObject(string type, string value)
+        private static object CreateObject(string type, string value)
         {
             switch (type)
             {
@@ -46,13 +45,12 @@ namespace DXPlus.Helpers
                 {
                     return DateTime.TryParse(value, out var result) ? result : DateTime.MinValue;
                 }
-                case CustomProperty.LPWSTR:
                 default:
-                    return value?.ToString() ?? "";
+                    return value ?? "";
             }
         }
 
-        internal static void Add(Package package, string name, string type, object value)
+        internal static bool Add(Package package, string name, string type, object value)
         {
             if (package == null)
                 throw new ObjectDisposedException("Document has been disposed.");
@@ -88,10 +86,12 @@ namespace DXPlus.Helpers
             }
 
             // Check if a custom property already exists with this name - if so, remove it.
-            customPropDoc.LocalNameDescendants("property")
+            var existingProperty = customPropDoc.LocalNameDescendants("property")
                     .SingleOrDefault(p => p.AttributeValue(Name.NameId)
-                    .Equals(name, StringComparison.InvariantCultureIgnoreCase))
-                    ?.Remove();
+                    .Equals(name, StringComparison.InvariantCultureIgnoreCase));
+
+            bool exists = existingProperty != null;
+            existingProperty?.Remove();
 
             // Get the next property id in the document
             var pid = customPropDoc.LocalNameDescendants("property")
@@ -111,6 +111,8 @@ namespace DXPlus.Helpers
             );
 
             customPropertiesPart.Save(customPropDoc);
+
+            return exists;
         }
     }
 }
