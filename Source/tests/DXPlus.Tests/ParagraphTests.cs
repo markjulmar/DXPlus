@@ -68,7 +68,7 @@ namespace DXPlus.Tests
         public void CheckHeading1()
         {
             using var doc = Document.Create(Filename);
-            doc.AddParagraph("This is a test.").Heading(HeadingType.Heading1);
+            doc.AddParagraph("This is a test.").Style(HeadingType.Heading1);
             Assert.Equal("Heading1", doc.Paragraphs[0].Properties.StyleName);
         }
 

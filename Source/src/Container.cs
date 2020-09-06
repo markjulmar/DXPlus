@@ -328,6 +328,11 @@ namespace DXPlus
             return OnAddParagraph(paragraph);
         }
 
+        /// <summary>
+        /// This method is called when a new paragraph is added to this container.
+        /// </summary>
+        /// <param name="paragraph">New paragraph</param>
+        /// <returns>Added paragraph</returns>
         private Paragraph OnAddParagraph(Paragraph paragraph)
         {
             paragraph.SetStartIndex(Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);

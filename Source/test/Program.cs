@@ -23,7 +23,7 @@ namespace TestDXPlus
             // Add a title.
             document.AddParagraph("Welcome to the Sample Document")
                 .WithProperties(new ParagraphProperties { Alignment = Alignment.Center })
-                .Heading(HeadingType.Title)
+                .Style(HeadingType.Title)
                 .AddPageBreak();
 
             document.InsertDefaultTableOfContents();
@@ -49,7 +49,7 @@ namespace TestDXPlus
 
         private static void AddFields(IDocument document)
         {
-            document.AddParagraph("Fields").Heading(HeadingType.Heading1);
+            document.AddParagraph("Fields").Style(HeadingType.Heading1);
 
             document.SetPropertyValue(DocumentPropertyName.Creator, "John Smith");
             document.SetPropertyValue(DocumentPropertyName.Title, "Test document created by C#");
@@ -87,12 +87,12 @@ namespace TestDXPlus
 
         private static void ShowAllHeaderStyles(IDocument document)
         {
-            document.AddParagraph("All the header styles").Heading(HeadingType.Heading1);
+            document.AddParagraph("All the header styles").Style(HeadingType.Heading1);
 
             foreach (var heading in (HeadingType[]) Enum.GetValues(typeof(HeadingType)))
             {
                 document.AddParagraph($"{heading} - The quick brown fox jumps over the lazy dog")
-                    .Heading(heading);
+                    .Style(heading);
             }
 
             document.AddPageBreak();
@@ -100,9 +100,9 @@ namespace TestDXPlus
 
         private static void AddTables(IDocument document)
         {
-            document.AddParagraph("Tables").Heading(HeadingType.Heading1);
+            document.AddParagraph("Tables").Style(HeadingType.Heading1);
 
-            document.AddParagraph("Basic Table").Heading(HeadingType.Heading2).AppendLine();
+            document.AddParagraph("Basic Table").Style(HeadingType.Heading2).AppendLine();
 
             var table = new Table(new[,] {{"Title", "The wonderful world of Disney"}, {"# visitors", "200,000,000 per year."}})
             {
@@ -113,7 +113,7 @@ namespace TestDXPlus
             document.AddParagraph()
                     .AddTable(table);
 
-            document.AddParagraph("2x2 table inserted into middle of paragraph").Heading(HeadingType.Heading2).AppendLine(); ;
+            document.AddParagraph("2x2 table inserted into middle of paragraph").Style(HeadingType.Heading2).AppendLine(); ;
             table = new Table(2, 2) {Design = TableDesign.MediumGrid1Accent1, Alignment = Alignment.Center};
 
             table.Rows[0].Cells[0].Paragraphs[0].Append("One");
@@ -129,7 +129,7 @@ namespace TestDXPlus
 
             AddLargeTable(document);
 
-            document.AddParagraph("Table with merged/centered cells").Heading(HeadingType.Heading2);
+            document.AddParagraph("Table with merged/centered cells").Style(HeadingType.Heading2);
 
             table = new Table(new[,] {{"1", "2", "3"}, {"4", "5", "6"}, {"7", "8", "9"}, {"10", "11", "12"},});
 
@@ -137,7 +137,7 @@ namespace TestDXPlus
             table.Rows[1].Cells.SelectMany(c => c.Paragraphs).ToList().ForEach(p => p.WithProperties(new ParagraphProperties { Alignment = Alignment.Center }));
             document.AddTable(table);
 
-            document.AddParagraph("Table with merged/centered rows").Heading(HeadingType.Heading2);
+            document.AddParagraph("Table with merged/centered rows").Style(HeadingType.Heading2);
 
             table = new Table(new[,]
             {
@@ -150,7 +150,7 @@ namespace TestDXPlus
             document.AddTable(table);
             table.MergeCellsInColumn(1, 0, table.Rows.Count);
 
-            document.AddParagraph("Empty 2x1 table").Heading(HeadingType.Heading2);
+            document.AddParagraph("Empty 2x1 table").Style(HeadingType.Heading2);
             document.AddTable(new Table(2, 1));
 
             document.AddPageBreak();
@@ -158,7 +158,7 @@ namespace TestDXPlus
 
         private static void AddCharts(IDocument document)
         {
-            document.AddParagraph("Charts").Heading(HeadingType.Heading1);
+            document.AddParagraph("Charts").Style(HeadingType.Heading1);
 
             BarChart(document);
             PieChart(document);
@@ -170,7 +170,7 @@ namespace TestDXPlus
 
         private static void AddBookmarks(IDocument document)
         {
-            document.AddParagraph("Bookmarks").Heading(HeadingType.Heading1);
+            document.AddParagraph("Bookmarks").Style(HeadingType.Heading1);
             var p = document.AddParagraph("This is a paragraph which contains a ")
                 .AppendBookmark("secondBookmark").Append("bookmark");
 
@@ -181,10 +181,10 @@ namespace TestDXPlus
 
         private static void AddEquations(IDocument document)
         {
-            document.AddParagraph("Equations").Heading(HeadingType.Heading1);
+            document.AddParagraph("Equations").Style(HeadingType.Heading1);
             document.AddEquation("x = y+z");
 
-            document.AddParagraph("Blue Larger Equation").Heading(HeadingType.Heading2);
+            document.AddParagraph("Blue Larger Equation").Style(HeadingType.Heading2);
             document.AddEquation("x = (y+z)/t").WithFormatting(new Formatting {FontSize = 18, Color = Color.Blue});
 
             document.AddPageBreak();
@@ -193,9 +193,9 @@ namespace TestDXPlus
         private static void AddLists(IDocument document)
         {
             // Add two lists.
-            document.AddParagraph("Lists").Heading(HeadingType.Heading1);
+            document.AddParagraph("Lists").Style(HeadingType.Heading1);
 
-            document.AddParagraph("Numbered List").Heading(HeadingType.Heading2);
+            document.AddParagraph("Numbered List").Style(HeadingType.Heading2);
             List numberedList = new List(NumberingFormat.Numbered)
                 .AddItem("First item.")
                 .AddItem("First sub list item", level: 1)
@@ -205,7 +205,7 @@ namespace TestDXPlus
                 .AddItem("Second nested item.", level: 1);
             document.AddList(numberedList);
 
-            document.AddParagraph("Bullet List").Heading(HeadingType.Heading2);
+            document.AddParagraph("Bullet List").Style(HeadingType.Heading2);
             List bulletedList = new List(NumberingFormat.Bulleted)
                 .AddItem("First item.")
                 .AddItem("Second item")
@@ -214,7 +214,7 @@ namespace TestDXPlus
                 .AddItem("Third item");
             document.AddList(bulletedList);
 
-            document.AddParagraph("Lists with fonts").Heading(HeadingType.Heading2);
+            document.AddParagraph("Lists with fonts").Style(HeadingType.Heading2);
             foreach (var fontFamily in FontFamily.Families.Take(5))
             {
                 const double fontSize = 15;
@@ -231,7 +231,7 @@ namespace TestDXPlus
         private static void AddHyperlinks(IDocument document)
         {
             // Add two hyperlinks to the document.
-            document.AddParagraph("Hyperlinks").Heading(HeadingType.Heading1);
+            document.AddParagraph("Hyperlinks").Style(HeadingType.Heading1);
 
             var p = document.AddParagraph("This line contains a ")
                 .Append(new Hyperlink("link", new Uri("http://www.microsoft.com")))
@@ -245,7 +245,7 @@ namespace TestDXPlus
 
         private static void AddIndentedParagraph(IDocument document)
         {
-            document.AddParagraph("Indented text").Heading(HeadingType.Heading1);
+            document.AddParagraph("Indented text").Style(HeadingType.Heading1);
 
             document.AddParagraph("This paragraph has the first sentence indented. "
                                   + "It shows how you can use the Intent property to control how paragraphs are lined up.")
@@ -258,7 +258,7 @@ namespace TestDXPlus
 
         private static void AddPicture(IDocument document)
         {
-            document.AddParagraph("Pictures!").Heading(HeadingType.Heading1);
+            document.AddParagraph("Pictures!").Style(HeadingType.Heading1);
 
             // Add an image into the document.
             var image = document.AddImage(Path.Combine("..", "images", "comic.jpg"));
@@ -271,7 +271,7 @@ namespace TestDXPlus
                 .SetName("Bat-Man!");
 
             // Insert a new Paragraph into the document.
-            document.AddParagraph("Pictures").Heading(HeadingType.Heading2);
+            document.AddParagraph("Pictures").Style(HeadingType.Heading2);
             document.AddParagraph()
                 .AppendLine("Just below there should be a picture rotated 10 degrees.")
                 .Append(picture)
@@ -287,9 +287,9 @@ namespace TestDXPlus
 
         private static void AddBasicText(IDocument document)
         {
-            document.AddParagraph("Basic text").Heading(HeadingType.Heading1);
+            document.AddParagraph("Basic text").Style(HeadingType.Heading1);
 
-            document.AddParagraph("Hello World Text").Heading(HeadingType.Heading2);
+            document.AddParagraph("Hello World Text").Style(HeadingType.Heading2);
 
             // Start with some hello world text.
             document.AddParagraph("Hello, World! This is the first paragraph.")
@@ -303,7 +303,7 @@ namespace TestDXPlus
 
             document.AddParagraph();
 
-            document.AddParagraph("Styled Text").Heading(HeadingType.Heading2);
+            document.AddParagraph("Styled Text").Style(HeadingType.Heading2);
 
             document.AddParagraph()
                 .Append("I am ")
@@ -326,7 +326,7 @@ namespace TestDXPlus
             document.AddParagraph();
 
             // Try some highlighted words
-            document.AddParagraph("Highlighted text").Heading(HeadingType.Heading2);
+            document.AddParagraph("Highlighted text").Style(HeadingType.Heading2);
             document.AddParagraph("First line. ")
                 .Append("This sentence is highlighted").WithFormatting(new Formatting { Highlight = Highlight.Yellow })
                 .Append(", but this is ")
@@ -338,7 +338,7 @@ namespace TestDXPlus
 
         private static void BarChart(IDocument document)
         {
-            document.AddParagraph("Bar Chart").Heading(HeadingType.Heading2);
+            document.AddParagraph("Bar Chart").Style(HeadingType.Heading2);
 
             // Create chart.
             var chart = new BarChart
@@ -369,7 +369,7 @@ namespace TestDXPlus
 
         private static void Chart3D(IDocument document)
         {
-            document.AddParagraph("3D Chart").Heading(HeadingType.Heading2);
+            document.AddParagraph("3D Chart").Style(HeadingType.Heading2);
 
             var company1 = ChartData.CreateCompanyList1();
             var series = new Series("Microsoft") {Color = Color.GreenYellow};
@@ -384,7 +384,7 @@ namespace TestDXPlus
 
         private static void AddLargeTable(IDocument document)
         {
-            document.AddParagraph("Large 10x10 Table across whole page width").Heading(HeadingType.Heading2);
+            document.AddParagraph("Large 10x10 Table across whole page width").Style(HeadingType.Heading2);
 
             var section = document.Sections.Last();
             Table table = document.AddTable(10,10);
@@ -406,7 +406,7 @@ namespace TestDXPlus
 
         private static void LineChart(IDocument document)
         {
-            document.AddParagraph("Line Chart").Heading(HeadingType.Heading2);
+            document.AddParagraph("Line Chart").Style(HeadingType.Heading2);
 
             // Create chart.
             LineChart c = new LineChart();
@@ -434,7 +434,7 @@ namespace TestDXPlus
 
         private static void PieChart(IDocument document)
         {
-            document.AddParagraph("Pie Chart").Heading(HeadingType.Heading2);
+            document.AddParagraph("Pie Chart").Style(HeadingType.Heading2);
 
             // Create chart.
             PieChart c = new PieChart();

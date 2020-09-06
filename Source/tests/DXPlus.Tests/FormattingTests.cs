@@ -73,7 +73,7 @@ namespace DXPlus.Tests
             Assert.Equal(Color.Empty, rPr.Color);
 
             rPr.Color = Color.Red;
-            Assert.Equal(Color.Red, rPr.Color);
+            Assert.NotStrictEqual(Color.Red, rPr.Color);
             Assert.NotNull(rPr.Xml.RemoveNamespaces().XPathSelectElement("color[@val='FF0000']"));
 
             rPr.Color = Color.Empty;
@@ -423,7 +423,7 @@ namespace DXPlus.Tests
             Assert.Equal(Color.Empty, rPr.UnderlineColor);
 
             rPr.UnderlineColor = Color.Red;
-            Assert.Equal(Color.Red, rPr.UnderlineColor);
+            Assert.NotStrictEqual(Color.Red, rPr.UnderlineColor);
             Assert.Equal(UnderlineStyle.SingleLine, rPr.UnderlineStyle);
             Assert.NotNull(rPr.Xml.RemoveNamespaces().XPathSelectElement("u[@color='FF0000']"));
 
@@ -470,7 +470,7 @@ namespace DXPlus.Tests
             f2 = new Formatting {Color = Color.Red, Effect = Effect.Emboss };
             f1.Merge(f2);
 
-            Assert.Equal(Color.Red, f1.Color);
+            Assert.NotStrictEqual(Color.Red, f1.Color);
             Assert.Equal(Effect.Emboss, f1.Effect);
             Assert.Equal(6, f1.Xml.Descendants().Count());
         }

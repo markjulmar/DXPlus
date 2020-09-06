@@ -46,22 +46,6 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Make this paragraph a Heading type by setting the style name
-        /// </summary>
-        /// <param name="paragraph"></param>
-        /// <param name="headingType"></param>
-        public static Paragraph Heading(this Paragraph paragraph, HeadingType headingType)
-        {
-            if (paragraph == null)
-            {
-                throw new ArgumentNullException(nameof(paragraph));
-            }
-
-            paragraph.Properties.StyleName = headingType.GetEnumName();
-            return paragraph;
-        }
-
-        /// <summary>
         /// Removes characters from a paragraph at a starting index. All
         /// text following that index is removed from the paragraph.
         /// </summary>
@@ -78,7 +62,14 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Fluent method to set StyleName property
+        /// Fluent method to set the style from a defined list.
+        /// </summary>
+        /// <param name="paragraph"></param>
+        /// <param name="headingType"></param>
+        public static Paragraph Style(this Paragraph paragraph, HeadingType headingType) => Style(paragraph, headingType.GetEnumName());
+
+        /// <summary>
+        /// Fluent method to set style to a custom name.
         /// </summary>
         /// <param name="paragraph"></param>
         /// <param name="styleName">Stylename</param>
