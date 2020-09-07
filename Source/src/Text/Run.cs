@@ -28,6 +28,11 @@ namespace DXPlus
         public int EndIndex { get; }
 
         /// <summary>
+        /// True if this run has a text block. False if it's a linebreak, paragraph break, or empty.
+        /// </summary>
+        public bool HasText => Xml.Element(Name.Text) != null;
+        
+        /// <summary>
         /// The raw text value of this run
         /// </summary>
         public string Text { get; }
@@ -60,11 +65,6 @@ namespace DXPlus
         public void AddFormatting(Formatting other) => Properties.Merge(other);
 
         /// <summary>
-        /// True if this run has a text block. False if it's a linebreak, paragraph break, or empty.
-        /// </summary>
-        public bool HasText => Xml.Element(Name.Text) != null;
-
-        /// <summary>
         /// Constructor for a run of text
         /// </summary>
         /// <param name="xml"></param>
@@ -94,17 +94,21 @@ namespace DXPlus
         /// <param name="index">Index to split this run at</param>
         /// <param name="editType">Type of editing being performed</param>
         /// <returns></returns>
-        internal XElement[] SplitRun(int index, EditType editType = EditType.Insert)
+        internal XElement[] SplitAtIndex(int index, EditType editType = EditType.Insert)
         {
+            // Find the (w:t) we need to split based on the index.
             index -= StartIndex;
+            var (textXml, startIndex) = FindTextElementByIndex(Xml, index);
 
-            TextBlock text = FindTextAffectedByEdit(editType, index);
-            var splitText = text.Split(index);
+            // Split the block.
+            // Returns [textElement, leftSide, rightSide]
+            var splitText = SplitTextElementAtIndex(index, textXml, startIndex);
+            
             var splitLeft = new XElement(Xml.Name,
                                         Xml.Attributes(),
                                         Xml.Element(Name.RunProperties),
-                                        text.Xml.ElementsBeforeSelf().Where(n => n.Name != Name.RunProperties),
-                                        splitText[0]);
+                                        splitText[0].ElementsBeforeSelf().Where(n => n.Name != Name.RunProperties),
+                                        splitText[1]);
 
             if (Paragraph.GetElementTextLength(splitLeft) == 0)
             {
@@ -114,8 +118,8 @@ namespace DXPlus
             var splitRight = new XElement(Xml.Name,
                                         Xml.Attributes(),
                                         Xml.Element(Name.RunProperties),
-                                        splitText[1],
-                                        text.Xml.ElementsAfterSelf().Where(n => n.Name != Name.RunProperties));
+                                        splitText[2],
+                                        splitText[0].ElementsAfterSelf().Where(n => n.Name != Name.RunProperties));
 
             if (Paragraph.GetElementTextLength(splitRight) == 0)
             {
@@ -126,22 +130,60 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Walk the run and identify the first (w:t) text element affected by an insert or delete
+        /// Split the text block at the given index
         /// </summary>
-        /// <param name="type">Type of edit being performed</param>
-        /// <param name="index">Position of edit</param>
-        /// <returns></returns>
-        private TextBlock FindTextAffectedByEdit(EditType type, int index)
+        /// <param name="index">Index to split at in parent Run</param>
+        /// <param name="xml">Text block to split</param>
+        /// <param name="startIndex">Start index of the text block in parent Run</param>
+        /// <returns>Array with left/right XElement values</returns>
+        private static XElement[] SplitTextElementAtIndex(int index, XElement xml, int startIndex)
         {
-            // Make sure we are looking within an acceptable index range.
-            if (index < 0 || index > HelperFunctions.GetText(Xml).Length)
+            if (xml == null)
+                throw new ArgumentNullException(nameof(xml));
+
+            int endIndex = startIndex + HelperFunctions.GetSize(xml);
+            if (index < startIndex || index > endIndex)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            // Start the recursive search
-            int count = 0; TextBlock locatedBlock = null;
-            RecursiveSearchForTextByIndex(Xml, type, index, ref count, ref locatedBlock);
+            XElement splitLeft = null, splitRight = null;
 
-            return locatedBlock;
+            if (xml.Name.LocalName == "t" || xml.Name.LocalName == "delText")
+            {
+                // The original text element, now containing only the text before the index point.
+                splitLeft = new XElement(xml.Name, xml.Attributes(), xml.Value.Substring(0, index - startIndex));
+                if (splitLeft.Value.Length == 0)
+                {
+                    splitLeft = null;
+                }
+                else
+                {
+                    splitLeft.PreserveSpace();
+                }
+
+                // The original text element, now containing only the text after the index point.
+                splitRight = new XElement(xml.Name, xml.Attributes(), xml.Value.Substring(index - startIndex, xml.Value.Length - (index-startIndex)));
+                if (splitRight.Value.Length == 0)
+                {
+                    splitRight = null;
+                }
+                else
+                {
+                    splitRight.PreserveSpace();
+                }
+            }
+            else
+            {
+                if (index == endIndex)
+                {
+                    splitLeft = xml;
+                }
+                else
+                {
+                    splitRight = xml;
+                }
+            }
+
+            return new[] { xml, splitLeft, splitRight };
         }
 
         /// <summary>
@@ -149,30 +191,20 @@ namespace DXPlus
         /// where an edit (insert/delete) would occur.
         /// </summary>
         /// <param name="element">XML graph to examine</param>
-        /// <param name="type">Insert or delete</param>
-        /// <param name="index">Position where edit is being performed</param>
-        /// <param name="count">Number of text characters encountered so far</param>
-        /// <param name="textBlock">The identified text block</param>
-        private static void RecursiveSearchForTextByIndex(XElement element, EditType type, int index, ref int count, ref TextBlock textBlock)
+        /// <param name="index">Index to search for</param>
+        private static (XElement textXml, int startIndex) FindTextElementByIndex(XElement element, int index)
         {
-            count += HelperFunctions.GetSize(element);
-            if (count > 0
-                && ((type == EditType.Delete && count > index)
-                    || (type == EditType.Insert && count >= index)))
+            int count = 0;
+            foreach (var child in element.Descendants())
             {
-                textBlock = new TextBlock(element, count - HelperFunctions.GetSize(element));
-                return;
-            }
-
-            if (element.HasElements)
-            {
-                foreach (var e in element.Elements())
+                int size = HelperFunctions.GetSize(child);
+                count += size;
+                if (count >= index)
                 {
-                    RecursiveSearchForTextByIndex(e, EditType.Insert, index, ref count, ref textBlock);
-                    if (textBlock != null)
-                        return;
+                    return (child, count - size);
                 }
             }
+            return default;
         }
     }
 }

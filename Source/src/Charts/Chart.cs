@@ -184,12 +184,12 @@ namespace DXPlus.Charts
         /// <summary>
         /// The XML representation of this chart
         /// </summary>
-        public XDocument Xml { get; }
+        internal XDocument Xml { get; }
 
         /// <summary>
         /// The root XML node of the chart (c:chart)
         /// </summary>
-        protected XElement ChartRootXml { get; }
+        private XElement ChartRootXml { get; }
 
         /// <summary>
         /// The root XML node of the specific chart (bar, pie, etc.)

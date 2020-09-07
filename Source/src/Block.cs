@@ -6,17 +6,16 @@ using System.Xml.Linq;
 namespace DXPlus
 {
     /// <summary>
-    /// This class is the basis for Paragraphs, Lists, and Table elements. It provides helper methods to
-    /// insert/add other elements before and after in the element tree.
+    /// Represents a block of content in the document. This can be a Paragraph, Numbered list, or Table.
     /// </summary>
-    public abstract class InsertBeforeOrAfter : DocXElement
+    public abstract class Block : DocXElement
     {
-        private Container owner;
+        private BlockContainer owner;
 
         /// <summary>
         /// Default constructor used with Lists/Tables
         /// </summary>
-        internal InsertBeforeOrAfter()
+        internal Block()
         {
         }
 
@@ -25,19 +24,19 @@ namespace DXPlus
         /// </summary>
         /// <param name="document"></param>
         /// <param name="xml"></param>
-        protected InsertBeforeOrAfter(IDocument document, XElement xml) : base(document, xml)
+        protected Block(IDocument document, XElement xml) : base(document, xml)
         {
         }
 
         /// <summary>
         /// Add a page break after the current element.
         /// </summary>
-        public void AddPageBreak() => Xml.AddAfterSelf(PageBreak);
+        public void AddPageBreak() => Xml.AddAfterSelf(HelperFunctions.PageBreak());
 
         /// <summary>
         /// Insert a page break before the current element.
         /// </summary>
-        public void InsertPageBreakBefore() => Xml.AddBeforeSelf(PageBreak);
+        public void InsertPageBreakBefore() => Xml.AddBeforeSelf(HelperFunctions.PageBreak());
 
         /// <summary>
         /// Add a new paragraph after the current element.
@@ -45,11 +44,16 @@ namespace DXPlus
         /// <param name="paragraph">Paragraph to insert</param>
         public void AddParagraph(Paragraph paragraph)
         {
-            if (paragraph.Container != null)
+            if (paragraph.BlockContainer != null)
                 throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
             Xml.AddAfterSelf(paragraph.Xml);
-            paragraph.Container = this.Container;
+
+            if (owner != null)
+            {
+                paragraph.BlockContainer = owner;
+                paragraph.SetStartIndex(owner.Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
+            }
         }
 
         /// <summary>
@@ -60,10 +64,9 @@ namespace DXPlus
         /// <returns>Newly created paragraph</returns>
         public Paragraph AddParagraph(string text, Formatting formatting)
         {
-            XElement newParagraph = Paragraph.Create(text, formatting);
-            Xml.AddAfterSelf(newParagraph);
-            XElement newlyInserted = Xml.ElementsAfterSelf().First();
-            return new Paragraph(Document, newlyInserted, -1) {Container = Container};
+            var paragraph = new Paragraph(Document, Paragraph.Create(text, formatting), -1);
+            AddParagraph(paragraph);
+            return paragraph;
         }
 
         /// <summary>
@@ -72,11 +75,16 @@ namespace DXPlus
         /// <param name="paragraph"></param>
         public void InsertParagraphBefore(Paragraph paragraph)
         {
-            if (paragraph.Container != null)
+            if (paragraph.BlockContainer != null)
                 throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
             Xml.AddBeforeSelf(paragraph.Xml);
-            paragraph.Container = Container;
+            
+            if (owner != null)
+            {
+                paragraph.BlockContainer = owner;
+                paragraph.SetStartIndex(owner.Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
+            }
         }
 
         /// <summary>
@@ -87,13 +95,9 @@ namespace DXPlus
         /// <returns></returns>
         public Paragraph InsertParagraphBefore(string text, Formatting formatting)
         {
-            XElement paragraph = Paragraph.Create(text, formatting);
-            Xml.AddBeforeSelf(paragraph);
-
-            string id = paragraph.AttributeValue(Name.ParagraphId);
-            return Container != null
-                ? Container.Paragraphs.Single(p => p.Id == id)
-                : new Paragraph(Document, paragraph, -1);
+            var paragraph = new Paragraph(Document, Paragraph.Create(text, formatting), -1);
+            InsertParagraphBefore(paragraph);
+            return paragraph;
         }
 
         /// <summary>
@@ -102,10 +106,10 @@ namespace DXPlus
         /// <param name="table">Table to add</param>
         public void AddTable(Table table)
         {
-            if (table.Container != null)
+            if (table.BlockContainer != null)
                 throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
-            table.Container = this.Container;
+            table.BlockContainer = this.BlockContainer;
             Xml.AddAfterSelf(table.Xml);
         }
 
@@ -115,17 +119,17 @@ namespace DXPlus
         /// <param name="table"></param>
         public void InsertTableBefore(Table table)
         {
-            if (table.Container != null)
+            if (table.BlockContainer != null)
                 throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
-            table.Container = Container;
+            table.BlockContainer = BlockContainer;
             Xml.AddBeforeSelf(table.Xml);
         }
 
         /// <summary>
         /// Set the container owner for this element.
         /// </summary>
-        internal Container Container
+        internal BlockContainer BlockContainer
         {
             get => owner;
             set
@@ -148,26 +152,17 @@ namespace DXPlus
         /// <summary>
         /// Invoked when this element is added to a container.
         /// </summary>
-        /// <param name="container">Current Container owner</param>
-        protected virtual void OnAddedToContainer(Container container)
+        /// <param name="blockContainer">Current Container owner</param>
+        protected virtual void OnAddedToContainer(BlockContainer blockContainer)
         {
         }
 
         /// <summary>
         /// Invoked when this element is removed from a container.
         /// </summary>
-        /// <param name="container">Current Container owner</param>
-        protected virtual void OnRemovedFromContainer(Container container)
+        /// <param name="blockContainer">Current Container owner</param>
+        protected virtual void OnRemovedFromContainer(BlockContainer blockContainer)
         {
         }
-
-        /// <summary>
-        /// Page break element
-        /// </summary>
-        private static XElement PageBreak => new XElement(Name.Paragraph,
-            new XAttribute(Name.ParagraphId, HelperFunctions.GenerateHexId()),
-            new XElement(Name.Run,
-                new XElement(Namespace.Main + "br",
-                    new XAttribute(Namespace.Main + "type", "page"))));
     }
 }

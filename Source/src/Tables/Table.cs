@@ -12,7 +12,7 @@ namespace DXPlus
     /// <summary>
     /// Represents a Table in a document.
     /// </summary>
-    public class Table : InsertBeforeOrAfter
+    public class Table : Block
     {
         private string customTableDesignName;
         private TableDesign tableDesign;
@@ -50,8 +50,8 @@ namespace DXPlus
         {
             if (xml == null)
                 throw new ArgumentNullException(nameof(xml));
-            if (xml.Name != Namespace.Main + "tbl")
-                throw new ArgumentException("Root element must be <w:tbl>", nameof(xml));
+            if (xml.Name != Name.Table)
+                throw new ArgumentException($"Root element must be {Name.Table}", nameof(xml));
 
             XElement style = TblPr?.Element(Namespace.Main + "tblStyle");
             if (style == null)

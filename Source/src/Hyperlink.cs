@@ -18,7 +18,10 @@ namespace DXPlus
         private readonly XElement instrText;
         private readonly List<XElement> runs;
 
-        public string Id { get; set; }
+        /// <summary>
+        /// Unique id for this hyperlink
+        /// </summary>
+        public string Id { get; private set; }
 
         /// <summary>
         /// Remove a Hyperlink from this Paragraph only.
@@ -77,7 +80,7 @@ namespace DXPlus
                 ? PackagePart.GetRelationship(Id).TargetUri
                 : uri;
 
-            set
+            private set
             {
                 uri = value;
 
@@ -160,7 +163,7 @@ namespace DXPlus
         /// </summary>
         /// <param name="document">Document owner</param>
         /// <param name="xml">XML fragment representing hyperlink</param>
-        internal Hyperlink(IDocument document, XElement xml) : base(document, xml)
+        private Hyperlink(IDocument document, XElement xml) : base(document, xml)
         {
             type = 0;
             Id = xml.AttributeValue(Namespace.RelatedDoc + "id");
@@ -173,7 +176,7 @@ namespace DXPlus
         /// <param name="document">Document owner</param>
         /// <param name="instrText">Text with field codes</param>
         /// <param name="runs">Text runs making up this hyperlink</param>
-        internal Hyperlink(IDocument document, XElement instrText, List<XElement> runs) : base(document, null)
+        private Hyperlink(IDocument document, XElement instrText, List<XElement> runs) : base(document, null)
         {
             type = 1;
             this.instrText = instrText;

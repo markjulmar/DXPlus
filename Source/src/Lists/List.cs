@@ -59,7 +59,7 @@ namespace DXPlus
     /// <summary>
     /// Represents a List in a container.
     /// </summary>
-    public class List : InsertBeforeOrAfter
+    public class List : Block
     {
         private readonly List<ListItem> items = new List<ListItem>();
         private FontFamily fontFamily;
@@ -196,7 +196,7 @@ namespace DXPlus
                 Paragraph = new Paragraph(Document, newParagraphSection, 0, ContainerType.Paragraph)
                 {
                     Document = Document,
-                    Container = Container,
+                    BlockContainer = BlockContainer,
                 }
             };
 
@@ -209,7 +209,7 @@ namespace DXPlus
                 newItem.Paragraph.AddFormatting(formatting);
             }
 
-            Container?.Xml.Add(newParagraphSection);
+            BlockContainer?.Xml.Add(newParagraphSection);
 
             items.Add(newItem);
 
@@ -254,10 +254,10 @@ namespace DXPlus
                     "New list items can only be added to this list if they are have the same numId.");
             }
 
-            if (paragraph.Container == null)
+            if (paragraph.BlockContainer == null)
             {
                 paragraph.Document = Document;
-                paragraph.Container = Container;
+                paragraph.BlockContainer = BlockContainer;
                 if (paragraph.DefaultFormatting == null)
                 {
                     paragraph.DefaultFormatting = new Formatting {Font = Font, FontSize = FontSize};
@@ -270,7 +270,7 @@ namespace DXPlus
             }
 
             if (paragraph.Xml.Parent == null)
-                Container?.Xml.Add(paragraph);
+                BlockContainer?.Xml.Add(paragraph);
 
             items.Add(new ListItem { Paragraph = paragraph });
 

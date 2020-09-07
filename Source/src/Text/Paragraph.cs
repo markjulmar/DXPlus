@@ -13,7 +13,7 @@ namespace DXPlus
     /// Represents a document paragraph.
     /// </summary>
     [DebuggerDisplay("{" + nameof(Xml) + "}")]
-    public class Paragraph : InsertBeforeOrAfter, IEquatable<Paragraph>
+    public class Paragraph : Block, IEquatable<Paragraph>
     {
         /// <summary>
         /// Text runs (r) that make up this paragraph
@@ -381,7 +381,7 @@ namespace DXPlus
                 else
                 {
                     // Split this run at the point you want to insert
-                    XElement[] splitRun = run.SplitRun(charIndex);
+                    XElement[] splitRun = run.SplitAtIndex(charIndex);
 
                     // Replace the original run.
                     run.Xml.ReplaceWith(splitRun[0], hyperlink.Xml, splitRun[1]);
@@ -738,7 +738,7 @@ namespace DXPlus
                 else
                 {
                     // Split this run at the point you want to insert
-                    XElement[] splitRun = run.SplitRun(index);
+                    XElement[] splitRun = run.SplitAtIndex(index);
 
                     // Replace the original run.
                     run.Xml.ReplaceWith(splitRun[0], xml, splitRun[1]);
@@ -808,7 +808,7 @@ namespace DXPlus
                         break;
 
                     default:
-                        XElement[] splitRun = run.SplitRun(index);
+                        XElement[] splitRun = run.SplitAtIndex(index);
                         run.Xml.ReplaceWith(splitRun[0], insert, splitRun[1]);
                         break;
                 }
@@ -884,10 +884,10 @@ namespace DXPlus
                     default:
                         if (GetElementTextLength(run.Xml) > 0)
                         {
-                            XElement[] splitRunBefore = run.SplitRun(index, EditType.Delete);
+                            XElement[] splitRunBefore = run.SplitAtIndex(index, EditType.Delete);
                             int min = Math.Min(index + (count - processed), run.EndIndex);
-                            XElement[] splitRunAfter = run.SplitRun(min, EditType.Delete);
-                            XElement middle = new Run(splitRunBefore[1], run.StartIndex + GetElementTextLength(splitRunBefore[0])).SplitRun(min, EditType.Delete)[0];
+                            XElement[] splitRunAfter = run.SplitAtIndex(min, EditType.Delete);
+                            XElement middle = new Run(splitRunBefore[1], run.StartIndex + GetElementTextLength(splitRunBefore[0])).SplitAtIndex(min, EditType.Delete)[0];
                             processed += GetElementTextLength(middle);
                             run.Xml.ReplaceWith(splitRunBefore[0], null, splitRunAfter[1]);
                         }
@@ -1219,7 +1219,7 @@ namespace DXPlus
         {
             // Find the run containing the index
             Run run = FindRunAffectedByEdit(type, index);
-            XElement[] splitRun = run.SplitRun(index, type);
+            XElement[] splitRun = run.SplitAtIndex(index, type);
 
             XElement splitLeft = new XElement(element.Name, element.Attributes(), run.Xml.ElementsBeforeSelf(), splitRun[0]);
             if (GetElementTextLength(splitLeft) == 0)
@@ -1260,12 +1260,12 @@ namespace DXPlus
                    && ParentContainerType == other.ParentContainerType;
         }
 
-        protected override void OnAddedToContainer(Container container)
+        protected override void OnAddedToContainer(BlockContainer blockContainer)
         {
-            base.OnAddedToContainer(container);
-            if (container != null)
+            base.OnAddedToContainer(blockContainer);
+            if (blockContainer != null)
             {
-                this.ParentContainerType = container.GetType().Name switch
+                this.ParentContainerType = blockContainer.GetType().Name switch
                 {
                     nameof(DXPlus.Table) => ContainerType.Table,
                     nameof(Section) => ContainerType.Section,

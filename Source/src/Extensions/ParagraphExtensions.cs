@@ -104,7 +104,7 @@ namespace DXPlus
         /// <param name="container">Container owner</param>
         /// <param name="text">Text for new paragraph</param>
         /// <returns>Newly created paragraph</returns>
-        public static Paragraph AddParagraph(this InsertBeforeOrAfter container, string text)
+        public static Paragraph AddParagraph(this Block container, string text)
         {
             if (container == null)
             {
@@ -120,7 +120,7 @@ namespace DXPlus
         /// <param name="container">Container owner</param>
         /// <param name="text">Text for new paragraph</param>
         /// <returns>Newly created paragraph</returns>
-        public static Paragraph InsertParagraphBefore(this InsertBeforeOrAfter container, string text)
+        public static Paragraph InsertParagraphBefore(this Block container, string text)
         {
             if (container == null)
             {

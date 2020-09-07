@@ -8,8 +8,8 @@ namespace DXPlus
     /// </summary>
     public sealed class SectionProperties
     {
-        private const int A4_WIDTH = 11906;
-        private const int A4_HEIGHT = 16838;
+        private const int A4Width = 11906;
+        private const int A4Height = 16838;
 
         /// <summary>
         /// XML that makes up this element
@@ -63,17 +63,17 @@ namespace DXPlus
         /// </summary>
         public Direction Direction
         {
-            get => Xml.Element(Name.RTL) == null ? Direction.LeftToRight : Direction.RightToLeft;
+            get => Xml.Element(Name.RightToLeft) == null ? Direction.LeftToRight : Direction.RightToLeft;
 
             set
             {
                 if (value == Direction.RightToLeft)
                 {
-                    Xml.GetOrCreateElement(Name.RTL);
+                    Xml.GetOrCreateElement(Name.RightToLeft);
                 }
                 else
                 {
-                    Xml.Element(Name.RTL)?.Remove();
+                    Xml.Element(Name.RightToLeft)?.Remove();
                 }
             }
         }
@@ -126,13 +126,13 @@ namespace DXPlus
                 pgSz.SetAttributeValue(Namespace.Main + "orient", value.GetEnumName());
                 if (value == Orientation.Landscape)
                 {
-                    pgSz.SetAttributeValue(Namespace.Main + "w", A4_HEIGHT);
-                    pgSz.SetAttributeValue(Namespace.Main + "h", A4_WIDTH);
+                    pgSz.SetAttributeValue(Namespace.Main + "w", A4Height);
+                    pgSz.SetAttributeValue(Namespace.Main + "h", A4Width);
                 }
                 else // if (value == Orientation.Portrait)
                 {
-                    pgSz.SetAttributeValue(Namespace.Main + "w", A4_WIDTH);
-                    pgSz.SetAttributeValue(Namespace.Main + "h", A4_HEIGHT);
+                    pgSz.SetAttributeValue(Namespace.Main + "w", A4Width);
+                    pgSz.SetAttributeValue(Namespace.Main + "h", A4Height);
                 }
             }
         }

@@ -14,7 +14,7 @@ namespace DXPlus
         /// <summary>
         /// GUID for the decorative image extension
         /// </summary>
-        private const string decorativeImageId = "{C183D7F6-B498-43B3-948B-1728B52AA6E4}";
+        private const string DecorativeImageId = "{C183D7F6-B498-43B3-948B-1728B52AA6E4}";
 
         // English Metric Units are used for coordinates and sizes of drawings/pictures.
         // 1in == 914400 EMUs. Pixels are measured at 72dpi.
@@ -237,19 +237,19 @@ namespace DXPlus
         {
             if (value)
             {
-                FindDrawingExtension(DocPr, decorativeImageId, true)
+                FindDrawingExtension(DocPr, DecorativeImageId, true)
                     .GetOrCreateElement(Namespace.ADec + "decorative")
                     .SetElementValue("val", "1");
 
-                FindDrawingExtension(CNvPr, decorativeImageId, true)?
+                FindDrawingExtension(CNvPr, DecorativeImageId, true)?
                     .GetOrCreateElement(Namespace.ADec + "decorative")
                     .SetElementValue("val", "1");
             }
             else
             {
                 // Remove the extension.
-                FindDrawingExtension(DocPr, decorativeImageId, false)?.Remove();
-                FindDrawingExtension(CNvPr, decorativeImageId, false)?.Remove();
+                FindDrawingExtension(DocPr, DecorativeImageId, false)?.Remove();
+                FindDrawingExtension(CNvPr, DecorativeImageId, false)?.Remove();
             }
         }
 

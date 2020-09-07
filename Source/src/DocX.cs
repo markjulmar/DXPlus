@@ -18,7 +18,7 @@ namespace DXPlus
     /// <summary>
     /// Represents a document.
     /// </summary>
-    internal sealed class DocX : Container, IDocument
+    internal sealed class DocX : BlockContainer, IDocument
     {
         private string filename;               // The filename that this document was loaded from; can be null;
         private Stream stream;                 // The stream that this document was loaded from; can be null.
@@ -953,7 +953,7 @@ namespace DXPlus
             foreach (var doc in documents)
             {
                 // Look for all the instrText fields matching this name.
-                foreach (var e in mainDoc.Descendants(Namespace.Main + "instrText")
+                foreach (var e in doc.Descendants(Namespace.Main + "instrText")
                             .Where(e => Regex.IsMatch(e.Value.ToUpperInvariant(), matchPattern)))
                 {
                     // Back up to <w:r> parent
@@ -1100,6 +1100,33 @@ namespace DXPlus
                 headerFooterCache.Add(id, doc);
             else
                 headerFooterCache.Remove(id);
+        }
+        
+        /// <summary>
+        /// Locate a paragraph from a character index.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns>Paragraph</returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        internal Paragraph FindParagraphByIndex(int index)
+        {
+            if (index < 0)
+                throw new ArgumentOutOfRangeException(nameof(index));
+
+            // If the insertion position is first (0) and there are no paragraphs, then return null.
+            var lookup = Paragraphs.ToDictionary(paragraph => paragraph.EndIndex);
+            if (lookup.Keys.Count == 0 && index == 0)
+            {
+                return null;
+            }
+
+            // Find the paragraph that contains the index
+            foreach (int paragraphEndIndex in lookup.Keys.Where(paragraphEndIndex => paragraphEndIndex >= index))
+            {
+                return lookup[paragraphEndIndex];
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(index));
         }
     }
 }

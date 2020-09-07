@@ -25,7 +25,7 @@ namespace DXPlus
         IReadOnlyList<Section> Sections { get; }
 
         /// <summary>
-        /// Retrieve a list of all Table objects in the document
+        /// Retrieve a list of all Table objects in the container
         /// </summary>
         IEnumerable<Table> Tables { get; }
 

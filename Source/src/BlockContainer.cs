@@ -11,14 +11,14 @@ namespace DXPlus
     /// <summary>
     /// Base container object - this is used to represent all DOCX elements that contain child elements
     /// </summary>
-    public abstract class Container : DocXElement, IContainer
+    public abstract class BlockContainer : DocXElement, IContainer
     {
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="document"></param>
         /// <param name="xml"></param>
-        internal Container(IDocument document, XElement xml)
+        internal BlockContainer(IDocument document, XElement xml)
             : base(document, xml)
         {
         }
@@ -26,23 +26,23 @@ namespace DXPlus
         /// <summary>
         /// Returns a list of all Paragraphs inside this container.
         /// </summary>
-        public virtual IReadOnlyList<Paragraph> Paragraphs
+        public IReadOnlyList<Paragraph> Paragraphs
         {
             get
             {
-                List<Paragraph> paragraphs = new List<Paragraph>();
-                GetParagraphs(Xml, 0, paragraphs, deepSearch: false);
-
-                foreach (Paragraph p in paragraphs)
-                {
-                    // If the next sibling node is a table, then link it up to this
-                    // paragraph node.
-                    XElement nextNode = p.Xml.ElementsAfterSelf().FirstOrDefault();
-                    if (nextNode?.Name.Equals(Namespace.Main + "tbl") == true)
+                var paragraphs = new List<Paragraph>();
+                Xml.Elements(Name.Paragraph)
+                    .Aggregate(0, (current, e) =>
                     {
-                        p.Table = new Table(Document, nextNode);
-                    }
-                }
+                        var p = new Paragraph(Document, e, current) {BlockContainer = this};
+                        
+                        var nextNode = p.Xml.ElementsAfterSelf().FirstOrDefault();
+                        if (nextNode?.Name.Equals(Name.Table) == true)
+                            p.Table = new Table(Document, nextNode);
+                        
+                        paragraphs.Add(p);
+                        return current + HelperFunctions.GetText(e).Length;
+                    });
                 return paragraphs;
             }
         }
@@ -54,18 +54,12 @@ namespace DXPlus
         /// <returns>True if removed</returns>
         public bool RemoveParagraph(int index)
         {
-            int i = 0;
-            foreach (XElement paragraph in Xml.Descendants(Name.Paragraph))
-            {
-                if (i == index)
-                {
-                    paragraph.Remove();
-                    return true;
-                }
-                ++i;
-            }
-
-            return false;
+            if (index < 0)
+                throw new ArgumentOutOfRangeException(nameof(index));
+            
+            var e = Xml.Descendants(Name.Paragraph).Skip(index).FirstOrDefault();
+            e?.Remove();
+            return e != null;
         }
 
         /// <summary>
@@ -75,7 +69,7 @@ namespace DXPlus
         /// <returns>True if removed</returns>
         public bool RemoveParagraph(Paragraph paragraph)
         {
-            if (paragraph.Container == this)
+            if (paragraph.BlockContainer == this)
             {
                 paragraph.Xml.Remove();
                 return true;
@@ -106,43 +100,9 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Get all paragraphs in the document recursively.
-        /// </summary>
-        /// <param name="xml">XML to search</param>
-        /// <param name="index">Max index</param>
-        /// <param name="paragraphs">Found paragraphs</param>
-        /// <param name="deepSearch">True to search inside paragraphs</param>
-        /// <returns></returns>
-        private int GetParagraphs(XElement xml, int index, List<Paragraph> paragraphs, bool deepSearch = false)
-        {
-            if (xml == null)
-            {
-                throw new ArgumentNullException(nameof(xml));
-            }
-
-            bool keepSearching = true;
-            if (xml.Name == Name.Paragraph)
-            {
-                paragraphs.Add(new Paragraph(Document, xml, index) { Container = this });
-                index += HelperFunctions.GetText(xml).Length;
-                if (!deepSearch)
-                {
-                    keepSearching = false;
-                }
-            }
-
-            if (keepSearching && xml.HasElements)
-            {
-                index = xml.Elements().Aggregate(index, (current, e) => current + GetParagraphs(e, current, paragraphs, deepSearch));
-            }
-
-            return index;
-        }
-
-        /// <summary>
         /// Retrieve a list of all Table objects in the document
         /// </summary>
-        public IEnumerable<Table> Tables => Xml.Descendants(Namespace.Main + "tbl")
+        public IEnumerable<Table> Tables => Xml.Descendants(Name.Table)
                           .Select(t => new Table(Document, t));
 
         /// <summary>
@@ -295,19 +255,19 @@ namespace DXPlus
         /// <returns>Inserted paragraph</returns>
         public Paragraph InsertParagraph(int index, Paragraph paragraph)
         {
-            if (paragraph.Container != null)
+            if (paragraph.BlockContainer != null)
                 throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
             InsertMissingStyles(paragraph);
 
-            Paragraph insertPos = HelperFunctions.GetFirstParagraphAffectedByInsert(Document, index);
+            Paragraph insertPos = Document.FindParagraphByIndex(index);
             if (insertPos == null)
             {
                 AddParagraphToDocument(paragraph.Xml);
             }
             else
             {
-                XElement[] split = HelperFunctions.SplitParagraph(insertPos, index - insertPos.StartIndex);
+                XElement[] split = SplitParagraph(insertPos, index - insertPos.StartIndex);
                 insertPos.Xml.ReplaceWith(split[0], paragraph.Xml, split[1]);
             }
 
@@ -319,7 +279,7 @@ namespace DXPlus
         /// </summary>
         public Paragraph AddParagraph(Paragraph paragraph)
         {
-            if (paragraph.Container != null)
+            if (paragraph.BlockContainer != null)
                 throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
             InsertMissingStyles(paragraph);
@@ -336,7 +296,7 @@ namespace DXPlus
         private Paragraph OnAddParagraph(Paragraph paragraph)
         {
             paragraph.SetStartIndex(Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
-            paragraph.Container = this;
+            paragraph.BlockContainer = this;
 
             return paragraph;
         }
@@ -420,7 +380,7 @@ namespace DXPlus
         public Paragraph InsertParagraph(int index, string text, Formatting formatting)
         {
             Paragraph newParagraph = new Paragraph(Document, Paragraph.Create(text, formatting), index);
-            Paragraph firstPar = HelperFunctions.GetFirstParagraphAffectedByInsert(Document, index);
+            Paragraph firstPar = Document.FindParagraphByIndex(index);
             if (firstPar != null)
             {
                 int splitIndex = index - firstPar.StartIndex;
@@ -430,7 +390,7 @@ namespace DXPlus
                 }
                 else
                 {
-                    XElement[] splitParagraph = HelperFunctions.SplitParagraph(firstPar, splitIndex);
+                    XElement[] splitParagraph = SplitParagraph(firstPar, splitIndex);
                     firstPar.Xml.ReplaceWith(splitParagraph[0], newParagraph.Xml, splitParagraph[1]);
                 }
             }
@@ -491,10 +451,10 @@ namespace DXPlus
         /// <returns>Table reference - may be copied if original table was already in document.</returns>
         public Table AddTable(Table table)
         {
-            if (table.Container != null)
+            if (table.BlockContainer != null)
                 throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
-            table.Container = this;
+            table.BlockContainer = this;
             AddParagraphToDocument(table.Xml);
 
             return table;
@@ -508,13 +468,13 @@ namespace DXPlus
         /// <returns>The Table now associated with this document.</returns>
         public Table InsertTable(int index, Table table)
         {
-            if (table.Container != null)
+            if (table.BlockContainer != null)
                 throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
-            table.Container = this;
+            table.BlockContainer = this;
 
-            Paragraph firstParagraph = HelperFunctions.GetFirstParagraphAffectedByInsert(Document, index);
-            XElement[] split = HelperFunctions.SplitParagraph(firstParagraph, index - firstParagraph.StartIndex);
+            Paragraph firstParagraph = Document.FindParagraphByIndex(index);
+            XElement[] split = SplitParagraph(firstParagraph, index - firstParagraph.StartIndex);
             firstParagraph.Xml.ReplaceWith(split[0], table.Xml, split[1]);
 
             return table;
@@ -527,7 +487,7 @@ namespace DXPlus
         /// <returns>The List now associated with this document.</returns>
         public List AddList(List list)
         {
-            if (list.Container != null)
+            if (list.BlockContainer != null)
                 throw new ArgumentException("Cannot add list multiple times.", nameof(list));
 
             foreach (ListItem item in list.Items)
@@ -535,7 +495,7 @@ namespace DXPlus
                 AddParagraphToDocument(item.Paragraph.Xml);
             }
 
-            list.Container = this;
+            list.BlockContainer = this;
 
             return list;
         }
@@ -548,15 +508,15 @@ namespace DXPlus
         /// <returns>The List now associated with this document.</returns>
         public List InsertList(int index, List list)
         {
-            if (list.Container != null)
+            if (list.BlockContainer != null)
                 throw new ArgumentException("Cannot add list multiple times.", nameof(list));
 
-            list.Container = this;
+            list.BlockContainer = this;
 
             if (list.Items.Count > 0)
             {
-                Paragraph firstParagraph = HelperFunctions.GetFirstParagraphAffectedByInsert(Document, index);
-                XElement[] split = HelperFunctions.SplitParagraph(firstParagraph, index - firstParagraph.StartIndex);
+                Paragraph firstParagraph = Document.FindParagraphByIndex(index);
+                XElement[] split = SplitParagraph(firstParagraph, index - firstParagraph.StartIndex);
 
                 List<XElement> elements = new List<XElement> { split[0] };
                 elements.AddRange(list.Items.Select(item => item.Xml));
@@ -582,6 +542,59 @@ namespace DXPlus
                     InsertMissingStyles(paragraph);
                 }
             }
+        }
+        
+        /// <summary>
+        /// Split a paragraph at a specific index
+        /// </summary>
+        /// <param name="paragraph">Paragraph to split</param>
+        /// <param name="index">Character index to split at</param>
+        /// <returns>Left/Right split</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        private static XElement[] SplitParagraph(Paragraph paragraph, int index)
+        {
+            if (paragraph == null)
+                throw new ArgumentNullException(nameof(paragraph));
+            
+            if (index < 0)
+                throw new ArgumentOutOfRangeException(nameof(index));
+
+            Run r = paragraph.FindRunAffectedByEdit(EditType.Insert, index);
+            XElement[] split;
+            XElement before, after;
+
+            switch (r.Xml.Parent?.Name.LocalName)
+            {
+                case "ins":
+                    split = paragraph.SplitEdit(r.Xml.Parent, index, EditType.Insert);
+                    before = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.Parent.ElementsBeforeSelf(), split[0]);
+                    after = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.Parent.ElementsAfterSelf(), split[1]);
+                    break;
+
+                case "del":
+                    split = paragraph.SplitEdit(r.Xml.Parent, index, EditType.Delete);
+                    before = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.Parent.ElementsBeforeSelf(), split[0]);
+                    after = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.Parent.ElementsAfterSelf(), split[1]);
+                    break;
+
+                default:
+                    split = r.SplitAtIndex(index);
+                    before = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.ElementsBeforeSelf(), split[0]);
+                    after = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), split[1], r.Xml.ElementsAfterSelf());
+                    break;
+            }
+
+            if (!before.Elements().Any())
+            {
+                before = null;
+            }
+
+            if (!after.Elements().Any())
+            {
+                after = null;
+            }
+
+            return new[] { before, after };
         }
     }
 }

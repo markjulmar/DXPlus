@@ -8,7 +8,7 @@ namespace DXPlus
     /// <summary>
     /// A single cell in a Word table
     /// </summary>
-    public class Cell : Container
+    public class Cell : BlockContainer
     {
         /// <summary>
         /// Constructor

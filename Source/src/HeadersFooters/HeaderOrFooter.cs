@@ -16,7 +16,7 @@ namespace DXPlus
     /// <summary>
     /// Base class for header/footer
     /// </summary>
-    public abstract class HeaderOrFooter : Container
+    public abstract class HeaderOrFooter : BlockContainer
     {
         /// <summary>
         /// The type of header/footer (even/odd/default)
@@ -38,11 +38,6 @@ namespace DXPlus
         /// Get the URI for this header/footer
         /// </summary>
         public Uri Uri => PackagePart?.Uri;
-
-        /// <summary>
-        /// PageNumber setting
-        /// </summary>
-        public abstract bool PageNumbers { get; set; }
 
         /// <summary>
         /// Constructor

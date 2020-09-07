@@ -13,7 +13,7 @@ namespace DXPlus.Tests
 
             Run r = new Run(e, 5);
             Assert.Equal(text, r.Text);
-            var results = r.SplitRun(10);
+            var results = r.SplitAtIndex(10);
 
             Assert.Equal("This ", results[0].Value);
             Assert.Equal("is a test.", results[1].Value);
@@ -27,7 +27,7 @@ namespace DXPlus.Tests
 
             Run r = new Run(e, 5);
             Assert.Equal(text, r.Text);
-            var results = r.SplitRun(10, EditType.Delete);
+            var results = r.SplitAtIndex(10, EditType.Delete);
 
             Assert.Equal("This ", results[0].Value);
             Assert.Equal("is a test.", results[1].Value);
@@ -41,7 +41,7 @@ namespace DXPlus.Tests
 
             Run r = new Run(e, 5);
             Assert.Equal(text, r.Text);
-            var results = r.SplitRun(5);
+            var results = r.SplitAtIndex(5);
 
             Assert.Null(results[0]);
             Assert.Equal("This is a test.", results[1].Value);
@@ -55,7 +55,7 @@ namespace DXPlus.Tests
 
             Run r = new Run(e, 5);
             Assert.Equal(text, r.Text);
-            var results = r.SplitRun(5, EditType.Delete);
+            var results = r.SplitAtIndex(5, EditType.Delete);
 
             Assert.Null(results[0]);
             Assert.Equal("This is a test.", results[1].Value);
@@ -69,7 +69,7 @@ namespace DXPlus.Tests
 
             Run r = new Run(e, 5);
             Assert.Equal(text, r.Text);
-            var results = r.SplitRun(5 + text.Length);
+            var results = r.SplitAtIndex(5 + text.Length);
 
             Assert.Null(results[1]);
             Assert.Equal("This is a test.", results[0].Value);
@@ -83,7 +83,7 @@ namespace DXPlus.Tests
 
             Run r = new Run(e, 5);
             Assert.Equal(text, r.Text);
-            var results = r.SplitRun(5 + text.Length, EditType.Delete);
+            var results = r.SplitAtIndex(5 + text.Length, EditType.Delete);
 
             Assert.Null(results[1]);
             Assert.Equal("This is a test.", results[0].Value);
@@ -97,7 +97,7 @@ namespace DXPlus.Tests
 
             Run r = new Run(e, 0);
             Assert.Equal(text, r.Text);
-            var results = r.SplitRun(text.Length);
+            var results = r.SplitAtIndex(text.Length);
 
             Assert.Null(results[1]);
             Assert.Equal("Test", results[0].Value);

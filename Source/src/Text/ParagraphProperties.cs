@@ -220,8 +220,8 @@ namespace DXPlus
         /// </summary>
         public Direction Direction
         {
-            get => Xml.Element(Name.RTL) == null ? Direction.LeftToRight : Direction.RightToLeft;
-            set => Xml.SetElementValue(Name.RTL, value == Direction.RightToLeft ? string.Empty : null);
+            get => Xml.Element(Name.RightToLeft) == null ? Direction.LeftToRight : Direction.RightToLeft;
+            set => Xml.SetElementValue(Name.RightToLeft, value == Direction.RightToLeft ? string.Empty : null);
         }
 
         /// <summary>

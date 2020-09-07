@@ -334,29 +334,6 @@ namespace DXPlus.Helpers
             return settings;
         }
 
-        public static Paragraph GetFirstParagraphAffectedByInsert(DocX document, int index)
-        {
-            if (document == null)
-            {
-                throw new ArgumentNullException(nameof(document));
-            }
-
-            // If the insertion position is first (0) and there are no paragraphs, then return null.
-            var lookup = document.Paragraphs.ToDictionary(paragraph => paragraph.EndIndex);
-            if (lookup.Keys.Count == 0 && index == 0)
-            {
-                return null;
-            }
-
-            // Find the paragraph that contains the index
-            foreach (int paragraphEndIndex in lookup.Keys.Where(paragraphEndIndex => paragraphEndIndex >= index))
-            {
-                return lookup[paragraphEndIndex];
-            }
-
-            throw new ArgumentOutOfRangeException(nameof(index));
-        }
-
         public static List<XElement> FormatInput(string text, XElement rPr)
         {
             List<XElement> newRuns = new List<XElement>();
@@ -407,51 +384,6 @@ namespace DXPlus.Helpers
             }
 
             return newRuns;
-        }
-
-        public static XElement[] SplitParagraph(Paragraph p, int index)
-        {
-            if (p == null)
-            {
-                throw new ArgumentNullException(nameof(p));
-            }
-
-            Run r = p.FindRunAffectedByEdit(EditType.Insert, index);
-            XElement[] split;
-            XElement before, after;
-
-            switch (r.Xml.Parent?.Name.LocalName)
-            {
-                case "ins":
-                    split = p.SplitEdit(r.Xml.Parent, index, EditType.Insert);
-                    before = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.Parent.ElementsBeforeSelf(), split[0]);
-                    after = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.Parent.ElementsAfterSelf(), split[1]);
-                    break;
-
-                case "del":
-                    split = p.SplitEdit(r.Xml.Parent, index, EditType.Delete);
-                    before = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.Parent.ElementsBeforeSelf(), split[0]);
-                    after = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.Parent.ElementsAfterSelf(), split[1]);
-                    break;
-
-                default:
-                    split = r.SplitRun(index);
-                    before = new XElement(p.Xml.Name, p.Xml.Attributes(), r.Xml.ElementsBeforeSelf(), split[0]);
-                    after = new XElement(p.Xml.Name, p.Xml.Attributes(), split[1], r.Xml.ElementsAfterSelf());
-                    break;
-            }
-
-            if (!before.Elements().Any())
-            {
-                before = null;
-            }
-
-            if (!after.Elements().Any())
-            {
-                after = null;
-            }
-
-            return new[] { before, after };
         }
 
         public static bool IsSameFile(Stream streamOne, Stream streamTwo)
@@ -668,5 +600,14 @@ namespace DXPlus.Helpers
             localName = name;
             return false;
         }
+
+        /// <summary>
+        /// Create a page break paragraph element
+        /// </summary>
+        /// <returns>Page break element</returns>
+        public static XElement PageBreak() => new XElement(Name.Paragraph,
+            new XAttribute(Name.ParagraphId, GenerateHexId()),
+            new XElement(Name.Run, new XElement(Namespace.Main + "br",
+                new XAttribute(Namespace.Main + "type", "page"))));
     }
 }

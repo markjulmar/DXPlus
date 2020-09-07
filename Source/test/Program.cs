@@ -55,7 +55,7 @@ namespace TestDXPlus
             document.SetPropertyValue(DocumentPropertyName.Title, "Test document created by C#");
             document.AddCustomProperty("ReplaceMe", " inserted field ");
 
-            var p = document.AddParagraph("This paragraph has an")
+            document.AddParagraph("This paragraph has an")
                 .AddCustomPropertyField("ReplaceMe")
                 .Append("which was added by ")
                 .AddDocumentPropertyField(DocumentPropertyName.Creator)
