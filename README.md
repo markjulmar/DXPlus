@@ -2,11 +2,19 @@
 
 This library is a fork of [DocX](http://docx.codeplex.com/) which has been heavily modified in a variety of ways, including adding support for later versions of Word. The library allows you to load or create Word documents and edit them with .NET Core code. No Office interop libraries are used and the source is fully managed code.
 
+![Build and Publish DXPlus library](https://github.com/markjulmar/DXPlus/workflows/Build%20and%20Publish%20DXPlus%20library/badge.svg)
+
+The library is available on NuGet as an unlisted entry.
+
+```
+Install-Package Julmar.DxPlus -Version 1.0.0-prerelease
+```
+
 > **Note**:
 >
-> The original DocX library has since been purchased by Xceed and is now maintained in [their GitHub repo](https://github.com/xceedsoftware/DocX) with full support. I recommend most people look to that library as it has a dedicated developer staff.
+> The original DocX library has been purchased by Xceed and is now maintained in [their GitHub repo](https://github.com/xceedsoftware/DocX) with full support. If you want a fully supported library with the same features, definitely check out their version.
 
-## Examples
+## Usage
 
 The library is oriented around the `IDocument` interface. It provides the basis for working with a single document. The primary namespace is `DXPlus`, and there's a secondary namespace for all the charting capabilities (`DXPlus.Charts`).
 
@@ -97,20 +105,56 @@ public interface IDocument : IDisposable
 
 ### Create a new document
 
-Documents are created and opened with the static `Document` class. It has `Create` and `Open` methods which then return the `IDocument` interface.
+Documents are created and opened with the static `Document` class. You can open or create documents with this static class.
 
 ```csharp
-IDocument document = Document.Create("test.docx");
+public static class Document
+{
+    public static IDocument Load(string filename);
+    public static IDocument Load(Stream stream);
+    public static IDocument Create(string filename = null);
+    public static IDocument CreateTemplate(string filename = null);
+}
+```
+
+It has `Create` and `Open` methods which then return the `IDocument` interface.
+
+```csharp
+IDocument document = Document.Create("test.docx"); // named -- but not written until Save is called.
+
+...
+
+document = Document.Create(); // No name -- must use SaveAs
 ```
 
 ### Open a document
+
+You can open a document from a file or a stream (including a network stream).
+
 ```csharp
+// Can read from an existing local document.
 IDocument document = Document.Open("test.docx")
+
+...
+
+// Can read from a stream.
+var document = Document.Open(await client.ReadAsStreamAsync())
 ```
 
 ### Fluent API
 
-Most of the API is _fluent_ in nature so each method returns the called object. This allows you to 'string together' changes to a paragraph, block, or section.
+Most of the API is _fluent_ in nature so each method returns the called object. This allows you to 'string together' changes to a paragraph, block, or section. These are all .NET extension methods in the `DXPlus` namespace added to the `Paragraph`, `Document`, `Table` and `Picture` classes.
+
+### Saving changes
+
+The document can be saved with the `Save` or `SaveAs` method. If `Save` is used, then the document cannot be new or an exception will be thrown. If you don't want to save the document, you can call `Close` or `Dispose` to throw away changes.
+
+```csharp
+IDocument document = Document.Open("test.docx")
+ ....
+
+document.Save();
+```
 
 ### Add paragraphs
 

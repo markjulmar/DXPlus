@@ -104,13 +104,12 @@ namespace DXPlus.Tests
             var rPr = new Formatting();
             Assert.Null(rPr.Font);
 
-            var ff = new FontFamily("Times New Roman");
+            //var ff = new FontFamily("Times New Roman");
+            //rPr.Font = ff;
+            //Assert.Equal(ff.Name, rPr.Font.Name);
+            //Assert.Single(rPr.Xml.RemoveNamespaces().XPathSelectElements("rFonts[@ascii='Times New Roman']"));
 
-            rPr.Font = ff;
-            Assert.Equal(ff.Name, rPr.Font.Name);
-            Assert.Single(rPr.Xml.RemoveNamespaces().XPathSelectElements("rFonts[@ascii='Times New Roman']"));
-
-            ff = new FontFamily("Wingdings");
+            var ff = new FontFamily("Wingdings");
             rPr.Font = ff;
             Assert.Equal(ff.Name, rPr.Font.Name);
             Assert.Single(rPr.Xml.RemoveNamespaces().XPathSelectElements("rFonts"));
