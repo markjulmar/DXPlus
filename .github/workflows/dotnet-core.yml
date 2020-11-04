@@ -1,4 +1,4 @@
-name: Build and Publish Azure DevOps Utils
+name: Build and Publish DXPlus library
 
 on:
   push:
@@ -15,15 +15,12 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 3.1.101
-    - name: Install dependencies
-      working-directory: ./src
-      run: dotnet restore
     - name: Build
       working-directory: ./src
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build --configuration Release
     - name: Test
-      working-directory: ./src
-      run: dotnet test --no-restore --verbosity normal
+      working-directory: ./tests/DXPlus.Tests
+      run: dotnet test --verbosity normal
     - name: Pack
       working-directory: ./src
       run: dotnet pack DxPlus.csproj --output nuget-packages --configuration Release
