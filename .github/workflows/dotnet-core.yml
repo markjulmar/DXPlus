@@ -23,7 +23,7 @@ jobs:
       run: dotnet test --verbosity normal
     - name: Pack
       working-directory: ./src
-      run: dotnet pack DxPlus.csproj --output nuget-packages --configuration Release
+      run: dotnet pack DXPlus.csproj --output nuget-packages --configuration Release
     - name: Push to NuGet
       working-directory: ./src
       run: dotnet nuget push nuget-packages/*.nupkg --skip-duplicate --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
