@@ -185,6 +185,28 @@ Add a page break with the `AddPageBreak` method.
 document.AddPageBreak();
 ```
 
+### Replacing text
+
+The `IDocument.ReplaceText` method can be used to find and replace regular expressions or text in all paragraphs of the document.
+
+```csharp
+document.ReplaceText("original text", "replacement text", RegexOptions.IgnoreCase);
+```
+
+The method has several optional parameters that allow you to change the formatting of the replacement.
+
+```csharp
+document.ReplaceText("original text", "replacement text", RegexOptions.None, 
+                        new Formatting { Bold = true });
+```
+
+You can also match formatting and only replace what aligns to the passed formatting options.
+
+```csharp
+document.ReplaceText("original bold text", "replacement text", RegexOptions.None, 
+                        null, new Formatting { Bold = true });
+```
+
 ### Hyperlinks
 
 Hyperlinks can be added to paragraphs - this creates a clickable element which can point to an external source, or to a section of the document.

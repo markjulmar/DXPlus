@@ -3,6 +3,20 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <RootNamespace>DXPlus</RootNamespace>
+    <PackOnBuild>true</PackOnBuild>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>Julmar.DxPlus</PackageId>
+    <Authors>Mark Smith, Cathal Coffey</Authors>
+    <Description>OpenXml .NET Core library to work with .docx format. Fork of DocX from Cathal Coffey.</Description>
+    <PackageVersion>1.0.0-prerelease</PackageVersion>
+    <CompanyName>julmar.com</CompanyName>
+    <Owners>julmar.com</Owners>
+    <PackageProjectUrl>https://github.com/markjulmar/DXPlus</PackageProjectUrl>
+    <Summary>.NET Core wrapper around .docx documents</Summary>
+    <Title>OpenXML DocX Utility Library</Title>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <ReleaseVersion>1.0.0</ReleaseVersion>
+    <SynchReleaseVersion>false</SynchReleaseVersion>        
   </PropertyGroup>
 
   <ItemGroup>
@@ -52,6 +66,6 @@
   <ItemGroup>
     <PackageReference Include="System.IO.Packaging" Version="4.7.0" />
     <PackageReference Include="runtime.osx.10.10-x64.CoreCompat.System.Drawing" Version="5.8.64" />
-    <PackageReference Include="System.Drawing.Common" Version="5.0.0-preview.7.20364.11" />
+    <PackageReference Include="System.Drawing.Common" Version="5.0.0-rc.2.20475.5" />
   </ItemGroup>
 </Project>
