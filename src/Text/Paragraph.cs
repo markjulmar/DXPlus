@@ -313,12 +313,19 @@ namespace DXPlus
         /// <returns>This paragraph</returns>
         public Paragraph AppendBookmark(string bookmarkName)
         {
+            if (this.BookmarkExists(bookmarkName))
+                throw new ArgumentException($"Bookmark '{bookmarkName}' already exists.");
+
+            long id = 0;
+            if (Document != null)
+                id = Document.GetNextDocumentId();
+            
             Xml.Add(new XElement(Name.BookmarkStart,
-                        new XAttribute(Name.Id, 0),
+                        new XAttribute(Name.Id, id),
                         new XAttribute(Name.NameId, bookmarkName)));
 
             Xml.Add(new XElement(Name.BookmarkEnd,
-                        new XAttribute(Name.Id, 0),
+                        new XAttribute(Name.Id, id),
                         new XAttribute(Name.NameId, bookmarkName)));
 
             return this;
@@ -563,9 +570,7 @@ namespace DXPlus
         public IEnumerable<Bookmark> GetBookmarks()
         {
             return Xml.Descendants(Name.BookmarkStart)
-                        .Select(x => x.Attribute(Name.NameId))
-                        .Where(x => x != null)
-                        .Select(x => new Bookmark(x.Value, this));
+                      .Select(e => new Bookmark(e, this));
         }
 
         /// <summary>
@@ -575,12 +580,11 @@ namespace DXPlus
         /// <param name="toInsert">Text to insert</param>
         public bool InsertAtBookmark(string bookmarkName, string toInsert)
         {
-            XElement bookmark = Xml.Descendants(Name.BookmarkStart)
-                    .SingleOrDefault(x => x.AttributeValue(Name.NameId) == bookmarkName);
+            var bookmark = GetBookmarks().SingleOrDefault(bm => bm.Name == bookmarkName);
             if (bookmark != null)
             {
-                List<XElement> run = HelperFunctions.FormatInput(toInsert, null);
-                bookmark.AddBeforeSelf(run);
+                var run = HelperFunctions.FormatInput(toInsert, null);
+                bookmark.Xml.AddBeforeSelf(run);
                 Document?.RenumberIds();
                 return true;
             }
@@ -1072,7 +1076,7 @@ namespace DXPlus
         public string Id
         {
             get => Xml.AttributeValue(Name.ParagraphId, null);
-            set => Xml.SetAttributeValue(Name.ParagraphId, string.IsNullOrEmpty(value) ? null : value);
+            private set => Xml.SetAttributeValue(Name.ParagraphId, string.IsNullOrEmpty(value) ? null : value);
         }
 
         /// <summary>
@@ -1183,7 +1187,7 @@ namespace DXPlus
         /// <param name="index">Index to look for</param>
         /// <param name="count"># of hyperlinks found so far</param>
         /// <returns>True when hyperlink is removed</returns>
-        internal bool RemoveHyperlinkRecursive(XElement element, int index, ref int count)
+        private static bool RemoveHyperlinkRecursive(XElement element, int index, ref int count)
         {
             if (element.Name.LocalName.Equals("hyperlink", StringComparison.CurrentCultureIgnoreCase))
             {
@@ -1258,6 +1262,18 @@ namespace DXPlus
                    && StartIndex == other.StartIndex
                    && EndIndex == other.EndIndex
                    && ParentContainerType == other.ParentContainerType;
+        }
+
+        protected override void OnDocumentOwnerChanged(IDocument previousValue, IDocument newValue)
+        {
+            base.OnDocumentOwnerChanged(previousValue, newValue);
+
+            if (newValue is DocX document)
+            {
+                // Update bookmark IDs.
+                foreach (var bookmark in GetBookmarks())
+                    bookmark.Id = Document.GetNextDocumentId();
+            }
         }
 
         protected override void OnAddedToContainer(BlockContainer blockContainer)

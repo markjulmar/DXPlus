@@ -1000,7 +1000,7 @@ namespace DXPlus
         /// Get a document ID to use with inserted XML. This should always be unique within the document.
         /// </summary>
         /// <returns>New document id</returns>
-        private long GetNextDocumentId()
+        internal long GetNextDocumentId()
         {
             if (nextDocumentId == 0)
                 nextDocumentId = HelperFunctions.FindLastUsedDocId(mainDoc);

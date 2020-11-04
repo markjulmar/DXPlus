@@ -10,12 +10,30 @@ namespace DXPlus
     public class Bookmark
     {
         /// <summary>
-        /// Name
+        /// XML behind this bookmark
         /// </summary>
-        public string Name { get; }
+        internal readonly XElement Xml;
 
         /// <summary>
-        /// Paragraph this bookmark is tied to
+        /// Name of the bookmark
+        /// </summary>
+        public string Name
+        {
+            get => Xml.AttributeValue(DXPlus.Name.NameId);
+            set => Xml.SetAttributeValue(DXPlus.Name.NameId, value);
+        }
+
+        /// <summary>
+        /// Id for this bookmark in the parent document
+        /// </summary>
+        public long Id
+        {
+            get => long.Parse(Xml.AttributeValue(DXPlus.Name.Id));
+            set => Xml.SetAttributeValue(DXPlus.Name.Id, value);
+        }
+
+        /// <summary>
+        /// Paragraph this bookmark is part of
         /// </summary>
         public Paragraph Paragraph { get; }
 
@@ -25,12 +43,7 @@ namespace DXPlus
         /// <param name="text">New text value</param>
         public void SetText(string text)
         {
-            var bookmark = Paragraph.Xml.Descendants(DXPlus.Name.BookmarkStart)
-                                    .FindByAttrVal(DXPlus.Name.NameId, Name);
-            if (bookmark == null)
-                return;
-
-            var nextNode = bookmark.NextNode;
+            var nextNode = Xml.NextNode;
             var nextElement = nextNode as XElement;
             while (nextElement == null
                    || (nextElement.Name != DXPlus.Name.Run
@@ -43,14 +56,14 @@ namespace DXPlus
             // Check if next element is a bookmarkEnd
             if (nextElement.Name == DXPlus.Name.BookmarkEnd)
             {
-                AddBookmarkRef(bookmark, text);
+                AddBookmarkRef(Xml, text);
                 return;
             }
 
             var contentElement = nextElement.Elements(DXPlus.Name.Text).FirstOrDefault();
             if (contentElement == null)
             {
-                AddBookmarkRef(bookmark, text);
+                AddBookmarkRef(Xml, text);
                 return;
             }
 
@@ -60,12 +73,12 @@ namespace DXPlus
         /// <summary>
         /// Bookmark constructor
         /// </summary>
-        /// <param name="name">Bookmark name</param>
-        /// <param name="p">Associated paragraph object</param>
-        public Bookmark(string name, Paragraph p)
+        /// <param name="xml">XML for this bookmark</param>
+        /// <param name="owner">Associated paragraph object</param>
+        public Bookmark(XElement xml, Paragraph owner)
         {
-            Name = name;
-            Paragraph = p;
+            Xml = xml;
+            Paragraph = owner;
         }
 
         /// <summary>
