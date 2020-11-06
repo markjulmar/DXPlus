@@ -98,7 +98,8 @@ public interface IDocument : IDisposable
     
     // Table of contents
     public TableOfContents InsertDefaultTableOfContents();
-    public TableOfContents InsertTableOfContents(Paragraph reference, string title, TableOfContentsSwitches switches, string headerStyle, int maxIncludeLevel, int? rightTabPos);
+    public TableOfContents InsertTableOfContents(Paragraph reference, string title, 
+    		TableOfContentsSwitches switches, string headerStyle, int maxIncludeLevel, int? rightTabPos);
 }
 
 ```
@@ -261,8 +262,8 @@ var paragraph = document.AddParagraph("This line contains a ")
     .Append(". With a few lines of text to read.")
     .AppendLine(" And a final line with a .");
 
-            p.InsertHyperlink(new Hyperlink("second link", new Uri("http://docs.microsoft.com/")), p.Text.Length - 2);
-
+// Insert another hyperlink into the paragraph.
+paragraph.InsertHyperlink(new Hyperlink("second link", new Uri("http://docs.microsoft.com/")), p.Text.Length - 2);
 ```
 
 ### Images
@@ -294,7 +295,6 @@ document.AddParagraph()
 document.AddParagraph()
     .AppendLine("Second copy without rotation.")
     .Append(image.CreatePicture("My Favorite Superhero", "This is a comic book"));
-
 ```
 
 ### Styles
