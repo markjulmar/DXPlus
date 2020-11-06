@@ -1,6 +1,7 @@
 ﻿using DXPlus.Helpers;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
@@ -196,7 +197,7 @@ namespace DXPlus
         /// </summary>
         /// <param name="owner"></param>
         /// <returns></returns>
-        internal static IEnumerable<Hyperlink> Enumerate(DocXElement owner)
+        internal static IEnumerable<Hyperlink> Enumerate(DocXElement owner, List<Hyperlink> unownedHyperlinks = null)
         {
             foreach (XElement he in owner.Xml.Descendants()
                                 .Where(h => h.Name.LocalName == "hyperlink"
@@ -204,6 +205,17 @@ namespace DXPlus
             {
                 if (he.Name.LocalName == "hyperlink")
                 {
+                    if (unownedHyperlinks != null)
+                    {
+                        var hyperlink = unownedHyperlinks.SingleOrDefault(hl => ReferenceEquals(hl.Xml, he));
+                        if (hyperlink != null)
+                        {
+                            yield return hyperlink;
+                            continue;
+                        }
+                    }
+
+                    Debug.Assert(owner.Document != null);
                     yield return new Hyperlink(owner.Document, he) { PackagePart = owner.PackagePart };
                 }
                 else

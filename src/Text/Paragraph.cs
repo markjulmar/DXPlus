@@ -353,6 +353,8 @@ namespace DXPlus
             return this;
         }
 
+        List<Hyperlink> unownedHyperlinks;
+
         /// <summary>
         /// This function inserts a hyperlink into a Paragraph at a specified character index.
         /// </summary>
@@ -361,15 +363,18 @@ namespace DXPlus
         /// <returns>The Paragraph with the Hyperlink inserted at the specified index.</returns>
         public Paragraph InsertHyperlink(Hyperlink hyperlink, int charIndex = 0)
         {
-            // Set the package and document relationship.
-            hyperlink.Document = Document;
-            hyperlink.PackagePart = PackagePart;
-
-            // Check to see if the rels file exists and create it if not.
-            _ = Document.EnsureRelsPathExists(PackagePart);
-
-            // Check to see if a rel for this Hyperlink exists, create it if not.
-            _ = hyperlink.GetOrCreateRelationship();
+            if (Document != null)
+            {
+                hyperlink.Document = Document;
+                hyperlink.PackagePart = PackagePart;
+                _ = hyperlink.GetOrCreateRelationship();
+            }
+            else
+            {
+                if (unownedHyperlinks == null)
+                    unownedHyperlinks = new List<Hyperlink>();
+                unownedHyperlinks.Add(hyperlink);
+            }
 
             if (charIndex == 0)
             {
@@ -401,7 +406,7 @@ namespace DXPlus
         /// <summary>
         /// Returns a list of Hyperlinks in this Paragraph.
         /// </summary>
-        public List<Hyperlink> Hyperlinks => Hyperlink.Enumerate(this).ToList();
+        public List<Hyperlink> Hyperlinks => Hyperlink.Enumerate(this, unownedHyperlinks).ToList();
 
         /// <summary>
         /// Append a hyperlink to a Paragraph.
@@ -410,24 +415,20 @@ namespace DXPlus
         /// <returns>The Paragraph with the hyperlink appended.</returns>
         public Paragraph Append(Hyperlink hyperlink)
         {
-            if (Document == null)
+            if (Document != null)
             {
-                throw new InvalidOperationException("Cannot add hyperlinks to paragraphs with no document owner.");
+                hyperlink.Document = Document;
+                hyperlink.PackagePart = PackagePart;
+                _ = hyperlink.GetOrCreateRelationship();
+            }
+            else
+            {
+                if (unownedHyperlinks == null)
+                    unownedHyperlinks = new List<Hyperlink>();
+                unownedHyperlinks.Add(hyperlink);
             }
 
-            // Ensure the owner document has the hyperlink styles.
-            Document.AddHyperlinkStyle();
-
-            // Set the document/package for the hyperlink to be owned by the document
-            hyperlink.Document = Document;
-            hyperlink.PackagePart = PackagePart;
-
-            // Check to see if the .rels file exists and create it if not.
-            _ = Document.EnsureRelsPathExists(PackagePart);
-            _ = hyperlink.GetOrCreateRelationship();
-
             Xml.Add(hyperlink.Xml);
-
             return this;
         }
 
@@ -1273,6 +1274,22 @@ namespace DXPlus
                 // Update bookmark IDs.
                 foreach (var bookmark in GetBookmarks())
                     bookmark.Id = Document.GetNextDocumentId();
+
+                if (Hyperlinks.Any())
+                {
+                    // Ensure the owner document has the hyperlink styles.
+                    Document.AddHyperlinkStyle();
+                    _ = Document.EnsureRelsPathExists(PackagePart);
+
+                    // Fixup hyperlinks
+                    foreach (var hyperlink in Hyperlinks)
+                    {
+                        hyperlink.Document = Document;
+                        hyperlink.PackagePart = PackagePart;
+                        _ = hyperlink.GetOrCreateRelationship();
+                    }
+                    unownedHyperlinks = null;
+                }
             }
         }
 

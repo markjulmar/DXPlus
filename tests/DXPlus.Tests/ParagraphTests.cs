@@ -89,6 +89,40 @@ namespace DXPlus.Tests
         }
 
         [Fact]
+        public void CheckHyperlinksInUnownedParagraph()
+        {
+            var microsoftUrl = new Uri("http://www.microsoft.com");
+
+            var paragraph = new Paragraph()
+                .AppendLine("This line contains a ")
+                .Append(new Hyperlink("link", microsoftUrl))
+                .Append(".");
+
+            Assert.Single(paragraph.Hyperlinks);
+            Assert.Equal("link", paragraph.Hyperlinks.First().Text);
+            Assert.Empty(paragraph.Hyperlinks.First().Id);
+            Assert.Equal(microsoftUrl, paragraph.Hyperlinks.First().Uri);
+        }
+
+        [Fact]
+        public void HyperlinkGetsIdWhenAddedToDocument()
+        {
+            var microsoftUrl = new Uri("http://www.microsoft.com");
+
+            var paragraph = new Paragraph()
+                .AppendLine("This line contains a ")
+                .Append(new Hyperlink("link", microsoftUrl))
+                .Append(".");
+
+            Assert.Single(paragraph.Hyperlinks);
+            Assert.Empty(paragraph.Hyperlinks.First().Id);
+
+            var doc = Document.Create();
+            doc.AddParagraph(paragraph);
+            Assert.NotEmpty(paragraph.Hyperlinks.First().Id);
+        }
+
+        [Fact]
         public void FirstHeaderAddsElements()
         {
             using var doc = (DocX) Document.Create();
