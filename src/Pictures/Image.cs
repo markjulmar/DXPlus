@@ -40,7 +40,7 @@ namespace DXPlus
         ///<summary>
         /// Returns the name of the image file.
         ///</summary>
-        public string FileName => Path.GetFileName(PackageRelationship.TargetUri.ToString());
+        public string FileName => PackageRelationship != null ? Path.GetFileName(PackageRelationship.TargetUri.ToString()) : string.Empty;
 
         /// <summary>
         /// Internal constructor to create an image from a package relationship.
@@ -52,6 +52,19 @@ namespace DXPlus
             this.document = (DocX) document;
             this.PackageRelationship = packageRelationship;
             Id = packageRelationship.Id;
+        }
+
+        /// <summary>
+        /// Internal constructor to create an image from an unowned document
+        /// </summary>
+        /// <param name="document"></param>
+        /// <param name="packageRelationship"></param>
+        /// <param name="id"></param>
+        internal Image(IDocument document, PackageRelationship packageRelationship, string id)
+        {
+            this.document = (DocX)document;
+            this.PackageRelationship = packageRelationship;
+            this.Id = id;
         }
 
         /// <summary>

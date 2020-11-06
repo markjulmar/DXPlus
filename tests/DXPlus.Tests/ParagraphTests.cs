@@ -511,5 +511,37 @@ namespace DXPlus.Tests
             p.AppendEquation("1 + 2 = 3");
             Assert.Equal(2, p.Runs.Count());
         }
+
+        [Fact]
+        public void UnownedParagraphInsertsImage()
+        {
+            var document = Document.Create();
+            var image = document.AddImage("1022.jpg");
+            Picture picture = image.CreatePicture(150, 150);
+
+            var paragraph = new Paragraph();
+            paragraph.Append(picture);
+
+            Assert.Single(paragraph.Pictures);
+            Assert.Same(picture.Xml, paragraph.Pictures.Single().Xml);
+        }
+
+        [Fact]
+        public void AssigningDocOwnerUpdatesImage()
+        {
+            var document = Document.Create();
+            var image = document.AddImage("1022.jpg");
+            Picture picture = image.CreatePicture(150, 150);
+
+            var paragraph = new Paragraph();
+            paragraph.Append(picture);
+
+            Assert.Single(paragraph.Pictures);
+            Assert.Null(paragraph.Pictures[0].PackagePart);
+
+            document.AddParagraph(paragraph);
+            Assert.NotNull(paragraph.Pictures[0].PackagePart);
+        }
+
     }
 }

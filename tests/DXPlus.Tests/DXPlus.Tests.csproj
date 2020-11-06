@@ -31,4 +31,9 @@
     <ProjectReference Include="..\..\src\DXPlus.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="1022.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

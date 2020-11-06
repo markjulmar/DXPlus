@@ -280,14 +280,14 @@ namespace DXPlus
                     from p in Xml.LocalNameDescendants("drawing")
                     let id = p.FirstLocalNameDescendant("blip").AttributeValue(Namespace.RelatedDoc + "embed")
                     where id != null
-                    let img = new Image(Document, Document.PackagePart.GetRelationship(id))
-                    select new Picture(Document, p, img)
+                    let img = new Image(Document, Document?.PackagePart?.GetRelationship(id), id)
+                    select new Picture(Document, p, img) { PackagePart = this.PackagePart }
                 ).Union(
                     from p in Xml.LocalNameDescendants("pict")
                     let id = p.FirstLocalNameDescendant("imagedata").AttributeValue(Namespace.RelatedDoc + "id")
                     where id != null
-                    let img = new Image(Document, Document.PackagePart.GetRelationship(id))
-                    select new Picture(Document, p, img)
+                    let img = new Image(Document, Document?.PackagePart?.GetRelationship(id), id)
+                    select new Picture(Document, p, img) { PackagePart = this.PackagePart }
                 ).ToList();
 
         /// <summary>
@@ -521,15 +521,12 @@ namespace DXPlus
         /// <returns>The Paragraph with the Picture now appended.</returns>
         public Paragraph Append(Picture picture)
         {
-            if (Document == null)
-                throw new ArgumentException("Cannot add pictures without a document owner.");
-
-            // Check to see if the .rels file exists and create it if not.
-            _ = Document.EnsureRelsPathExists(PackagePart);
-
-            // Check to see if a rel for this Picture exists, create it if not.
-            picture.PackagePart = this.PackagePart;
-            picture.RelationshipId = picture.GetOrCreateRelationship();
+            if (Document != null)
+            {
+                picture.Document = this.Document;
+                picture.PackagePart = this.PackagePart;
+                picture.RelationshipId = picture.GetOrCreateRelationship();
+            }
 
             // Add a new run with the given drawing to the paragraph.
             var run = new XElement(Name.Run,
@@ -708,17 +705,12 @@ namespace DXPlus
         /// <returns>The modified Paragraph.</returns>
         public Paragraph Insert(Picture picture, int index = 0)
         {
-            if (Document == null)
+            if (Document != null)
             {
-                throw new InvalidOperationException("Cannot add pictures without a document owner.");
+                picture.Document = this.Document;
+                picture.PackagePart = this.PackagePart;
+                picture.RelationshipId = picture.GetOrCreateRelationship();
             }
-
-            // Check to see if the rels file exists and create it if not.
-            _ = Document.EnsureRelsPathExists(PackagePart);
-
-            // Check to see if a rel for this Picture exists, create it if not.
-            picture.PackagePart = this.PackagePart;
-            picture.RelationshipId = picture.GetOrCreateRelationship();
 
             // Create a run for the picture
             var xml = new XElement(Name.Run,
@@ -1289,6 +1281,20 @@ namespace DXPlus
                         _ = hyperlink.GetOrCreateRelationship();
                     }
                     unownedHyperlinks = null;
+                }
+
+                if (Pictures.Any())
+                {
+                    // Check to see if the .rels file exists and create it if not.
+                    _ = Document.EnsureRelsPathExists(PackagePart);
+
+                    // Fixup pictures
+                    foreach (var picture in Pictures)
+                    {
+                        picture.Document = Document;
+                        picture.PackagePart = this.PackagePart;
+                        picture.RelationshipId = picture.GetOrCreateRelationship();
+                    }
                 }
             }
         }
