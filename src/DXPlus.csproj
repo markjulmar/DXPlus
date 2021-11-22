@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <RootNamespace>DXPlus</RootNamespace>
     <PackOnBuild>true</PackOnBuild>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Julmar.DxPlus</PackageId>
     <Authors>Mark Smith, Cathal Coffey</Authors>
     <Description>OpenXml .NET Core library to work with .docx format. Fork of DocX from Cathal Coffey.</Description>
-    <PackageVersion>1.0.2-prerelease</PackageVersion>
+    <PackageVersion>1.0.3-prerelease</PackageVersion>
     <CompanyName>julmar.com</CompanyName>
     <Owners>julmar.com</Owners>
     <PackageProjectUrl>https://github.com/markjulmar/DXPlus</PackageProjectUrl>

@@ -1,10 +1,12 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30320.27
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DXPlus", "src\DXPlus.csproj", "{C78A211F-E82E-45B3-A72F-D663718F347D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DXPlus.Tests", "tests\DXPlus.Tests\DXPlus.Tests.csproj", "{0AC37A0C-FAB5-42E4-9D0B-0FEE9E386BF1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DXPlus.Tests", "tests\DXPlus.Tests\DXPlus.Tests.csproj", "{0AC37A0C-FAB5-42E4-9D0B-0FEE9E386BF1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReadDocument", "tests\ReadDocument\ReadDocument.csproj", "{DED1FAF3-1156-4F85-9078-B9F577282855}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -20,6 +22,10 @@ Global
 		{0AC37A0C-FAB5-42E4-9D0B-0FEE9E386BF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0AC37A0C-FAB5-42E4-9D0B-0FEE9E386BF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0AC37A0C-FAB5-42E4-9D0B-0FEE9E386BF1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DED1FAF3-1156-4F85-9078-B9F577282855}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DED1FAF3-1156-4F85-9078-B9F577282855}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DED1FAF3-1156-4F85-9078-B9F577282855}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DED1FAF3-1156-4F85-9078-B9F577282855}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

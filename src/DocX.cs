@@ -856,8 +856,10 @@ namespace DXPlus
 
             // Get the last revision id
             string revValue = Xml.GetSectionProperties().RevisionId;
-            revision = uint.Parse(revValue, System.Globalization.NumberStyles.AllowHexSpecifier);
-            revision++; // bump revision
+            if (uint.TryParse(revValue, out revision))
+                revision++; // bump revision
+            else 
+                revision = 1;
 
             // Load all the XML files
             settingsDoc = settingsPart?.Load();
