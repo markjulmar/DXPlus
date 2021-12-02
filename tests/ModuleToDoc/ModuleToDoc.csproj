@@ -5,6 +5,12 @@
         <TargetFramework>net5.0</TargetFramework>
     </PropertyGroup>
 
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+      <LangVersion>preview</LangVersion>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+      <LangVersion>preview</LangVersion>
+    </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="CommandLineParser" Version="2.8.0" />
         <PackageReference Include="Julmar.MSLearnRepos" Version="1.0.5.1" />
