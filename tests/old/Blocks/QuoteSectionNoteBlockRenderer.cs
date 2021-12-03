@@ -3,9 +3,9 @@ using Microsoft.DocAsCode.MarkdigEngine.Extensions;
 
 namespace Markdig.Renderer.Docx.Blocks
 {
-    public class QuoteSectionNoteBlockRenderer : DocxObjectRenderer<QuoteSectionNoteBlock>
+    public class QuoteSectionNoteBlockRenderer : DocxRenderer<QuoteSectionNoteBlock>
     {
-        protected override void Write(DocxRenderer renderer, QuoteSectionNoteBlock obj)
+        protected override void Write(BaseRenderer renderer, QuoteSectionNoteBlock obj)
         {
             if (obj.Count > 0)
             {

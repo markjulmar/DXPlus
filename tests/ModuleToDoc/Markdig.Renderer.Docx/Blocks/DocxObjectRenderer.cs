@@ -1,16 +1,77 @@
-using Markdig.Renderers;
+using System.Linq;
+using DXPlus;
+using Markdig.Helpers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 
 namespace Markdig.Renderer.Docx.Blocks
 {
-    /// <summary>
-    /// A base class for XAML rendering <see cref="Block"/> and <see cref="Inline"/> Markdown objects.
-    /// </summary>
-    /// <typeparam name="TObject">The type of the object.</typeparam>
-    /// <seealso cref="IMarkdownObjectRenderer" />
-    public abstract class DocxObjectRenderer<TObject> : MarkdownObjectRenderer<DocxRenderer,TObject>
-        where TObject : MarkdownObject
+    public interface IDocxObjectRenderer
     {
+        bool CanRender(MarkdownObject obj);
+        void Write(IDocxRenderer owner, IDocument document, Paragraph currentParagraph, MarkdownObject obj);
+    }
+
+    public abstract class DocxObjectRenderer<TObject> : IDocxObjectRenderer
+        where TObject : MarkdownObject 
+    {
+        public virtual bool CanRender(MarkdownObject obj) => obj.GetType() == typeof(TObject) || typeof(TObject).IsAssignableFrom(obj.GetType());
+        public abstract void Write(IDocxRenderer owner, IDocument document, Paragraph currentParagraph, TObject obj);
+        void IDocxObjectRenderer.Write(IDocxRenderer owner, IDocument document, Paragraph currentParagraph, MarkdownObject obj)
+            => Write(owner, document, currentParagraph, (TObject)obj);
+
+        protected virtual void WriteChildren(LeafBlock leafBlock,
+                IDocxRenderer owner, IDocument document, Paragraph currentParagraph)
+        {
+            var inlines = leafBlock.Inline;
+            if (inlines != null)
+            {
+                foreach (var child in inlines)
+                {
+                    Write(child, owner, document, currentParagraph);
+                }
+            }
+
+            if (leafBlock.Lines.Count > 0)
+            {
+                int index = 0;
+                int count = leafBlock.Lines.Count;
+                foreach (var text in leafBlock.Lines.Cast<StringLine>().Take(count))
+                {
+                    if (++index < count)
+                        currentParagraph.AppendLine(text.ToString());
+                    else
+                        currentParagraph.Append(text.ToString());
+                }
+            }
+        }
+
+        protected virtual void WriteChildren(ContainerBlock container,
+                IDocxRenderer owner, IDocument document, Paragraph currentParagraph)
+        {
+            foreach (var block in container)
+            {
+                Write(block, owner, document, currentParagraph);
+            }
+        }
+
+        protected virtual void WriteChildren(ContainerInline container,
+                IDocxRenderer owner, IDocument document, Paragraph currentParagraph)
+        {
+            foreach (var inline in container)
+            {
+                Write(inline, owner, document, currentParagraph);
+            }
+        }
+
+        protected virtual void Write(MarkdownObject item,
+                IDocxRenderer owner, IDocument document, Paragraph currentParagraph)
+        {
+            var renderer = owner.FindRenderer(item);
+            if (renderer != null)
+            {
+                renderer.Write(owner, document, currentParagraph, item);
+            }
+        }
     }
 }

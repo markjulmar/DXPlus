@@ -7,9 +7,9 @@ using Microsoft.DocAsCode.MarkdigEngine.Extensions;
 
 namespace Markdig.Renderer.Docx.Blocks
 {
-    public class TripleColonBlockRenderer : DocxObjectRenderer<TripleColonBlock>
+    public class TripleColonBlockRenderer : DocxRenderer<TripleColonBlock>
     {
-        protected override void Write(DocxRenderer renderer, TripleColonBlock block)
+        protected override void Write(BaseRenderer renderer, TripleColonBlock block)
         {
             switch (block.Extension.Name)
             {
@@ -21,7 +21,7 @@ namespace Markdig.Renderer.Docx.Blocks
             }
         }
 
-        private void WriteImage(DocxRenderer renderer, IDictionary<string, string> blockAttributes)
+        private void WriteImage(BaseRenderer renderer, IDictionary<string, string> blockAttributes)
         {
             if (blockAttributes.TryGetValue("source", out string imageSource)
                 && !string.IsNullOrWhiteSpace(imageSource))

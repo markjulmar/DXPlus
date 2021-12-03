@@ -1,4 +1,4 @@
-using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 using System.Linq;
 using DXPlus;
 using Markdig.Syntax;
@@ -7,45 +7,35 @@ namespace Markdig.Renderer.Docx.Blocks
 {
     public class ListRenderer : DocxObjectRenderer<ListBlock>
     {
-        private List currentList;
-        private int currentLevel;
-        
-        protected override void Write(DocxRenderer renderer, [NotNull] ListBlock listBlock)
+        List currentList = null;
+        int currentLevel = 0;
+
+        public override void Write(IDocxRenderer owner, IDocument document, Paragraph currentParagraph, ListBlock block)
         {
-            bool isTopList = currentList == null;
-            if (!isTopList)
+            bool topList = false;
+            if (currentParagraph != null)
             {
-                // First, close off the prior paragraph (if any).
-                var existingParagraph = renderer.CurrentParagraph();
-                if (existingParagraph != null)
-                {
-                    currentList.AddItem(existingParagraph, currentLevel);
-                    renderer.NewListParagraph();
-                }
-                
+                Debug.Assert(currentList != null);
                 currentLevel++;
             }
             else
             {
-                currentList = new List(listBlock.IsOrdered ? NumberingFormat.Numbered : NumberingFormat.Bulleted);
-                if (listBlock.IsOrdered)
-                    currentList.StartNumber = int.Parse(listBlock.OrderedStart);
-            }
-                
-            foreach (var item in listBlock.Cast<ListItemBlock>())
-            {
-                var newParagraph = renderer.WriteParagraph(item);
-                if (newParagraph != null)
-                {
-                    currentList.AddItem(newParagraph, currentLevel);
-                }
+                topList = true;
+                currentList = new List(block.IsOrdered ? NumberingFormat.Numbered : NumberingFormat.Bulleted);
+                if (block.IsOrdered)
+                    currentList.StartNumber = int.Parse(block.OrderedStart);
             }
 
-            if (isTopList)
+            foreach (var item in block.Cast<ListItemBlock>())
             {
-                renderer.Document.AddList(currentList);
-                renderer.EndParagraph();
+                currentParagraph = new Paragraph();
+                WriteChildren(item, owner, document, currentParagraph);
+                currentList.AddItem(currentParagraph, currentLevel);
+            }
 
+            if (topList)
+            {
+                document.AddList(currentList);
                 currentLevel = 0;
                 currentList = null;
             }

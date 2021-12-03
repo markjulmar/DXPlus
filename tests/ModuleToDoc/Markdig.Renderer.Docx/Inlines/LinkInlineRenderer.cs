@@ -8,67 +8,26 @@ namespace Markdig.Renderer.Docx.Inlines
 {
     public class LinkInlineRenderer : DocxObjectRenderer<LinkInline>
     {
-        protected override void Write(DocxRenderer renderer, LinkInline obj)
+        public override void Write(IDocxRenderer owner, IDocument document, Paragraph currentParagraph, LinkInline link)
         {
-            var url = obj.GetDynamicUrl?.Invoke() ?? obj.Url;
+            var url = link.GetDynamicUrl?.Invoke() ?? link.Url;
 
-            string title = obj.Title;
+            string title = link.Title;
             if (string.IsNullOrEmpty(title))
             {
-                if (obj.FirstChild is LiteralInline literal)
+                if (link.FirstChild is LiteralInline literal)
                     title = literal.Content.ToString();
             }
-            
-            if (obj.IsImage)
+
+            if (link.IsImage)
             {
-                RenderImage(renderer, url, title);
+                owner.InsertImage(currentParagraph, url, title);
             }
             else
             {
                 if (string.IsNullOrEmpty(title))
                     title = url;
-                renderer.CurrentParagraph()
-                    .Append(new Hyperlink(title, new Uri(url)));
-            }
-        }
-
-        public static void RenderImage(DocxRenderer renderer, string imageSource, string altText)
-        {
-            string fullPath = renderer.ResolvePath(imageSource);
-            if (File.Exists(fullPath))
-            {
-                var img = System.Drawing.Image.FromFile(fullPath);
-                var width = img.Width;
-                var height = img.Height;
-
-                int finalWidth = width;
-                int finalHeight = height;
-
-                if (finalWidth > finalHeight)
-                {
-                    if (finalWidth > 400)
-                    {
-                        finalWidth = 400;
-                        finalHeight = (int)(400 * ((double)height / width));
-                    }
-                }
-                else
-                {
-                    if (finalHeight > 400)
-                    {
-                        finalHeight = 400;
-                        finalWidth = (int)(400 * ((double)width / height));
-                    }
-                }
-                    
-                var image = renderer.Document.AddImage(fullPath);
-                var picture = image.CreatePicture(imageSource, altText, finalWidth, finalHeight);
-                renderer.CurrentParagraph()
-                    .AppendLine()
-                    .Append(picture)
-                    .AppendLine();
-                
-                renderer.EndParagraph();
+                currentParagraph.Append(new Hyperlink(title, new Uri(url)));
             }
         }
     }

@@ -5,9 +5,9 @@ using Markdig.Syntax.Inlines;
 
 namespace Markdig.Renderer.Docx.Blocks
 {
-    public class QuoteBlockRenderer : DocxObjectRenderer<QuoteBlock>
+    public class QuoteBlockRenderer : DocxRenderer<QuoteBlock>
     {
-        protected override void Write(DocxRenderer renderer, QuoteBlock obj)
+        protected override void Write(BaseRenderer renderer, QuoteBlock obj)
         {
             if (obj.Count > 0)
             {

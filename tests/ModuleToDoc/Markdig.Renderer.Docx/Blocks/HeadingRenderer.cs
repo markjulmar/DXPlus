@@ -1,18 +1,26 @@
-using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
+using DXPlus;
 using Markdig.Syntax;
 
 namespace Markdig.Renderer.Docx.Blocks
 {
-    /// <summary>
-    /// An XAML renderer for a <see cref="HeadingBlock"/>.
-    /// </summary>
-    /// <seealso cref="DocxObjectRenderer{TObject}" />
     public class HeadingRenderer : DocxObjectRenderer<HeadingBlock>
     {
-        protected override void Write([NotNull] DocxRenderer renderer, [NotNull] HeadingBlock obj)
+        public override void Write(IDocxRenderer owner, IDocument document, Paragraph currentParagraph, HeadingBlock heading)
         {
-            renderer.WriteChildren(obj.Inline);
-            renderer.EndParagraph();
+            Debug.Assert(currentParagraph == null);
+
+            currentParagraph = document.AddParagraph();
+            switch (heading.Level)
+            {
+                case 1: currentParagraph.Style(HeadingType.Heading1); break;
+                case 2: currentParagraph.Style(HeadingType.Heading2); break;
+                case 3: currentParagraph.Style(HeadingType.Heading3); break;
+                case 4: currentParagraph.Style(HeadingType.Heading4); break;
+                case 5: currentParagraph.Style(HeadingType.Heading5); break;
+            }
+
+            WriteChildren(heading, owner, document, currentParagraph);
         }
     }
 }

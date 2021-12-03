@@ -3,7 +3,7 @@ using Markdig.Syntax;
 
 namespace Markdig.Renderer.Docx.Inlines
 {
-    public class LinkReferenceDefinitionRenderer : DocxObjectRenderer<LinkReferenceDefinition>
+    public class LinkReferenceDefinitionRenderer : DocxRenderer<LinkReferenceDefinition>
     {
         protected override void Write(DocxRenderer renderer, LinkReferenceDefinition linkDef)
         {

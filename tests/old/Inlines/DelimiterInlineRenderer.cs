@@ -3,7 +3,7 @@ using Markdig.Syntax.Inlines;
 
 namespace Markdig.Renderer.Docx.Inlines
 {
-    public class DelimiterInlineRenderer : DocxObjectRenderer<DelimiterInline>
+    public class DelimiterInlineRenderer : DocxRenderer<DelimiterInline>
     {
         protected override void Write(DocxRenderer renderer, DelimiterInline obj)
         {

@@ -7,9 +7,9 @@ using Table = Markdig.Extensions.Tables.Table;
 
 namespace Markdig.Renderer.Docx.Blocks
 {
-    public class TableRenderer : DocxObjectRenderer<Table>
+    public class TableRenderer : DocxRenderer<Table>
     {
-        public override void Write(IDocxRenderer owner, IDocument document, Paragraph currentParagraph, Table table)
+        protected override void Write(BaseRenderer renderer, Table table)
         {
             bool hasColumnWidth = table.ColumnDefinitions.Any(tableColumnDefinition 
                 => tableColumnDefinition.Width != 0.0f && tableColumnDefinition.Width != 1.0f);
@@ -21,20 +21,23 @@ namespace Markdig.Renderer.Docx.Blocks
                     .Select(tableColumnDefinition => Math.Round(tableColumnDefinition.Width * 100) / 100)
                     .ToList();
             }
+            
+            var section = renderer.Document.Sections.First();
 
-            // Determine the width of the page
-            var section = document.Sections.First();
-            double pageWidth = section.Properties.PageWidth - section.Properties.LeftMargin - section.Properties.RightMargin;
+            renderer.CurrentParagraph().AppendLine();
 
             int totalColumns = table.Max(tr => ((TableRow) tr).Count);
-            var documentTable = document.AddTable(table.Count, totalColumns);
+            var documentTable = renderer.Document.AddTable(table.Count, totalColumns);
+
+            // Determine the width of the page
+            double pageWidth = section.Properties.PageWidth - section.Properties.LeftMargin - section.Properties.RightMargin;
             bool firstRow = true;
 
             for (var rowIndex = 0; rowIndex < table.Count; rowIndex++)
             {
                 var row = (TableRow) table[rowIndex];
                 if (firstRow && row.IsHeader) {
-                    documentTable.Design = TableDesign.TableNormal;
+                    documentTable.Design = TableDesign.LightGrid;
                 }
 
                 firstRow = false;
@@ -50,8 +53,8 @@ namespace Markdig.Renderer.Docx.Blocks
                         documentCell.SetMargins(0);
                     }
 
-                    var cellParagraph = documentCell.Paragraphs[0];
-                    WriteChildren(cell, owner, document, cellParagraph);
+                    var paragraph = renderer.WriteParagraph(cell);
+                    documentCell.Paragraphs[0].InsertParagraphBefore(paragraph);
                     
                     if (table.ColumnDefinitions.Count > 0)
                     {
@@ -67,13 +70,13 @@ namespace Markdig.Renderer.Docx.Blocks
                             switch (alignment)
                             {
                                 case TableColumnAlign.Left:
-                                    cellParagraph.WithProperties(new ParagraphProperties { Alignment = Alignment.Left });
+                                    paragraph.WithProperties(new ParagraphProperties { Alignment = Alignment.Left });
                                     break;
                                 case TableColumnAlign.Center:
-                                    cellParagraph.WithProperties(new ParagraphProperties { Alignment = Alignment.Center });
+                                    paragraph.WithProperties(new ParagraphProperties { Alignment = Alignment.Center });
                                     break;
                                 case TableColumnAlign.Right:
-                                    cellParagraph.WithProperties(new ParagraphProperties { Alignment = Alignment.Right });
+                                    paragraph.WithProperties(new ParagraphProperties { Alignment = Alignment.Right });
                                     break;
                             }
                         }
@@ -91,6 +94,9 @@ namespace Markdig.Renderer.Docx.Blocks
 
             if (columnWidths.Count == 0)
                 documentTable.AutoFit(AutoFit.Contents);
+
+            renderer.EndParagraph();
+            renderer.CurrentParagraph().AppendLine();
         }
     }
 }

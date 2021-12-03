@@ -50,6 +50,8 @@ namespace ModuleToDoc
             using IDocument wordDocument = Document.Create(options.OutputFile);
             await processor.Process(wordDocument, options.ZonePivot);
             wordDocument.Save();
+
+            Console.WriteLine("Done.");
         }
     }
 }

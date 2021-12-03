@@ -1,12 +1,16 @@
+using DXPlus;
 using Markdig.Syntax;
 
 namespace Markdig.Renderer.Docx.Blocks
 {
     public class ParagraphRenderer : DocxObjectRenderer<ParagraphBlock>
     {
-        protected override void Write(DocxRenderer renderer, ParagraphBlock obj)
+        public override void Write(IDocxRenderer owner, IDocument document, Paragraph currentParagraph, ParagraphBlock block)
         {
-            renderer.Write(obj.Inline);
+            if (currentParagraph == null)
+                currentParagraph = document.AddParagraph();
+
+            WriteChildren(block, owner, document, currentParagraph);
         }
-    }
+   }
 }

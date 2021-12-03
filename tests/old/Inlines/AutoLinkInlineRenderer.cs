@@ -5,7 +5,7 @@ using Markdig.Syntax.Inlines;
 
 namespace Markdig.Renderer.Docx.Inlines
 {
-    public class AutolinkInlineRenderer : DocxObjectRenderer<AutolinkInline>
+    public class AutolinkInlineRenderer : DocxRenderer<AutolinkInline>
     {
         protected override void Write(DocxRenderer renderer, AutolinkInline obj)
         {

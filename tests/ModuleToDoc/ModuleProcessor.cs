@@ -99,17 +99,14 @@ namespace ModuleToDoc
                     .UseTripleColon(context)
                     .Build();
 
-                var docWriter = new DocxRenderer(wordDocument, moduleFolder);
-                pipeline.Setup(docWriter);
+                var docWriter = new DocxObjectRenderer(wordDocument, moduleFolder);
 
                 string markdownText = File.ReadAllText(markdownFile);
-
-
                 MarkdownDocument markdownDocument = Markdown.Parse(markdownText, pipeline);
 
-                MarkdigDebug.Dump(markdownDocument);
+                //MarkdigDebug.Dump(markdownDocument);
 
-                //docWriter.Render(markdownDocument);
+                docWriter.Render(markdownDocument);
             }
             finally
             {
