@@ -13,6 +13,8 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 
+[assembly:InternalsVisibleTo("DXPlus.Tests")]
+
 namespace DXPlus
 {
     /// <summary>

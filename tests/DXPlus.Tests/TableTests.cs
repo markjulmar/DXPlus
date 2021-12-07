@@ -8,6 +8,15 @@ namespace DXPlus.Tests
     public class TableTests
     {
         [Fact]
+        public void AddTableToOrphanParagraphFails()
+        {
+            Paragraph p = new Paragraph();
+            Table t = new Table(1, 1);
+
+            Assert.Throws<InvalidOperationException>(() => p.AppendTable(t));
+        }
+
+        [Fact]
         public void CreateTableWithInvalidRowsOrColumnsThrowsException()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new Table(0, 1));

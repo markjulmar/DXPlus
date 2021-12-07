@@ -229,6 +229,31 @@ namespace DXPlus
         public Table Table { get; internal set; }
 
         /// <summary>
+        /// Add a new table after this paragraph
+        /// </summary>
+        /// <param name="table">Table to add</param>
+        public Paragraph Append(Table table)
+        {
+            if (table.BlockContainer != null)
+                throw new ArgumentException("Cannot add table multiple times.", nameof(table));
+
+            table.BlockContainer = this.BlockContainer;
+
+            if (Xml.Parent == null)
+            {
+                if (Table != null)
+                    throw new Exception("Can only add one table after the a paragraph.");
+                Table = table;
+            }
+            else
+            {
+                Xml.AddAfterSelf(table.Xml);
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Properties applied to this paragraph
         /// </summary>
         public ParagraphProperties Properties
@@ -827,7 +852,6 @@ namespace DXPlus
             }
             else
             {
-                // Remove this paragraph from the document
                 Xml.Remove();
                 Xml = null;
             }
@@ -1233,30 +1257,6 @@ namespace DXPlus
             return new[] { splitLeft, splitRight };
         }
 
-        /// <summary>
-        /// Provides value equality for the paragraph.
-        /// </summary>
-        /// <param name="other"></param>
-        /// <returns></returns>
-        public bool Equals(Paragraph other)
-        {
-            if (other is null)
-            {
-                return false;
-            }
-
-            if (ReferenceEquals(this, other))
-            {
-                return true;
-            }
-
-            return Text == other.Text
-                   && Id == other.Id
-                   && StartIndex == other.StartIndex
-                   && EndIndex == other.EndIndex
-                   && ParentContainerType == other.ParentContainerType;
-        }
-
         protected override void OnDocumentOwnerChanged(IDocument previousValue, IDocument newValue)
         {
             base.OnDocumentOwnerChanged(previousValue, newValue);
@@ -1265,33 +1265,40 @@ namespace DXPlus
             {
                 // Update bookmark IDs.
                 foreach (var bookmark in GetBookmarks())
-                    bookmark.Id = Document.GetNextDocumentId();
+                    bookmark.Id = document.GetNextDocumentId();
 
                 if (Hyperlinks.Any())
                 {
                     // Ensure the owner document has the hyperlink styles.
-                    Document.AddHyperlinkStyle();
-                    _ = Document.EnsureRelsPathExists(PackagePart);
+                    document.AddHyperlinkStyle();
+                    _ = document.EnsureRelsPathExists(this.PackagePart);
 
                     // Fixup hyperlinks
                     foreach (var hyperlink in Hyperlinks)
                     {
-                        hyperlink.Document = Document;
-                        hyperlink.PackagePart = PackagePart;
+                        hyperlink.Document = document;
+                        hyperlink.PackagePart = this.PackagePart;
                         _ = hyperlink.GetOrCreateRelationship();
                     }
                     unownedHyperlinks = null;
                 }
 
+                if (Table != null)
+                {
+                    Table.Document = document;
+                    Table.PackagePart = this.PackagePart;
+                    Xml.AddAfterSelf(Table.Xml);
+                }
+
                 if (Pictures.Any())
                 {
                     // Check to see if the .rels file exists and create it if not.
-                    _ = Document.EnsureRelsPathExists(PackagePart);
+                    _ = document.EnsureRelsPathExists(PackagePart);
 
                     // Fixup pictures
                     foreach (var picture in Pictures)
                     {
-                        picture.Document = Document;
+                        picture.Document = document;
                         picture.PackagePart = this.PackagePart;
                         picture.RelationshipId = picture.GetOrCreateRelationship();
                     }
@@ -1315,6 +1322,11 @@ namespace DXPlus
                     nameof(DocX) => ContainerType.Body,
                     _ => ContainerType.None
                 };
+            }
+
+            if (Table != null)
+            {
+                Table.BlockContainer = blockContainer;
             }
         }
 
@@ -1349,10 +1361,46 @@ namespace DXPlus
         /// <returns></returns>
         public static Paragraph Clone(Paragraph otherParagraph)
         {
-            return new Paragraph
-            {
-                Xml = otherParagraph.Xml.Clone(), Id = HelperFunctions.GenerateHexId()
+            if (otherParagraph is null)
+                throw new ArgumentNullException(nameof(otherParagraph));
+
+            return new Paragraph {
+                Xml = otherParagraph.Xml.Clone(),
+                Id = HelperFunctions.GenerateHexId()
             };
         }
+
+        /// <summary>
+        /// Provides value equality for the paragraph.
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool Equals(Paragraph other)
+        {
+            if (other is null)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            return Text == other.Text
+                   && Id == other.Id
+                   && StartIndex == other.StartIndex
+                   && EndIndex == other.EndIndex
+                   && ParentContainerType == other.ParentContainerType;
+        }
+
+        public override bool Equals(object obj) => Equals(obj as Paragraph);
+
+        public override int GetHashCode()
+            => Text.GetHashCode()
+                + Id.GetHashCode()
+                + StartIndex.GetHashCode()
+                + EndIndex.GetHashCode()
+                + ParentContainerType.GetHashCode();
     }
 }

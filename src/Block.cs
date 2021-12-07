@@ -101,19 +101,6 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Add a new table after this container
-        /// </summary>
-        /// <param name="table">Table to add</param>
-        public void AddTable(Table table)
-        {
-            if (table.BlockContainer != null)
-                throw new ArgumentException("Cannot add table multiple times.", nameof(table));
-
-            table.BlockContainer = this.BlockContainer;
-            Xml.AddAfterSelf(table.Xml);
-        }
-
-        /// <summary>
         /// Insert a table before this element
         /// </summary>
         /// <param name="table"></param>

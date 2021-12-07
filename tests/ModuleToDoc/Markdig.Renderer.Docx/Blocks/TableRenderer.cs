@@ -17,17 +17,28 @@ namespace Markdig.Renderer.Docx.Blocks
             var columnWidths = new List<double>();
             if (hasColumnWidth)
             {
-                table.ColumnDefinitions
+                // Force column widths to be evaulated.
+                _ = table.ColumnDefinitions
                     .Select(tableColumnDefinition => Math.Round(tableColumnDefinition.Width * 100) / 100)
                     .ToList();
             }
 
             // Determine the width of the page
-            var section = document.Sections.First();
+            var section = document.Sections[0];
             double pageWidth = section.Properties.PageWidth - section.Properties.LeftMargin - section.Properties.RightMargin;
 
             int totalColumns = table.Max(tr => ((TableRow) tr).Count);
-            var documentTable = document.AddTable(table.Count, totalColumns);
+            DXPlus.Table documentTable;
+            if (currentParagraph != null)
+            {
+                documentTable = new DXPlus.Table(table.Count, totalColumns);
+                currentParagraph.Append(documentTable);
+            }
+            else
+            {
+                documentTable = document.AddTable(table.Count, totalColumns);
+            }
+
             bool firstRow = true;
 
             for (var rowIndex = 0; rowIndex < table.Count; rowIndex++)

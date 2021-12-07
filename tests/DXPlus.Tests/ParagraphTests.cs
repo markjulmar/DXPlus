@@ -1,6 +1,4 @@
 using System;
-using System.Drawing;
-using System.Globalization;
 using System.Linq;
 using System.Xml.Linq;
 using System.Xml.XPath;
@@ -306,6 +304,14 @@ namespace DXPlus.Tests
             doc.AddParagraph(p);
             Assert.NotNull(p.PackagePart);
             Assert.Equal(doc.PackagePart, p.PackagePart);
+        }
+
+        [Fact]
+        public void AddPageBreakToOrphanedParagraphThrowsException()
+        {
+            var paragraph = new Paragraph("Test");
+
+            Assert.Throws<InvalidOperationException>(() => paragraph.AddPageBreak());
         }
 
         [Fact]
