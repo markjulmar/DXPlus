@@ -6,8 +6,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DXPlus", "src\DXPlus.csproj
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DXPlus.Tests", "tests\DXPlus.Tests\DXPlus.Tests.csproj", "{0AC37A0C-FAB5-42E4-9D0B-0FEE9E386BF1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReadDocument", "tests\ReadDocument\ReadDocument.csproj", "{DED1FAF3-1156-4F85-9078-B9F577282855}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -22,10 +20,6 @@ Global
 		{0AC37A0C-FAB5-42E4-9D0B-0FEE9E386BF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0AC37A0C-FAB5-42E4-9D0B-0FEE9E386BF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0AC37A0C-FAB5-42E4-9D0B-0FEE9E386BF1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DED1FAF3-1156-4F85-9078-B9F577282855}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DED1FAF3-1156-4F85-9078-B9F577282855}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DED1FAF3-1156-4F85-9078-B9F577282855}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DED1FAF3-1156-4F85-9078-B9F577282855}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
