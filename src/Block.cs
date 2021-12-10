@@ -44,7 +44,7 @@ namespace DXPlus
         /// <param name="paragraph">Paragraph to insert</param>
         public void AddParagraph(Paragraph paragraph)
         {
-            if (paragraph.BlockContainer != null)
+            if (paragraph.InDom)
                 throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
             Xml.AddAfterSelf(paragraph.Xml);
@@ -75,7 +75,7 @@ namespace DXPlus
         /// <param name="paragraph"></param>
         public void InsertParagraphBefore(Paragraph paragraph)
         {
-            if (paragraph.BlockContainer != null)
+            if (paragraph.InDom)
                 throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
             Xml.AddBeforeSelf(paragraph.Xml);
@@ -106,7 +106,7 @@ namespace DXPlus
         /// <param name="table"></param>
         public void InsertTableBefore(Table table)
         {
-            if (table.BlockContainer != null)
+            if (table.InDom)
                 throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
             table.BlockContainer = BlockContainer;
@@ -125,14 +125,18 @@ namespace DXPlus
                     return;
 
                 if (owner != null)
+                {
                     OnRemovedFromContainer(owner);
+                }
 
                 owner = value;
                 PackagePart = owner?.PackagePart;
                 Document = owner?.Document;
 
                 if (owner != null)
+                {
                     OnAddedToContainer(owner);
+                }
             }
         }
 

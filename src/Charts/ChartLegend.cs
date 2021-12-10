@@ -32,7 +32,7 @@ namespace DXPlus.Charts
         public bool Overlay
         {
             get => Xml.Element(Namespace.Chart + "overlay").GetVal() == "1";
-            set => Xml.GetOrCreateElement(Namespace.Chart + "overlay").SetAttributeValue("val", value ? "1" : "0");
+            set => Xml.GetOrAddElement(Namespace.Chart + "overlay").SetAttributeValue("val", value ? "1" : "0");
         }
 
         /// <summary>
@@ -41,7 +41,7 @@ namespace DXPlus.Charts
         public ChartLegendPosition Position
         {
             get => Xml.Element(Namespace.Chart + "legendPos").GetEnumValue<ChartLegendPosition>();
-            set => Xml.GetOrCreateElement(Namespace.Chart + "legendPos").SetEnumValue(value);
+            set => Xml.GetOrAddElement(Namespace.Chart + "legendPos").SetEnumValue(value);
         }
     }
 }

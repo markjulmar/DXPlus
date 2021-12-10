@@ -23,7 +23,7 @@ namespace DXPlus.Charts
         public bool IsVisible
         {
             get => Xml.Element(Namespace.Chart + "delete")?.GetVal() == "0";
-            set => Xml.GetOrCreateElement(Namespace.Chart + "delete").SetValue(value ? "1" : "0");
+            set => Xml.GetOrAddElement(Namespace.Chart + "delete").SetValue(value ? "1" : "0");
         }
     }
 }

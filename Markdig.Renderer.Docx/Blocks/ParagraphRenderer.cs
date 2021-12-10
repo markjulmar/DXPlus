@@ -7,8 +7,7 @@ namespace Markdig.Renderer.Docx.Blocks
     {
         public override void Write(IDocxRenderer owner, IDocument document, Paragraph currentParagraph, ParagraphBlock block)
         {
-            if (currentParagraph == null)
-                currentParagraph = document.AddParagraph();
+            currentParagraph ??= document.AddParagraph();
 
             WriteChildren(block, owner, document, currentParagraph);
         }

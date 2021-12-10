@@ -15,6 +15,11 @@ namespace DXPlus
         IDocument Owner { get; }
 
         /// <summary>
+        /// Enumerate all blocks
+        /// </summary>
+        IEnumerable<Block> Blocks { get; }
+
+        /// <summary>
         /// Returns a list of all Paragraphs inside this container.
         /// </summary>
         IReadOnlyList<Paragraph> Paragraphs { get; }

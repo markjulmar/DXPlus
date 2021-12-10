@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -14,15 +14,10 @@
     <ItemGroup>
         <PackageReference Include="CommandLineParser" Version="2.8.0" />
         <PackageReference Include="Julmar.MSLearnRepos" Version="1.0.5.1" />
-        <PackageReference Include="Markdig" Version="0.26.0" />
-        <PackageReference Include="Microsoft.DocAsCode.MarkdigEngine.Extensions" Version="2.58.9" />
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Markdig.Renderer.Docx" />
-    </ItemGroup>
-
-    <ItemGroup>
+      <ProjectReference Include="..\..\Markdig.Renderer.Docx\Markdig.Renderer.Docx.csproj" />
       <ProjectReference Include="..\..\src\DXPlus.csproj" />
     </ItemGroup>
 </Project>

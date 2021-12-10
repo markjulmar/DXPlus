@@ -61,12 +61,12 @@ namespace DXPlus
         /// <summary>
         /// Retrieve the formatting options
         /// </summary>
-        public Formatting Formatting => new Formatting(Xml.GetOrCreateElement(DXPlus.Name.RunProperties));
+        public Formatting Formatting => new Formatting(Xml.GetOrAddElement(DXPlus.Name.RunProperties));
 
         /// <summary>
         /// Paragraph properties
         /// </summary>
-        public ParagraphProperties ParagraphFormatting => new ParagraphProperties(Xml.GetOrCreateElement(DXPlus.Name.ParagraphProperties));
+        public ParagraphProperties ParagraphFormatting => new ParagraphProperties(Xml.GetOrAddElement(DXPlus.Name.ParagraphProperties));
 
         /// <summary>
         /// The style this one is based on.

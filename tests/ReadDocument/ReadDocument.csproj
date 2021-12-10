@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Julmar.DxPlus" Version="1.0.3-prerelease" />
+    <ProjectReference Include="..\..\src\DXPlus.csproj" />
   </ItemGroup>
 
 </Project>

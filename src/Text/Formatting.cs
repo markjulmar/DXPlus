@@ -383,7 +383,7 @@ namespace DXPlus
             {
                 if (value != Color.Empty)
                 {
-                    var e = Xml.GetOrCreateElement(Name.Underline);
+                    var e = Xml.GetOrAddElement(Name.Underline);
                     if (e.GetValAttr() == null) // no underline?
                     {
                         e.SetAttributeValue(Name.MainVal, UnderlineStyle.SingleLine.GetEnumName());

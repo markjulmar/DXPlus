@@ -886,7 +886,7 @@ namespace DXPlus
 
             // See if we have the list style
             AddDefaultStyles();
-            if (Styles.HasStyle("ListParagraph", StyleType.Paragraph))
+            if (!Styles.HasStyle("ListParagraph", StyleType.Paragraph))
             {
                 Styles.Add(Resource.ListParagraphStyle(RevisionId));
             }

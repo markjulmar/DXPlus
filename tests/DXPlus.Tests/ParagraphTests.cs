@@ -306,13 +306,14 @@ namespace DXPlus.Tests
             Assert.Equal(doc.PackagePart, p.PackagePart);
         }
 
+        /* NullContainer allows this to work.
         [Fact]
         public void AddPageBreakToOrphanedParagraphThrowsException()
         {
             var paragraph = new Paragraph("Test");
-
             Assert.Throws<InvalidOperationException>(() => paragraph.AddPageBreak());
         }
+        */
 
         [Fact]
         public void InsertParagraphAtZeroAddsToBeginning()

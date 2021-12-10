@@ -8,9 +8,9 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using Microsoft.DocAsCode.MarkdigEngine.Extensions;
 
-namespace ModuleToDoc
+namespace Markdig.Renderer.Docx
 {
-    public class MarkdigDebug
+    public static class MarkdigDebug
     {
         public static void Dump(ContainerBlock block, int tabs = 0)
         {

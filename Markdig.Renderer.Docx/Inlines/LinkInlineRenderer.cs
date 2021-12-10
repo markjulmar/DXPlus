@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using DXPlus;
 using Markdig.Renderer.Docx.Blocks;
 using Markdig.Syntax.Inlines;
@@ -27,7 +26,15 @@ namespace Markdig.Renderer.Docx.Inlines
             {
                 if (string.IsNullOrEmpty(title))
                     title = url;
-                currentParagraph.Append(new Hyperlink(title, new Uri(url)));
+
+                try
+                {
+                    currentParagraph.Append(new Hyperlink(title, new Uri(url??"", UriKind.RelativeOrAbsolute)));
+                }
+                catch
+                {
+                    currentParagraph.Append($"{title} ({url})");
+                }
             }
         }
     }

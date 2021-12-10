@@ -9,7 +9,8 @@ namespace DXPlus.Helpers
         /// <summary>
         /// Determine if this paragraph is a list element.
         /// </summary>
-        internal static bool IsListItem(this Paragraph p) => ParagraphNumberProperties(p) != null;
+        internal static bool IsListItem(this Paragraph p) => ParagraphNumberProperties(p) != null 
+                                                             || p.Properties?.StyleName == "ListParagraph";
 
         /// <summary>
         /// Fetch the paragraph number properties for a list element.

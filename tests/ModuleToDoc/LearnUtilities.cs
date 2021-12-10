@@ -10,21 +10,21 @@ namespace ModuleToDoc
 {
     public sealed class LearnUtilities
     {
-        private Action<string> _logger;
-        private string _accessToken;
+        private Action<string> logger;
+        private string accessToken;
 
         public async Task<(TripleCrownModule module, string markdownFile)> DownloadModuleAsync(
-            ITripleCrownGitHubService tcService, string accessToken,
-            string learnFolder, string outputFolder, Action<string> logger = null)
+            ITripleCrownGitHubService tcService, string token,
+            string learnFolder, string outputFolder, Action<string> log = null)
         {
             if (string.IsNullOrEmpty(outputFolder))
                 throw new ArgumentException($"'{nameof(outputFolder)}' cannot be null or empty.", nameof(outputFolder));
 
-            _accessToken = string.IsNullOrEmpty(accessToken)
+            this.accessToken = string.IsNullOrEmpty(token)
                 ? GithubHelper.ReadDefaultSecurityToken()
-                : accessToken;
+                : token;
 
-            _logger = logger ?? Console.WriteLine;
+            this.logger = log ?? Console.WriteLine;
 
             var module = await tcService.GetModuleAsync(learnFolder);
             if (module == null)
@@ -35,9 +35,9 @@ namespace ModuleToDoc
             if (!Directory.Exists(outputFolder))
                 Directory.CreateDirectory(outputFolder);
 
-            _logger?.Invoke($"Copying \"{module.Title}\" to {outputFolder}");
+            this.logger?.Invoke($"Copying \"{module.Title}\" to {outputFolder}");
 
-            var markdownFile = Path.Combine(outputFolder, Path.ChangeExtension(Path.GetFileNameWithoutExtension(learnFolder),".md"));
+            var markdownFile = Path.Combine(outputFolder, Path.ChangeExtension(Path.GetFileNameWithoutExtension(learnFolder)??"temp-markdown",".md"));
 
             await using var tempFile = new StreamWriter(markdownFile);
 
@@ -138,7 +138,7 @@ namespace ModuleToDoc
                 // Image > 1Mb in size, switch to the Git Data API and download based on the sha.
                 var remote = (IRemoteTripleCrownGitHubService)gitHub;
                 await GitHelper.GetAndWriteBlobAsync(Constants.Organization,
-                    gitHub.Repository, remotePath, localPath, _accessToken, remote.Branch);
+                    gitHub.Repository, remotePath, localPath, accessToken, remote.Branch);
             }
 
             return imagePath;

@@ -1,30 +1,20 @@
-﻿using System;
-using System.IO;
-using DXPlus;
+﻿using DXPlus;
 
-string fn = @"C:\Users\mark\OneDrive\Desktop\introduction-winautomation.docx";
+var doc = Document.Create(@"C:\Users\mark\onedrive\desktop\tc.docx");
 
-var doc = Document.Load(fn);
+doc.AddParagraph("This is a normal paragraph.");
 
-string title = string.Empty, author = string.Empty, summary = string.Empty;
+var list = new List(NumberingFormat.Numbered);
+list.AddItem("This is a list");
+list.Items[0].Paragraph
+    .AddParagraph("With another paragraph")
+    .AddParagraph("And another ..")
+    .AddParagraph("With a quote").Style("IntenseQuote");
+list.AddItem("Starting the list again.")
+    .AddItem("With another item (#3)");
 
-foreach (var item in doc.Paragraphs)
-{
-    var styleName = item.Properties.StyleName;
-    if (styleName == "Heading1") break;
-    switch (styleName)
-    {
-        case "Title": title = item.Text; break;
-        case "Author": author = item.Text; break;
-        case "Abstract": summary = item.Text; break;
-    }
-}
+doc.AddList(list);
 
-Console.WriteLine($"Title: {title}");
-Console.WriteLine($"Author: {author}");
-Console.WriteLine($"Description: {summary}");
+doc.AddParagraph("And finally ending with a final paragraph.");
 
-if (doc.DocumentProperties.TryGetValue(DocumentPropertyName.Creator, out var dtText))
-{
-    Console.WriteLine(dtText);
-}
+doc.Save();

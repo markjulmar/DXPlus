@@ -18,6 +18,22 @@ namespace DXPlus.Tests
         }
 
         [Fact]
+        public void CanAddChildParagraphsToListItem()
+        {
+            var list = new List(NumberingFormat.Numbered);
+            list.AddItem("This is a list");
+            list.Items[0].Paragraph
+                .AddParagraph("With another paragraph")
+                .AddParagraph("And another ..")
+                .AddParagraph("With a quote").Style("IntenseQuote");
+            list.AddItem("Starting the list again.")
+                .AddItem("With another item (#3)");
+
+            Assert.Equal(3, list.Items.Count);
+            var listItem = list.Items[0];
+        }
+
+        [Fact]
         public void PackagePartSetWhenAddedToDoc()
         {
             List list = new List(NumberingFormat.Bulleted);

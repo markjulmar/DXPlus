@@ -109,7 +109,7 @@ namespace DXPlus
         {
             if (value != null)
             {
-                Xml.GetOrCreateElement(Name.Spacing)
+                Xml.GetOrAddElement(Name.Spacing)
                    .SetAttributeValue(Namespace.Main + type, Math.Round(value.Value*20.0, 2));
             }
             else

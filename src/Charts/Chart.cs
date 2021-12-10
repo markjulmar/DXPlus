@@ -215,7 +215,7 @@ namespace DXPlus.Charts
                 RemoveLegend();
 
             Legend = new ChartLegend(position, overlay);
-            ChartRootXml.GetOrCreateElement(Namespace.Chart + "plotArea").AddAfterSelf(Legend.Xml);
+            ChartRootXml.GetOrAddElement(Namespace.Chart + "plotArea").AddAfterSelf(Legend.Xml);
         }
 
         /// <summary>

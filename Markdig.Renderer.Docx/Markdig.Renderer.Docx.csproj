@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Markdig" Version="0.26.0" />
+		<PackageReference Include="Microsoft.DocAsCode.MarkdigEngine.Extensions" Version="2.58.9" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\src\DXPlus.csproj" />
+	</ItemGroup>
+
+</Project>

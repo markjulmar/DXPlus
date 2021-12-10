@@ -83,7 +83,7 @@ namespace DXPlus
                     ? result
                     : Alignment.Left;
 
-            set => TblPr.GetOrCreateElement(Name.ParagraphAlignment)
+            set => TblPr.GetOrAddElement(Name.ParagraphAlignment)
                     .SetAttributeValue(Name.MainVal,
                         value.GetEnumName());
         }
@@ -173,7 +173,7 @@ namespace DXPlus
                         }
 
                         // Set the table width based on the column widths
-                        TblPr.GetOrCreateElement(Namespace.Main + "tblW")?
+                        TblPr.GetOrAddElement(Namespace.Main + "tblW")?
                              .SetAttributeValue(Namespace.Main + "w", ColumnWidths.Sum());
                         break;
                 }
@@ -220,7 +220,7 @@ namespace DXPlus
             {
                 customTableDesignName = value;
                 tableDesign = TableDesign.Custom;
-                TblPr.GetOrCreateElement(Namespace.Main + "tblStyle")
+                TblPr.GetOrAddElement(Namespace.Main + "tblStyle")
                      .SetAttributeValue(Name.MainVal, value);
             }
         }
@@ -240,7 +240,7 @@ namespace DXPlus
 
                 tableDesign = value;
 
-                XElement style = TblPr.GetOrCreateElement(Namespace.Main + "tblStyle");
+                XElement style = TblPr.GetOrAddElement(Namespace.Main + "tblStyle");
                 if (tableDesign == TableDesign.None)
                 {
                     style?.Remove();
@@ -497,8 +497,8 @@ namespace DXPlus
             for (int rowIndex = startRow; rowIndex <= endRow; rowIndex++)
             {
                 Cell cell = Rows[rowIndex].Cells[columnIndex];
-                XElement vMerge = cell.Xml.GetOrCreateElement(Namespace.Main + "tcPr")
-                            .GetOrCreateElement(Namespace.Main + "vMerge");
+                XElement vMerge = cell.Xml.GetOrAddElement(Namespace.Main + "tcPr")
+                            .GetOrAddElement(Namespace.Main + "vMerge");
 
                 if (rowIndex == startRow)
                 {
@@ -613,8 +613,8 @@ namespace DXPlus
         public void SetBorder(TableBorderType borderType, TableBorder tableBorder)
         {
             // Set the border style
-            XElement tblBorders = TblPr.GetOrCreateElement(Namespace.Main + "tblBorders");
-            XElement tblBorderType = tblBorders.GetOrCreateElement(Namespace.Main + borderType.GetEnumName());
+            XElement tblBorders = TblPr.GetOrAddElement(Namespace.Main + "tblBorders");
+            XElement tblBorderType = tblBorders.GetOrAddElement(Namespace.Main + borderType.GetEnumName());
             tblBorderType.SetAttributeValue(Name.MainVal, tableBorder.Style.GetEnumName());
 
             // .. and the style
@@ -758,8 +758,8 @@ namespace DXPlus
         {
             if (margin != null)
             {
-                XElement cellMargin = TblPr.GetOrCreateElement(Namespace.Main + "tblCellMar")
-                    .GetOrCreateElement(Namespace.Main + type.GetEnumName());
+                XElement cellMargin = TblPr.GetOrAddElement(Namespace.Main + "tblCellMar")
+                    .GetOrAddElement(Namespace.Main + type.GetEnumName());
                 cellMargin.SetAttributeValue(Namespace.Main + "w", margin * TableHelpers.UnitConversion);
                 cellMargin.SetAttributeValue(Namespace.Main + "type", "dxa");
             }
@@ -780,7 +780,7 @@ namespace DXPlus
         /// <returns>The w:tbl/tblPr element.</returns>
         private XElement GetOrCreateTablePropertiesSection()
         {
-            return Xml.GetOrCreateElement(Namespace.Main + "tblPr");
+            return Xml.GetOrAddElement(Namespace.Main + "tblPr");
         }
 
         /// <summary>

@@ -99,7 +99,7 @@ namespace DXPlus.Charts
                     new XElement(Namespace.DrawingMain + "solidFill",
                         new XElement(Namespace.DrawingMain + "srgbClr",
                             new XAttribute("val", value.ToHex()))));
-                Xml.GetOrCreateElement(Namespace.Chart + "tx").AddAfterSelf(colorElement);
+                Xml.GetOrAddElement(Namespace.Chart + "tx").AddAfterSelf(colorElement);
             }
         }
 

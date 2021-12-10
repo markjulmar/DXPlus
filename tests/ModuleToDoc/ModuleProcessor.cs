@@ -1,22 +1,12 @@
 using System;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Reflection.Metadata.Ecma335;
-using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DXPlus;
 using Markdig;
 using Markdig.Extensions.EmphasisExtras;
-using Markdig.Extensions.Tables;
 using Markdig.Renderer.Docx;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
 using Microsoft.DocAsCode.MarkdigEngine.Extensions;
 using MSLearnRepos;
-using Octokit;
 
 namespace ModuleToDoc
 {
@@ -24,7 +14,6 @@ namespace ModuleToDoc
     {
         private TripleCrownModule moduleData;
         private IDocument document;
-        private string zonePivot;
         private string markdownFile;
         private readonly ITripleCrownGitHubService tcService;
         private readonly string accessToken;
@@ -75,12 +64,11 @@ namespace ModuleToDoc
             this.accessToken = accessToken;
         }
 
-        public async Task Process(IDocument wordDocument, string selectedZonePivot)
+        public async Task Process(IDocument wordDocument)
         {
             this.document = wordDocument ?? throw new ArgumentNullException(nameof(wordDocument));
-            this.zonePivot = selectedZonePivot;
 
-            string outputFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), Path.GetFileNameWithoutExtension(Path.GetTempFileName()));
+            var outputFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), Path.GetFileNameWithoutExtension(Path.GetTempFileName()));
             (moduleData, markdownFile) = await new LearnUtilities().DownloadModuleAsync(tcService, accessToken, moduleFolder, outputFolder);
 
             try
@@ -101,8 +89,8 @@ namespace ModuleToDoc
 
                 var docWriter = new DocxObjectRenderer(wordDocument, moduleFolder);
 
-                string markdownText = File.ReadAllText(markdownFile);
-                MarkdownDocument markdownDocument = Markdown.Parse(markdownText, pipeline);
+                string markdownText = await File.ReadAllTextAsync(markdownFile);
+                var markdownDocument = Markdown.Parse(markdownText, pipeline);
 
                 //MarkdigDebug.Dump(markdownDocument);
 
@@ -110,10 +98,7 @@ namespace ModuleToDoc
             }
             finally
             {
-                if (outputFolder != null)
-                {
-                    Directory.Delete(outputFolder, true);
-                }
+                Directory.Delete(outputFolder, true);
             }
         }
 

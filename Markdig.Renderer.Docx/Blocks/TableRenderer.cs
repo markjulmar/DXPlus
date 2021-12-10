@@ -17,7 +17,7 @@ namespace Markdig.Renderer.Docx.Blocks
             var columnWidths = new List<double>();
             if (hasColumnWidth)
             {
-                // Force column widths to be evaulated.
+                // Force column widths to be evaluated.
                 _ = table.ColumnDefinitions
                     .Select(tableColumnDefinition => Math.Round(tableColumnDefinition.Width * 100) / 100)
                     .ToList();

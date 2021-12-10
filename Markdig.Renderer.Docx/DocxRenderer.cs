@@ -29,9 +29,9 @@ namespace Markdig.Renderer.Docx
                 new ParagraphRenderer(),
                 new ListRenderer(),
                 new QuoteSectionNoteRenderer(),
-                new CodeBlockRenderer(),
+                new FencedCodeBlockRenderer(),
                 new TripleColonRenderer(),
-                new CodeBlockRenderer(),
+                new FencedCodeBlockRenderer(),
                 new TableRenderer(),
 
                 // Inline handlers

@@ -6,7 +6,7 @@ using DXPlus;
 
 namespace ModuleToDoc
 {
-    public class Program
+    public static class Program
     {
         public static async Task Main(string[] args)
         {
@@ -20,6 +20,18 @@ namespace ModuleToDoc
             if (string.IsNullOrEmpty(options.OutputFile))
                 options.OutputFile = Path.GetFileName(options.InputFolder);
             options.OutputFile = Path.ChangeExtension(options.OutputFile, ".docx");
+
+            if (string.IsNullOrEmpty(options.InputFolder))
+            {
+                Console.WriteLine("Missing input folder or URL.");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(options.OutputFile))
+            {
+                Console.WriteLine("Missing output file.");
+                return;
+            }
 
             if (File.Exists(options.OutputFile))
                 File.Delete(options.OutputFile);
@@ -43,12 +55,12 @@ namespace ModuleToDoc
 
             if (processor == null)
             {
-                Console.Error.WriteLine("Please supply a Url, local folder, or GitHub details to a Learn module.");
+                await Console.Error.WriteLineAsync("Please supply a Url, local folder, or GitHub details to a Learn module.");
                 return;
             }
 
-            using IDocument wordDocument = Document.Create(options.OutputFile);
-            await processor.Process(wordDocument, options.ZonePivot);
+            using var wordDocument = Document.Create(options.OutputFile);
+            await processor.Process(wordDocument);
             wordDocument.Save();
 
             Console.WriteLine("Done.");

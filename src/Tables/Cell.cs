@@ -38,8 +38,8 @@ namespace DXPlus
 
             set
             {
-                XElement tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
-                XElement shd = tcPr.GetOrCreateElement(Namespace.Main + "shd");
+                XElement tcPr = Xml.GetOrAddElement(Namespace.Main + "tcPr");
+                XElement shd = tcPr.GetOrAddElement(Namespace.Main + "shd");
 
                 shd.SetAttributeValue(Name.MainVal, "clear");
                 shd.SetAttributeValue(Name.Color, "auto");
@@ -108,8 +108,8 @@ namespace DXPlus
 
             set
             {
-                XElement tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
-                XElement shd = tcPr.GetOrCreateElement(Namespace.Main + "shd");
+                XElement tcPr = Xml.GetOrAddElement(Namespace.Main + "tcPr");
+                XElement shd = tcPr.GetOrAddElement(Namespace.Main + "shd");
 
                 // The val attribute needs to be set to clear
                 shd.SetAttributeValue(Name.MainVal, "clear");
@@ -168,8 +168,8 @@ namespace DXPlus
             }
             set
             {
-                XElement tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
-                XElement textDirection = tcPr.GetOrCreateElement(Namespace.Main + "textDirection");
+                XElement tcPr = Xml.GetOrAddElement(Namespace.Main + "tcPr");
+                XElement textDirection = tcPr.GetOrAddElement(Namespace.Main + "textDirection");
                 textDirection.SetAttributeValue(Name.MainVal, value.GetEnumName());
             }
         }
@@ -195,8 +195,8 @@ namespace DXPlus
 
             set
             {
-                XElement tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
-                XElement vAlign = tcPr.GetOrCreateElement(Namespace.Main + "vAlign");
+                XElement tcPr = Xml.GetOrAddElement(Namespace.Main + "tcPr");
+                XElement vAlign = tcPr.GetOrAddElement(Namespace.Main + "vAlign");
                 vAlign.SetAttributeValue(Name.MainVal, value.GetEnumName());
             }
         }
@@ -223,8 +223,8 @@ namespace DXPlus
 
             set
             {
-                XElement tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
-                XElement tcW = tcPr.GetOrCreateElement(Namespace.Main + "tcW");
+                XElement tcPr = Xml.GetOrAddElement(Namespace.Main + "tcPr");
+                XElement tcW = tcPr.GetOrAddElement(Namespace.Main + "tcW");
 
                 if (value < 0)
                 {
@@ -266,12 +266,12 @@ namespace DXPlus
 
         private void SetMargin(string name, double? value)
         {
-            XElement tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
+            XElement tcPr = Xml.GetOrAddElement(Namespace.Main + "tcPr");
 
             if (value != null)
             {
-                XElement tcMar = tcPr.GetOrCreateElement(Namespace.Main + "tcMar");
-                XElement margin = tcMar.GetOrCreateElement(Namespace.Main + name);
+                XElement tcMar = tcPr.GetOrAddElement(Namespace.Main + "tcMar");
+                XElement margin = tcMar.GetOrAddElement(Namespace.Main + name);
 
                 margin.SetAttributeValue(Namespace.Main + "type", "dxa");
                 margin.SetAttributeValue(Namespace.Main + "w", value * TableHelpers.UnitConversion);
@@ -307,10 +307,10 @@ namespace DXPlus
         /// <param name="tableBorder">Border object to set the table cell border</param>
         public void SetBorder(TableCellBorderType borderType, TableBorder tableBorder)
         {
-            XElement tcPr = Xml.GetOrCreateElement(Namespace.Main + "tcPr");
-            XElement tcBorders = tcPr.GetOrCreateElement(Namespace.Main + "tcBorders");
+            XElement tcPr = Xml.GetOrAddElement(Namespace.Main + "tcPr");
+            XElement tcBorders = tcPr.GetOrAddElement(Namespace.Main + "tcBorders");
             XElement tcBorderType =
-                tcBorders.GetOrCreateElement(Namespace.Main.NamespaceName + borderType.GetEnumName());
+                tcBorders.GetOrAddElement(Namespace.Main.NamespaceName + borderType.GetEnumName());
 
             // The val attribute is used for the style
             tcBorderType.SetAttributeValue(Name.MainVal, tableBorder.Style.GetEnumName());

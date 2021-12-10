@@ -97,12 +97,12 @@ namespace DXPlus
         /// <summary>
         /// Retrieve the formatting options
         /// </summary>
-        public Formatting Formatting => new Formatting(Xml.GetOrCreateElement(Name.RunProperties));
+        public Formatting Formatting => new Formatting(Xml.GetOrAddElement(Name.RunProperties));
 
         /// <summary>
         /// Paragraph properties
         /// </summary>
-        public ParagraphProperties ParagraphFormatting => new ParagraphProperties(Xml.GetOrCreateElement(Name.ParagraphProperties));
+        public ParagraphProperties ParagraphFormatting => new ParagraphProperties(Xml.GetOrAddElement(Name.ParagraphProperties));
 
         /// <summary>
         /// Number format used to display all the values at this level.
@@ -124,7 +124,7 @@ namespace DXPlus
             {
                 if (string.IsNullOrWhiteSpace(value))
                     throw new ArgumentException("Value must be provided.", nameof(Text));
-                Xml.GetOrCreateElement(Namespace.Main + "lvlText").SetAttributeValue(Name.MainVal, value);
+                Xml.GetOrAddElement(Namespace.Main + "lvlText").SetAttributeValue(Name.MainVal, value);
             }
         }
 

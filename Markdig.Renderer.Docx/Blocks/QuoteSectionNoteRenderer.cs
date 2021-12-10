@@ -7,11 +7,11 @@ namespace Markdig.Renderer.Docx.Blocks
     {
         public override void Write(IDocxRenderer owner, IDocument document, Paragraph currentParagraph, QuoteSectionNoteBlock block)
         {
-            if (currentParagraph == null)
-                currentParagraph = document.AddParagraph();
+            currentParagraph ??= document.AddParagraph();
 
-            currentParagraph.Style(HeadingType.IntenseQuote);
-            currentParagraph.AppendLine(block.NoteTypeString);
+            currentParagraph
+                .Style(HeadingType.IntenseQuote)
+                .AppendLine(block.NoteTypeString);
             WriteChildren(block, owner, document, currentParagraph);
         }
     }

@@ -1,5 +1,4 @@
-﻿using System;
-using DXPlus;
+﻿using DXPlus;
 using Microsoft.DocAsCode.MarkdigEngine.Extensions;
 
 namespace Markdig.Renderer.Docx.Blocks
@@ -18,10 +17,9 @@ namespace Markdig.Renderer.Docx.Blocks
             }
         }
 
-        private void HandleImage(IDocxRenderer owner, IDocument document, Paragraph currentParagraph, TripleColonBlock block)
+        private static void HandleImage(IDocxRenderer owner, IContainer document, Paragraph currentParagraph, TripleColonBlock block)
         {
-            if (currentParagraph == null)
-                currentParagraph = document.AddParagraph();
+            currentParagraph ??= document.AddParagraph();
 
             block.Attributes.TryGetValue("type", out string type);
             block.Attributes.TryGetValue("alt-text", out string title);

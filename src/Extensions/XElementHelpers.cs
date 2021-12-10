@@ -101,7 +101,7 @@ namespace DXPlus
         /// <param name="node">Starting container element</param>
         /// <param name="path">Path to create/follow</param>
         /// <returns>Final node created</returns>
-        public static XElement GetOrCreateElement(this XContainer node, params XName[] path)
+        public static XElement GetOrAddElement(this XContainer node, params XName[] path)
         {
             if (node == null)
             {
@@ -120,6 +120,38 @@ namespace DXPlus
                 {
                     child = new XElement(name);
                     node.Add(child);
+                }
+                node = child;
+            }
+
+            return (XElement)node;
+        }
+
+        /// <summary>
+        /// Gets or creates an element based on a path.
+        /// </summary>
+        /// <param name="node">Starting container element</param>
+        /// <param name="path">Path to create/follow</param>
+        /// <returns>Final node created</returns>
+        public static XElement GetOrInsertElement(this XContainer node, params XName[] path)
+        {
+            if (node == null)
+            {
+                throw new ArgumentNullException(nameof(node));
+            }
+
+            if (path == null || path.Length == 0)
+            {
+                throw new ArgumentException("Must supply the path to follow.", nameof(path));
+            }
+
+            foreach (XName name in path)
+            {
+                XElement child = node.Element(name);
+                if (child == null)
+                {
+                    child = new XElement(name);
+                    node.AddFirst(child);
                 }
                 node = child;
             }
@@ -184,7 +216,7 @@ namespace DXPlus
             }
 
             // Use the first name as an element.
-            node = node.GetOrCreateElement(name);
+            node = node.GetOrAddElement(name);
 
             XName part; object val; int index;
 
@@ -198,7 +230,7 @@ namespace DXPlus
                     string sn => sn,
                     _ => throw new ArgumentException($"Path cannot include {val.GetType().Name} types.", nameof(pathAndValue)),
                 };
-                node = node.GetOrCreateElement(part);
+                node = node.GetOrAddElement(part);
             }
 
             val = pathAndValue[index++];

@@ -69,7 +69,7 @@ namespace DXPlus
             {
                 if (value == Direction.RightToLeft)
                 {
-                    Xml.GetOrCreateElement(Name.RightToLeft);
+                    Xml.GetOrAddElement(Name.RightToLeft);
                 }
                 else
                 {
@@ -90,7 +90,7 @@ namespace DXPlus
                 return w != null && double.TryParse(w.Value, out var value) ? Math.Round(value / 20.0) : 12240.0 / 20.0;
             }
 
-            set => Xml.GetOrCreateElement(Namespace.Main + "pgSz")
+            set => Xml.GetOrAddElement(Namespace.Main + "pgSz")
                 .SetAttributeValue(Namespace.Main + "w", value * 20.0);
         }
 
@@ -106,7 +106,7 @@ namespace DXPlus
                 return w != null && double.TryParse(w.Value, out double value) ? Math.Round(value / 20.0) : 15840.0 / 20.0;
             }
 
-            set => Xml.GetOrCreateElement(Namespace.Main + "pgSz")
+            set => Xml.GetOrAddElement(Namespace.Main + "pgSz")
                 .SetAttributeValue(Namespace.Main + "h", value * 20);
         }
 
@@ -122,7 +122,7 @@ namespace DXPlus
 
             set
             {
-                var pgSz = Xml.GetOrCreateElement(Namespace.Main + "pgSz");
+                var pgSz = Xml.GetOrAddElement(Namespace.Main + "pgSz");
                 pgSz.SetAttributeValue(Namespace.Main + "orient", value.GetEnumName());
                 if (value == Orientation.Landscape)
                 {
@@ -249,7 +249,7 @@ namespace DXPlus
         /// <param name="value">Value in 1/20th pt</param>
         private void SetMarginAttribute(XName name, double value)
         {
-            Xml.GetOrCreateElement(Namespace.Main + "pgMar")
+            Xml.GetOrAddElement(Namespace.Main + "pgMar")
                 .SetAttributeValue(name, value * 20.0);
         }
     }

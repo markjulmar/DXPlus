@@ -61,7 +61,7 @@ namespace DXPlus
     /// </summary>
     public class List : Block
     {
-        private readonly List<ListItem> items = new List<ListItem>();
+        private readonly List<ListItem> items = new();
         private FontFamily fontFamily;
         private double? fontSize;
 
@@ -84,7 +84,7 @@ namespace DXPlus
         /// <summary>
         /// The numId used to reference the list settings in the numbering.xml
         /// </summary>
-        public int NumId { get; private set; }
+        public int NumId { get; internal set; }
 
         /// <summary>
         /// Default font family to use
@@ -123,6 +123,7 @@ namespace DXPlus
         /// </summary>
         internal List()
         {
+            this.BlockContainer = new NullContainer();
         }
 
         /// <summary>
@@ -155,22 +156,6 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Method to clone a list into a new unowned list.
-        /// </summary>
-        /// <param name="otherList">Other list</param>
-        /// <returns>Copy of the list</returns>
-        public static List Clone(List otherList)
-        {
-            List list = new List(otherList.ListType, otherList.StartNumber);
-            foreach (var item in otherList.Items)
-            {
-                list.items.Add(new ListItem {Paragraph = Paragraph.Clone(item.Paragraph)});
-            }
-
-            return list;
-        }
-
-        /// <summary>
         /// Add an item to the list
         /// </summary>
         /// <param name="text">Text</param>
@@ -195,8 +180,7 @@ namespace DXPlus
             {
                 Paragraph = new Paragraph(Document, newParagraphSection, 0, ContainerType.Paragraph)
                 {
-                    Document = Document,
-                    BlockContainer = BlockContainer,
+                    BlockContainer = this.BlockContainer,
                 }
             };
 
@@ -209,7 +193,7 @@ namespace DXPlus
                 newItem.Paragraph.AddFormatting(formatting);
             }
 
-            BlockContainer?.Xml.Add(newParagraphSection);
+            BlockContainer.Xml.Add(newParagraphSection);
 
             items.Add(newItem);
 
@@ -254,23 +238,18 @@ namespace DXPlus
                     "New list items can only be added to this list if they are have the same numId.");
             }
 
-            if (paragraph.BlockContainer == null)
+            paragraph.BlockContainer = BlockContainer;
+            if (paragraph.DefaultFormatting == null)
             {
-                paragraph.Document = Document;
-                paragraph.BlockContainer = BlockContainer;
-                if (paragraph.DefaultFormatting == null)
-                {
-                    paragraph.DefaultFormatting = new Formatting {Font = Font, FontSize = FontSize};
-                }
-                else
-                {
-                    paragraph.DefaultFormatting.Font = Font;
-                    paragraph.DefaultFormatting.FontSize = FontSize;
-                }
+                paragraph.DefaultFormatting = new Formatting {Font = Font, FontSize = FontSize};
+            }
+            else
+            {
+                paragraph.DefaultFormatting.Font = Font;
+                paragraph.DefaultFormatting.FontSize = FontSize;
             }
 
-            if (paragraph.Xml.Parent == null)
-                BlockContainer?.Xml.Add(paragraph);
+            BlockContainer.Xml.Add(paragraph);
 
             items.Add(new ListItem { Paragraph = paragraph });
 

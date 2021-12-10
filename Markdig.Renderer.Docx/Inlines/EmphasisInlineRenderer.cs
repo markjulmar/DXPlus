@@ -14,12 +14,11 @@ namespace Markdig.Renderer.Docx.Inlines
             // Write children into the paragraph..
             WriteChildren(emphasis, owner, document, currentParagraph);
             // .. and then change the style of that run.
-            if (emphasis.DelimiterChar == '*' || emphasis.DelimiterChar == '_')
+            if (emphasis.DelimiterChar is '*' or '_')
             {
-                if (emphasis.DelimiterCount == 2)
-                    currentParagraph.WithFormatting(new Formatting { Bold = true });
-                else
-                    currentParagraph.WithFormatting(new Formatting { Italic = true });
+                currentParagraph.WithFormatting(emphasis.DelimiterCount == 2
+                    ? new Formatting {Bold = true}
+                    : new Formatting {Italic = true});
             }
         }
     }

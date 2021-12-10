@@ -38,7 +38,7 @@ namespace DXPlus
             get => Xml.Element(Namespace.Main + "trPr")?
                       .Element(Namespace.Main + "cantSplit") == null;
 
-            set => Xml.GetOrCreateElement(Namespace.Main + "trPr")
+            set => Xml.GetOrAddElement(Namespace.Main + "trPr")
                       .SetElementValue(Namespace.Main + "cantSplit", value ? null : string.Empty);
         }
 
@@ -90,7 +90,7 @@ namespace DXPlus
                       .Element(Namespace.Main + "tblHeader") != null;
             set
             {
-                XElement trPr = Xml.GetOrCreateElement(Namespace.Main + "trPr");
+                XElement trPr = Xml.GetOrAddElement(Namespace.Main + "trPr");
                 XElement tblHeader = trPr.Element(Namespace.Main + "tblHeader");
 
                 if (tblHeader == null && value)
@@ -141,8 +141,8 @@ namespace DXPlus
             }
 
             // Set the gridSpan to the number of merged cells.
-            startCell.Xml.GetOrCreateElement(Namespace.Main + "tcPr")
-                         .GetOrCreateElement(Namespace.Main + "gridSpan")
+            startCell.Xml.GetOrAddElement(Namespace.Main + "tcPr")
+                         .GetOrAddElement(Namespace.Main + "gridSpan")
                          .SetAttributeValue(Name.MainVal, gridSpanSum + endIndex - startIndex + 1);
         }
 
@@ -169,8 +169,8 @@ namespace DXPlus
         {
             if (height != null)
             {
-                XElement trPr = Xml.GetOrCreateElement(Namespace.Main + "trPr");
-                XElement trHeight = trPr.GetOrCreateElement(Namespace.Main + "trHeight");
+                XElement trPr = Xml.GetOrAddElement(Namespace.Main + "trPr");
+                XElement trHeight = trPr.GetOrAddElement(Namespace.Main + "trHeight");
                 trHeight.SetAttributeValue(Namespace.Main + "hRule", exact ? "exact" : "atLeast");
                 trHeight.SetAttributeValue(Name.MainVal, height * TableHelpers.UnitConversion);
             }

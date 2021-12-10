@@ -234,7 +234,7 @@ namespace DXPlus
         /// <param name="table">Table to add</param>
         public Paragraph Append(Table table)
         {
-            if (table.BlockContainer != null)
+            if (table.InDom)
                 throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
             table.BlockContainer = this.BlockContainer;

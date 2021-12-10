@@ -54,6 +54,7 @@ namespace DXPlus
         public static readonly XName Underline = Namespace.Main + "u";
         public static readonly XName Vanish = Namespace.Main + "vanish";
         public static readonly XName VerticalAlign = Namespace.Main + "vertAlign";
+        public static readonly XName Temp = Namespace.Main + "temp";
     }
 
     /// <summary>

@@ -238,11 +238,11 @@ namespace DXPlus
             if (value)
             {
                 FindDrawingExtension(DocPr, DecorativeImageId, true)
-                    .GetOrCreateElement(Namespace.ADec + "decorative")
+                    .GetOrAddElement(Namespace.ADec + "decorative")
                     .SetElementValue("val", "1");
 
                 FindDrawingExtension(CNvPr, DecorativeImageId, true)?
-                    .GetOrCreateElement(Namespace.ADec + "decorative")
+                    .GetOrAddElement(Namespace.ADec + "decorative")
                     .SetElementValue("val", "1");
             }
             else

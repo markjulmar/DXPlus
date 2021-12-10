@@ -11,7 +11,14 @@ namespace Markdig.Renderer.Docx.Inlines
         {
             Debug.Assert(currentParagraph != null);
 
-            if (!literal.Content.IsEmpty)
+            if (literal.Content.IsEmpty) 
+                return;
+
+            if (currentParagraph.Text.Length == 0)
+            {
+                currentParagraph.SetText(literal.Content.ToString());
+            }
+            else
             {
                 currentParagraph.Append(literal.Content.ToString());
             }

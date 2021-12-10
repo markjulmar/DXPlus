@@ -66,6 +66,11 @@ namespace DXPlus
         }
 
         /// <summary>
+        /// Returns whether this Xml fragment is in a document.
+        /// </summary>
+        internal bool InDom => Xml?.Parent != null;
+
+        /// <summary>
         /// This is the actual Xml that gives this element substance.
         /// </summary>
         internal XElement Xml

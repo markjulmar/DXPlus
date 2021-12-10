@@ -1,6 +1,7 @@
 ﻿using DXPlus.Helpers;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO.Packaging;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -21,6 +22,62 @@ namespace DXPlus
         internal BlockContainer(IDocument document, XElement xml)
             : base(document, xml)
         {
+        }
+
+        public IEnumerable<Block> Blocks
+        {
+            get
+            {
+                List currentList = null;
+                int current = 0;
+
+                foreach (var element in Xml.Elements())
+                {
+                    if (element.Name == Name.Paragraph)
+                    {
+                        var p = new Paragraph(Document, element, current) { BlockContainer = this };
+                        var nextNode = p.Xml.ElementsAfterSelf().FirstOrDefault();
+                        if (nextNode?.Name.Equals(Name.Table) == true)
+                            p.Table = new Table(Document, nextNode);
+                        current += HelperFunctions.GetText(element).Length;
+
+                        if (p.IsListItem())
+                        {
+                            // Start a new list?
+                            if (currentList != null && !currentList.CanAddListItem(p))
+                            {
+                                yield return currentList;
+                                currentList = null;
+                            }
+
+                            currentList ??= new List(p.GetNumberingFormat(),
+                                Document.NumberingStyles.GetStartingNumber(
+                                    p.GetListNumId(), p.GetListLevel()));
+                            currentList.AddItem(p);
+                        }
+                        else
+                        {
+                            if (currentList != null)
+                            {
+                                yield return currentList;
+                                currentList = null;
+                            }
+
+                            yield return p;
+                        }
+                    }
+                    else if (element.Name == Name.Table)
+                    {
+                        if (currentList != null)
+                        {
+                            yield return currentList;
+                            currentList = null;
+                        }
+
+                        yield return new Table(Document, element);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -112,34 +169,35 @@ namespace DXPlus
         {
             get
             {
-                List list = new List();
-                foreach (Paragraph paragraph in Paragraphs)
+                var list = new List();
+                foreach (var paragraph in Paragraphs)
                 {
-                    if (paragraph.IsListItem())
+                    if (!paragraph.IsListItem()) 
+                        continue;
+                    
+                    if (list.CanAddListItem(paragraph))
                     {
-                        if (list.CanAddListItem(paragraph))
+                        if (list.Items.Count == 0)
                         {
-                            if (list.Items.Count == 0)
-                            {
-                                list.ListType = paragraph.GetNumberingFormat();
-                                list.StartNumber = Document.NumberingStyles.GetStartingNumber(
-                                    paragraph.GetListNumId(), paragraph.GetListLevel());
-                            }
-
-                            list.AddItem(paragraph);
+                            list.NumId = paragraph.GetListNumId();
+                            list.ListType = paragraph.GetNumberingFormat();
+                            list.StartNumber = Document.NumberingStyles.GetStartingNumber(
+                                paragraph.GetListNumId(), paragraph.GetListLevel());
                         }
-                        // Found new list!
-                        else
-                        {
-                            list.Document = Document;
-                            list.PackagePart = PackagePart;
-                            yield return list;
 
-                            list = new List(paragraph.GetNumberingFormat(),
-                                Document.NumberingStyles.GetStartingNumber(
-                                    paragraph.GetListNumId(), paragraph.GetListLevel()));
-                            list.AddItem(paragraph);
-                        }
+                        list.AddItem(paragraph);
+                    }
+                    // Found new list!
+                    else
+                    {
+                        list.Document = Document;
+                        list.PackagePart = PackagePart;
+                        yield return list;
+
+                        list = new List(paragraph.GetNumberingFormat(),
+                            Document.NumberingStyles.GetStartingNumber(
+                                paragraph.GetListNumId(), paragraph.GetListLevel()));
+                        list.AddItem(paragraph);
                     }
                 }
 
@@ -255,7 +313,7 @@ namespace DXPlus
         /// <returns>Inserted paragraph</returns>
         public Paragraph InsertParagraph(int index, Paragraph paragraph)
         {
-            if (paragraph.BlockContainer != null)
+            if (paragraph.InDom)
                 throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
             InsertMissingStyles(paragraph);
@@ -279,7 +337,7 @@ namespace DXPlus
         /// </summary>
         public Paragraph AddParagraph(Paragraph paragraph)
         {
-            if (paragraph.BlockContainer != null)
+            if (paragraph.InDom)
                 throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
             InsertMissingStyles(paragraph);
@@ -353,7 +411,7 @@ namespace DXPlus
                 }
 
                 // Get all the styleId values from the current style
-                XElement styles = styleDoc.GetOrCreateElement(Namespace.Main + "styles");
+                XElement styles = styleDoc.GetOrAddElement(Namespace.Main + "styles");
                 List<string> ids = styles.Descendants(Namespace.Main + "style")
                                 .Select(e => e.AttributeValue(Namespace.Main + "styleId", null))
                                 .Where(v => v != null)
@@ -451,7 +509,7 @@ namespace DXPlus
         /// <returns>Table reference - may be copied if original table was already in document.</returns>
         public Table AddTable(Table table)
         {
-            if (table.BlockContainer != null)
+            if (table.InDom)
                 throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
             table.BlockContainer = this;
@@ -468,7 +526,7 @@ namespace DXPlus
         /// <returns>The Table now associated with this document.</returns>
         public Table InsertTable(int index, Table table)
         {
-            if (table.BlockContainer != null)
+            if (table.InDom)
                 throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
             table.BlockContainer = this;
@@ -487,15 +545,28 @@ namespace DXPlus
         /// <returns>The List now associated with this document.</returns>
         public List AddList(List list)
         {
-            if (list.BlockContainer != null)
+            if (list.InDom)
                 throw new ArgumentException("Cannot add list multiple times.", nameof(list));
 
-            foreach (ListItem item in list.Items)
-            {
-                AddParagraphToDocument(item.Paragraph.Xml);
-            }
-
             list.BlockContainer = this;
+
+            if (list.Items.Count > 0)
+            {
+                var parentXml = list.Items[0].Paragraph.Xml.Parent;
+                Debug.Assert(parentXml != null);
+                foreach (var child in parentXml.Elements())
+                {
+                    // Make sure all paragraphs in this ListItem have the proper style.
+                    if (child.Element(Name.ParagraphProperties) == null)
+                    {
+                        var paraProps = child.GetOrInsertElement(Name.ParagraphProperties);
+                        var style = paraProps.GetOrAddElement(Name.ParagraphStyle);
+                        style.SetAttributeValue(Name.MainVal, "ListParagraph");
+                    }
+
+                    AddParagraphToDocument(child);
+                }
+            }
 
             return list;
         }
@@ -508,7 +579,7 @@ namespace DXPlus
         /// <returns>The List now associated with this document.</returns>
         public List InsertList(int index, List list)
         {
-            if (list.BlockContainer != null)
+            if (list.InDom)
                 throw new ArgumentException("Cannot add list multiple times.", nameof(list));
 
             list.BlockContainer = this;

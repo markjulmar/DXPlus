@@ -15,7 +15,7 @@ namespace Markdig.Renderer.Docx.Blocks
     public abstract class DocxObjectRenderer<TObject> : IDocxObjectRenderer
         where TObject : MarkdownObject 
     {
-        public virtual bool CanRender(MarkdownObject obj) => obj.GetType() == typeof(TObject) || typeof(TObject).IsAssignableFrom(obj.GetType());
+        public virtual bool CanRender(MarkdownObject obj) => obj.GetType() == typeof(TObject) || obj is TObject;
         public abstract void Write(IDocxRenderer owner, IDocument document, Paragraph currentParagraph, TObject obj);
         void IDocxObjectRenderer.Write(IDocxRenderer owner, IDocument document, Paragraph currentParagraph, MarkdownObject obj)
             => Write(owner, document, currentParagraph, (TObject)obj);
