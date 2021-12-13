@@ -1,4 +1,3 @@
-using System;
 using System.Diagnostics;
 using System.Linq;
 using DXPlus;
@@ -13,6 +12,8 @@ namespace Markdig.Renderer.Docx.Blocks
 
         public override void Write(IDocxRenderer owner, IDocument document, Paragraph currentParagraph, ListBlock block)
         {
+            Debug.Assert(currentParagraph == null);
+
             currentLevel++;
             try
             {
@@ -44,10 +45,6 @@ namespace Markdig.Renderer.Docx.Blocks
                                 // Create a new paragraph to hold this block.
                                 // Unless it's a table - that gets appended to the prior paragraph.
                                 currentParagraph = currentParagraph.AddParagraph().ListStyle();
-                            }
-                            else
-                            {
-                                Console.WriteLine("!");
                             }
                         }
 

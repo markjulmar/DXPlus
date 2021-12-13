@@ -42,7 +42,7 @@ namespace DXPlus
         /// </summary>
         public Formatting Properties
         {
-            get => new Formatting(Xml.GetRunProps(true));
+            get => new(Xml.GetRunProps(true));
             set
             {
                 XElement rPr = Xml.Element(Name.RunProperties);

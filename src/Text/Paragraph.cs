@@ -120,7 +120,7 @@ namespace DXPlus
         /// Apply the specified formatting to the paragraph or last text run
         /// </summary>
         /// <param name="formatting">Formatting to apply</param>
-        /// <returns>FirstParagraph</returns>
+        /// <returns>paragraph</returns>
         public Paragraph WithFormatting(Formatting formatting)
         {
             if (Runs.Any())
@@ -141,7 +141,7 @@ namespace DXPlus
         /// Adds to the existing formatting for the paragraph and/or last run.
         /// </summary>
         /// <param name="formatting">Formatting to add</param>
-        /// <returns>FirstParagraph</returns>
+        /// <returns>paragraph</returns>
         public Paragraph AddFormatting(Formatting formatting)
         {
             if (formatting != null)
@@ -291,7 +291,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Returns a list of all Pictures in a FirstParagraph.
+        /// Returns a list of all Pictures in a paragraph.
         /// </summary>
         public List<Picture> Pictures => (
                     from p in Xml.LocalNameDescendants("drawing")
@@ -308,18 +308,27 @@ namespace DXPlus
                 ).ToList();
 
         /// <summary>
-        /// Gets the text value of this FirstParagraph.
+        /// Gets the text value of this paragraph.
         /// </summary>
         public string Text => HelperFunctions.GetText(Xml);
 
         /// <summary>
-        /// Append text to this FirstParagraph.
+        /// Append text to this paragraph.
         /// </summary>
         /// <param name="text">The text to append.</param>
-        /// <returns>This FirstParagraph with the new text appended.</returns>
-        public Paragraph Append(string text)
+        /// <param name="formatting">Formatting for the text run</param>
+        /// <returns>This paragraph with the new text appended.</returns>
+        public Paragraph Append(string text, Formatting formatting = null)
         {
-            Xml.Add(HelperFunctions.FormatInput(text, null));
+            if (Text.Length == 0)
+            {
+                SetText(text, formatting);
+            }
+            else
+            {
+                Xml.Add(HelperFunctions.FormatInput(text, formatting?.Xml));
+            }
+
             return this;
         }
 
@@ -352,7 +361,7 @@ namespace DXPlus
         /// Add an equation to a document.
         /// </summary>
         /// <param name="equation">The Equation to append.</param>
-        /// <returns>The FirstParagraph with the Equation now appended.</returns>
+        /// <returns>The paragraph with the Equation now appended.</returns>
         public Paragraph AppendEquation(string equation)
         {
             // Create equation element
@@ -373,11 +382,11 @@ namespace DXPlus
         List<Hyperlink> unownedHyperlinks;
 
         /// <summary>
-        /// This function inserts a hyperlink into a FirstParagraph at a specified character index.
+        /// This function inserts a hyperlink into a paragraph at a specified character index.
         /// </summary>
         /// <param name="hyperlink">The hyperlink to insert.</param>
         /// <param name="charIndex">The character index in the owning paragraph to insert at.</param>
-        /// <returns>The FirstParagraph with the Hyperlink inserted at the specified index.</returns>
+        /// <returns>The paragraph with the Hyperlink inserted at the specified index.</returns>
         public Paragraph InsertHyperlink(Hyperlink hyperlink, int charIndex = 0)
         {
             if (Document != null)
@@ -419,15 +428,15 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Returns a list of Hyperlinks in this FirstParagraph.
+        /// Returns a list of Hyperlinks in this paragraph.
         /// </summary>
         public List<Hyperlink> Hyperlinks => Hyperlink.Enumerate(this, unownedHyperlinks).ToList();
 
         /// <summary>
-        /// Append a hyperlink to a FirstParagraph.
+        /// Append a hyperlink to a paragraph.
         /// </summary>
         /// <param name="hyperlink">The hyperlink to append.</param>
-        /// <returns>The FirstParagraph with the hyperlink appended.</returns>
+        /// <returns>The paragraph with the hyperlink appended.</returns>
         public Paragraph Append(Hyperlink hyperlink)
         {
             if (Document != null)
@@ -446,30 +455,30 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Append a PageCount place holder onto the end of a FirstParagraph.
+        /// Append a PageCount place holder onto the end of a paragraph.
         /// </summary>
         /// <param name="format">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
         public void AppendPageCount(PageNumberFormat format) => AddPageNumberInfo(format, "numPages");
 
         /// <summary>
-        /// Append a PageNumber place holder onto the end of a FirstParagraph.
+        /// Append a PageNumber place holder onto the end of a paragraph.
         /// </summary>
         /// <param name="format">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
         public void AppendPageNumber(PageNumberFormat format) => AddPageNumberInfo(format, "page");
 
         /// <summary>
-        /// Insert a PageCount place holder into a FirstParagraph.
-        /// This place holder should only be inserted into a Header or Footer FirstParagraph.
-        /// Word will not automatically update this field if it is inserted into a document level FirstParagraph.
+        /// Insert a PageCount place holder into a paragraph.
+        /// This place holder should only be inserted into a Header or Footer paragraph.
+        /// Word will not automatically update this field if it is inserted into a document level paragraph.
         /// </summary>
         /// <param name="pnf">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
         /// <param name="index">The text index to insert this PageCount place holder at.</param>
         public void InsertPageCount(PageNumberFormat pnf, int index = 0) => AddPageNumberInfo(pnf, "numPages", index);
 
         /// <summary>
-        /// Insert a PageNumber place holder into a FirstParagraph.
-        /// This place holder should only be inserted into a Header or Footer FirstParagraph.
-        /// Word will not automatically update this field if it is inserted into a document level FirstParagraph.
+        /// Insert a PageNumber place holder into a paragraph.
+        /// This place holder should only be inserted into a Header or Footer paragraph.
+        /// Word will not automatically update this field if it is inserted into a document level paragraph.
         /// </summary>
         /// <param name="pnf">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
         /// <param name="index">The text index to insert this PageNumber place holder at.</param>
@@ -516,10 +525,10 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Add an image to a document, create a custom view of that image (picture) and then insert it into a FirstParagraph using append.
+        /// Add an image to a document, create a custom view of that image (picture) and then insert it into a paragraph using append.
         /// </summary>
         /// <param name="picture">The Picture to append.</param>
-        /// <returns>The FirstParagraph with the Picture now appended.</returns>
+        /// <returns>The paragraph with the Picture now appended.</returns>
         public Paragraph Append(Picture picture)
         {
             if (Document != null)
@@ -696,12 +705,12 @@ namespace DXPlus
         */
 
         /// <summary>
-        /// Insert a Picture into a FirstParagraph at the given text index.
+        /// Insert a Picture into a paragraph at the given text index.
         /// If not index is provided defaults to 0.
         /// </summary>
         /// <param name="picture">The Picture to insert.</param>
         /// <param name="index">The text index to insert at.</param>
-        /// <returns>The modified FirstParagraph.</returns>
+        /// <returns>The modified paragraph.</returns>
         public Paragraph Insert(Picture picture, int index = 0)
         {
             if (Document != null)
@@ -745,7 +754,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Inserts a string into a FirstParagraph with the specified formatting.
+        /// Inserts a string into a paragraph with the specified formatting.
         /// </summary>
         public void InsertText(string value, Formatting formatting = null)
         {
@@ -770,7 +779,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Inserts a string into the FirstParagraph with the specified formatting at the given index.
+        /// Inserts a string into the paragraph with the specified formatting at the given index.
         /// </summary>
         /// <param name="index">The index position of the insertion.</param>
         /// <param name="value">The System.String to insert.</param>
@@ -809,11 +818,11 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Remove this FirstParagraph from the document.
+        /// Remove this paragraph from the document.
         /// </summary>
         public void Remove()
         {
-            // If this is the only FirstParagraph in the Cell then we cannot remove it.
+            // If this is the only paragraph in the Cell then we cannot remove it.
             if (Xml.Parent?.Name.LocalName == "tc"
                 && Xml.Parent.Elements(Name.Paragraph).Count() == 1)
             {
@@ -841,7 +850,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Removes characters from a DXPlus.Document.FirstParagraph.
+        /// Removes characters from a DXPlus.Document.paragraph.
         /// </summary>
         /// <param name="index">The position to begin deleting characters.</param>
         /// <param name="count">The number of characters to delete</param>

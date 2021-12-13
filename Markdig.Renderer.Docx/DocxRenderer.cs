@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
@@ -28,6 +29,7 @@ namespace Markdig.Renderer.Docx
                 new HeadingRenderer(),
                 new ParagraphRenderer(),
                 new ListRenderer(),
+                new QuoteBlockRenderer(),
                 new QuoteSectionNoteRenderer(),
                 new FencedCodeBlockRenderer(),
                 new TripleColonRenderer(),
@@ -39,14 +41,30 @@ namespace Markdig.Renderer.Docx
                 new EmphasisInlineRenderer(),
                 new LineBreakInlineRenderer(),
                 new LinkInlineRenderer(),
-                new CodeInlineRenderer()
+                new AutolinkInlineRenderer(),
+                new CodeInlineRenderer(),
+                new DelimiterInlineRenderer(),
+                new HtmlEntityInlineRenderer(),
+                new LinkReferenceDefinitionRenderer(),
+                new TaskListRenderer(),
+                new HtmlInlineRenderer()
             };
         }
 
         public string ModuleFolder { get; private set; }
         public Syntax.Block LastBlock { get; private set; }
 
-        public IDocxObjectRenderer FindRenderer(MarkdownObject obj) => Renderers.FirstOrDefault(r => r.CanRender(obj));
+        public IDocxObjectRenderer FindRenderer(MarkdownObject obj)
+        {
+            var renderer = Renderers.FirstOrDefault(r => r.CanRender(obj));
+#if DEBUG
+            if (renderer == null)
+            {
+                Console.WriteLine($"Missing renderer for {obj.GetType()}");
+            }
+#endif
+            return renderer;
+        }
 
         public void Render(MarkdownDocument markdownDocument)
         {
