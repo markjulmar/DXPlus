@@ -24,7 +24,8 @@ namespace DXPlus
             {
                 int start = 0;
                 // Only look at the localName so we capture Math.r and Main.r
-                foreach (var runXml in Xml.Descendants().Where(e => e.Name.LocalName == Name.Run.LocalName))
+                foreach (var runXml in Xml.Descendants()
+                             .Where(e => e.Name.LocalName == Name.Run.LocalName))
                 {
                     var run = new Run(runXml, start);
                     yield return run;
@@ -36,7 +37,7 @@ namespace DXPlus
         /// <summary>
         /// Styles in this paragraph
         /// </summary>
-        internal List<XElement> Styles { get; } = new List<XElement>();
+        internal List<XElement> Styles { get; } = new();
 
         /// <summary>
         /// Starting index for this paragraph
@@ -59,7 +60,8 @@ namespace DXPlus
         /// Public constructor for the paragraph
         /// </summary>
         /// <param name="text"></param>
-        public Paragraph(string text) : this (null, Create(text, null), 0)
+        public Paragraph(string text) 
+            : this (null, Create(text, null), 0)
         {
         }
 
@@ -68,7 +70,8 @@ namespace DXPlus
         /// </summary>
         /// <param name="text"></param>
         /// <param name="formatting"></param>
-        public Paragraph(string text, Formatting formatting) : this(null, Create(text, formatting), 0)
+        public Paragraph(string text, Formatting formatting) 
+            : this(null, Create(text, formatting), 0)
         {
         }
 
@@ -78,13 +81,11 @@ namespace DXPlus
         /// <param name="document">Document owner</param>
         /// <param name="xml">XML for the paragraph</param>
         /// <param name="startIndex">Starting position in the doc</param>
-        /// <param name="parentContainerType">Container parent type</param>
-        internal Paragraph(IDocument document, XElement xml, int startIndex, ContainerType parentContainerType = ContainerType.None)
+        internal Paragraph(IDocument document, XElement xml, int startIndex)
             : base(document, xml)
         {
-            ParentContainerType = parentContainerType;
             StartIndex = startIndex;
-            EndIndex = startIndex + GetElementTextLength(Xml);
+            EndIndex = startIndex + HelperFunctions.GetTextLength(Xml);
         }
 
         /// <summary>
@@ -119,7 +120,7 @@ namespace DXPlus
         /// Apply the specified formatting to the paragraph or last text run
         /// </summary>
         /// <param name="formatting">Formatting to apply</param>
-        /// <returns>Paragraph</returns>
+        /// <returns>FirstParagraph</returns>
         public Paragraph WithFormatting(Formatting formatting)
         {
             if (Runs.Any())
@@ -140,7 +141,7 @@ namespace DXPlus
         /// Adds to the existing formatting for the paragraph and/or last run.
         /// </summary>
         /// <param name="formatting">Formatting to add</param>
-        /// <returns>Paragraph</returns>
+        /// <returns>FirstParagraph</returns>
         public Paragraph AddFormatting(Formatting formatting)
         {
             if (formatting != null)
@@ -239,16 +240,11 @@ namespace DXPlus
 
             table.BlockContainer = this.BlockContainer;
 
-            if (Xml.Parent == null)
-            {
-                if (Table != null)
-                    throw new Exception("Can only add one table after the a paragraph.");
-                Table = table;
-            }
-            else
-            {
-                Xml.AddAfterSelf(table.Xml);
-            }
+            if (Table != null)
+                throw new Exception("Can only add one table after the a paragraph.");
+            Table = table;
+
+            Xml?.AddAfterSelf(table.Xml);
 
             return this;
         }
@@ -268,7 +264,8 @@ namespace DXPlus
                 }
                 return new ParagraphProperties(pPr);
             }
-            set
+            
+            private set
             {
                 var pPr = Xml.Element(Name.ParagraphProperties);
                 pPr?.Remove();
@@ -294,12 +291,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Container owner type.
-        /// </summary>
-        public ContainerType ParentContainerType { get; set; }
-
-        /// <summary>
-        /// Returns a list of all Pictures in a Paragraph.
+        /// Returns a list of all Pictures in a FirstParagraph.
         /// </summary>
         public List<Picture> Pictures => (
                     from p in Xml.LocalNameDescendants("drawing")
@@ -316,15 +308,15 @@ namespace DXPlus
                 ).ToList();
 
         /// <summary>
-        /// Gets the text value of this Paragraph.
+        /// Gets the text value of this FirstParagraph.
         /// </summary>
         public string Text => HelperFunctions.GetText(Xml);
 
         /// <summary>
-        /// Append text to this Paragraph.
+        /// Append text to this FirstParagraph.
         /// </summary>
         /// <param name="text">The text to append.</param>
-        /// <returns>This Paragraph with the new text appended.</returns>
+        /// <returns>This FirstParagraph with the new text appended.</returns>
         public Paragraph Append(string text)
         {
             Xml.Add(HelperFunctions.FormatInput(text, null));
@@ -360,7 +352,7 @@ namespace DXPlus
         /// Add an equation to a document.
         /// </summary>
         /// <param name="equation">The Equation to append.</param>
-        /// <returns>The Paragraph with the Equation now appended.</returns>
+        /// <returns>The FirstParagraph with the Equation now appended.</returns>
         public Paragraph AppendEquation(string equation)
         {
             // Create equation element
@@ -381,11 +373,11 @@ namespace DXPlus
         List<Hyperlink> unownedHyperlinks;
 
         /// <summary>
-        /// This function inserts a hyperlink into a Paragraph at a specified character index.
+        /// This function inserts a hyperlink into a FirstParagraph at a specified character index.
         /// </summary>
         /// <param name="hyperlink">The hyperlink to insert.</param>
         /// <param name="charIndex">The character index in the owning paragraph to insert at.</param>
-        /// <returns>The Paragraph with the Hyperlink inserted at the specified index.</returns>
+        /// <returns>The FirstParagraph with the Hyperlink inserted at the specified index.</returns>
         public Paragraph InsertHyperlink(Hyperlink hyperlink, int charIndex = 0)
         {
             if (Document != null)
@@ -396,9 +388,7 @@ namespace DXPlus
             }
             else
             {
-                if (unownedHyperlinks == null)
-                    unownedHyperlinks = new List<Hyperlink>();
-                unownedHyperlinks.Add(hyperlink);
+                (unownedHyperlinks ??= new List<Hyperlink>()).Add(hyperlink);
             }
 
             if (charIndex == 0)
@@ -429,15 +419,15 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Returns a list of Hyperlinks in this Paragraph.
+        /// Returns a list of Hyperlinks in this FirstParagraph.
         /// </summary>
         public List<Hyperlink> Hyperlinks => Hyperlink.Enumerate(this, unownedHyperlinks).ToList();
 
         /// <summary>
-        /// Append a hyperlink to a Paragraph.
+        /// Append a hyperlink to a FirstParagraph.
         /// </summary>
         /// <param name="hyperlink">The hyperlink to append.</param>
-        /// <returns>The Paragraph with the hyperlink appended.</returns>
+        /// <returns>The FirstParagraph with the hyperlink appended.</returns>
         public Paragraph Append(Hyperlink hyperlink)
         {
             if (Document != null)
@@ -448,9 +438,7 @@ namespace DXPlus
             }
             else
             {
-                if (unownedHyperlinks == null)
-                    unownedHyperlinks = new List<Hyperlink>();
-                unownedHyperlinks.Add(hyperlink);
+                (unownedHyperlinks ??= new List<Hyperlink>()).Add(hyperlink);
             }
 
             Xml.Add(hyperlink.Xml);
@@ -458,46 +446,34 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Append a PageCount place holder onto the end of a Paragraph.
+        /// Append a PageCount place holder onto the end of a FirstParagraph.
         /// </summary>
         /// <param name="format">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
-        public void AppendPageCount(PageNumberFormat format)
-        {
-            AddPageNumberInfo(format, "numPages");
-        }
+        public void AppendPageCount(PageNumberFormat format) => AddPageNumberInfo(format, "numPages");
 
         /// <summary>
-        /// Append a PageNumber place holder onto the end of a Paragraph.
+        /// Append a PageNumber place holder onto the end of a FirstParagraph.
         /// </summary>
         /// <param name="format">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
-        public void AppendPageNumber(PageNumberFormat format)
-        {
-            AddPageNumberInfo(format, "page");
-        }
+        public void AppendPageNumber(PageNumberFormat format) => AddPageNumberInfo(format, "page");
 
         /// <summary>
-        /// Insert a PageCount place holder into a Paragraph.
-        /// This place holder should only be inserted into a Header or Footer Paragraph.
-        /// Word will not automatically update this field if it is inserted into a document level Paragraph.
+        /// Insert a PageCount place holder into a FirstParagraph.
+        /// This place holder should only be inserted into a Header or Footer FirstParagraph.
+        /// Word will not automatically update this field if it is inserted into a document level FirstParagraph.
         /// </summary>
         /// <param name="pnf">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
         /// <param name="index">The text index to insert this PageCount place holder at.</param>
-        public void InsertPageCount(PageNumberFormat pnf, int index = 0)
-        {
-            AddPageNumberInfo(pnf, "numPages", index);
-        }
+        public void InsertPageCount(PageNumberFormat pnf, int index = 0) => AddPageNumberInfo(pnf, "numPages", index);
 
         /// <summary>
-        /// Insert a PageNumber place holder into a Paragraph.
-        /// This place holder should only be inserted into a Header or Footer Paragraph.
-        /// Word will not automatically update this field if it is inserted into a document level Paragraph.
+        /// Insert a PageNumber place holder into a FirstParagraph.
+        /// This place holder should only be inserted into a Header or Footer FirstParagraph.
+        /// Word will not automatically update this field if it is inserted into a document level FirstParagraph.
         /// </summary>
         /// <param name="pnf">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
         /// <param name="index">The text index to insert this PageNumber place holder at.</param>
-        public void InsertPageNumber(PageNumberFormat pnf, int index = 0)
-        {
-            AddPageNumberInfo(pnf, "page", index);
-        }
+        public void InsertPageNumber(PageNumberFormat pnf, int index = 0) => AddPageNumberInfo(pnf, "page", index);
 
         /// <summary>
         /// Internal method to populate page numbers or page counts.
@@ -540,10 +516,10 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Add an image to a document, create a custom view of that image (picture) and then insert it into a Paragraph using append.
+        /// Add an image to a document, create a custom view of that image (picture) and then insert it into a FirstParagraph using append.
         /// </summary>
         /// <param name="picture">The Picture to append.</param>
-        /// <returns>The Paragraph with the Picture now appended.</returns>
+        /// <returns>The FirstParagraph with the Picture now appended.</returns>
         public Paragraph Append(Picture picture)
         {
             if (Document != null)
@@ -604,14 +580,12 @@ namespace DXPlus
         public bool InsertAtBookmark(string bookmarkName, string toInsert)
         {
             var bookmark = GetBookmarks().SingleOrDefault(bm => bm.Name == bookmarkName);
-            if (bookmark != null)
-            {
-                var run = HelperFunctions.FormatInput(toInsert, null);
-                bookmark.Xml.AddBeforeSelf(run);
-                Document?.RenumberIds();
-                return true;
-            }
-            return false;
+            if (bookmark == null) 
+                return false;
+            
+            var run = HelperFunctions.FormatInput(toInsert, null);
+            bookmark.Xml.AddBeforeSelf(run);
+            return true;
         }
 
         /// <summary>
@@ -722,12 +696,12 @@ namespace DXPlus
         */
 
         /// <summary>
-        /// Insert a Picture into a Paragraph at the given text index.
+        /// Insert a Picture into a FirstParagraph at the given text index.
         /// If not index is provided defaults to 0.
         /// </summary>
         /// <param name="picture">The Picture to insert.</param>
         /// <param name="index">The text index to insert at.</param>
-        /// <returns>The modified Paragraph.</returns>
+        /// <returns>The modified FirstParagraph.</returns>
         public Paragraph Insert(Picture picture, int index = 0)
         {
             if (Document != null)
@@ -771,12 +745,11 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Inserts a string into a Paragraph with the specified formatting.
+        /// Inserts a string into a FirstParagraph with the specified formatting.
         /// </summary>
         public void InsertText(string value, Formatting formatting = null)
         {
             Xml.Add(HelperFunctions.FormatInput(value, formatting?.Xml));
-            Document?.RenumberIds();
         }
 
         /// <summary>
@@ -789,17 +762,15 @@ namespace DXPlus
             // Remove all runs from this paragraph.
             Xml.Descendants(Name.Run).Remove();
 
+            // Add the new run.
             if (!string.IsNullOrEmpty(value))
             {
-                // Add the new run.
                 Xml.Add(HelperFunctions.FormatInput(value, formatting?.Xml));
-                // Renumber any insert/delete markers
-                Document?.RenumberIds();
             }
         }
 
         /// <summary>
-        /// Inserts a string into the Paragraph with the specified formatting at the given index.
+        /// Inserts a string into the FirstParagraph with the specified formatting at the given index.
         /// </summary>
         /// <param name="index">The index position of the insertion.</param>
         /// <param name="value">The System.String to insert.</param>
@@ -835,16 +806,14 @@ namespace DXPlus
                         break;
                 }
             }
-
-            Document?.RenumberIds();
         }
 
         /// <summary>
-        /// Remove this Paragraph from the document.
+        /// Remove this FirstParagraph from the document.
         /// </summary>
         public void Remove()
         {
-            // If this is the only Paragraph in the Cell then we cannot remove it.
+            // If this is the only FirstParagraph in the Cell then we cannot remove it.
             if (Xml.Parent?.Name.LocalName == "tc"
                 && Xml.Parent.Elements(Name.Paragraph).Count() == 1)
             {
@@ -872,7 +841,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Removes characters from a DXPlus.DocX.Paragraph.
+        /// Removes characters from a DXPlus.Document.FirstParagraph.
         /// </summary>
         /// <param name="index">The position to begin deleting characters.</param>
         /// <param name="count">The number of characters to delete</param>
@@ -897,19 +866,19 @@ namespace DXPlus
                             int take = count - processed;
                             XElement[] splitEditAfter = SplitEdit(parentElement, index + take, EditType.Delete);
                             XElement middle = SplitEdit(splitEditBefore[1], index + take, EditType.Delete)[1];
-                            processed += GetElementTextLength(middle);
+                            processed += HelperFunctions.GetTextLength(middle);
                             parentElement.ReplaceWith(splitEditBefore[0], null, splitEditAfter[1]);
                         }
                         break;
 
                     default:
-                        if (GetElementTextLength(run.Xml) > 0)
+                        if (HelperFunctions.GetTextLength(run.Xml) > 0)
                         {
                             XElement[] splitRunBefore = run.SplitAtIndex(index, EditType.Delete);
                             int min = Math.Min(index + (count - processed), run.EndIndex);
                             XElement[] splitRunAfter = run.SplitAtIndex(min, EditType.Delete);
-                            XElement middle = new Run(splitRunBefore[1], run.StartIndex + GetElementTextLength(splitRunBefore[0])).SplitAtIndex(min, EditType.Delete)[0];
-                            processed += GetElementTextLength(middle);
+                            XElement middle = new Run(splitRunBefore[1], run.StartIndex + HelperFunctions.GetTextLength(splitRunBefore[0])).SplitAtIndex(min, EditType.Delete)[0];
+                            processed += HelperFunctions.GetTextLength(middle);
                             run.Xml.ReplaceWith(splitRunBefore[0], null, splitRunAfter[1]);
                         }
                         else
@@ -922,7 +891,7 @@ namespace DXPlus
 
                 // See if the paragraph is empty -- if so we can remove it.
                 if (parentElement != null
-                    && GetElementTextLength(parentElement) == 0
+                    && HelperFunctions.GetTextLength(parentElement) == 0
                     && parentElement.Parent != null
                     && parentElement.Parent.Name.LocalName != "tc"
                     && parentElement.Parent.Elements(Name.Paragraph).Any()
@@ -932,8 +901,6 @@ namespace DXPlus
                 }
             }
             while (processed < count);
-
-            Document?.RenumberIds();
         }
 
         /// <summary>
@@ -1096,41 +1063,6 @@ namespace DXPlus
             private set => Xml.SetAttributeValue(Name.ParagraphId, string.IsNullOrEmpty(value) ? null : value);
         }
 
-        /// <summary>
-        /// Retrieve the text length of the passed element
-        /// </summary>
-        /// <param name="textElement"></param>
-        /// <returns></returns>
-        internal static int GetElementTextLength(XElement textElement)
-        {
-            int count = 0;
-            if (textElement != null)
-            {
-                foreach (XElement el in textElement.Descendants())
-                {
-                    switch (el.Name.LocalName)
-                    {
-                        case "tab":
-                            if (el.Parent?.Name.LocalName != "tabs")
-                            {
-                                goto case "br";
-                            }
-
-                            break;
-
-                        case "br":
-                            count++;
-                            break;
-
-                        case "t":
-                        case "delText":
-                            count += el.Value.Length;
-                            break;
-                    }
-                }
-            }
-            return count;
-        }
 
         /// <summary>
         /// Walk all the text runs in the paragraph and find the one containing a specific index.
@@ -1243,13 +1175,13 @@ namespace DXPlus
             XElement[] splitRun = run.SplitAtIndex(index, type);
 
             XElement splitLeft = new XElement(element.Name, element.Attributes(), run.Xml.ElementsBeforeSelf(), splitRun[0]);
-            if (GetElementTextLength(splitLeft) == 0)
+            if (HelperFunctions.GetTextLength(splitLeft) == 0)
             {
                 splitLeft = null;
             }
 
             XElement splitRight = new XElement(element.Name, element.Attributes(), splitRun[1], run.Xml.ElementsAfterSelf());
-            if (GetElementTextLength(splitRight) == 0)
+            if (HelperFunctions.GetTextLength(splitRight) == 0)
             {
                 splitRight = null;
             }
@@ -1261,7 +1193,7 @@ namespace DXPlus
         {
             base.OnDocumentOwnerChanged(previousValue, newValue);
 
-            if (newValue is DocX document)
+            if (newValue is Document document)
             {
                 // Update bookmark IDs.
                 foreach (var bookmark in GetBookmarks())
@@ -1309,20 +1241,6 @@ namespace DXPlus
         protected override void OnAddedToContainer(BlockContainer blockContainer)
         {
             base.OnAddedToContainer(blockContainer);
-            if (blockContainer != null)
-            {
-                this.ParentContainerType = blockContainer.GetType().Name switch
-                {
-                    nameof(DXPlus.Table) => ContainerType.Table,
-                    nameof(Section) => ContainerType.Section,
-                    nameof(Cell) => ContainerType.Cell,
-                    nameof(Header) => ContainerType.Header,
-                    nameof(Footer) => ContainerType.Footer,
-                    nameof(Paragraph) => ContainerType.Paragraph,
-                    nameof(DocX) => ContainerType.Body,
-                    _ => ContainerType.None
-                };
-            }
 
             if (Table != null)
             {
@@ -1338,7 +1256,7 @@ namespace DXPlus
         internal void SetStartIndex(int index)
         {
             StartIndex = index;
-            EndIndex = index + GetElementTextLength(Xml);
+            EndIndex = index + HelperFunctions.GetTextLength(Xml);
         }
 
         /// <summary>
@@ -1354,6 +1272,7 @@ namespace DXPlus
                 HelperFunctions.FormatInput(text, formatting?.Xml));
         }
 
+        /*
         /// <summary>
         /// Method to clone a paragraph into a new unowned paragraph.
         /// </summary>
@@ -1369,6 +1288,7 @@ namespace DXPlus
                 Id = HelperFunctions.GenerateHexId()
             };
         }
+        */
 
         /// <summary>
         /// Provides value equality for the paragraph.
@@ -1387,20 +1307,12 @@ namespace DXPlus
                 return true;
             }
 
-            return Text == other.Text
-                   && Id == other.Id
-                   && StartIndex == other.StartIndex
-                   && EndIndex == other.EndIndex
-                   && ParentContainerType == other.ParentContainerType;
+            return Text == other.Text && Id == other.Id;
         }
 
         public override bool Equals(object obj) => Equals(obj as Paragraph);
 
         public override int GetHashCode()
-            => Text.GetHashCode()
-                + Id.GetHashCode()
-                + StartIndex.GetHashCode()
-                + EndIndex.GetHashCode()
-                + ParentContainerType.GetHashCode();
+            => Text.GetHashCode() + Id.GetHashCode();
     }
 }

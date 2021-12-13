@@ -67,7 +67,7 @@ namespace DXPlus.Tests
         {
             using var doc = Document.Create(Filename);
             doc.AddParagraph("This is a test.").Style(HeadingType.Heading1);
-            Assert.Equal("Heading1", doc.Paragraphs[0].Properties.StyleName);
+            Assert.Equal("Heading1", doc.Paragraphs.First().Properties.StyleName);
         }
 
         [Fact]
@@ -123,7 +123,7 @@ namespace DXPlus.Tests
         [Fact]
         public void FirstHeaderAddsElements()
         {
-            using var doc = (DocX) Document.Create();
+            using var doc = (Document) Document.Create();
 
             var section = doc.Sections.Single();
 
@@ -146,7 +146,7 @@ namespace DXPlus.Tests
         [Fact]
         public void FirstHeaderRemovesElements()
         {
-            using var doc = (DocX)Document.Create();
+            using var doc = (Document)Document.Create();
             var section = doc.Sections.Single();
             Assert.NotNull(section.Headers);
 
@@ -169,7 +169,7 @@ namespace DXPlus.Tests
         [Fact]
         public void SecondHeaderIncrementsCorrectly()
         {
-            using var doc = (DocX)Document.Create();
+            using var doc = (Document)Document.Create();
             var section = doc.Sections.Single();
 
             Assert.NotNull(section.Headers);
@@ -295,7 +295,7 @@ namespace DXPlus.Tests
         [Fact]
         public void CheckPackagePartAssignmentForParagraphs()
         {
-            using DocX doc = (DocX) Document.Create();
+            using Document doc = (Document) Document.Create();
             Assert.NotNull(doc.PackagePart);
 
             Paragraph p = new Paragraph("Test");
@@ -310,7 +310,7 @@ namespace DXPlus.Tests
         [Fact]
         public void AddPageBreakToOrphanedParagraphThrowsException()
         {
-            var paragraph = new Paragraph("Test");
+            var paragraph = new FirstParagraph("Test");
             Assert.Throws<InvalidOperationException>(() => paragraph.AddPageBreak());
         }
         */
@@ -324,13 +324,13 @@ namespace DXPlus.Tests
             Assert.Equal("First paragraph", firstParagraph.Text);
 
             var secondParagraph = doc.AddParagraph("Another paragraph");
-            Assert.Equal(2, doc.Paragraphs.Count);
+            Assert.Equal(2, doc.Paragraphs.Count());
             Assert.Equal("Another paragraph", secondParagraph.Text);
 
             var p = doc.InsertParagraph(0, " Inserted Text ");
-            Assert.Equal(3, doc.Paragraphs.Count);
+            Assert.Equal(3, doc.Paragraphs.Count());
 
-            Assert.Equal(" Inserted Text ", doc.Paragraphs[0].Text);
+            Assert.Equal(" Inserted Text ", doc.Paragraphs.First().Text);
         }
 
         [Fact]
@@ -342,11 +342,11 @@ namespace DXPlus.Tests
             Assert.Equal("First paragraph", firstParagraph.Text);
 
             var p = doc.InsertParagraph(5, " Inserted Text ");
-            Assert.Equal(3, doc.Paragraphs.Count);
+            Assert.Equal(3, doc.Paragraphs.Count());
 
-            Assert.Equal("First", doc.Paragraphs[0].Text);
-            Assert.Equal(" Inserted Text ", doc.Paragraphs[1].Text);
-            Assert.Equal(" paragraph", doc.Paragraphs[2].Text);
+            Assert.Equal("First", doc.Paragraphs.First().Text);
+            Assert.Equal(" Inserted Text ", doc.Paragraphs.ElementAt(1).Text);
+            Assert.Equal(" paragraph", doc.Paragraphs.ElementAt(2).Text);
         }
 
         [Fact]
@@ -503,7 +503,7 @@ namespace DXPlus.Tests
             var doc = Document.Create();
 
             var p1 = doc.AddParagraph("This is a test");
-            var p2 = doc.Paragraphs[0];
+            var p2 = doc.Paragraphs.First();
 
             Assert.Equal(p1,p2);  // value equality
             Assert.False(p1==p2); // not reference equality

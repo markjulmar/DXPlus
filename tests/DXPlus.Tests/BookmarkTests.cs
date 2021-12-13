@@ -8,7 +8,7 @@ namespace DXPlus.Tests
         [Fact]
         public void AddBookmarkInsertsXml()
         {
-            DocX doc = (DocX) Document.Create();
+            Document doc = (Document) Document.Create();
 
             doc.AddParagraph("This is a test paragraph.");
             var p = doc

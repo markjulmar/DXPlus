@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\DXPlus.csproj" />
+    <ProjectReference Include="..\DXPlus.Tests\DXPlus.Tests.csproj" />
   </ItemGroup>
 
 </Project>

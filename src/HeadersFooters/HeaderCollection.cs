@@ -10,7 +10,7 @@
         /// </summary>
         /// <param name="documentOwner">Document</param>
         /// <param name="sectionOwner">Section owner</param>
-        internal HeaderCollection(DocX documentOwner, Section sectionOwner)
+        internal HeaderCollection(Document documentOwner, Section sectionOwner)
             : base(documentOwner, sectionOwner, "hdr", Relations.Header, "header")
         {
         }

@@ -1,5 +1,6 @@
 ﻿using DXPlus.Helpers;
 using System;
+using System.Linq;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 
@@ -59,7 +60,7 @@ namespace DXPlus
         {
             if (!Exists)
                 CreateFunc.Invoke(this);
-            return Paragraphs[0];
+            return Paragraphs.First();
         }
 
         /// <summary>

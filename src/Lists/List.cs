@@ -1,313 +1,142 @@
 ﻿using DXPlus.Helpers;
 using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
 
 namespace DXPlus
 {
     /// <summary>
-    /// This represents a single item in the list.
+    /// Helper methods to make a paragraph a ListItem.
+    /// This involves adding a style + {w:numPr} element to indicate the numbering style.
     /// </summary>
-    public class ListItem
+    public static class ListExtensions
     {
         /// <summary>
-        /// Internal constructor
+        /// Determine if this paragraph is a list element.
         /// </summary>
-        internal ListItem()
-        {
-        }
+        public static bool IsListItem(this Paragraph p)
+            => p.ParagraphNumberProperties() != null
+               || p.Properties?.StyleName == "ListParagraph";
 
         /// <summary>
-        /// Text
-        /// </summary>
-        public Paragraph Paragraph { get; set; }
-
-        /// <summary>
-        /// Indent level (0 == root)
-        /// </summary>
-        public int IndentLevel
-        {
-            get
-            {
-                string value = Paragraph?.ParagraphNumberProperties().FirstLocalNameDescendant("ilvl").GetVal();
-                return value != null && int.TryParse(value, out int result) ? result : 0;
-            }
-        }
-
-        /// <summary>
-        /// Assigned NumId -- should match owner List
-        /// </summary>
-        public int NumId
-        {
-            get
-            {
-                string numIdVal = Paragraph.ParagraphNumberProperties().Element(Namespace.Main + "numId").GetVal();
-                return numIdVal != null && int.TryParse(numIdVal, out var result) ? result : 0;
-            }
-            set => Paragraph.ParagraphNumberProperties()
-                    .Element(Namespace.Main + "numId")?
-                    .SetAttributeValue(Name.MainVal, value);
-        }
-
-        public string Text => Paragraph.Text;
-        internal XElement Xml => Paragraph.Xml;
-    }
-
-    /// <summary>
-    /// Represents a List in a container.
-    /// </summary>
-    public class List : Block
-    {
-        private readonly List<ListItem> items = new();
-        private FontFamily fontFamily;
-        private double? fontSize;
-
-        /// <summary>
-        /// List of items to add - these will create paragraph objects in the document
-        /// tied to numberId elements in numbering.xml
-        /// </summary>
-        public IReadOnlyList<ListItem> Items => items.AsReadOnly();
-
-        /// <summary>
-        /// The ListItemType (bullet or numbered) of the list.
-        /// </summary>
-        public NumberingFormat ListType { get; internal set; }
-
-        /// <summary>
-        /// Start number
-        /// </summary>
-        public int StartNumber { get; set; }
-
-        /// <summary>
-        /// The numId used to reference the list settings in the numbering.xml
-        /// </summary>
-        public int NumId { get; internal set; }
-
-        /// <summary>
-        /// Default font family to use
-        /// </summary>
-        public FontFamily Font
-        {
-            get => fontFamily;
-            set
-            {
-                fontFamily = value;
-                foreach (var item in Items)
-                {
-                    item.Paragraph.AddFormatting(new Formatting {Font = value});
-                }
-            }
-        }
-
-        /// <summary>
-        /// Default font size to use
-        /// </summary>
-        public double? FontSize
-        {
-            get => fontSize;
-            set
-            {
-                fontSize = value;
-                foreach (var item in Items)
-                {
-                    item.Paragraph.AddFormatting(new Formatting { FontSize = value });
-                }
-            }
-        }
-
-        /// <summary>
-        /// Internal constructor when building List from paragraphs
-        /// </summary>
-        internal List()
-        {
-            this.BlockContainer = new NullContainer();
-        }
-
-        /// <summary>
-        /// Public constructor
-        /// </summary>
-        /// <param name="listType">List type</param>
-        /// <param name="startNumber">Starting number</param>
-        public List(NumberingFormat listType, int startNumber = 1) : this()
-        {
-            if (listType == NumberingFormat.None)
-                throw new ArgumentException("Cannot use None as the ListType.", nameof(listType));
-
-            ListType = listType;
-            StartNumber = startNumber;
-            NumId = 0;
-        }
-
-        /// <summary>
-        /// Constructor to load a set of items into the list.
-        /// </summary>
-        /// <param name="listType">List type</param>
-        /// <param name="items">Items to add</param>
-        /// <param name="startNumber">Starting number</param>
-        public List(NumberingFormat listType, IEnumerable<string> items, int startNumber = 1) : this(listType, startNumber)
-        {
-            foreach (var text in items)
-            {
-                AddItem(text);
-            }
-        }
-
-        /// <summary>
-        /// Add an item to the list
-        /// </summary>
-        /// <param name="text">Text</param>
-        /// <param name="level">Level</param>
-        /// <returns></returns>
-        public List AddItem(string text, int level = 0)
-        {
-            if (text == null)
-                throw new ArgumentNullException(nameof(text));
-
-            var newParagraphSection = new XElement(Name.Paragraph,
-                new XAttribute(Name.ParagraphId, HelperFunctions.GenerateHexId()),
-                new XElement(Name.ParagraphProperties,
-                    new XElement(Name.ParagraphStyle, new XAttribute(Name.MainVal, "ListParagraph")),
-                    new XElement(Namespace.Main + "numPr",
-                        new XElement(Namespace.Main + "ilvl", new XAttribute(Name.MainVal, level)),
-                        new XElement(Namespace.Main + "numId", new XAttribute(Name.MainVal, NumId)))),
-                new XElement(Name.Run, new XElement(Name.Text, text))
-            );
-
-            var newItem = new ListItem
-            {
-                Paragraph = new Paragraph(Document, newParagraphSection, 0, ContainerType.Paragraph)
-                {
-                    BlockContainer = this.BlockContainer,
-                }
-            };
-
-            // Apply the font/size if it's set.
-            if (Font != null || FontSize != null)
-            {
-                var formatting = new Formatting();
-                if (Font != null) formatting.Font = Font;
-                if (FontSize != null) formatting.FontSize = FontSize;
-                newItem.Paragraph.AddFormatting(formatting);
-            }
-
-            BlockContainer.Xml.Add(newParagraphSection);
-
-            items.Add(newItem);
-
-            return this;
-        }
-
-        /// <summary>
-        /// Adds an item to the list.
+        /// This ensures a secondary paragraph remains associated to a list.
         /// </summary>
         /// <param name="paragraph"></param>
-        /// <param name="level"></param>
-        public List AddItem(Paragraph paragraph, int level = 0)
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static Paragraph ListStyle(this Paragraph paragraph)
         {
-            var paraProps = paragraph.ParagraphNumberProperties();
-            if (paraProps == null)
-            {
-                paraProps = new XElement(Name.ParagraphProperties,
-                    new XElement(Name.ParagraphStyle, new XAttribute(Name.MainVal, "ListParagraph")),
-                    new XElement(Namespace.Main + "numPr",
-                        new XElement(Namespace.Main + "ilvl", new XAttribute(Name.MainVal, level)),
-                        new XElement(Namespace.Main + "numId", new XAttribute(Name.MainVal, 0))));
-                paragraph.Xml.AddFirst(paraProps);
-            }
-            else if (NumId == 0)
-            {
-                string numIdVal = paraProps.Element(Namespace.Main + "numId").GetVal();
-                if (numIdVal != null && int.TryParse(numIdVal, out var result))
-                {
-                    if (Items.Any(i => i.NumId != 0 && i.NumId != result))
-                    {
-                        throw new InvalidOperationException(
-                            "New list items can only be added to this list if they are have the same numId.");
-                    }
+            if (paragraph == null)
+                throw new ArgumentNullException(nameof(paragraph));
 
-                    NumId = result;
-                }
-            }
+            // List items have a ListParagraph style.
+            var paraProps = paragraph.Xml.GetOrInsertElement(Name.ParagraphProperties);
+            var style = paraProps.GetOrAddElement(Name.ParagraphStyle);
+            style.SetAttributeValue(Name.MainVal, "ListParagraph");
 
-            if (!CanAddListItem(paragraph))
-            {
-                throw new InvalidOperationException(
-                    "New list items can only be added to this list if they are have the same numId.");
-            }
+            return paragraph;
+        }
 
-            paragraph.BlockContainer = BlockContainer;
-            if (paragraph.DefaultFormatting == null)
+        /// <summary>
+        /// Make the passed paragraph part of a List (bullet or numbered).
+        /// </summary>
+        /// <param name="paragraph">Paragraph</param>
+        /// <param name="numberingDefinition">Numbering style to use</param>
+        /// <param name="level">Indent level (0-based, defaults to top level)</param>
+        /// <returns>Paragraph</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public static Paragraph ListStyle(this Paragraph paragraph, 
+            NumberingDefinition numberingDefinition, int level = 0)
+        {
+            if (paragraph == null)
+                throw new ArgumentNullException(nameof(paragraph));
+            if (numberingDefinition == null)
+                throw new ArgumentNullException(nameof(numberingDefinition));
+            if (level < 0)
+                throw new ArgumentOutOfRangeException(nameof(level));
+
+            // List items have a ListParagraph style.
+            var paraProps = paragraph.Xml.GetOrInsertElement(Name.ParagraphProperties);
+            var style = paraProps.GetOrAddElement(Name.ParagraphStyle);
+            style.SetAttributeValue(Name.MainVal, "ListParagraph");
+
+            // Add the paragraph numbering properties.
+            var pnpElement = paragraph.ParagraphNumberProperties();
+            if (pnpElement == null)
             {
-                paragraph.DefaultFormatting = new Formatting {Font = Font, FontSize = FontSize};
+                paraProps.Add(new XElement(Namespace.Main + "numPr",
+                    new XElement(Namespace.Main + "ilvl", new XAttribute(Name.MainVal, level)),
+                    new XElement(Namespace.Main + "numId", new XAttribute(Name.MainVal, numberingDefinition.Id))));
             }
+            // Has list info? Replace it.
             else
             {
-                paragraph.DefaultFormatting.Font = Font;
-                paragraph.DefaultFormatting.FontSize = FontSize;
+                pnpElement.GetOrAddElement(Namespace.Main + "ilvl").SetAttributeValue(Name.MainVal, level);
+                pnpElement.GetOrAddElement(Namespace.Main + "numId")
+                    .SetAttributeValue(Name.MainVal, numberingDefinition.Id);
             }
 
-            BlockContainer.Xml.Add(paragraph);
-
-            items.Add(new ListItem { Paragraph = paragraph });
-
-            return this;
+            return paragraph;
         }
 
         /// <summary>
-        /// Determine if the given paragraph can be added to this list.
-        ///    1. Paragraph has a w:numPr element.
-        ///    2. w:numId == 0 or >0 and matches List.numId
+        /// Fetch the paragraph number properties for a list element.
         /// </summary>
-        /// <param name="paragraph"></param>
-        /// <returns>
-        /// Return true if paragraph can be added to the list.
-        /// </returns>
-        public bool CanAddListItem(Paragraph paragraph)
+        private static XElement ParagraphNumberProperties(this Paragraph p)
+            => p.Xml.FirstLocalNameDescendant("numPr");
+
+        /// <summary>
+        /// Return the associated numId for the list
+        /// </summary>
+        /// <param name="p"></param>
+        /// <returns></returns>
+        internal static int? GetListNumId(this Paragraph p)
         {
-            if (!paragraph.IsListItem())
-                return false;
-
-            var numIdNode = paragraph.Xml.FirstLocalNameDescendant("numId");
-            if (numIdNode == null || !int.TryParse(numIdNode.GetVal(), out int numId))
-                return false;
-
-            return NumId == 0 || (numId == NumId && numId > 0);
+            var numProperties = ParagraphNumberProperties(p);
+            return numProperties == null
+                ? null
+                : int.Parse(numProperties.Element(Namespace.Main + "numId").GetVal());
         }
 
-        protected override void OnDocumentOwnerChanged(IDocument previousValue, IDocument newValue)
+        /// <summary>
+        /// Return the list level for this paragraph
+        /// </summary>
+        /// <param name="p"></param>
+        /// <returns></returns>
+        public static int? GetListLevel(this Paragraph p)
         {
-            base.OnDocumentOwnerChanged(previousValue, newValue);
+            var numProperties = ParagraphNumberProperties(p);
+            return numProperties == null
+                ? null
+                : int.Parse(numProperties.Element(Namespace.Main + "ilvl").GetVal());
+        }
 
-            // Attached to a document!
-            if (newValue is DocX doc)
+        /// <summary>
+        /// Get the ListItemType property for the paragraph.
+        /// Defaults to numbered if a list is found but the type is not specified
+        /// </summary>
+        public static NumberingFormat GetNumberingFormat(this Paragraph p)
+        {
+            var numProperties = ParagraphNumberProperties(p);
+            if (numProperties == null)
+                return NumberingFormat.None;
+
+            int level = int.Parse(numProperties.Element(Namespace.Main + "ilvl").GetVal());
+            int numId = int.Parse(numProperties.Element(Namespace.Main + "numId").GetVal());
+
+            // Find the number definition instance.
+            var styles = p.Document.NumberingStyles;
+            var definition = styles.Definitions.SingleOrDefault(d => d.Id == numId);
+            if (definition == null)
             {
-                // Add the numbering.xml file
-                doc.AddDefaultNumberingPart();
-
-                // Create a numbering section if needed.
-                if (NumId == 0)
-                    NumId = doc.NumberingStyles.Create(ListType, StartNumber).Id;
-
-                // Wire up the paragraphs
-                foreach (var item in Items)
-                {
-                    item.Paragraph.Document = doc;
-                    item.NumId = NumId;
-                }
+                throw new Exception(
+                    $"Number reference w:numId('{numId}') used in document but not defined in /word/numbering.xml");
             }
-        }
 
-        /// <summary>
-        /// Called when the package part is changed.
-        /// </summary>
-        protected override void OnPackagePartChanged(PackagePart previousValue, PackagePart newValue)
-        {
-            base.OnPackagePartChanged(previousValue, newValue);
-            foreach (var item in Items)
-                item.Paragraph.PackagePart = newValue;
+            return definition.Style.Levels
+                .Single(l => l.Level == level)
+                .Format;
         }
     }
 }

@@ -6,83 +6,44 @@ namespace DXPlus.Tests
     public class ListTests
     {
         [Fact]
-        public void ListHasEnumerableItems()
+        public void ListStyleAddsNumberingDefinitionId()
         {
-            var list = new List(NumberingFormat.Bulleted);
-            list.AddItem("1")
-                .AddItem("2")
-                .AddItem("3");
+            using var doc = Document.Create();
+            var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
 
-            Assert.Equal(3, list.Items.Count);
-            Assert.Equal("2", list.Items[1].Paragraph.Text);
+            var p = doc.AddParagraph("1").ListStyle(nd);
+
+            Assert.True(p.IsListItem());
+            Assert.Equal(1, p.GetListNumId());
+            Assert.Equal(0, p.GetListLevel());
         }
 
         [Fact]
-        public void CanAddChildParagraphsToListItem()
+        public void ChildItemsHaveListStyle()
         {
-            var list = new List(NumberingFormat.Numbered);
-            list.AddItem("This is a list");
-            list.Items[0].Paragraph
-                .AddParagraph("With another paragraph")
-                .AddParagraph("And another ..")
-                .AddParagraph("With a quote").Style("IntenseQuote");
-            list.AddItem("Starting the list again.")
-                .AddItem("With another item (#3)");
+            using var doc = Document.Create();
+            var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
 
-            Assert.Equal(3, list.Items.Count);
-            var listItem = list.Items[0];
-        }
+            var p = doc.AddParagraph("Starting list").ListStyle(nd);
+            p = p.AddParagraph("With another paragraph").ListStyle();
 
-        [Fact]
-        public void PackagePartSetWhenAddedToDoc()
-        {
-            List list = new List(NumberingFormat.Bulleted);
-            Assert.Null(list.PackagePart);
-
-            var doc = Document.Create();
-            doc.AddList(list);
-            Assert.NotNull(list.PackagePart);
-            Assert.Empty(doc.Lists);
-        }
-
-        [Fact]
-        public void ListAddsElementsToDoc()
-        {
-            var doc = Document.Create();
-            doc.AddList(new List(NumberingFormat.Bulleted, new[] { "Item 1", "Item 2", "Item 3" }));
-            Assert.Single(doc.Lists);
-
-            doc.AddList(new List(NumberingFormat.Numbered, new [] { "One" }));
-            Assert.Equal(2, doc.Lists.Count());
-        }
-
-        [Fact]
-        public void ListAddsElementsToDocAfterInsert()
-        {
-            List list = new List(NumberingFormat.Bulleted);
-            var doc = Document.Create();
-            var l2 = doc.AddList(list);
-            Assert.Empty(doc.Lists);
-
-            l2.AddItem("2");
-            Assert.Single(doc.Lists);
+            Assert.Equal("ListParagraph", p.Properties.StyleName);
         }
 
         [Fact]
         public void ListAddsToHeaderPart()
         {
-            List list = new List(NumberingFormat.Bulleted, new [] { "Test"} );
-            Assert.Null(list.PackagePart);
+            using var doc = Document.Create();
+            var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
 
-            var doc = Document.Create();
             var section = doc.Sections.Single();
 
             section.Headers.Default.Add();
             var header = section.Headers.Default;
 
-            header.AddList(list);
-            Assert.NotNull(list.PackagePart);
-            Assert.Single(header.Lists);
+            var p = header.AddParagraph("List in paragraph").ListStyle(nd);
+            Assert.NotNull(p.PackagePart);
+            Assert.Equal(p.PackagePart, header.PackagePart);
         }
     }
 }

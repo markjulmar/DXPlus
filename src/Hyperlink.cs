@@ -25,7 +25,7 @@ namespace DXPlus
         public string Id { get; private set; }
 
         /// <summary>
-        /// Remove a Hyperlink from this Paragraph only.
+        /// Remove a Hyperlink from this FirstParagraph only.
         /// </summary>
         public void Remove()
         {
@@ -196,6 +196,7 @@ namespace DXPlus
         /// Return all hyperlinks associated to a given parent
         /// </summary>
         /// <param name="owner"></param>
+        /// <param name="unownedHyperlinks"></param>
         /// <returns></returns>
         internal static IEnumerable<Hyperlink> Enumerate(DocXElement owner, List<Hyperlink> unownedHyperlinks = null)
         {
@@ -205,14 +206,11 @@ namespace DXPlus
             {
                 if (he.Name.LocalName == "hyperlink")
                 {
-                    if (unownedHyperlinks != null)
+                    var hyperlink = unownedHyperlinks?.SingleOrDefault(hl => ReferenceEquals(hl.Xml, he));
+                    if (hyperlink != null)
                     {
-                        var hyperlink = unownedHyperlinks.SingleOrDefault(hl => ReferenceEquals(hl.Xml, he));
-                        if (hyperlink != null)
-                        {
-                            yield return hyperlink;
-                            continue;
-                        }
+                        yield return hyperlink;
+                        continue;
                     }
 
                     Debug.Assert(owner.Document != null);
@@ -261,7 +259,7 @@ namespace DXPlus
         {
             base.OnDocumentOwnerChanged(previousValue, newValue);
             // Add the hyperlink styles to the document if missing.
-            (newValue as DocX)?.AddHyperlinkStyle();
+            (newValue as Document)?.AddHyperlinkStyle();
         }
     }
 }

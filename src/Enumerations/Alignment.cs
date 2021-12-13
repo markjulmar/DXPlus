@@ -3,7 +3,7 @@
 namespace DXPlus
 {
     /// <summary>
-    /// Text alignment of a Paragraph or List
+    /// Text alignment of a FirstParagraph or List
     /// </summary>
     public enum Alignment
     {

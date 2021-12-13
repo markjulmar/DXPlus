@@ -14,6 +14,20 @@ namespace DXPlus.Helpers
 {
     internal static class HelperFunctions
     {
+        internal static Paragraph WrapParagraphElement(XElement element, IDocument document, PackagePart packagePart, ref int position)
+        {
+            if (element.Name != Name.Paragraph)
+                throw new ArgumentException($"Passed element {element.Name} not a {Name.Paragraph}.", nameof(element));
+
+            var p = new Paragraph(document, element, position) { PackagePart = packagePart };
+            var nextNode = p.Xml.ElementsAfterSelf().FirstOrDefault();
+            if (nextNode?.Name.Equals(Name.Table) == true)
+                p.Table = new Table(document, nextNode);
+            position += GetText(element).Length;
+
+            return p;
+        }
+
         /// <summary>
         /// This creates a Word docx in a memory stream.
         /// </summary>
@@ -600,6 +614,43 @@ namespace DXPlus.Helpers
             localName = name;
             return false;
         }
+
+        /// <summary>
+        /// Retrieve the text length of the passed element
+        /// </summary>
+        /// <param name="textElement"></param>
+        /// <returns></returns>
+        internal static int GetTextLength(XElement textElement)
+        {
+            int count = 0;
+            if (textElement != null)
+            {
+                foreach (XElement el in textElement.Descendants())
+                {
+                    switch (el.Name.LocalName)
+                    {
+                        case "tab":
+                            if (el.Parent?.Name.LocalName != "tabs")
+                            {
+                                goto case "br";
+                            }
+
+                            break;
+
+                        case "br":
+                            count++;
+                            break;
+
+                        case "t":
+                        case "delText":
+                            count += el.Value.Length;
+                            break;
+                    }
+                }
+            }
+            return count;
+        }
+
 
         /// <summary>
         /// Create a page break paragraph element

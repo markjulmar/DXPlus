@@ -23,10 +23,10 @@ namespace DXPlus.Tests
 
             Assert.Single(doc.Sections);
             var section = doc.Sections.Single();
-            Assert.Equal(3, section.Paragraphs.Count);
+            Assert.Equal(3, section.Paragraphs.Count());
             Assert.Contains(p1, section.Paragraphs);
-            Assert.Equal(p2.Text, section.Paragraphs[1].Text);
-            Assert.Equal(p3.Text, section.Paragraphs[2].Text);
+            Assert.Equal(p2.Text, section.Paragraphs.ElementAt(1).Text);
+            Assert.Equal(p3.Text, section.Paragraphs.ElementAt(2).Text);
         }
 
         [Fact]
@@ -34,10 +34,12 @@ namespace DXPlus.Tests
         {
             var doc = Document.Load("MultipleSectionsTest.docx");
 
-            Assert.Equal(3, doc.Sections.Count);
+            var sections = doc.Sections.ToList();
 
-            var s1 = doc.Sections[0];
-            Assert.Equal(6, s1.Paragraphs.Count);
+            Assert.Equal(3, sections.Count);
+
+            var s1 = sections[0];
+            Assert.Equal(6, s1.Paragraphs.Count());
             Assert.NotNull(s1.Paragraphs.Last().Xml.Element(Name.ParagraphProperties)?.Element(Name.SectionProperties));
             Assert.True(s1.Footers.Even.Exists);
             Assert.True(s1.Footers.Default.Exists);
@@ -45,15 +47,15 @@ namespace DXPlus.Tests
             Assert.Equal(2, s1.Footers.Count());
             Assert.Empty(s1.Headers);
 
-            var s2 = doc.Sections[1];
-            Assert.Equal(5, s2.Paragraphs.Count);
+            var s2 = sections[1];
+            Assert.Equal(5, s2.Paragraphs.Count());
             Assert.Equal(144, s2.Properties.LeftMargin);
             Assert.Equal(72, s2.Properties.TopMargin);
             Assert.Empty(s2.Headers);
             Assert.Empty(s2.Footers);
 
-            var s3 = doc.Sections[2];
-            Assert.Equal(5, s3.Paragraphs.Count);
+            var s3 = sections[2];
+            Assert.Equal(5, s3.Paragraphs.Count());
             Assert.Equal(SectionBreakType.EvenPage, s3.Properties.Type);
             Assert.Empty(s3.Headers);
             Assert.Empty(s3.Footers);

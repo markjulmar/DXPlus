@@ -1,7 +1,6 @@
-<w:abstractNum w:abstractNumId="0" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:abstractNum xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:abstractNumId="0">
   <w:nsid w:val="{nsid}"/>
   <w:multiLevelType w:val="hybridMultilevel"/>
-  <w:tmpl w:val="0409001D"/>
   <w:lvl w:ilvl="0">
     <w:start w:val="1"/>
     <w:numFmt w:val="decimal"/>

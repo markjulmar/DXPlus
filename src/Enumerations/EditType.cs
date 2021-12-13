@@ -6,12 +6,12 @@
     internal enum EditType
     {
         /// <summary>
-        /// Paragraph has a tracked insertion
+        /// FirstParagraph has a tracked insertion
         /// </summary>
         Insert,
 
         /// <summary>
-        /// Paragraph has a tracked deletion
+        /// FirstParagraph has a tracked deletion
         /// </summary>
         Delete
     }

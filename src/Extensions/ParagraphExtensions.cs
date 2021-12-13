@@ -4,14 +4,14 @@ using System.Linq;
 namespace DXPlus
 {
     /// <summary>
-    /// Extension methods to work with the Paragraph type.
+    /// Extension methods to work with the FirstParagraph type.
     /// </summary>
     public static class ParagraphExtensions
     {
         /// <summary>
-        /// Append a new line to this Paragraph.
+        /// Append a new line to this FirstParagraph.
         /// </summary>
-        /// <returns>This Paragraph with a new line appended.</returns>
+        /// <returns>This FirstParagraph with a new line appended.</returns>
         public static Paragraph AppendLine(this Paragraph paragraph)
         {
             if (paragraph == null)
@@ -23,11 +23,11 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Append text on a new line to this Paragraph.
+        /// Append text on a new line to this FirstParagraph.
         /// </summary>
         /// <param name="paragraph"></param>
         /// <param name="text">The text to append.</param>
-        /// <returns>This Paragraph with the new text appended.</returns>
+        /// <returns>This FirstParagraph with the new text appended.</returns>
         public static Paragraph AppendLine(this Paragraph paragraph, string text)
         {
             if (paragraph == null)

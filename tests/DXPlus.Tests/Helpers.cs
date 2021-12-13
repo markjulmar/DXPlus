@@ -1,12 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Xml.Linq;
 
 namespace DXPlus.Tests
 {
     public static class Helpers
     {
+        public static string GenerateLoremIpsum(int numParagraphs = 1, int minWords = 5, int maxWords = 20, int minSentences = 5, int maxSentences = 20)
+        {
+            var words = new[]{"lorem", "ipsum", "dolor", "sit", "amet", "consectetuer", "adipiscing", "elit", "sed", "diam", "nonummy", "nibh", "euismod", "tincidunt", "ut", "laoreet", "dolore", "magna", "aliquam", "erat"};
+            var rng = new Random();
+            var text = new StringBuilder();
+            for (var paragraph = 0; paragraph < numParagraphs; paragraph++)
+            {
+                for (var sentence = 0; sentence < rng.Next(maxSentences - minSentences) + minSentences + 1; sentence++)
+                {
+                    text.Append(string.Join(" ", Enumerable.Range(0, rng.Next(maxWords - minWords) + minWords + 1)
+                        .Select(_ => words[rng.Next(words.Length)])));
+                    text.Append(". ");
+                }
+            }
+            return text.ToString();
+        }
+
         public static XElement RemoveNamespaces(this XElement element)
         {
             if (!element.HasElements)

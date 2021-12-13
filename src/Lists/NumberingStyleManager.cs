@@ -2,6 +2,7 @@
 using DXPlus.Resources;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
@@ -62,44 +63,50 @@ namespace DXPlus
         /// <param name="listType">Type of list to create</param>
         /// <param name="startNumber">Starting number</param>
         /// <returns></returns>
-        public NumberingDefinition Create(NumberingFormat listType, int startNumber)
+        public NumberingDefinition Create(NumberingFormat listType, int startNumber = 1)
         {
-            if (startNumber < 0)
+            Debug.Assert(numberingDoc != null);
+
+            if (startNumber < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(startNumber));
             }
 
-            XElement template = listType switch
-            {
-                NumberingFormat.Bulleted => Resource.DefaultBulletNumberingXml(HelperFunctions.GenerateHexId()),
-                NumberingFormat.Numbered => Resource.DefaultDecimalNumberingXml(HelperFunctions.GenerateHexId()),
-                _ => throw new InvalidOperationException($"Unable to create {nameof(NumberingFormat)}: {listType}."),
-            };
+            var styles = Styles.ToList();
+            var definitions = Definitions.ToList();
 
-            List<NumberingDefinition> definitions = Definitions.ToList();
-            List<NumberingStyle> styles = Styles.ToList();
+            // TODO: improve the search.
+            NumberingStyle style = null; // styles.FirstOrDefault(s => s.Levels.FirstOrDefault()?.Format == listType);
+            if (style == null)
+            {
+                var template = listType switch
+                {
+                    NumberingFormat.Bullet => Resource.DefaultBulletNumberingXml(HelperFunctions.GenerateHexId()),
+                    NumberingFormat.Numbered => Resource.DefaultDecimalNumberingXml(HelperFunctions.GenerateHexId()),
+                    _ => throw new InvalidOperationException($"Unable to create {nameof(NumberingFormat)}: {listType}."),
+                };
+                int abstractNumId = styles.Count > 0 ? styles.Max(s => s.Id) + 1 : 0;
+                style = new NumberingStyle(template) { Id = abstractNumId };
+
+                // Style definition goes first -- this new one should be at the end of the existing styles
+                XElement lastStyle = numberingDoc.Root.Descendants().LastOrDefault(e => e.Name == Namespace.Main + "abstractNum");
+                if (lastStyle != null)
+                {
+                    lastStyle.AddAfterSelf(style.Xml);
+                }
+                // Or at the beginning of the document.
+                else
+                {
+                    numberingDoc.Root.AddFirst(style.Xml);
+                }
+            }
 
             int numId = definitions.Count > 0 ? definitions.Max(d => d.Id) + 1 : 1;
-            int abstractNumId = styles.Count > 0 ? styles.Max(s => s.Id) + 1 : 0;
-
-            NumberingStyle style = new NumberingStyle(template) { Id = abstractNumId };
-            NumberingDefinition definition = new NumberingDefinition(numId, abstractNumId) { Style = style };
+            var definition = new NumberingDefinition(numId, style.Id) { Style = style };
 
             if (startNumber != 1)
             {
                 definition.AddOverrideForLevel(0, new NumberingLevel { Start = startNumber });
-            }
-
-            // Style definition goes first -- this new one should be at the end of the existing styles
-            XElement lastStyle = numberingDoc.Root!.Descendants().LastOrDefault(e => e.Name == Namespace.Main + "abstractNum");
-            if (lastStyle != null)
-            {
-                lastStyle.AddAfterSelf(style.Xml);
-            }
-            // Or at the beginning of the document.
-            else
-            {
-                numberingDoc.Root.AddFirst(style.Xml);
             }
 
             // Definition is always at the end of the document.

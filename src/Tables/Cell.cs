@@ -128,15 +128,15 @@ namespace DXPlus
             get => string.Join('\n', Paragraphs.Select(p => p.Text).Where(p => !string.IsNullOrEmpty(p)));
             set
             {
-                string val = value ?? "";
-                switch (Paragraphs.Count)
+                string val = value ?? string.Empty;
+                switch (Paragraphs.Count())
                 {
                     case 0:
                         this.AddParagraph(val);
                         break;
 
                     case 1:
-                        Paragraphs[0].SetText(val);
+                        Paragraphs.First().SetText(val);
                         break;
 
                     default:
@@ -226,7 +226,7 @@ namespace DXPlus
                 XElement tcPr = Xml.GetOrAddElement(Namespace.Main + "tcPr");
                 XElement tcW = tcPr.GetOrAddElement(Namespace.Main + "tcW");
 
-                if (value < 0)
+                if (value == null || value < 0)
                 {
                     tcW.Remove();
                 }

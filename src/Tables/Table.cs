@@ -89,6 +89,36 @@ namespace DXPlus
         }
 
         /// <summary>
+        /// Indentation in pixels
+        /// </summary>
+        public double? Indent
+        {
+            get
+            {
+                XAttribute value = TblPr.Element(Name.TableIndent)?
+                                        .Attribute(Namespace.Main + "w");
+                if (value != null && double.TryParse(value.Value, out var indentUnits))
+                    return indentUnits / TableHelpers.UnitConversion;
+
+                value?.Remove();
+                return null;
+            }
+            set
+            {
+                XElement tblIndent = TblPr.GetOrAddElement(Name.TableIndent);
+                if (value is null or < 0)
+                {
+                    tblIndent.Remove();
+                }
+                else
+                {
+                    tblIndent.SetAttributeValue(Namespace.Main + "type", "dxa"); // Widths in 20th/pt.
+                    tblIndent.SetAttributeValue(Namespace.Main + "w", value * TableHelpers.UnitConversion);
+                }
+            }
+        }
+
+        /// <summary>
         /// Auto size this table according to some rule.
         /// </summary>
         public AutoFit AutoFit
@@ -261,7 +291,7 @@ namespace DXPlus
         {
             base.OnDocumentOwnerChanged(previousValue, newValue);
 
-            if (newValue is DocX doc && Xml != null)
+            if (newValue is Document doc && Xml != null)
             {
                 ApplyTableStyleToDocumentOwner();
                 Rows.ForEach(r => r.Document = doc);
@@ -283,23 +313,17 @@ namespace DXPlus
         private void ApplyTableStyleToDocumentOwner()
         {
             if (Document == null)
-            {
                 return;
-            }
 
             string designName = TblPr.Element(Namespace.Main + "tblStyle").GetVal();
             if (string.IsNullOrWhiteSpace(designName))
-            {
                 return;
-            }
 
-            bool hasStyle = Document.Styles?.HasStyle(designName, StyleType.Table) ?? false;
-            if (!hasStyle)
+            if (!Document.Styles.HasStyle(designName, StyleType.Table))
             {
-                XDocument externalStyleDoc = Resource.DefaultTableStyles();
-                XElement styleElement = externalStyleDoc.Descendants().FindByAttrVal(Namespace.Main + "styleId", designName);
-
-                Document.AddDefaultStyles();
+                var styleElement = Resource.DefaultTableStyles()
+                                        .Descendants()
+                                        .FindByAttrVal(Namespace.Main + "styleId", designName);
                 Document.Styles.Add(styleElement);
             }
         }
@@ -694,7 +718,7 @@ namespace DXPlus
             // Fill in any missing values.
             if (columnWidths.Contains(double.NaN))
             {
-                SectionProperties section = Document.Sections[0].Properties;
+                SectionProperties section = Document.Sections.First().Properties;
                 double pageWidth = section.PageWidth - section.LeftMargin - section.RightMargin;
                 double usedSpace = columnWidths.Where(c => !double.IsNaN(c)).Sum();
                 double eachColumn = (pageWidth - usedSpace) / columnWidths.Count(double.IsNaN);

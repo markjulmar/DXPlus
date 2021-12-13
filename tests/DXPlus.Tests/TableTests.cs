@@ -12,7 +12,7 @@ namespace DXPlus.Tests
         [Fact]
         public void AddTableToOrphanParagraphFails()
         {
-            Paragraph p = new Paragraph();
+            FirstParagraph p = new FirstParagraph();
             Table t = new Table(1, 1);
 
             Assert.Throws<InvalidOperationException>(() => p.Append(t));
@@ -109,7 +109,7 @@ namespace DXPlus.Tests
             t.AddRow().Cells[0].Text = "2";
             var rows = t.Xml.RemoveNamespaces().XPathSelectElements("//tr").ToList();
             Assert.Equal(2, rows.Count);
-            Assert.Equal("2", t.Rows[1].Cells[0].Paragraphs[0].Text);
+            Assert.Equal("2", t.Rows[1].Cells[0].Paragraphs.First().Text);
             Assert.Equal("2", rows.Last().Value);
         }
 
@@ -124,7 +124,7 @@ namespace DXPlus.Tests
             t.InsertRow(0).Cells[0].Text = "1";
             var rows = t.Xml.RemoveNamespaces().XPathSelectElements("//tr").ToList();
             Assert.Equal(2, rows.Count);
-            Assert.Equal("1", t.Rows[0].Cells[0].Paragraphs[0].Text);
+            Assert.Equal("1", t.Rows[0].Cells[0].Paragraphs.First().Text);
             Assert.Equal("1", rows[0].Value);
         }
 
@@ -149,7 +149,7 @@ namespace DXPlus.Tests
 
             var rows = t.Xml.RemoveNamespaces().XPathSelectElements("//tr").ToList();
             Assert.Equal(3, rows.Count);
-            Assert.Equal("test", t.Rows[1].Cells[0].Paragraphs[0].Text);
+            Assert.Equal("test", t.Rows[1].Cells[0].Paragraphs.First().Text);
             Assert.Equal("test", rows[1].Value);
         }
 

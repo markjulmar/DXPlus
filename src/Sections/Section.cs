@@ -27,7 +27,7 @@ namespace DXPlus
         /// <summary>
         /// Paragraphs contained in this section.
         /// </summary>
-        public IReadOnlyList<Paragraph> Paragraphs
+        public IEnumerable<Paragraph> Paragraphs
         {
             get
             {
@@ -51,7 +51,7 @@ namespace DXPlus
 
                 if (startingParagraph == null)
                 {
-                    return new List<Paragraph>();
+                    return Enumerable.Empty<Paragraph>();
                 }
 
                 var sectionParagraphs = new List<Paragraph> {startingParagraph};
@@ -83,7 +83,7 @@ namespace DXPlus
         /// </summary>
         /// <param name="document">Document owner</param>
         /// <param name="xml">Parent of sectionProps</param>
-        internal Section(DocX document, XElement xml) : base(document, xml)
+        internal Section(Document document, XElement xml) : base(document, xml)
         {
             var eProps = xml.Element(Name.SectionProperties) ??
                          xml.Element(Name.ParagraphProperties, Name.SectionProperties);

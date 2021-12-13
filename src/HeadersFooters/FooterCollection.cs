@@ -10,7 +10,7 @@
         /// </summary>
         /// <param name="documentOwner">Document</param>
         /// <param name="sectionOwner">Section owner</param>
-        internal FooterCollection(DocX documentOwner, Section sectionOwner)
+        internal FooterCollection(Document documentOwner, Section sectionOwner)
             : base(documentOwner, sectionOwner, "ftr", Relations.Footer, "footer")
         {
         }

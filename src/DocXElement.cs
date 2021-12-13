@@ -4,19 +4,19 @@ using System.Xml.Linq;
 namespace DXPlus
 {
     /// <summary>
-    /// All DocX types are derived from DocXElement.
-    /// This class contains properties which every element of a DocX must contain.
+    /// All Document types are derived from DocXElement.
+    /// This class contains properties which every element of a Document must contain.
     /// </summary>
     public abstract class DocXElement
     {
         private XElement xml;
-        private DocX document;
+        private Document document;
         private PackagePart packagePart;
 
         /// <summary>
         /// The document owner
         /// </summary>
-        internal DocX Document
+        internal Document Document
         {
             get => document;
             set
@@ -62,7 +62,7 @@ namespace DXPlus
         internal DocXElement(IDocument document, XElement xml)
         {
             this.xml = xml;
-            this.document = (DocX) document;
+            this.document = (Document) document;
         }
 
         /// <summary>
@@ -93,7 +93,7 @@ namespace DXPlus
 
         /// <summary>
         /// This is a reference to the document object that this element belongs to.
-        /// Every DocX element is connected to a document.
+        /// Every Document element is connected to a document.
         /// </summary>
         public IDocument Owner => document;
 

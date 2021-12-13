@@ -18,14 +18,8 @@ namespace DXPlus
         /// </summary>
         /// <param name="document">Document owner</param>
         /// <param name="xml">XML data</param>
-        /// <param name="headerStyle">Header style</param>
-        private TableOfContents(DocX document, XElement xml, string headerStyle) : base(document, xml)
+        private TableOfContents(IDocument document, XElement xml) : base(document, xml)
         {
-            // Invalidate placeholder fields
-            document.InvalidatePlaceholderFields();
-
-            // Add any required styles to the document
-            EnsureTocStylesArePresent(document, headerStyle);
         }
 
         /// <summary>
@@ -37,17 +31,29 @@ namespace DXPlus
         /// <param name="headerStyle">Header style (null for default style)</param>
         /// <param name="lastIncludeLevel">Last level to include</param>
         /// <param name="rightTabPos">Position of right tab</param>
-        internal static TableOfContents CreateTableOfContents(DocX document, string title,
+        internal static TableOfContents CreateTableOfContents(Document document, string title,
                                                     TableOfContentsSwitches switches, string headerStyle = null,
                                                     int lastIncludeLevel = 3, int? rightTabPos = null)
-            => new TableOfContents(document,
-                    Resource.TocXmlBase(
-                    headerStyle ?? HeaderStyle,
-                    title ?? "",
-                    rightTabPos ?? RightTabPos,
-                    BuildSwitchString(switches, lastIncludeLevel)),
-                headerStyle);
+        {
+            headerStyle ??= HeaderStyle;
+            rightTabPos ??= RightTabPos;
+            title ??= string.Empty;
 
+            // Invalidate placeholder fields
+            document.InvalidatePlaceholderFields();
+
+            // Add any required styles to the document
+            EnsureTocStylesArePresent(document, headerStyle);
+
+            // Create the TOC
+            return new TableOfContents(document,
+                Resource.TocXmlBase(headerStyle, title, rightTabPos,
+                    BuildSwitchString(switches, lastIncludeLevel)));
+        }
+
+        /// <summary>
+        /// Build the text TOC switches set on this table of contents.
+        /// </summary>
         private static string BuildSwitchString(TableOfContentsSwitches switches, int lastIncludeLevel)
         {
             var switchString = "TOC";
@@ -70,7 +76,7 @@ namespace DXPlus
         /// </summary>
         /// <param name="document">Document to alter</param>
         /// <param name="headerStyle">Header style, null to use the default style</param>
-        private static void EnsureTocStylesArePresent(DocX document, string headerStyle)
+        private static void EnsureTocStylesArePresent(IDocument document, string headerStyle)
         {
             headerStyle ??= HeaderStyle;
 
@@ -84,9 +90,7 @@ namespace DXPlus
                 ("Hyperlink", StyleType.Character, Resource.TocHyperLinkStyleBase, "")
             };
 
-            document.AddDefaultStyles();
             var mgr = document.Styles;
-
             foreach (var (style, applyTo, template, name) in availableStyles)
             {
                 if (!mgr.HasStyle(style, applyTo))

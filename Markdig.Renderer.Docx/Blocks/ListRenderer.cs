@@ -1,60 +1,72 @@
+using System;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
 using DXPlus;
 using Markdig.Syntax;
+using MDTable = Markdig.Extensions.Tables.Table;
 
 namespace Markdig.Renderer.Docx.Blocks
 {
     public class ListRenderer : DocxObjectRenderer<ListBlock>
     {
-        private List currentList;
-        private int currentLevel;
+        private int currentLevel = -1;
 
         public override void Write(IDocxRenderer owner, IDocument document, Paragraph currentParagraph, ListBlock block)
         {
-            bool topList = false;
-            if (currentParagraph != null)
+            currentLevel++;
+            try
             {
-                Debug.Assert(currentList != null);
-                currentLevel++;
-            }
-            else
-            {
-                topList = true;
-                currentList = new List(block.IsOrdered ? NumberingFormat.Numbered : NumberingFormat.Bulleted);
+                NumberingDefinition nd;
                 if (block.IsOrdered)
-                    currentList.StartNumber = int.Parse(block.OrderedStart??"1");
+                {
+                    if (!int.TryParse(block.OrderedStart, out int startNumber))
+                        startNumber = 1;
+                    nd = document.NumberingStyles.Create(NumberingFormat.Numbered, startNumber);
+                }
+                else
+                {
+                    nd = document.NumberingStyles.Create(NumberingFormat.Bullet);
+                }
+
+                // ListBlock has a collection of ListItemBlock objects
+                // ... which in turn contain paragraphs, tables, code blocks, etc.
+                foreach (var listItem in block.Cast<ListItemBlock>())
+                {
+                    currentParagraph = document.AddParagraph().ListStyle(nd, currentLevel);
+
+                    for (var index = 0; index < listItem.Count; index++)
+                    {
+                        var childBlock = listItem[index];
+                        if (index > 0)
+                        {
+                            if (childBlock is not MDTable)
+                            {
+                                // Create a new paragraph to hold this block.
+                                // Unless it's a table - that gets appended to the prior paragraph.
+                                currentParagraph = currentParagraph.AddParagraph().ListStyle();
+                            }
+                            else
+                            {
+                                Console.WriteLine("!");
+                            }
+                        }
+
+                        Write(childBlock, owner, document, currentParagraph);
+
+                        if (childBlock is MDTable && currentParagraph.Table != null)
+                        {
+                            currentParagraph.Table.Indent = 36.0;
+                        }
+                        else if (currentParagraph.Properties.StyleName != "ListParagraph")
+                        {
+                            currentParagraph.Properties.LeftIndent = 36.0;
+                        }
+                    }
+                }
             }
-
-            foreach (var item in block.Cast<ListItemBlock>())
+            finally
             {
-                //for (int index = 0; index < item.Count; index++)
-                //{
-                //    var itemBlock = item[index];
-
-                //    if (itemBlock is LeafBlock)
-                //    {
-                //        var container = new Paragraph();
-                //        Write(itemBlock, owner, document, container);
-                //    }
-                //    else
-                //    {
-
-                //    }
-                //}
-
-                WriteChildren(item, owner, document, currentParagraph);
-
-
-                currentList.AddItem(currentParagraph, currentLevel);
-            }
-
-            if (topList)
-            {
-                document.AddList(currentList);
-                currentLevel = 0;
-                currentList = null;
+                currentLevel--;
             }
         }
     }

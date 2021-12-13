@@ -9,7 +9,7 @@ namespace DXPlus
     /// </summary>
     public class Image
     {
-        private readonly DocX document;
+        private readonly Document document;
 
         /// <summary>
         /// Associated package relationship
@@ -49,7 +49,7 @@ namespace DXPlus
         /// <param name="packageRelationship"></param>
         internal Image(IDocument document, PackageRelationship packageRelationship)
         {
-            this.document = (DocX) document;
+            this.document = (Document) document;
             this.PackageRelationship = packageRelationship;
             Id = packageRelationship.Id;
         }
@@ -62,7 +62,7 @@ namespace DXPlus
         /// <param name="id"></param>
         internal Image(IDocument document, PackageRelationship packageRelationship, string id)
         {
-            this.document = (DocX)document;
+            this.document = (Document)document;
             this.PackageRelationship = packageRelationship;
             this.Id = id;
         }

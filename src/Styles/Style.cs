@@ -64,7 +64,7 @@ namespace DXPlus
         public Formatting Formatting => new Formatting(Xml.GetOrAddElement(DXPlus.Name.RunProperties));
 
         /// <summary>
-        /// Paragraph properties
+        /// FirstParagraph properties
         /// </summary>
         public ParagraphProperties ParagraphFormatting => new ParagraphProperties(Xml.GetOrAddElement(DXPlus.Name.ParagraphProperties));
 

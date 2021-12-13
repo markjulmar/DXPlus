@@ -59,7 +59,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Gets or Sets the Direction of content in this Paragraph.
+        /// Gets or Sets the Direction of content in this FirstParagraph.
         /// </summary>
         public Direction Direction
         {

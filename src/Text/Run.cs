@@ -110,7 +110,7 @@ namespace DXPlus
                                         splitText[0].ElementsBeforeSelf().Where(n => n.Name != Name.RunProperties),
                                         splitText[1]);
 
-            if (Paragraph.GetElementTextLength(splitLeft) == 0)
+            if (HelperFunctions.GetTextLength(splitLeft) == 0)
             {
                 splitLeft = null;
             }
@@ -121,7 +121,7 @@ namespace DXPlus
                                         splitText[2],
                                         splitText[0].ElementsAfterSelf().Where(n => n.Name != Name.RunProperties));
 
-            if (Paragraph.GetElementTextLength(splitRight) == 0)
+            if (HelperFunctions.GetTextLength(splitRight) == 0)
             {
                 splitRight = null;
             }

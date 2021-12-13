@@ -24,7 +24,7 @@ namespace Markdig.Renderer.Docx.Blocks
             }
 
             // Determine the width of the page
-            var section = document.Sections[0];
+            var section = document.Sections.First();
             double pageWidth = section.Properties.PageWidth - section.Properties.LeftMargin - section.Properties.RightMargin;
 
             int totalColumns = table.Max(tr => ((TableRow) tr).Count);
@@ -45,7 +45,7 @@ namespace Markdig.Renderer.Docx.Blocks
             {
                 var row = (TableRow) table[rowIndex];
                 if (firstRow && row.IsHeader) {
-                    documentTable.Design = TableDesign.TableNormal;
+                    documentTable.Design = TableDesign.TableGrid;
                 }
 
                 firstRow = false;
@@ -61,7 +61,7 @@ namespace Markdig.Renderer.Docx.Blocks
                         documentCell.SetMargins(0);
                     }
 
-                    var cellParagraph = documentCell.Paragraphs[0];
+                    var cellParagraph = documentCell.Paragraphs.First();
                     WriteChildren(cell, owner, document, cellParagraph);
                     
                     if (table.ColumnDefinitions.Count > 0)

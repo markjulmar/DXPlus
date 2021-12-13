@@ -6,7 +6,7 @@ using System.Xml.Linq;
 namespace DXPlus
 {
     /// <summary>
-    /// Represents a block of content in the document. This can be a Paragraph, Numbered list, or Table.
+    /// Represents a block of content in the document. This can be a FirstParagraph, Numbered list, or Table.
     /// </summary>
     public abstract class Block : DocXElement
     {
@@ -31,19 +31,25 @@ namespace DXPlus
         /// <summary>
         /// Add a page break after the current element.
         /// </summary>
-        public void AddPageBreak() => Xml.AddAfterSelf(HelperFunctions.PageBreak());
+        public void AddPageBreak() =>
+            Xml.AddAfterSelf(HelperFunctions.PageBreak());
 
         /// <summary>
         /// Insert a page break before the current element.
         /// </summary>
-        public void InsertPageBreakBefore() => Xml.AddBeforeSelf(HelperFunctions.PageBreak());
+        public void InsertPageBreakBefore() =>
+            Xml.AddBeforeSelf(HelperFunctions.PageBreak());
+
+        public Paragraph AddParagraph() => AddParagraph(string.Empty, null);
 
         /// <summary>
         /// Add a new paragraph after the current element.
         /// </summary>
-        /// <param name="paragraph">Paragraph to insert</param>
-        public void AddParagraph(Paragraph paragraph)
+        /// <param name="paragraph">FirstParagraph to insert</param>
+        public Paragraph AddParagraph(Paragraph paragraph)
         {
+            if (paragraph == null) 
+                throw new ArgumentNullException(nameof(paragraph));
             if (paragraph.InDom)
                 throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
@@ -54,6 +60,8 @@ namespace DXPlus
                 paragraph.BlockContainer = owner;
                 paragraph.SetStartIndex(owner.Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
             }
+
+            return paragraph;
         }
 
         /// <summary>
@@ -75,11 +83,13 @@ namespace DXPlus
         /// <param name="paragraph"></param>
         public void InsertParagraphBefore(Paragraph paragraph)
         {
+            if (paragraph == null) 
+                throw new ArgumentNullException(nameof(paragraph));
             if (paragraph.InDom)
                 throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
             Xml.AddBeforeSelf(paragraph.Xml);
-            
+
             if (owner != null)
             {
                 paragraph.BlockContainer = owner;
@@ -106,6 +116,8 @@ namespace DXPlus
         /// <param name="table"></param>
         public void InsertTableBefore(Table table)
         {
+            if (table == null) 
+                throw new ArgumentNullException(nameof(table));
             if (table.InDom)
                 throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 

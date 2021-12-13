@@ -8,7 +8,7 @@ namespace DXPlus
     public enum NumberingFormat
     {
         [XmlAttribute("bullet")]
-        Bulleted,
+        Bullet,
         [XmlAttribute("decimal")]
         Numbered,
         UpperRoman,

@@ -49,12 +49,12 @@ namespace DXPlus
         public static readonly XName Size = Namespace.Main + "sz";
         public static readonly XName Spacing = Namespace.Main + "spacing";
         public static readonly XName Table = Namespace.Main + "tbl";
+        public static readonly XName TableIndent = Namespace.Main + "tblInd";
         public static readonly XName Text = Namespace.Main + "t";
         public static readonly XName Top = Namespace.Main + "top";
         public static readonly XName Underline = Namespace.Main + "u";
         public static readonly XName Vanish = Namespace.Main + "vanish";
         public static readonly XName VerticalAlign = Namespace.Main + "vertAlign";
-        public static readonly XName Temp = Namespace.Main + "temp";
     }
 
     /// <summary>

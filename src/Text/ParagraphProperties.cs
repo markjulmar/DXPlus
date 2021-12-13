@@ -97,7 +97,7 @@ namespace DXPlus
         private double? GetLineSpacing(string type)
         {
             var value = Xml.Element(Name.Spacing).AttributeValue(Namespace.Main + type, null);
-            return value != null ? (double?)Math.Round(double.Parse(value) / 20.0, 2) : null;
+            return value != null ? Math.Round(double.Parse(value) / 20.0, 2) : null;
         }
 
         /// <summary>
@@ -125,7 +125,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Set the left indentation in 1/20th pt for this Paragraph.
+        /// Set the left indentation in 1/20th pt for this FirstParagraph.
         /// </summary>
         public double LeftIndent
         {
@@ -147,7 +147,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Set the right indentation in 1/20th pt for this Paragraph.
+        /// Set the right indentation in 1/20th pt for this FirstParagraph.
         /// </summary>
         public double RightIndent
         {
@@ -169,7 +169,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Get or set the indentation of the first line of this Paragraph.
+        /// Get or set the indentation of the first line of this FirstParagraph.
         /// </summary>
         public double FirstLineIndent
         {
@@ -192,7 +192,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Get or set the indentation of all but the first line of this Paragraph.
+        /// Get or set the indentation of all but the first line of this FirstParagraph.
         /// </summary>
         public double HangingIndent
         {

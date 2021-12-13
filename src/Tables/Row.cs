@@ -209,7 +209,7 @@ namespace DXPlus
             base.OnDocumentOwnerChanged(previousValue, newValue);
             foreach (Cell cell in Cells)
             {
-                cell.Document = (DocX)newValue;
+                cell.Document = (Document)newValue;
             }
         }
 

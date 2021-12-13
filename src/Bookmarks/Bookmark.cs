@@ -1,4 +1,5 @@
-﻿using DXPlus.Helpers;
+﻿using System;
+using DXPlus.Helpers;
 using System.Linq;
 using System.Xml.Linq;
 
@@ -33,7 +34,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Paragraph this bookmark is part of
+        /// FirstParagraph this bookmark is part of
         /// </summary>
         public Paragraph Paragraph { get; }
 
@@ -86,11 +87,12 @@ namespace DXPlus
         /// </summary>
         /// <param name="bookmark">Bookmark XML element</param>
         /// <param name="text">Text to insert</param>
-        private void AddBookmarkRef(XNode bookmark, string text)
+        private static void AddBookmarkRef(XNode bookmark, string text)
         {
-            var run = HelperFunctions.FormatInput(text, null);
-            bookmark.AddAfterSelf(run);
-            Paragraph.Document.RenumberIds();
+            if (bookmark == null) 
+                throw new ArgumentNullException(nameof(bookmark));
+            
+            bookmark.AddAfterSelf(HelperFunctions.FormatInput(text, null));
         }
     }
 }

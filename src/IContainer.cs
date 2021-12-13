@@ -4,40 +4,30 @@ using System.Text.RegularExpressions;
 namespace DXPlus
 {
     /// <summary>
-    /// This interface provides basic methods to insert/add/remove items from a Paragraph, TableCell, Header or Footer.
+    /// This interface provides basic methods to insert/add/remove items from a FirstParagraph, TableCell, Header or Footer.
     /// </summary>
     public interface IContainer
     {
         /// <summary>
         /// This is a reference to the document object that this element belongs to.
-        /// Every DocX element is connected to a document.
+        /// Every Document element is connected to a document.
         /// </summary>
         IDocument Owner { get; }
 
         /// <summary>
-        /// Enumerate all blocks
-        /// </summary>
-        IEnumerable<Block> Blocks { get; }
-
-        /// <summary>
         /// Returns a list of all Paragraphs inside this container.
         /// </summary>
-        IReadOnlyList<Paragraph> Paragraphs { get; }
+        IEnumerable<Paragraph> Paragraphs { get; }
 
         /// <summary>
         /// Returns all the sections associated with this container.
         /// </summary>
-        IReadOnlyList<Section> Sections { get; }
+        IEnumerable<Section> Sections { get; }
 
         /// <summary>
-        /// Retrieve a list of all Table objects in the container
+        /// Retrieve all Table objects in the container
         /// </summary>
         IEnumerable<Table> Tables { get; }
-
-        /// <summary>
-        /// Retrieve a list of all Lists in the container (numbered or bulleted)
-        /// </summary>
-        IEnumerable<List> Lists { get; }
 
         /// <summary>
         /// Retrieve a list of all hyperlinks in the document
@@ -59,7 +49,7 @@ namespace DXPlus
         /// <summary>
         /// Removes paragraph
         /// </summary>
-        /// <param name="paragraph">Paragraph to remove</param>
+        /// <param name="paragraph">FirstParagraph to remove</param>
         /// <returns>True if removed</returns>
         bool RemoveParagraph(Paragraph paragraph);
 
@@ -90,7 +80,7 @@ namespace DXPlus
         /// Insert a paragraph into this container at a specific index
         /// </summary>
         /// <param name="index">Index to insert into</param>
-        /// <param name="paragraph">Paragraph to insert</param>
+        /// <param name="paragraph">FirstParagraph to insert</param>
         /// <returns>Inserted paragraph</returns>
         Paragraph InsertParagraph(int index, Paragraph paragraph);
 
@@ -140,20 +130,5 @@ namespace DXPlus
         /// <param name="table">The Table to insert.</param>
         /// <returns>The Table now associated with this document.</returns>
         Table InsertTable(int index, Table table);
-
-        /// <summary>
-        /// Add a List into this document.
-        /// </summary>
-        /// <param name="list">The List to insert</param>
-        /// <returns>The List now associated with this document.</returns>
-        List AddList(List list);
-
-        /// <summary>
-        /// Insert a List at a specific position.
-        /// </summary>
-        /// <param name="index">Position to insert into</param>
-        /// <param name="list">The List to insert</param>
-        /// <returns>The List now associated with this document.</returns>
-        List InsertList(int index, List list);
     }
 }

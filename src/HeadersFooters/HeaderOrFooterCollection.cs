@@ -16,7 +16,7 @@ namespace DXPlus
         where T : HeaderOrFooter, new()
     {
         private readonly Section sectionOwner;
-        private readonly DocX documentOwner;
+        private readonly Document documentOwner;
         private readonly string rootElementName;
         private readonly Relationship relationTemplate;
         private readonly string typeName;
@@ -29,7 +29,7 @@ namespace DXPlus
         /// <param name="rootElementName">Root XML element name</param>
         /// <param name="relation">Relation name</param>
         /// <param name="typeName">Type name</param>
-        internal HeaderOrFooterCollection(DocX documentOwner, Section sectionOwner, string rootElementName, Relationship relation, string typeName)
+        internal HeaderOrFooterCollection(Document documentOwner, Section sectionOwner, string rootElementName, Relationship relation, string typeName)
         {
             this.documentOwner = documentOwner;
             this.sectionOwner = sectionOwner;

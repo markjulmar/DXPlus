@@ -24,83 +24,23 @@ namespace DXPlus
         {
         }
 
-        public IEnumerable<Block> Blocks
-        {
-            get
-            {
-                List currentList = null;
-                int current = 0;
-
-                foreach (var element in Xml.Elements())
-                {
-                    if (element.Name == Name.Paragraph)
-                    {
-                        var p = new Paragraph(Document, element, current) { BlockContainer = this };
-                        var nextNode = p.Xml.ElementsAfterSelf().FirstOrDefault();
-                        if (nextNode?.Name.Equals(Name.Table) == true)
-                            p.Table = new Table(Document, nextNode);
-                        current += HelperFunctions.GetText(element).Length;
-
-                        if (p.IsListItem())
-                        {
-                            // Start a new list?
-                            if (currentList != null && !currentList.CanAddListItem(p))
-                            {
-                                yield return currentList;
-                                currentList = null;
-                            }
-
-                            currentList ??= new List(p.GetNumberingFormat(),
-                                Document.NumberingStyles.GetStartingNumber(
-                                    p.GetListNumId(), p.GetListLevel()));
-                            currentList.AddItem(p);
-                        }
-                        else
-                        {
-                            if (currentList != null)
-                            {
-                                yield return currentList;
-                                currentList = null;
-                            }
-
-                            yield return p;
-                        }
-                    }
-                    else if (element.Name == Name.Table)
-                    {
-                        if (currentList != null)
-                        {
-                            yield return currentList;
-                            currentList = null;
-                        }
-
-                        yield return new Table(Document, element);
-                    }
-                }
-            }
-        }
-
         /// <summary>
         /// Returns a list of all Paragraphs inside this container.
         /// </summary>
-        public IReadOnlyList<Paragraph> Paragraphs
+        public IEnumerable<Paragraph> Paragraphs
         {
             get
             {
-                var paragraphs = new List<Paragraph>();
-                Xml.Elements(Name.Paragraph)
-                    .Aggregate(0, (current, e) =>
+                if (Xml != null)
+                {
+                    int current = 0;
+                    foreach (var e in Xml.Elements(Name.Paragraph))
                     {
-                        var p = new Paragraph(Document, e, current) {BlockContainer = this};
-                        
-                        var nextNode = p.Xml.ElementsAfterSelf().FirstOrDefault();
-                        if (nextNode?.Name.Equals(Name.Table) == true)
-                            p.Table = new Table(Document, nextNode);
-                        
-                        paragraphs.Add(p);
-                        return current + HelperFunctions.GetText(e).Length;
-                    });
-                return paragraphs;
+                        var p = HelperFunctions.WrapParagraphElement(e, Document, PackagePart, ref current);
+                        if (!p.IsListItem())
+                            yield return p;
+                    }
+                }
             }
         }
 
@@ -122,7 +62,7 @@ namespace DXPlus
         /// <summary>
         /// Removes paragraph
         /// </summary>
-        /// <param name="paragraph">Paragraph to remove</param>
+        /// <param name="paragraph">FirstParagraph to remove</param>
         /// <returns>True if removed</returns>
         public bool RemoveParagraph(Paragraph paragraph)
         {
@@ -137,22 +77,21 @@ namespace DXPlus
         /// <summary>
         /// Returns all the sections associated with this container.
         /// </summary>
-        public IReadOnlyList<Section> Sections
+        public IEnumerable<Section> Sections
         {
             get
             {
-                List<Section> sections = (
-                    from para in Paragraphs
-                    where para.Xml.Element(Name.ParagraphProperties, Name.SectionProperties) != null
-                    select new Section(Document, para.Xml) {PackagePart = PackagePart}).ToList();
+                foreach (var para in Paragraphs)
+                {
+                    if (para.Xml.Element(Name.ParagraphProperties, Name.SectionProperties) != null)
+                        yield return new Section(Document, para.Xml) {PackagePart = PackagePart};
+                }
 
                 // Return the final section if this is the mainDoc.
                 if (Xml.Element(Name.SectionProperties) != null)
                 {
-                    sections.Add(new Section(Document, Xml) { PackagePart = PackagePart });
+                    yield return new Section(Document, Xml) {PackagePart = PackagePart}; 
                 }
-
-                return sections.AsReadOnly();
             }
         }
 
@@ -161,54 +100,6 @@ namespace DXPlus
         /// </summary>
         public IEnumerable<Table> Tables => Xml.Descendants(Name.Table)
                           .Select(t => new Table(Document, t));
-
-        /// <summary>
-        /// Retrieve a list of all Lists in the container (numbered or bullet)
-        /// </summary>
-        public IEnumerable<List> Lists
-        {
-            get
-            {
-                var list = new List();
-                foreach (var paragraph in Paragraphs)
-                {
-                    if (!paragraph.IsListItem()) 
-                        continue;
-                    
-                    if (list.CanAddListItem(paragraph))
-                    {
-                        if (list.Items.Count == 0)
-                        {
-                            list.NumId = paragraph.GetListNumId();
-                            list.ListType = paragraph.GetNumberingFormat();
-                            list.StartNumber = Document.NumberingStyles.GetStartingNumber(
-                                paragraph.GetListNumId(), paragraph.GetListLevel());
-                        }
-
-                        list.AddItem(paragraph);
-                    }
-                    // Found new list!
-                    else
-                    {
-                        list.Document = Document;
-                        list.PackagePart = PackagePart;
-                        yield return list;
-
-                        list = new List(paragraph.GetNumberingFormat(),
-                            Document.NumberingStyles.GetStartingNumber(
-                                paragraph.GetListNumId(), paragraph.GetListLevel()));
-                        list.AddItem(paragraph);
-                    }
-                }
-
-                if (list.Items.Count > 0)
-                {
-                    list.Document = Document;
-                    list.PackagePart = PackagePart;
-                    yield return list;
-                }
-            }
-        }
 
         /// <summary>
         /// Retrieve a list of all hyperlinks in the document
@@ -309,14 +200,12 @@ namespace DXPlus
         /// Insert a paragraph into this container at a specific index
         /// </summary>
         /// <param name="index">Character index to insert into</param>
-        /// <param name="paragraph">Paragraph to insert</param>
+        /// <param name="paragraph">FirstParagraph to insert</param>
         /// <returns>Inserted paragraph</returns>
         public Paragraph InsertParagraph(int index, Paragraph paragraph)
         {
             if (paragraph.InDom)
                 throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
-
-            InsertMissingStyles(paragraph);
 
             Paragraph insertPos = Document.FindParagraphByIndex(index);
             if (insertPos == null)
@@ -340,9 +229,7 @@ namespace DXPlus
             if (paragraph.InDom)
                 throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
-            InsertMissingStyles(paragraph);
             AddParagraphToDocument(paragraph.Xml);
-
             return OnAddParagraph(paragraph);
         }
 
@@ -353,8 +240,10 @@ namespace DXPlus
         /// <returns>Added paragraph</returns>
         private Paragraph OnAddParagraph(Paragraph paragraph)
         {
-            paragraph.SetStartIndex(Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
+            InsertMissingStyles(paragraph);
+
             paragraph.BlockContainer = this;
+            paragraph.SetStartIndex(Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
 
             return paragraph;
         }
@@ -539,66 +428,6 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Insert a List into this document.
-        /// </summary>
-        /// <param name="list">The List to insert</param>
-        /// <returns>The List now associated with this document.</returns>
-        public List AddList(List list)
-        {
-            if (list.InDom)
-                throw new ArgumentException("Cannot add list multiple times.", nameof(list));
-
-            list.BlockContainer = this;
-
-            if (list.Items.Count > 0)
-            {
-                var parentXml = list.Items[0].Paragraph.Xml.Parent;
-                Debug.Assert(parentXml != null);
-                foreach (var child in parentXml.Elements())
-                {
-                    // Make sure all paragraphs in this ListItem have the proper style.
-                    if (child.Element(Name.ParagraphProperties) == null)
-                    {
-                        var paraProps = child.GetOrInsertElement(Name.ParagraphProperties);
-                        var style = paraProps.GetOrAddElement(Name.ParagraphStyle);
-                        style.SetAttributeValue(Name.MainVal, "ListParagraph");
-                    }
-
-                    AddParagraphToDocument(child);
-                }
-            }
-
-            return list;
-        }
-
-        /// <summary>
-        /// Insert a List at a specific position.
-        /// </summary>
-        /// <param name="index">Position to insert into</param>
-        /// <param name="list">The List to insert</param>
-        /// <returns>The List now associated with this document.</returns>
-        public List InsertList(int index, List list)
-        {
-            if (list.InDom)
-                throw new ArgumentException("Cannot add list multiple times.", nameof(list));
-
-            list.BlockContainer = this;
-
-            if (list.Items.Count > 0)
-            {
-                Paragraph firstParagraph = Document.FindParagraphByIndex(index);
-                XElement[] split = SplitParagraph(firstParagraph, index - firstParagraph.StartIndex);
-
-                List<XElement> elements = new List<XElement> { split[0] };
-                elements.AddRange(list.Items.Select(item => item.Xml));
-                elements.Add(split[1]);
-                firstParagraph.Xml.ReplaceWith(elements.ToArray<object>());
-            }
-
-            return list;
-        }
-
-        /// <summary>
         /// Called when the document owner is changed.
         /// </summary>
         protected override void OnDocumentOwnerChanged(IDocument previousValue, IDocument newValue)
@@ -608,17 +437,14 @@ namespace DXPlus
             // Make sure we have all the styles in our document owner.
             if (newValue != null && Xml != null)
             {
-                foreach (Paragraph paragraph in Paragraphs)
-                {
-                    InsertMissingStyles(paragraph);
-                }
+                Paragraphs.ToList().ForEach(InsertMissingStyles);
             }
         }
         
         /// <summary>
         /// Split a paragraph at a specific index
         /// </summary>
-        /// <param name="paragraph">Paragraph to split</param>
+        /// <param name="paragraph">FirstParagraph to split</param>
         /// <param name="index">Character index to split at</param>
         /// <returns>Left/Right split</returns>
         /// <exception cref="ArgumentNullException"></exception>
