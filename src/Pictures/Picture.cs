@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Drawing;
 using System.Globalization;
 using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
+using DXPlus.Shapes;
 
 namespace DXPlus
 {
@@ -46,6 +48,40 @@ namespace DXPlus
                 throw new ArgumentException("Root element must be <drawing> for picture.");
 
             this.image = image;
+        }
+
+        private XElement spPr => Xml.FirstLocalNameDescendant("spPr");
+
+        /// <summary>
+        /// Set a border line around the picture
+        /// </summary>
+        public Color? BorderColor
+        {
+            get
+            {
+                var shapeProperties = spPr;
+                var border = shapeProperties?.Element(Namespace.DrawingMain + "ln");
+                
+                // Try solid color.
+                var solidFill = border?.Element(Namespace.DrawingMain + "solidFill");
+                if (solidFill != null)
+                    return ShapeHelpers.ParseColorElement(solidFill.Element());
+
+                return null;
+            }
+
+            set
+            {
+                var border = spPr.GetOrAddElement(Namespace.DrawingMain + "ln");
+                border.Remove();
+                if (value != null)
+                {
+                    spPr.GetOrAddElement(Namespace.DrawingMain + "ln")
+                        .GetOrAddElement(Namespace.DrawingMain + "solidFill")
+                        .GetOrAddElement(Namespace.DrawingMain + "srgbClr")
+                        .SetAttributeValue("val", value.Value.ToHex());
+                }
+            }
         }
 
         /// <summary>

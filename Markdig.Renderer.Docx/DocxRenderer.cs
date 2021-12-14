@@ -7,6 +7,8 @@ using DXPlus;
 using Markdig.Renderer.Docx.Blocks;
 using Markdig.Renderer.Docx.Inlines;
 using Markdig.Syntax;
+using Microsoft.DocAsCode.MarkdigEngine.Extensions;
+using TripleColonInlineRenderer = Markdig.Renderer.Docx.Inlines.TripleColonInlineRenderer;
 
 namespace Markdig.Renderer.Docx
 {
@@ -47,7 +49,8 @@ namespace Markdig.Renderer.Docx
                 new HtmlEntityInlineRenderer(),
                 new LinkReferenceDefinitionRenderer(),
                 new TaskListRenderer(),
-                new HtmlInlineRenderer()
+                new HtmlInlineRenderer(),
+                new TripleColonInlineRenderer()
             };
         }
 
@@ -68,18 +71,31 @@ namespace Markdig.Renderer.Docx
 
         public void Render(MarkdownDocument markdownDocument)
         {
-            foreach (Syntax.Block block in markdownDocument)
+            for (var index = 0; index < markdownDocument.Count; index++)
             {
-                var renderer = FindRenderer(block);
-                if (renderer != null)
+                var block = markdownDocument[index];
+
+                // Special case RowBlock and children to generate a full table.
+                if (block is RowBlock)
                 {
-                    renderer.Write(this, document, null, block);
+                    var rows = new List<RowBlock>();
+                    do
+                    {
+                        rows.Add((RowBlock) block);
+                        block = markdownDocument[++index];
+                    } while (block is RowBlock);
+
+                    new RowBlockRenderer().Write(this, document, rows);
                 }
+
+                // Find the renderer and process.
+                var renderer = FindRenderer(block);
+                renderer?.Write(this, document, null, block);
                 LastBlock = block;
             }
         }
 
-        public void InsertImage(Paragraph currentParagraph, string imageSource, string altText)
+        public Picture InsertImage(Paragraph currentParagraph, string imageSource, string altText)
         {
             string path = ResolvePath(ModuleFolder, imageSource);
             if (File.Exists(path))
@@ -111,7 +127,11 @@ namespace Markdig.Renderer.Docx
                 var image = document.AddImage(path);
                 var picture = image.CreatePicture(imageSource, altText, finalWidth, finalHeight);
                 currentParagraph.Append(picture);
+
+                return picture;
             }
+
+            return null;
         }
 
         private static string ResolvePath(string rootFolder, string path)

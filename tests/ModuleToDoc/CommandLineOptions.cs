@@ -21,5 +21,8 @@ namespace ModuleToDoc
 
         [Option('z', "ZonePivot", HelpText = "Zone Pivot version to use")]
         public string ZonePivot { get; set; }
+
+        [Option('d', "Debug", HelpText = "Display Markdown graph (DEBUG)")]
+        public bool Debug { get; set; }
     }
 }

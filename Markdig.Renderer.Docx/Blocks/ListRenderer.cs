@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using DXPlus;
@@ -12,8 +13,6 @@ namespace Markdig.Renderer.Docx.Blocks
 
         public override void Write(IDocxRenderer owner, IDocument document, Paragraph currentParagraph, ListBlock block)
         {
-            Debug.Assert(currentParagraph == null);
-
             currentLevel++;
             try
             {
@@ -29,11 +28,17 @@ namespace Markdig.Renderer.Docx.Blocks
                     nd = document.NumberingStyles.Create(NumberingFormat.Bullet);
                 }
 
+                int count = 0;
+
                 // ListBlock has a collection of ListItemBlock objects
                 // ... which in turn contain paragraphs, tables, code blocks, etc.
                 foreach (var listItem in block.Cast<ListItemBlock>())
                 {
-                    currentParagraph = document.AddParagraph().ListStyle(nd, currentLevel);
+                    if (count >= 0 || currentParagraph == null)
+                        currentParagraph = document.AddParagraph();
+                    currentParagraph.ListStyle(nd, currentLevel);
+
+                    count++;
 
                     for (var index = 0; index < listItem.Count; index++)
                     {

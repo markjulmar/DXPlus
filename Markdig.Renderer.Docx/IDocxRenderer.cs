@@ -8,6 +8,6 @@ namespace Markdig.Renderer.Docx
     {
         Syntax.Block LastBlock { get; }
         IDocxObjectRenderer FindRenderer(MarkdownObject obj);
-        void InsertImage(Paragraph currentParagraph, string imageSource, string altText);
+        Picture InsertImage(Paragraph currentParagraph, string imageSource, string altText);
     }
 }

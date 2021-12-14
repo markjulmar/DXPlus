@@ -9,9 +9,18 @@ namespace Markdig.Renderer.Docx.Blocks
         {
             currentParagraph ??= document.AddParagraph();
 
-            currentParagraph
-                .Style(HeadingType.IntenseQuote)
-                .AppendLine(block.NoteTypeString);
+            if (block.NoteTypeString != null)
+            {
+                currentParagraph
+                    .Style(HeadingType.IntenseQuote)
+                    .AppendLine(block.NoteTypeString);
+                WriteChildren(block, owner, document, currentParagraph);
+            }
+            else if (block.SectionAttributeString != null)
+            {
+                // TODO: capture attribute (class)
+            }
+
             WriteChildren(block, owner, document, currentParagraph);
         }
     }

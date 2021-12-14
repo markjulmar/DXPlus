@@ -64,7 +64,7 @@ namespace ModuleToDoc
             this.accessToken = accessToken;
         }
 
-        public async Task Process(IDocument wordDocument)
+        public async Task Process(IDocument wordDocument, bool debug = false)
         {
             this.document = wordDocument ?? throw new ArgumentNullException(nameof(wordDocument));
 
@@ -79,26 +79,53 @@ namespace ModuleToDoc
                 var context = new MarkdownContext();
                 var pipelineBuilder = new MarkdownPipelineBuilder();
                 var pipeline = pipelineBuilder
-                    .UseAdvancedExtensions()
+                    .UseAbbreviations()
+                    .UseAutoIdentifiers()
+                    //.UseCitations()
+                    //.UseCustomContainers()
+                    //.UseDefinitionLists()
+                    //.UseFigures()
+                    //.UseFooters()
+                    //.UseFootnotes()
+                    .UseGridTables()
+                    .UseMathematics()
+                    .UseMediaLinks()
+                    .UsePipeTables()
+                    .UseListExtras()
+                    .UseTaskLists()
+                    //.UseDiagrams()
+                    .UseAutoLinks()
                     .UseEmphasisExtras(EmphasisExtraOptions.Strikethrough)
                     .UseIncludeFile(context)
                     .UseQuoteSectionNote(context)
                     .UseRow(context)
+                    .UseNestedColumn(context)
                     .UseTripleColon(context)
+                    .UseNoloc()
+                    .UseGenericAttributes() // Must be last as it is one parser that is modifying other parsers
                     .Build();
 
-                var docWriter = new DocxObjectRenderer(wordDocument, moduleFolder);
+                var docWriter = new DocxObjectRenderer(wordDocument, outputFolder);
 
                 string markdownText = await File.ReadAllTextAsync(markdownFile);
                 var markdownDocument = Markdown.Parse(markdownText, pipeline);
 
-                //MarkdigDebug.Dump(markdownDocument);
+                if (debug)
+                {
+                    string debugFile =
+                        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+                            "debug.txt");
+                    await File.WriteAllTextAsync(debugFile, MarkdigDebug.Dump(markdownDocument));
+                }
 
                 docWriter.Render(markdownDocument);
             }
             finally
             {
-                Directory.Delete(outputFolder, true);
+                if (!debug)
+                {
+                    Directory.Delete(outputFolder, true);
+                }
             }
         }
 
