@@ -6,7 +6,7 @@ namespace Markdig.Renderer.Docx
 {
     public interface IDocxRenderer
     {
-        Syntax.Block LastBlock { get; }
+        string ZonePivot { get; }
         IDocxObjectRenderer FindRenderer(MarkdownObject obj);
         Picture InsertImage(Paragraph currentParagraph, string imageSource, string altText);
     }

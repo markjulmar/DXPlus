@@ -27,8 +27,9 @@ namespace DXPlus
         /// </summary>
         /// <param name="paragraph"></param>
         /// <param name="text">The text to append.</param>
+        /// <param name="formatting">Optional formatting for text</param>
         /// <returns>This FirstParagraph with the new text appended.</returns>
-        public static Paragraph AppendLine(this Paragraph paragraph, string text)
+        public static Paragraph AppendLine(this Paragraph paragraph, string text, Formatting formatting = null)
         {
             if (paragraph == null)
             {
@@ -40,7 +41,7 @@ namespace DXPlus
                 throw new ArgumentNullException(nameof(text));
             }
 
-            return paragraph.Append(text + "\n");
+            return paragraph.Append(text + "\n", formatting);
         }
 
         /// <summary>

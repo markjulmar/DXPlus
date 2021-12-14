@@ -1,5 +1,4 @@
 ﻿using DXPlus;
-using Markdig.Extensions.CustomContainers;
 using Markdig.Renderer.Docx.Blocks;
 using Markdig.Renderer.Docx.TripleColonExtensions;
 using Microsoft.DocAsCode.MarkdigEngine.Extensions;
@@ -10,7 +9,7 @@ namespace Markdig.Renderer.Docx.Inlines
     {
         public override void Write(IDocxRenderer owner, IDocument document, Paragraph currentParagraph, TripleColonInline inline)
         {
-            TripleColonProcessor.Write(owner, document, currentParagraph, new TripleColonElement(inline));
+            TripleColonProcessor.Write(this, inline, owner, document, currentParagraph, new TripleColonElement(inline));
         }
     }
 }

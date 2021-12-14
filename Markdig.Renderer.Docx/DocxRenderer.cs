@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using DXPlus;
@@ -18,14 +17,18 @@ namespace Markdig.Renderer.Docx
     public class DocxObjectRenderer : IDocxRenderer
     {
         private readonly IDocument document;
-        readonly List<IDocxObjectRenderer> Renderers;
+        private readonly List<IDocxObjectRenderer> renderers;
+        private readonly string moduleFolder;
 
-        public DocxObjectRenderer(IDocument document, string moduleFolder)
+        public string ZonePivot { get; }
+
+        public DocxObjectRenderer(IDocument document, string moduleFolder, string zonePivot)
         {
-            ModuleFolder = moduleFolder;
+            this.moduleFolder = moduleFolder;
             this.document = document;
+            this.ZonePivot = zonePivot;
 
-            Renderers = new List<IDocxObjectRenderer>
+            renderers = new List<IDocxObjectRenderer>
             {
                 // Block handlers
                 new HeadingRenderer(),
@@ -37,6 +40,7 @@ namespace Markdig.Renderer.Docx
                 new TripleColonRenderer(),
                 new FencedCodeBlockRenderer(),
                 new TableRenderer(),
+                new InclusionRenderer(),
 
                 // Inline handlers
                 new LiteralInlineRenderer(),
@@ -54,12 +58,9 @@ namespace Markdig.Renderer.Docx
             };
         }
 
-        public string ModuleFolder { get; private set; }
-        public Syntax.Block LastBlock { get; private set; }
-
         public IDocxObjectRenderer FindRenderer(MarkdownObject obj)
         {
-            var renderer = Renderers.FirstOrDefault(r => r.CanRender(obj));
+            var renderer = renderers.FirstOrDefault(r => r.CanRender(obj));
 #if DEBUG
             if (renderer == null)
             {
@@ -91,13 +92,12 @@ namespace Markdig.Renderer.Docx
                 // Find the renderer and process.
                 var renderer = FindRenderer(block);
                 renderer?.Write(this, document, null, block);
-                LastBlock = block;
             }
         }
 
         public Picture InsertImage(Paragraph currentParagraph, string imageSource, string altText)
         {
-            string path = ResolvePath(ModuleFolder, imageSource);
+            string path = ResolvePath(moduleFolder, imageSource);
             if (File.Exists(path))
             {
                 var img = System.Drawing.Image.FromFile(path);

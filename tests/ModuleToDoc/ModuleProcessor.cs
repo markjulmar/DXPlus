@@ -64,7 +64,7 @@ namespace ModuleToDoc
             this.accessToken = accessToken;
         }
 
-        public async Task Process(IDocument wordDocument, bool debug = false)
+        public async Task Process(IDocument wordDocument, string zonePivot, bool debug = false)
         {
             this.document = wordDocument ?? throw new ArgumentNullException(nameof(wordDocument));
 
@@ -105,7 +105,7 @@ namespace ModuleToDoc
                     .UseGenericAttributes() // Must be last as it is one parser that is modifying other parsers
                     .Build();
 
-                var docWriter = new DocxObjectRenderer(wordDocument, outputFolder);
+                var docWriter = new DocxObjectRenderer(wordDocument, outputFolder, zonePivot);
 
                 string markdownText = await File.ReadAllTextAsync(markdownFile);
                 var markdownDocument = Markdown.Parse(markdownText, pipeline);
