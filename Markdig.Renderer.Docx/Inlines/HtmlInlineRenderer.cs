@@ -14,7 +14,7 @@ namespace Markdig.Renderer.Docx.Inlines
         {
             Debug.Assert(currentParagraph != null);
 
-            string tag = GetTag(html.Tag);
+            string tag = Helpers.GetTag(html.Tag);
             bool isClose = html.Tag.StartsWith("</");
             switch (tag)
             {
@@ -32,12 +32,15 @@ namespace Markdig.Renderer.Docx.Inlines
                     break;
                 case "a":
                     if (!isClose)
-                    {
                         ProcessRawAnchor(html, owner, document, currentParagraph);
-                    }
                     break;
                 case "br":
                     currentParagraph.AppendLine();
+                    break;
+                case "rgn":
+                    if (!isClose)
+                        currentParagraph.Append($"{{rgn {Helpers.ReadLiteralTextAfterTag(html)}}}",
+                            new Formatting() { Highlight = Highlight.Cyan });
                     break;
                 default:
                     Console.WriteLine($"Encountered unsupported HTML tag: {tag}");
@@ -47,15 +50,7 @@ namespace Markdig.Renderer.Docx.Inlines
 
         private static void ProcessRawAnchor(HtmlInline html, IDocxRenderer owner, IDocument document, Paragraph currentParagraph)
         {
-            string text = string.Empty;
-            if (!html.IsClosed)
-            {
-                if (html.NextSibling is LiteralInline li)
-                {
-                    text = li.Content.ToString();
-                }
-            }
-
+            string text = Helpers.ReadLiteralTextAfterTag(html);
             Regex re = new Regex(@"(?inx)
                 <a \s [^>]*
                     href \s* = \s*
@@ -75,20 +70,6 @@ namespace Markdig.Renderer.Docx.Inlines
             {
                 currentParagraph.Append(new Hyperlink(text, new Uri(m.Groups["url"].Value)));
             }
-        }
-
-        private static string GetTag(string htmlTag)
-        {
-            if (string.IsNullOrEmpty(htmlTag))
-                return null;
-
-            int startPos = 1;
-            if (htmlTag.StartsWith("</"))
-                startPos = 2;
-            int endPos = startPos;
-            while (char.IsLetter(htmlTag[endPos]))
-                endPos++;
-            return htmlTag.Substring(startPos, endPos - startPos).ToLower();
         }
     }
 }

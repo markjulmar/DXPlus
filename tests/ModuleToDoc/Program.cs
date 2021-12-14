@@ -66,7 +66,7 @@ namespace ModuleToDoc
                 using var wordDocument = Document.Create(options.OutputFile);
                 await processor.Process(wordDocument, options.ZonePivot, options.Debug);
 
-                Console.WriteLine("Done.");
+                Console.WriteLine($"Wrote {options.OutputFile}.");
             }
             catch (AggregateException aex)
             {

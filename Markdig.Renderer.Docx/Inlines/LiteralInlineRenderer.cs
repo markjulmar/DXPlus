@@ -16,7 +16,7 @@ namespace Markdig.Renderer.Docx.Inlines
                 return;
 
             // Surrounded by HTML tags .. ignore.
-            if (literal.PreviousSibling is HtmlInline {IsClosed: false} && literal.NextSibling is HtmlInline)
+            if (Helpers.IsSurroundedByHtml(literal))
                 return;
 
             if (currentParagraph.Text.Length == 0)
