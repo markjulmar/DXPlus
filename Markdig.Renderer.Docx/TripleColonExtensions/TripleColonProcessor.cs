@@ -1,8 +1,6 @@
-﻿using System.ComponentModel;
-using System.Drawing;
+﻿using System.Drawing;
 using DXPlus;
 using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
 using IContainer = DXPlus.IContainer;
 
 namespace Markdig.Renderer.Docx.TripleColonExtensions
@@ -36,7 +34,7 @@ namespace Markdig.Renderer.Docx.TripleColonExtensions
             extension.Attributes.TryGetValue("highlight", out var highlight);
 
             var p = currentParagraph ?? document.AddParagraph();
-            p.Append($"codeBlock: language={language}, source=\"{source}\", range={range}, highlight={highlight}")
+            p.Append($"{{codeBlock: language={language}, source=\"{source}\", range={range}, highlight={highlight}}}")
                 .WithFormatting(new Formatting { Highlight = Highlight.Blue, Color = Color.White });
             if (currentParagraph == null) p.AppendLine();
         }
@@ -51,7 +49,7 @@ namespace Markdig.Renderer.Docx.TripleColonExtensions
                 if (owner.ZonePivot == null)
                 {
                     var p = currentParagraph ?? document.AddParagraph();
-                    p.Append($"zonePivot: {pivot}")
+                    p.Append($"{{zonePivot: \"{pivot}\"}}")
                         .WithFormatting(new Formatting {Highlight = Highlight.Red, Color = Color.White });
                     if (currentParagraph == null) p.AppendLine();
                 }
@@ -61,7 +59,7 @@ namespace Markdig.Renderer.Docx.TripleColonExtensions
                 if (owner.ZonePivot == null)
                 {
                     var p = currentParagraph ?? document.AddParagraph();
-                    p.Append($"end-zonePivot: {pivot}")
+                    p.Append($"{{end-zonePivot: \"{pivot}\"}}")
                         .WithFormatting(new Formatting { Highlight = Highlight.Red, Color = Color.White });
                     if (currentParagraph == null) p.AppendLine();
                 }

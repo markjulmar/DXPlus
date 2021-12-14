@@ -25,6 +25,7 @@ namespace DXPlus
         internal Row(Table table, XElement xml) : base(table.Document, xml)
         {
             Table = table;
+            PackagePart = table.PackagePart;
         }
 
         /// <summary>

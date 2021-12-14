@@ -33,37 +33,50 @@ namespace ModuleToDoc
                 return;
             }
 
-            if (File.Exists(options.OutputFile))
-                File.Delete(options.OutputFile);
-
-            ModuleProcessor processor = null;
-
-            if (options.InputFolder.StartsWith("http", StringComparison.InvariantCultureIgnoreCase))
+            try
             {
-                processor = await ModuleProcessor.CreateFromUrl(options.InputFolder, options.AccessToken);
-            }
-            else if (!string.IsNullOrEmpty(options.GitHubRepo))
-            {
-                if (string.IsNullOrEmpty(options.GitHubBranch))
-                    options.GitHubBranch = "live";
-                processor = await ModuleProcessor.CreateFromRepo(options.GitHubRepo, options.GitHubBranch, options.InputFolder, options.AccessToken);
-            }
-            else if (Directory.Exists(options.InputFolder))
-            {
-                processor = await ModuleProcessor.CreateFromLocalFolder(options.InputFolder);
-            }
+                if (File.Exists(options.OutputFile))
+                    File.Delete(options.OutputFile);
 
-            if (processor == null)
-            {
-                await Console.Error.WriteLineAsync("Please supply a Url, local folder, or GitHub details to a Learn module.");
-                return;
+                ModuleProcessor processor = null;
+
+                if (options.InputFolder.StartsWith("http", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    processor = await ModuleProcessor.CreateFromUrl(options.InputFolder, options.AccessToken);
+                }
+                else if (!string.IsNullOrEmpty(options.GitHubRepo))
+                {
+                    if (string.IsNullOrEmpty(options.GitHubBranch))
+                        options.GitHubBranch = "live";
+                    processor = await ModuleProcessor.CreateFromRepo(options.GitHubRepo, options.GitHubBranch,
+                        options.InputFolder, options.AccessToken);
+                }
+                else if (Directory.Exists(options.InputFolder))
+                {
+                    processor = await ModuleProcessor.CreateFromLocalFolder(options.InputFolder);
+                }
+
+                if (processor == null)
+                {
+                    await Console.Error.WriteLineAsync(
+                        "Please supply a Url, local folder, or GitHub details to a Learn module.");
+                    return;
+                }
+
+                using var wordDocument = Document.Create(options.OutputFile);
+                await processor.Process(wordDocument, options.ZonePivot, options.Debug);
+                wordDocument.Save();
+
+                Console.WriteLine("Done.");
             }
-
-            using var wordDocument = Document.Create(options.OutputFile);
-            await processor.Process(wordDocument, options.ZonePivot, options.Debug);
-            wordDocument.Save();
-
-            Console.WriteLine("Done.");
+            catch (AggregateException aex)
+            {
+                Console.WriteLine($"Error: {aex.Flatten().Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+            }
         }
     }
 }

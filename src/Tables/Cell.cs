@@ -19,6 +19,7 @@ namespace DXPlus
             : base(row.Document, xml)
         {
             Row = row;
+            PackagePart = row.PackagePart;
         }
 
         /// <summary>

@@ -8,14 +8,14 @@
     <PackageId>Julmar.DxPlus</PackageId>
     <Authors>Mark Smith, Cathal Coffey</Authors>
     <Description>OpenXml .NET Core library to work with .docx format. Fork of DocX from Cathal Coffey.</Description>
-    <PackageVersion>1.0.3-prerelease</PackageVersion>
+    <PackageVersion>1.0.4</PackageVersion>
     <CompanyName>julmar.com</CompanyName>
     <Owners>julmar.com</Owners>
     <PackageProjectUrl>https://github.com/markjulmar/DXPlus</PackageProjectUrl>
     <Summary>.NET Core wrapper around .docx documents</Summary>
     <Title>OpenXML DocX Utility Library</Title>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <ReleaseVersion>1.0.2</ReleaseVersion>
+    <ReleaseVersion>1.0.4</ReleaseVersion>
     <SynchReleaseVersion>false</SynchReleaseVersion>        
   </PropertyGroup>
 

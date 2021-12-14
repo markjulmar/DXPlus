@@ -1,4 +1,5 @@
-﻿using DXPlus;
+﻿using System.Drawing;
+using DXPlus;
 using Microsoft.DocAsCode.MarkdigEngine.Extensions;
 
 namespace Markdig.Renderer.Docx.Blocks
@@ -9,16 +10,19 @@ namespace Markdig.Renderer.Docx.Blocks
         {
             currentParagraph ??= document.AddParagraph();
 
-            if (block.NoteTypeString != null)
+            if (block.QuoteType == QuoteSectionNoteType.DFMNote 
+                && block.NoteTypeString != null)
             {
                 currentParagraph
                     .Style(HeadingType.IntenseQuote)
                     .AppendLine(block.NoteTypeString);
                 WriteChildren(block, owner, document, currentParagraph);
             }
-            else if (block.SectionAttributeString != null)
+            else if (block.QuoteType == QuoteSectionNoteType.DFMVideo)
             {
-                // TODO: capture attribute (class)
+                string videoLink = block.VideoLink;
+                currentParagraph.AppendLine($"{{video: {videoLink}}}",
+                    new Formatting { Highlight = Highlight.Magenta, Color = Color.White });
             }
 
             WriteChildren(block, owner, document, currentParagraph);
