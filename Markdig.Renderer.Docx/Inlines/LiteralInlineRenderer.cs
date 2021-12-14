@@ -11,7 +11,12 @@ namespace Markdig.Renderer.Docx.Inlines
         {
             Debug.Assert(currentParagraph != null);
 
+            // Nothing to render .. ignore.
             if (literal.Content.IsEmpty) 
+                return;
+
+            // Surrounded by HTML tags .. ignore.
+            if (literal.PreviousSibling is HtmlInline {IsClosed: false} && literal.NextSibling is HtmlInline)
                 return;
 
             if (currentParagraph.Text.Length == 0)

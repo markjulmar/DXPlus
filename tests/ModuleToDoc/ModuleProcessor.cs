@@ -119,12 +119,22 @@ namespace ModuleToDoc
                 }
 
                 docWriter.Render(markdownDocument);
+
+                wordDocument.Save();
+                wordDocument.Close();
             }
             finally
             {
                 if (!debug)
                 {
-                    Directory.Delete(outputFolder, true);
+                    try
+                    {
+                        Directory.Delete(outputFolder, true);
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
                 }
             }
         }
@@ -141,7 +151,7 @@ namespace ModuleToDoc
         {
             document.AddParagraph(moduleData.Title)
                 .Style(HeadingType.Title);
-            document.AddParagraph($"Last modified on {moduleData.LastUpdated.ToShortDateString()}")
+            document.AddParagraph($"Last modified on {moduleData.LastUpdated.ToShortDateString()} by {moduleData.Metadata.MsAuthor}@microsoft.com")
                 .Style(HeadingType.Subtitle);
         }
     }

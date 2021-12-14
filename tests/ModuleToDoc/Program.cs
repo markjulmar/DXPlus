@@ -65,7 +65,6 @@ namespace ModuleToDoc
 
                 using var wordDocument = Document.Create(options.OutputFile);
                 await processor.Process(wordDocument, options.ZonePivot, options.Debug);
-                wordDocument.Save();
 
                 Console.WriteLine("Done.");
             }

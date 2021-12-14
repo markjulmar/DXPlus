@@ -100,9 +100,12 @@ namespace Markdig.Renderer.Docx
             string path = ResolvePath(moduleFolder, imageSource);
             if (File.Exists(path))
             {
-                var img = System.Drawing.Image.FromFile(path);
-                var width = img.Width;
-                var height = img.Height;
+                int width = 400, height = 400;
+                using (var img = System.Drawing.Image.FromFile(path))
+                {
+                    width = img.Width;
+                    height = img.Height;
+                }
 
                 int finalWidth = width;
                 int finalHeight = height;
