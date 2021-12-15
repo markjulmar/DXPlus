@@ -38,6 +38,15 @@ namespace DXPlus
         public string Text { get; }
 
         /// <summary>
+        /// Style applied to this run
+        /// </summary>
+        public string StyleName
+        {
+            get => Xml.GetRunProps(false)?.Element(Namespace.Main + "rStyle")?.GetVal();
+            set => Xml.GetRunProps(true).AddElementVal(Namespace.Main + "rStyle", value);
+        }
+
+        /// <summary>
         /// The run properties for this text run
         /// </summary>
         public Formatting Properties

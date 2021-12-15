@@ -26,6 +26,8 @@ namespace DXPlus
         [XmlAttribute("dcterms:created")]
         CreatedDate,
         [XmlAttribute("dcterms:modified")]
-        SaveDate
+        SaveDate,
+        [XmlAttribute("cp:contentStatus")]
+        Status
     }
 }

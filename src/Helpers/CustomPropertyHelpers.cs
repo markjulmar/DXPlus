@@ -95,7 +95,7 @@ namespace DXPlus.Helpers
 
             // Get the next property id in the document
             var pid = customPropDoc.LocalNameDescendants("property")
-                .Select(p => int.TryParse(p.AttributeValue(Namespace.Main + "pid"), out int result) ? result : 0)
+                .Select(p => int.TryParse(p.AttributeValue("pid"), out int result) ? result : 0)
                 .DefaultIfEmpty().Max() + 1;
 
             // Custom props start at 2

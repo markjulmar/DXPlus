@@ -89,6 +89,39 @@ namespace DXPlus
         }
 
         /// <summary>
+        /// Attaches a comment to this paragraph.
+        /// </summary>
+        /// <param name="comment">Comment to add</param>
+        public void AttachComment(Comment comment) => AttachComment(comment, Runs.First());
+
+        /// <summary>
+        /// Attach a comment to this Run
+        /// </summary>
+        /// <param name="comment">Comment</param>
+        /// <param name="run">Text run</param>
+        public void AttachComment(Comment comment, Run run) => AttachComment(comment, run, run);
+
+        /// <summary>
+        /// Attach a comment to this Run
+        /// </summary>
+        /// <param name="comment">Comment</param>
+        /// <param name="runStart">Text run</param>
+        /// <param name="runEnd">End run</param>
+        public void AttachComment(Comment comment, Run runStart, Run runEnd)
+        {
+            if (comment == null) throw new ArgumentNullException(nameof(comment));
+            if (runStart == null) throw new ArgumentNullException(nameof(runStart));
+            if (runStart.Xml.Parent != Xml) throw new ArgumentException("Specified run not part of paragraph.", nameof(runStart));
+            if (runEnd.Xml.Parent != Xml) throw new ArgumentException("Specified run not part of paragraph.", nameof(runEnd));
+
+            if (Document == null)
+                throw new Exception(
+                    "Cannot attached comments with unowned paragraph. Add the paragraph to a document first.");
+
+            Document.CommentManager.Attach(comment, runStart, runEnd);
+        }
+
+        /// <summary>
         /// The default run properties applied at the paragraph level
         /// </summary>
         public Formatting DefaultFormatting

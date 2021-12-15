@@ -26,6 +26,21 @@ namespace DXPlus
         StyleManager Styles { get; }
 
         /// <summary>
+        /// Returns the reviewers who have commented on this document.
+        /// </summary>
+        IEnumerable<string> Reviewers { get; }
+
+        /// <summary>
+        /// Retrieve comments in the document
+        /// </summary>
+        IEnumerable<Comment> Comments { get; }
+
+        /// <summary>
+        /// Retrieve comments in the document by a specific author
+        /// </summary>
+        IEnumerable<Comment> CommentsBy(string authorName);
+
+        /// <summary>
         /// Retrieve all bookmarks
         /// </summary>
         BookmarkCollection Bookmarks { get; }
@@ -139,6 +154,17 @@ namespace DXPlus
         /// Insert a chart in document
         /// </summary>
         void InsertChart(Chart chart);
+
+        /// <summary>
+        /// Creates a new document comment which can be associated to a DocxElement
+        /// </summary>
+        /// <param name="authorName">Author name</param>
+        /// <param name="text">Initial text</param>
+        /// <param name="dt">Optional date</param>
+        /// <param name="authorInitials">Optional initials</param>
+        /// <returns>Comment</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        Comment CreateComment(string authorName, string text, DateTime? dt = null, string authorInitials = null);
 
         /// <summary>
         /// Inserts a default TOC into the current document.

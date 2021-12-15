@@ -29,6 +29,25 @@ namespace DXPlus.Resources
                 => GetDocument("DXPlus.Resources.document.xml", new {rsid});
 
         /// <summary>
+        /// People document needed when comments are added to the docx file.
+        /// </summary>
+        /// <returns></returns>
+        public static XDocument PeopleDocument() => GetDocument("DXPlus.Resources.people.xml");
+
+        /// <summary>
+        /// Comments document needed when comments are added to the docx file.
+        /// </summary>
+        /// <returns></returns>
+        public static XDocument CommentsDocument() => GetDocument("DXPlus.Resources.comments.xml");
+
+        /// <summary>
+        /// Comments document needed when comments are added to the docx file.
+        /// </summary>
+        /// <returns></returns>
+        public static XElement CommentElement(string authorName, string authorInitials, DateTime dt) 
+            => GetElement("DXPlus.Resources.comment.xml",new { authorName, authorInitials, date=dt.ToString("s")+"Z" });
+
+        /// <summary>
         /// Get a basic drawing element which represents a vector drawing
         /// </summary>
         /// <param name="id">Unique id within the document</param>
@@ -137,7 +156,8 @@ namespace DXPlus.Resources
         /// </summary>
         /// <param name="resourceName">Resource name</param>
         /// <param name="tokens">Replacement tokens</param>
-        private static XDocument GetDocument(string resourceName, object tokens = null) => XDocument.Parse(GetText(resourceName, tokens));
+        private static XDocument GetDocument(string resourceName, object tokens = null) 
+            => XDocument.Parse(GetText(resourceName, tokens));
 
         /// <summary>
         /// Get an XML element (fragment) from embedded resources

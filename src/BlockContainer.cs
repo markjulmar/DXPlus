@@ -1,7 +1,6 @@
 ﻿using DXPlus.Helpers;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO.Packaging;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -226,6 +225,9 @@ namespace DXPlus
         /// </summary>
         public Paragraph AddParagraph(Paragraph paragraph)
         {
+            if (paragraph == null)
+                throw new ArgumentNullException(nameof(paragraph));
+
             if (paragraph.InDom)
                 throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 

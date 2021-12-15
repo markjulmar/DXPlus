@@ -62,16 +62,18 @@ namespace DXPlus
     /// </summary>
     internal static class Relations
     {
-        public static readonly Relationship Header = new Relationship($"{Namespace.RelatedDoc.NamespaceName}/header", "/word/header{0}.xml", DocxContentType.Base + "header+xml");
-        public static readonly Relationship Footer = new Relationship($"{Namespace.RelatedDoc.NamespaceName}/footer", "/word/footer{0}.xml", DocxContentType.Base + "footer+xml");
-        public static readonly Relationship Endnotes = new Relationship($"{Namespace.RelatedDoc.NamespaceName}/endnotes", "/word/endnotes.xml", DocxContentType.Base + "endnotes+xml");
-        public static readonly Relationship Footnotes = new Relationship($"{Namespace.RelatedDoc.NamespaceName}/footnotes", "/word/footnotes.xml", DocxContentType.Base + "footnotes+xml");
-        public static readonly Relationship Styles = new Relationship($"{Namespace.RelatedDoc.NamespaceName}/styles", "/word/styles.xml", DocxContentType.Base + "styles+xml");
-        public static readonly Relationship FontTable = new Relationship($"{Namespace.RelatedDoc.NamespaceName}/fontTable", "/word/fontTable.xml", DocxContentType.Base + "fontTable+xml");
-        public static readonly Relationship Numbering = new Relationship($"{Namespace.RelatedDoc.NamespaceName}/numbering", "/word/numbering.xml", DocxContentType.Base + "numbering+xml");
-        public static readonly Relationship Settings = new Relationship($"{Namespace.RelatedDoc.NamespaceName}/settings", "/word/settings.xml", DocxContentType.Base + "settings+xml");
-        public static readonly Relationship CoreProperties = new Relationship($"{Namespace.RelatedPackage}/metadata/core-properties", "/docProps/core.xml", DocxContentType.CoreProperties);
-        public static readonly Relationship CustomProperties = new Relationship($"{Namespace.RelatedDoc}/custom-properties", "/docProps/custom.xml", DocxContentType.CustomProperties);
+        public static readonly Relationship Header = new($"{Namespace.RelatedDoc.NamespaceName}/header", "/word/header{0}.xml", DocxContentType.Base + "header+xml");
+        public static readonly Relationship Footer = new($"{Namespace.RelatedDoc.NamespaceName}/footer", "/word/footer{0}.xml", DocxContentType.Base + "footer+xml");
+        public static readonly Relationship Endnotes = new($"{Namespace.RelatedDoc.NamespaceName}/endnotes", "/word/endnotes.xml", DocxContentType.Base + "endnotes+xml");
+        public static readonly Relationship Footnotes = new($"{Namespace.RelatedDoc.NamespaceName}/footnotes", "/word/footnotes.xml", DocxContentType.Base + "footnotes+xml");
+        public static readonly Relationship Styles = new($"{Namespace.RelatedDoc.NamespaceName}/styles", "/word/styles.xml", DocxContentType.Base + "styles+xml");
+        public static readonly Relationship FontTable = new($"{Namespace.RelatedDoc.NamespaceName}/fontTable", "/word/fontTable.xml", DocxContentType.Base + "fontTable+xml");
+        public static readonly Relationship Numbering = new($"{Namespace.RelatedDoc.NamespaceName}/numbering", "/word/numbering.xml", DocxContentType.Base + "numbering+xml");
+        public static readonly Relationship Settings = new($"{Namespace.RelatedDoc.NamespaceName}/settings", "/word/settings.xml", DocxContentType.Base + "settings+xml");
+        public static readonly Relationship CoreProperties = new($"{Namespace.RelatedPackage}/metadata/core-properties", "/docProps/core.xml", DocxContentType.CoreProperties);
+        public static readonly Relationship CustomProperties = new($"{Namespace.RelatedDoc}/custom-properties", "/docProps/custom.xml", DocxContentType.CustomProperties);
+        public static readonly Relationship People = new($"{Namespace.W2012Rel.NamespaceName}/people", "/word/people.xml", DocxContentType.People);
+        public static readonly Relationship Comments = new($"{Namespace.RelatedDoc.NamespaceName}/comments", "/word/comments.xml", DocxContentType.Comments);
     }
 
     /// <summary>
@@ -120,7 +122,7 @@ namespace DXPlus
     internal static class Namespace
     {
         private static XmlNamespaceManager _manager;
-        
+
         public static readonly XNamespace Main = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
         public static readonly XNamespace RelatedPackage = "http://schemas.openxmlformats.org/package/2006/relationships";
         public static readonly XNamespace Math = "http://schemas.openxmlformats.org/officeDocument/2006/math";
@@ -134,7 +136,9 @@ namespace DXPlus
         public static readonly XNamespace W2010 = "http://schemas.microsoft.com/office/word/2010/wordml";
         public static readonly XNamespace ADec = "http://schemas.microsoft.com/office/drawing/2017/decorative";
         public static readonly XNamespace Picture = "http://schemas.openxmlformats.org/drawingml/2006/picture";
-        
+        public static readonly XNamespace W2012 = "http://schemas.microsoft.com/office/word/2012/wordml";
+        public static readonly XNamespace W2012Rel = "http://schemas.microsoft.com/office/2011/relationships";
+
         /// <summary>
         /// Returns an XmlNamespaceManager which can be used with XQuery
         /// </summary>
@@ -165,5 +169,7 @@ namespace DXPlus
         public const string Relationships = "application/vnd.openxmlformats-package.relationships+xml";
         public const string CoreProperties = "application/vnd.openxmlformats-package.core-properties+xml";
         public const string CustomProperties = "application/vnd.openxmlformats-officedocument.custom-properties+xml";
+        public const string People = "application/vnd.openxmlformats-officedocument.wordprocessingml.people+xml";
+        public const string Comments = "application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml";
     }
 }

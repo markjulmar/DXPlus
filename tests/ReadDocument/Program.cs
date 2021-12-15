@@ -1,27 +1,25 @@
-﻿using DXPlus;
-using DXPlus.Tests;
+﻿using System;
+using System.Linq;
+using DXPlus;
 
-var doc = Document.Create(@"C:\Users\mark\onedrive\desktop\tc.docx");
+var doc = Document.Create(@"C:\Users\mark\onedrive\desktop\t.docx");
 
-doc.AddParagraph(Helpers.GenerateLoremIpsum());
+var comment = doc.CreateComment("James Arrow", "Testing 1.2.3");
 
-var nd = doc.NumberingStyles.Create(NumberingFormat.Numbered);
+var p1 = doc.AddParagraph("This is the first paragraph.")
+    .Append("With multiple runs.")
+    .Append("Last run");
+doc.AddParagraph("This is the second and final paragraph");
 
-doc.AddParagraph("Item #1").ListStyle(nd)
-   .AddParagraph("Sub-item #1").ListStyle(nd, level:1)
-   .AddParagraph("Sub-item #2").ListStyle(nd, level: 1);
-doc.AddParagraph("Item #2").ListStyle(nd)
-   .AddParagraph("With another paragraph").ListStyle()
-   .AddParagraph("And another ..").ListStyle()
-   .AddParagraph("With a quote").Style("IntenseQuote");
+var r = p1.Runs.ElementAt(1);
+p1.AttachComment(comment, r);
 
-doc.AddParagraph(Helpers.GenerateLoremIpsum());
+foreach (var c in doc.Comments)
+{
+    Console.WriteLine(c);
+    foreach (var p in c.Paragraphs)
+        Console.WriteLine(p.Text);
+}
 
-nd = doc.NumberingStyles.Create(NumberingFormat.Numbered);
 
-doc.AddParagraph("Item #1").ListStyle(nd)
-    .AddParagraph("Sub-item #1").ListStyle(nd, level: 1)
-    .AddParagraph("Sub-item #2").ListStyle(nd, level: 1);
-
-doc.AddParagraph("And finally ending with a final paragraph.");
 doc.Save();

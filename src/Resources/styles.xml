@@ -1058,4 +1058,67 @@
 			<w:spacing w:val="5"/>
 		</w:rPr>
 	</w:style>
+	<w:style w:styleId="CommentReference" w:type="character">
+		<w:name w:val="annotation reference"/>
+		<w:basedOn w:val="DefaultParagraphFont"/>
+		<w:uiPriority w:val="99"/>
+		<w:semiHidden/>
+		<w:unhideWhenUsed/>
+		<w:rsid w:val="002B5A1F"/>
+		<w:rPr>
+			<w:sz w:val="16"/>
+			<w:szCs w:val="16"/>
+		</w:rPr>
+	</w:style>
+	<w:style w:styleId="CommentText" w:type="paragraph">
+		<w:name w:val="annotation text"/>
+		<w:basedOn w:val="Normal"/>
+		<w:link w:val="CommentTextChar"/>
+		<w:uiPriority w:val="99"/>
+		<w:unhideWhenUsed/>
+		<w:rsid w:val="002B5A1F"/>
+		<w:rPr>
+			<w:sz w:val="20"/>
+			<w:szCs w:val="20"/>
+		</w:rPr>
+	</w:style>
+	<w:style w:customStyle="1" w:styleId="CommentTextChar" w:type="character">
+		<w:name w:val="Comment Text Char"/>
+		<w:basedOn w:val="DefaultParagraphFont"/>
+		<w:link w:val="CommentText"/>
+		<w:uiPriority w:val="99"/>
+		<w:rsid w:val="002B5A1F"/>
+		<w:rPr>
+			<w:sz w:val="20"/>
+			<w:szCs w:val="20"/>
+		</w:rPr>
+	</w:style>
+	<w:style w:styleId="CommentSubject" w:type="paragraph">
+		<w:name w:val="annotation subject"/>
+		<w:basedOn w:val="CommentText"/>
+		<w:next w:val="CommentText"/>
+		<w:link w:val="CommentSubjectChar"/>
+		<w:uiPriority w:val="99"/>
+		<w:semiHidden/>
+		<w:unhideWhenUsed/>
+		<w:rsid w:val="002B5A1F"/>
+		<w:rPr>
+			<w:b/>
+			<w:bCs/>
+		</w:rPr>
+	</w:style>
+	<w:style w:customStyle="1" w:styleId="CommentSubjectChar" w:type="character">
+		<w:name w:val="Comment Subject Char"/>
+		<w:basedOn w:val="CommentTextChar"/>
+		<w:link w:val="CommentSubject"/>
+		<w:uiPriority w:val="99"/>
+		<w:semiHidden/>
+		<w:rsid w:val="002B5A1F"/>
+		<w:rPr>
+			<w:b/>
+			<w:bCs/>
+			<w:sz w:val="20"/>
+			<w:szCs w:val="20"/>
+		</w:rPr>
+	</w:style>
 </w:styles>

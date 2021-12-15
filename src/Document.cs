@@ -11,6 +11,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
+using DXPlus.Comments;
 
 [assembly:InternalsVisibleTo("DXPlus.Tests")]
 
@@ -123,6 +124,24 @@ namespace DXPlus
                 return styleManager;
             }
         }
+
+        /// <summary>
+        /// Returns all comments in the document
+        /// </summary>
+        public IEnumerable<Comment> Comments
+            => commentManager == null ? Enumerable.Empty<Comment>() : commentManager.Comments;
+
+        /// <summary>
+        /// Returns all comments for a specific author in the document.
+        /// </summary>
+        /// <param name="authorName">Author name</param>
+        public IEnumerable<Comment> CommentsBy(string authorName) => Comments.Where(c =>
+            string.Compare(authorName, c.AuthorName, StringComparison.OrdinalIgnoreCase) == 0);
+
+        /// <summary>
+        /// Returns all the reviewers for the document
+        /// </summary>
+        public IEnumerable<string> Reviewers => Comments.Select(c => c.AuthorName).Distinct();
 
         /// <summary>
         /// True if the Document use different Headers and Footers for odd and even pages.
@@ -709,6 +728,7 @@ namespace DXPlus
             settingsPart.Save(settingsDoc);
             endnotesPart?.Save(endnotesDoc);
             footnotesPart?.Save(footnotesDoc);
+            commentManager?.Save();
 
             // Close the package and commit changes to the memory stream.
             // Note that .NET core requires we close the package - not just flush it.
@@ -823,6 +843,9 @@ namespace DXPlus
             // Load the settings
             settingsPart = Package.GetPart(Relations.Settings.Uri);
 
+            // Create a comment manager
+            commentManager = new CommentManager(this);
+
             // Load all the sections
             foreach (var rel in PackagePart.GetRelationships())
             {
@@ -834,6 +857,10 @@ namespace DXPlus
                     styleManager = new StyleManager(this, Package.GetPart(Relations.Styles.Uri));
                 else if (rel.RelationshipType == Relations.Numbering.RelType)
                     numberingStyles = new NumberingStyleManager(this, Package.GetPart(Relations.Numbering.Uri));
+                else if (rel.RelationshipType == Relations.People.RelType)
+                    commentManager.PeoplePackagePart = Package.GetPart(Relations.People.Uri);
+                else if (rel.RelationshipType == Relations.Comments.RelType)
+                    commentManager.CommentPackagePart = Package.GetPart(Relations.Comments.Uri);
             }
         }
 
@@ -1013,6 +1040,28 @@ namespace DXPlus
         }
 
         /// <summary>
+        /// Creates a new document comment which can be associated to a DocxElement
+        /// </summary>
+        /// <param name="authorName">Author name</param>
+        /// <param name="text">Initial text</param>
+        /// <param name="dt">Optional date</param>
+        /// <param name="authorInitials">Optional initials</param>
+        /// <returns>Comment</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public Comment CreateComment(string authorName, string text, DateTime? dt = null, string authorInitials = null)
+        {
+            ThrowIfObjectDisposed();
+
+            if (text == null) throw new ArgumentNullException(nameof(text));
+            if (string.IsNullOrWhiteSpace(authorName))
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(authorName));
+            
+            var comment = commentManager.CreateComment(authorName, dt, authorInitials);
+            comment.AddParagraph(text);
+            return comment;
+        }
+
+        /// <summary>
         /// Create a new Picture.
         /// </summary>
         /// <param name="rid">A unique id that identifies an Image embedded in this document.</param>
@@ -1144,6 +1193,8 @@ namespace DXPlus
         /// </summary>
         internal Package Package { get; set; }
 
+        internal CommentManager CommentManager => commentManager;
+
         /// <summary>
         /// XML documents representing loaded sections of the DOCX file.
         /// These have possible unsaved edits
@@ -1175,5 +1226,10 @@ namespace DXPlus
         /// Numbering styles associated with this document
         /// </summary>
         private NumberingStyleManager numberingStyles;
+
+        /// <summary>
+        /// Comment manager for the document
+        /// </summary>
+        private CommentManager commentManager;
     }
 }
