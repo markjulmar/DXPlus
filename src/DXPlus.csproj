@@ -16,7 +16,11 @@
     <Title>OpenXML DocX Utility Library</Title>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <ReleaseVersion>1.0.5</ReleaseVersion>
-    <SynchReleaseVersion>false</SynchReleaseVersion>        
+    <SynchReleaseVersion>false</SynchReleaseVersion>
+    <Copyright>(c) 2020,2021 julmar.com</Copyright>
+    <RepositoryUrl>https://github.com/markjulmar/dxplus</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>docx;openxml;.net;dotnet</PackageTags>        
   </PropertyGroup>
 
   <ItemGroup>

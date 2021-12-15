@@ -7,18 +7,6 @@ namespace DXPlus.Tests
 {
     public class TableTests
     {
-        /*
-         New Table property allows test to work
-        [Fact]
-        public void AddTableToOrphanParagraphFails()
-        {
-            FirstParagraph p = new FirstParagraph();
-            Table t = new Table(1, 1);
-
-            Assert.Throws<InvalidOperationException>(() => p.Append(t));
-        }
-        */
-
         [Fact]
         public void CreateTableWithInvalidRowsOrColumnsThrowsException()
         {
