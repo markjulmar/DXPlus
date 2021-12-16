@@ -11,7 +11,7 @@ namespace DXPlus
         /// <summary>
         /// Border style (dashed, line, etc.)
         /// </summary>
-        public TableBorderStyle Style { get; set; }
+        public BorderStyle Style { get; set; }
 
         /// <summary>
         /// Border size
@@ -31,7 +31,7 @@ namespace DXPlus
         /// <summary>
         /// Default border constructor
         /// </summary>
-        public TableBorder() : this(TableBorderStyle.Single, BorderSize.One, 0, Color.Black)
+        public TableBorder() : this(BorderStyle.Single, BorderSize.One, 0, Color.Black)
         {
         }
 
@@ -42,7 +42,7 @@ namespace DXPlus
         /// <param name="size">Border size</param>
         /// <param name="spacingOffset">Border spacing</param>
         /// <param name="color">Border color</param>
-        public TableBorder(TableBorderStyle style, BorderSize size, int spacingOffset, Color color)
+        public TableBorder(BorderStyle style, BorderSize size, int spacingOffset, Color color)
         {
             Style = style;
             Size = size;
@@ -71,7 +71,7 @@ namespace DXPlus
             var val = borderDetails.Attribute(Name.MainVal);
             if (val != null)
             {
-                if (val.TryGetEnumValue<TableBorderStyle>(out var bs))
+                if (val.TryGetEnumValue<BorderStyle>(out var bs))
                 {
                     Style = bs;
                 }

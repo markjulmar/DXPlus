@@ -1,4 +1,5 @@
 using System;
+using System.Drawing;
 using System.Linq;
 using System.Xml.Linq;
 using System.Xml.XPath;
@@ -549,6 +550,5 @@ namespace DXPlus.Tests
             document.AddParagraph(paragraph);
             Assert.NotNull(paragraph.Pictures[0].PackagePart);
         }
-
     }
 }

@@ -35,9 +35,7 @@ namespace DXPlus
                     int current = 0;
                     foreach (var e in Xml.Elements(Name.Paragraph))
                     {
-                        var p = HelperFunctions.WrapParagraphElement(e, Document, PackagePart, ref current);
-                        if (!p.IsListItem())
-                            yield return p;
+                        yield return HelperFunctions.WrapParagraphElement(e, Document, PackagePart, ref current);
                     }
                 }
             }

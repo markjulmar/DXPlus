@@ -1,4 +1,6 @@
-﻿using System.Xml.XPath;
+﻿using System.Drawing;
+using System.Xml.XPath;
+using System.Linq;
 using Xunit;
 
 namespace DXPlus.Tests
@@ -250,6 +252,27 @@ namespace DXPlus.Tests
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
             p.RightIndent = 0;
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
+        }
+
+
+        [Fact]
+        public void SetFillAddsShdToProperties()
+        {
+            var p = new ParagraphProperties {ShadeFill = Color.LightGray};
+
+            var e = p.Xml.RemoveNamespaces().XPathSelectElements("shd").ToList();
+            Assert.Single(e);
+            Assert.True(e[0].AttributeValue("fill") == "D3D3D3");
+            Assert.NotStrictEqual(Color.LightGray, p.ShadeFill);
+        }
+
+        [Fact]
+        public void SetFillAddsAllShdProperties()
+        {
+            var p = new ParagraphProperties { ShadeFill = Color.LightGray };
+
+            var e = p.Xml.RemoveNamespaces().XPathSelectElements("shd").ToList();
+            Assert.True(e[0].AttributeValue("color") == "auto");
         }
 
     }

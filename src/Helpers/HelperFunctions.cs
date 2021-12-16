@@ -14,6 +14,16 @@ namespace DXPlus.Helpers
 {
     internal static class HelperFunctions
     {
+        internal static XElement CreateDefaultShadeElement(XElement parent)
+        {
+            var e = new XElement(Namespace.Main + "shd",
+                new XAttribute(Name.Color, "auto"),
+                new XAttribute(Namespace.Main + "fill", "auto"),
+                new XAttribute(Name.MainVal, "clear"));
+            parent.Add(e);
+            return e;
+        }
+
         internal static Paragraph WrapParagraphElement(XElement element, IDocument document, PackagePart packagePart, ref int position)
         {
             if (element.Name != Name.Paragraph)

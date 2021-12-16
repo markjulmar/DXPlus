@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Xml.Linq;
 
 namespace DXPlus
@@ -8,7 +9,7 @@ namespace DXPlus
     /// </summary>
     public sealed class Style
     {
-        internal XElement Xml { get; }
+        private XElement Xml { get; }
 
         /// <summary>
         /// Unique id for this style
@@ -61,12 +62,12 @@ namespace DXPlus
         /// <summary>
         /// Retrieve the formatting options
         /// </summary>
-        public Formatting Formatting => new Formatting(Xml.GetOrAddElement(DXPlus.Name.RunProperties));
+        public Formatting Formatting => new(Xml.GetOrAddElement(DXPlus.Name.RunProperties));
 
         /// <summary>
         /// FirstParagraph properties
         /// </summary>
-        public ParagraphProperties ParagraphFormatting => new ParagraphProperties(Xml.GetOrAddElement(DXPlus.Name.ParagraphProperties));
+        public ParagraphProperties ParagraphFormatting => new(Xml.GetOrAddElement(DXPlus.Name.ParagraphProperties));
 
         /// <summary>
         /// The style this one is based on.
@@ -101,9 +102,33 @@ namespace DXPlus
         /// Constructor for an existing style
         /// </summary>
         /// <param name="xml">Element in the style document</param>
-        public Style(XElement xml)
+        internal Style(XElement xml)
         {
             Xml = xml ?? throw new ArgumentNullException(nameof(xml));
+        }
+
+        /// <summary>
+        /// Public constructor to add a new style to the document.
+        /// </summary>
+        /// <param name="owner">Style manager owner</param>
+        /// <param name="id">Name of the style</param>
+        /// <param name="type">Style type</param>
+        internal Style(XDocument owner, string id, StyleType type)
+        {
+            if (owner == null) throw new ArgumentNullException(nameof(owner));
+
+            /* 	<w:style w:customStyle="1" w:styleId="Normal" w:type="paragraph">
+		            <w:name w:val="Normal"/>
+		            <w:qFormat/>
+	            </w:style>  */
+            Xml = new XElement(Namespace.Main + "style",
+                new XAttribute(Namespace.Main + "styleId", id),
+                new XAttribute(Namespace.Main + "customStyle", 1),
+                new XAttribute(Namespace.Main + "type", type.ToString().ToLower()),
+                new XElement(Namespace.Main + "name", new XAttribute(Namespace.Main + "val", id)),
+                new XElement(Namespace.Main + "qFormat"));
+
+            owner.Root!.Add(Xml);
         }
     }
 }

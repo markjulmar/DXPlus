@@ -16,7 +16,7 @@ namespace DXPlus
     public sealed class Formatting : IEquatable<Formatting>
     {
         internal XElement Xml { get; }
-        private readonly HashSet<string> setProperties = new HashSet<string>();
+        private readonly HashSet<string> setProperties = new();
 
         /// <summary>
         /// Returns whether this paragraph is marked as BOLD
@@ -439,8 +439,82 @@ namespace DXPlus
             }
         }
 
+        /// <summary>
+        /// The shade pattern applied to this paragraph
+        /// </summary>
+        public ShadePattern? ShadePattern
+        {
+            get => Enum.TryParse<ShadePattern>(Xml.Element(Namespace.Main + "shd")?.GetVal(), out var sp) ? sp : null;
+
+            set
+            {
+                var e = Xml.Element(Namespace.Main + "shd");
+                if (value == null)
+                {
+                    if (e == null) return;
+                    value = DXPlus.ShadePattern.Clear;
+                }
+                e ??= HelperFunctions.CreateDefaultShadeElement(Xml);
+                e.SetAttributeValue(Name.MainVal, value.Value.GetEnumName());
+                setProperties.Add(nameof(ShadePattern));
+            }
+        }
+
+        /// <summary>
+        /// Shade color used with pattern - use Color.Empty for "auto"
+        /// </summary>
+        public Color? ShadeColor
+        {
+            get
+            {
+                var color = Xml.Element(Namespace.Main + "shd")?.AttributeValue(Name.Color);
+                return string.IsNullOrEmpty(color) ? null :
+                    color.ToLower() == "auto" ? Color.Empty : ColorTranslator.FromHtml($"#{color}");
+            }
+
+            set
+            {
+                var e = Xml.Element(Namespace.Main + "shd");
+                if (value == null)
+                {
+                    if (e == null) return;
+                    value = Color.Empty;
+                }
+
+                e ??= HelperFunctions.CreateDefaultShadeElement(Xml);
+                e.SetAttributeValue(Name.Color, value == Color.Empty ? "auto" : value.Value.ToHex());
+                setProperties.Add(nameof(ShadeColor));
+            }
+        }
+
+        /// <summary>
+        /// Shade fill - use Color.Empty for "auto"
+        /// </summary>
+        public Color? ShadeFill
+        {
+            get
+            {
+                var color = Xml.Element(Namespace.Main + "shd")?.AttributeValue(Namespace.Main + "fill");
+                return string.IsNullOrEmpty(color) ? null :
+                    color.ToLower() == "auto" ? Color.Empty : ColorTranslator.FromHtml($"#{color}");
+            }
+
+            set
+            {
+                var e = Xml.Element(Namespace.Main + "shd");
+                if (value == null)
+                {
+                    if (e == null) return;
+                    value = Color.Empty;
+                }
+
+                e ??= HelperFunctions.CreateDefaultShadeElement(Xml);
+                e.SetAttributeValue(Namespace.Main + "fill", value == Color.Empty ? "auto" : value.Value.ToHex());
+                setProperties.Add(nameof(ShadeFill));
+            }
+        }
+
         // TODO: add TextBorder (bdr)
-        // TODO: add Shading (shd)
 
         /// <summary>
         /// Constructor

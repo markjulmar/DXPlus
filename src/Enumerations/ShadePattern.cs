@@ -1,0 +1,85 @@
+﻿using System.Xml.Serialization;
+
+namespace DXPlus
+{
+    /// <summary>
+    /// Shading pattern applied to a paragraph, table cell, or border.
+    /// </summary>
+    public enum ShadePattern
+    {
+        Clear,
+        [XmlAttribute("diagCross")]
+        DiagonalCross,
+        [XmlAttribute("diagStripe")]
+        DiagonalStrip,
+        [XmlAttribute("horzCross")]
+        HorizontalCross,
+        [XmlAttribute("horzStripe")]
+        HorizontalStripe,
+        [XmlAttribute("nil")]
+        None,
+        [XmlAttribute("pct5")]
+        Percent5,
+        [XmlAttribute("pct10")]
+        Percent10,
+        [XmlAttribute("pct12")]
+        Percent12,
+        [XmlAttribute("pct15")]
+        Percent15,
+        [XmlAttribute("pct20")]
+        Percent20,
+        [XmlAttribute("pct25")]
+        Percent25,
+        [XmlAttribute("pct30")]
+        Percent30,
+        [XmlAttribute("pct35")]
+        Percent35,
+        [XmlAttribute("pct37")]
+        Percent37,
+        [XmlAttribute("pct40")]
+        Percent40,
+        [XmlAttribute("pct45")]
+        Percent45,
+        [XmlAttribute("pct50")]
+        Percent50,
+        [XmlAttribute("pct55")]
+        Percent55,
+        [XmlAttribute("pct60")]
+        Percent60,
+        [XmlAttribute("pct62")]
+        Percent62,
+        [XmlAttribute("pct65")]
+        Percent65,
+        [XmlAttribute("pct70")]
+        Percent70,
+        [XmlAttribute("pct75")]
+        Percent75,
+        [XmlAttribute("pct80")]
+        Percent80,
+        [XmlAttribute("pct85")]
+        Percent85,
+        [XmlAttribute("pct87")]
+        Percent87,
+        [XmlAttribute("pct90")]
+        Percent90,
+        [XmlAttribute("pct95")]
+        Percent95,
+        [XmlAttribute("reverseDiagStripe")]
+        ReverseDiagonalStripe,
+        Solid,
+        [XmlAttribute("thinDiagCross")]
+        ThinDiagonalCross,
+        [XmlAttribute("thinDiagStripe")]
+        ThinDiagonalStrip,
+        [XmlAttribute("thinHorzCross")]
+        ThinHorizontalCross,
+        [XmlAttribute("thinHorzStripe")]
+        ThinHorizontalStripe,
+        [XmlAttribute("thinReverseDiagStripe")]
+        ThinReverseDiagonalStrip,
+        [XmlAttribute("thinVertStripe")]
+        ThinVerticalStripe,
+        [XmlAttribute("vertStripe")]
+        VerticalStripe,
+    }
+}

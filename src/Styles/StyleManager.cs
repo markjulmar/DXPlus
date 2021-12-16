@@ -1,6 +1,7 @@
 ﻿using DXPlus.Helpers;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
@@ -16,8 +17,8 @@ namespace DXPlus
 
         /// <summary>
         /// A list of all the available numbering styles in this document.
-        /// </summary>
-        public IEnumerable<Style> Styles =>
+        /// </summary>2
+        public IEnumerable<Style> AvailableStyles =>
             Xml.Elements(Namespace.Main + "style").Select(e => new Style(e));
 
         /// <summary>
@@ -35,7 +36,7 @@ namespace DXPlus
         /// <summary>
         /// Save the changes back to the package.
         /// </summary>
-        public void Save()
+        internal void Save()
         {
             PackagePart.Save(stylesDoc);
         }
@@ -54,13 +55,33 @@ namespace DXPlus
         }
 
         /// <summary>
+        /// This method adds a new style to the document.
+        /// </summary>
+        /// <param name="id">Name of the style</param>
+        /// <param name="type">Style type</param>
+        /// <param name="basedOnStyle"></param>
+        /// <returns>Created style which can be edited</returns>
+        public Style AddStyle(string id, StyleType type, Style basedOnStyle = null)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(id));
+            if (!Enum.IsDefined(typeof(StyleType), type))
+                throw new InvalidEnumArgumentException(nameof(type), (int) type, typeof(StyleType));
+
+            basedOnStyle ??= AvailableStyles.Single(s => s.IsDefault && s.Type == type);
+
+            id = new string(id.Where(char.IsLetterOrDigit).ToArray());
+            return new Style(stylesDoc, id, type) { BasedOn = basedOnStyle.Id };
+        }
+
+        /// <summary>
         /// This method retrieves the XML block associated with a style.
         /// </summary>
         /// <param name="styleId">Id</param>
         /// <param name="type">Style type</param>
         /// <returns>Style if present</returns>
-        internal Style GetStyle(string styleId, StyleType type) =>
-            Styles.SingleOrDefault(s => s.Id == styleId && s.Type == type);
+        public Style GetStyle(string styleId, StyleType type) =>
+            AvailableStyles.SingleOrDefault(s => s.Id == styleId && s.Type == type);
 
         /// <summary>
         /// This method adds a new Style XML block to the /word/styles.xml document

@@ -45,6 +45,7 @@ namespace DXPlus
         public static readonly XName RunFonts = Namespace.Main + "rFonts";
         public static readonly XName RunProperties = Namespace.Main + "rPr";
         public static readonly XName SectionProperties = Namespace.Main + "sectPr";
+        public static readonly XName Shadow = Namespace.Main + "shadow";
         public static readonly XName SimpleField = Namespace.Main + "fldSimple";
         public static readonly XName Size = Namespace.Main + "sz";
         public static readonly XName Spacing = Namespace.Main + "spacing";

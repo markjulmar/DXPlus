@@ -1,13 +1,14 @@
 ﻿namespace DXPlus
 {
     /// <summary>
-    /// Table Cell Border styles
+    /// Table Cell and Paragraph Border styles
     /// source: http://msdn.microsoft.com/en-us/library/documentformat.openxml.wordprocessing.tablecellborders.aspx
     /// </summary>
-    public enum TableBorderStyle
+    public enum BorderStyle
     {
         Empty = -1,
         None = 0,
+        Nil = 0,
         Single = 1,
         Thick,
         DoubleLine,

@@ -642,7 +642,7 @@ namespace DXPlus
             tblBorderType.SetAttributeValue(Name.MainVal, tableBorder.Style.GetEnumName());
 
             // .. and the style
-            if (tableBorder.Style != TableBorderStyle.Empty)
+            if (tableBorder.Style != BorderStyle.Empty)
             {
                 int size = tableBorder.Size switch
                 {

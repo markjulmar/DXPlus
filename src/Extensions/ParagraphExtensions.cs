@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.Linq;
 
 namespace DXPlus
@@ -68,6 +69,11 @@ namespace DXPlus
         public static Paragraph Style(this Paragraph paragraph, HeadingType headingType) => Style(paragraph, headingType.GetEnumName());
 
         /// <summary>
+        /// Fluent method to set the style from a style object
+        /// </summary>
+        public static Paragraph Style(this Paragraph paragraph, Style style) => Style(paragraph, style.Id);
+
+        /// <summary>
         /// Fluent method to set style to a custom name.
         /// </summary>
         /// <param name="paragraph"></param>
@@ -75,11 +81,73 @@ namespace DXPlus
         public static Paragraph Style(this Paragraph paragraph, string styleName)
         {
             if (paragraph == null)
-            {
                 throw new ArgumentNullException(nameof(paragraph));
-            }
+            if (string.IsNullOrWhiteSpace(styleName))
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(styleName));
 
             paragraph.Properties.StyleName = styleName;
+            return paragraph;
+        }
+
+        /// <summary>
+        /// Sets a specific border on the paragraph
+        /// </summary>
+        /// <param name="paragraph"></param>
+        /// <param name="type"></param>
+        /// <param name="style"></param>
+        /// <param name="color"></param>
+        /// <param name="spacing"></param>
+        /// <param name="size"></param>
+        /// <param name="shadow"></param>
+        /// <returns></returns>
+        public static Paragraph WithBorder(this Paragraph paragraph, BorderEdgeType type, BorderStyle style, Color color, double? spacing = 1,
+                                    double size = 2, bool shadow = false)
+        {
+            paragraph.Properties.SetBorder(type, style, color, spacing, size, shadow);
+            return paragraph;
+        }
+
+        /// <summary>
+        /// Sets all borders on the paragraph
+        /// </summary>
+        /// <param name="paragraph"></param>
+        /// <param name="type"></param>
+        /// <param name="style"></param>
+        /// <param name="color"></param>
+        /// <param name="spacing"></param>
+        /// <param name="size"></param>
+        /// <param name="shadow"></param>
+        /// <returns></returns>
+        public static Paragraph WithBorders(this Paragraph paragraph, BorderStyle style, Color color, double? spacing = 1,
+            double size = 2, bool shadow = false)
+        {
+            paragraph.Properties.SetBorders(style, color, spacing, size, shadow);
+            return paragraph;
+        }
+
+        /// <summary>
+        /// Set a fill color on the paragraph
+        /// </summary>
+        /// <param name="paragraph"></param>
+        /// <param name="fillColor"></param>
+        /// <returns></returns>
+        public static Paragraph WithFill(this Paragraph paragraph, Color fillColor)
+        {
+            paragraph.Properties.ShadeFill = fillColor;
+            return paragraph;
+        }
+
+        /// <summary>
+        /// Set a fill color on the paragraph
+        /// </summary>
+        /// <param name="paragraph"></param>
+        /// <param name="pattern"></param>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        public static Paragraph WithPattern(this Paragraph paragraph, ShadePattern pattern, Color color)
+        {
+            paragraph.Properties.ShadePattern = pattern;
+            paragraph.Properties.ShadeColor = color;
             return paragraph;
         }
 
