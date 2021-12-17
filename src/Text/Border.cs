@@ -6,45 +6,11 @@ using System.Xml.Linq;
 namespace DXPlus
 {
     /// <summary>
-    /// Border borderEdgeType type
-    /// </summary>
-    public enum BorderEdgeType
-    {
-        /// <summary>
-        /// Specifies the border displayed above a set of paragraphs which have the same set of paragraph border settings.
-        /// </summary>
-        Top,
-        /// <summary>
-        /// Specifies the border displayed to the left of a set of paragraphs which have the same set of paragraph border settings.
-        /// </summary>
-        Left,
-        /// <summary>
-        /// Specifies the border displayed below a set of paragraphs which have the same set of paragraph border settings.
-        /// </summary>
-        Bottom,
-        /// <summary>
-        /// Specifies the border displayed to the right of a set of paragraphs which have the same set of paragraph border settings.
-        /// </summary>
-        Right,
-        /// <summary>
-        /// Specifies the border between each paragraph in a set of paragraphs which have the same set of paragraph border settings.
-        /// So if adjoining paragraphs have identical border settings, then there will be one border between them as specified
-        /// by the between element. Otherwise the first paragraph will use its bottom border and the following paragraph will use its top border.
-        /// </summary>
-        Between
-    }
-
-    /// <summary>
     /// This represents a border borderEdgeType along a side of an element.
     /// </summary>
-    public class BorderEdge
+    public class Border
     {
         private readonly XElement Xml;
-
-        /// <summary>
-        /// Returns the borderEdgeType this represents (top,left,bottom,right)
-        /// </summary>
-        public BorderEdgeType Edge => Enum.Parse<BorderEdgeType>(Xml.Name.LocalName);
 
         /// <summary>
         /// Returns the color for this border borderEdgeType.
@@ -104,7 +70,7 @@ namespace DXPlus
         /// Border edge for an existing border edge.
         /// </summary>
         /// <param name="xml"></param>
-        internal BorderEdge(XElement xml)
+        internal Border(XElement xml)
         {
             Xml = xml;
         }

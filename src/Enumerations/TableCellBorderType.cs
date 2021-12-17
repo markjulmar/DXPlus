@@ -9,6 +9,7 @@ namespace DXPlus
     /// </summary>
     public enum TableCellBorderType
     {
+        None,
         Top,
         Bottom,
         Left,
@@ -18,6 +19,6 @@ namespace DXPlus
         [XmlAttribute("tl2br")]
         TopLeftToBottomRight,
         [XmlAttribute("tr2bl")]
-        TopRightToBottomLeft
+        TopRightToBottomLeft,
     }
 }

@@ -204,7 +204,7 @@
 		<w:lsdException w:name="Medium Shading 2 Accent 1" w:uiPriority="64"/>
 		<w:lsdException w:name="Medium List 1 Accent 1" w:uiPriority="65"/>
 		<w:lsdException w:name="Revision" w:semiHidden="1"/>
-		<w:lsdException w:name="List FirstParagraph" w:qFormat="1" w:uiPriority="34"/>
+		<w:lsdException w:name="List Paragraph" w:qFormat="1" w:uiPriority="34"/>
 		<w:lsdException w:name="Quote" w:qFormat="1" w:uiPriority="29"/>
 		<w:lsdException w:name="Intense Quote" w:qFormat="1" w:uiPriority="30"/>
 		<w:lsdException w:name="Medium List 2 Accent 1" w:uiPriority="66"/>
@@ -713,17 +713,6 @@
 			<w:rFonts w:ascii="Consolas" w:hAnsi="Consolas"/>
 			<w:sz w:val="22"/>
 		</w:rPr>
-	</w:style>
-	<w:style w:styleId="ListParagraph" w:type="paragraph">
-		<w:name w:val="List FirstParagraph"/>
-		<w:basedOn w:val="Normal"/>
-		<w:uiPriority w:val="34"/>
-		<w:qFormat/>
-		<w:rsid w:val="00C203CC"/>
-		<w:pPr>
-			<w:ind w:left="720"/>
-			<w:contextualSpacing/>
-		</w:pPr>
 	</w:style>
 	<w:style w:styleId="Hyperlink" w:type="character">
 		<w:name w:val="Hyperlink"/>

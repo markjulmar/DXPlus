@@ -1,5 +1,7 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.Globalization;
+using System.Reflection;
 using System.Xml.Linq;
 
 namespace DXPlus
@@ -33,6 +35,18 @@ namespace DXPlus
         public static string ToHex(this Color color)
         {
             return $"{color.R:X2}{color.G:X2}{color.B:X2}";
+        }
+
+        /// <summary>
+        /// Convert an enumeration value to hex.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="digits"></param>
+        /// <returns></returns>
+        public static string ToHex(this Enum value, int digits = -1)
+        {
+            int num = Convert.ToInt32(value);
+            return digits <= 0 ? num.ToString("X") : num.ToString("X" + digits);
         }
 
         /// <summary>

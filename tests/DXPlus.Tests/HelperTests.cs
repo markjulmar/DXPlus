@@ -22,6 +22,26 @@ namespace DXPlus.Tests
         }
 
         [Fact]
+        public void EnumToHexReturnsZeroFilledValue()
+        {
+            var val = TableConditionalFormatting.FirstColumn
+                      | TableConditionalFormatting.FirstRow;
+
+            string s = val.ToHex(4);
+            Assert.Equal("00A0", s);
+        }
+
+        [Fact]
+        public void EnumToHexWithNoLengthReturnsUnfilledValue()
+        {
+            var val = TableConditionalFormatting.FirstColumn
+                      | TableConditionalFormatting.FirstRow;
+
+            string s = val.ToHex();
+            Assert.Equal("A0", s);
+        }
+
+        [Fact]
         public void GetAttributeValueReturnValueOrNull()
         {
             var xml = XElement.Parse(@"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>

@@ -100,7 +100,7 @@ namespace DXPlus
         /// <param name="size"></param>
         /// <param name="shadow"></param>
         /// <returns></returns>
-        public static Paragraph WithBorder(this Paragraph paragraph, BorderEdgeType type, BorderStyle style, Color color, double? spacing = 1,
+        public static Paragraph WithBorder(this Paragraph paragraph, ParagraphBorderType type, BorderStyle style, Color color, double? spacing = 1,
                                     double size = 2, bool shadow = false)
         {
             paragraph.Properties.SetBorder(type, style, color, spacing, size, shadow);

@@ -3,19 +3,30 @@ using System.Drawing;
 using System.Linq;
 using DXPlus;
 
-var doc = Document.Create(@"C:\Users\mark\onedrive\desktop\t.docx");
+var doc = Document.Create(@"C:\Users\mark\onedrive\desktop\tdx.docx");
 
-var s = doc.Styles.AddStyle("Code", StyleType.Paragraph);
-s.ParagraphFormatting.ShadeFill = Color.FromArgb(0xf0, 0xf0, 0xf0);
-s.ParagraphFormatting.SetBorders(BorderStyle.Single, Color.LightGray, 5);
-s.Formatting.Font = new FontFamily("Consolas");
+doc.AddParagraph("Heading").Style(HeadingType.Heading1)
+    .AddParagraph("This is a test");
 
-var p1 = doc.AddParagraph("This is the first paragraph.")
-    .Append("With multiple runs.").Append("Last run").Style(s);
+Table t = new Table(3, 2)
+{
+    Design = TableDesign.LightListAccent1,
+    TableCaption = "Welcome to the table",
+    ConditionalFormatting = TableConditionalFormatting.FirstRow
+};
 
-doc.AddParagraph("This is the second and final paragraph");
+// Header row
+var boldFont = new Formatting {Bold = true};
+t.Rows[0].Cells[0].Paragraphs.Single().SetText("Id", boldFont);
+t.Rows[0].Cells[1].Paragraphs.Single().SetText("Value", boldFont);
 
-p1.Runs.Last().Properties.ShadePattern = ShadePattern.DiagonalCross;
-p1.Runs.Last().Properties.ShadeColor = Color.Blue;
+for (int i = 0; i < 2; i++)
+{
+    t.Rows[i+1].Cells[0].Paragraphs.Single().SetText(100+i.ToString());
+    t.Rows[i + 1].Cells[1].Paragraphs.Single().SetText($"Value #{i+1}");
+}
+
+doc.AddTable(t);
+doc.AddParagraph("Final paragraph");
 
 doc.Save();

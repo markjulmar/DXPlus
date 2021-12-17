@@ -62,7 +62,7 @@ namespace DXPlus.Tests
             Assert.Equal(AutoFit.Fixed, t.AutoFit);
 
             Assert.Equal(120.0, t.Rows[0].Cells[0].Width);
-            Assert.Equal(120.0, t.GetColumnWidth(0));
+            Assert.Equal(120.0, t.GetDefaultColumnWidth(0));
         }
 
         [Fact]
