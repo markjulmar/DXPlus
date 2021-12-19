@@ -16,15 +16,17 @@ namespace DXPlus
     /// </summary>
     public class Table : Block
     {
+        public const double UnitConversion = 20.0;  // Height/Widths are represented in 20ths of a pt.
+        public const int MaxTableWidth = (int)(9350.0 / UnitConversion);
+
         private string customTableDesignName;
         private TableDesign tableDesign;
 
         /// <summary>
         /// Public constructor to create an empty table
         /// </summary>
-        /// <param name="rows">Rows</param>
         /// <param name="columns">Columns</param>
-        public Table(int rows, int columns) : this(null, TableHelpers.CreateTable(rows, columns))
+        public Table(int columns) : this(null, CreateTableRootXml(columns))
         {
         }
 
@@ -32,7 +34,7 @@ namespace DXPlus
         /// Create a table from a text array of rows, columns
         /// </summary>
         /// <param name="values"></param>
-        public Table(string[,] values) : this(null, TableHelpers.CreateTable(values.GetLength(0), values.GetLength(1)))
+        public Table(string[,] values) : this(null, CreateTable(values.GetLength(0), values.GetLength(1)))
         {
             int rowIndex = 0, colIndex = 0;
             foreach (var row in Rows)
@@ -761,5 +763,80 @@ namespace DXPlus
         {
             return Xml.GetOrAddElement(Namespace.Main + "tblPr");
         }
+
+        private static XElement CreateTableRootXml(int columns)
+        {
+            if (columns < 1)
+                throw new ArgumentOutOfRangeException(nameof(columns), "Cannot be < 1");
+
+            var newTable = new XElement(Namespace.Main + "tbl",
+                new XElement(Namespace.Main + "tblPr",
+                    new XElement(Namespace.Main + "tblStyle",
+                        new XAttribute(Name.MainVal, TableDesign.TableGrid.GetEnumName())),
+                    new XElement(Namespace.Main + "tblW", new XAttribute(Namespace.Main + "w", 0),
+                        new XAttribute(Namespace.Main + "type", "auto"))));
+
+            WriteTableConditionalFormat(newTable.Element(Namespace.Main + "tblPr"), TableConditionalFormatting.None);
+
+            var grid = new XElement(Namespace.Main + "tblGrid");
+            newTable.Add(grid);
+            foreach (int width in columnWidths)
+            {
+                grid.Add(new XElement(Namespace.Main + "gridCol", new XAttribute(Namespace.Main + "w", width * UnitConversion)));
+            }
+
+            for (int i = 0; i < rows; i++)
+            {
+                var row = new XElement(Namespace.Main + "tr");
+                foreach (int width in columnWidths)
+                    row.Add(CreateTableCell(width));
+
+                newTable.Add(row);
+            }
+            return newTable;
+
+        }
+
+        /// <summary>
+        /// Write the element children for the TableConditionalFormatting
+        /// </summary>
+        /// <param name="tblPr"></param>
+        /// <param name="format"></param>
+        private static void WriteTableConditionalFormat(XElement tblPr, TableConditionalFormatting format)
+        {
+            var e = tblPr.GetOrAddElement(Namespace.Main + "tblLook");
+            e.RemoveAttributes();
+
+            e.Add(
+                new XAttribute(Namespace.Main + "firstColumn", format.HasFlag(TableConditionalFormatting.FirstColumn) ? 1 : 0),
+                new XAttribute(Namespace.Main + "lastColumn", format.HasFlag(TableConditionalFormatting.LastColumn) ? 1 : 0),
+                new XAttribute(Namespace.Main + "firstRow", format.HasFlag(TableConditionalFormatting.FirstRow) ? 1 : 0),
+                new XAttribute(Namespace.Main + "lastRow", format.HasFlag(TableConditionalFormatting.LastRow) ? 1 : 0),
+                new XAttribute(Namespace.Main + "noHBand", format.HasFlag(TableConditionalFormatting.NoRowBand) ? 1 : 0),
+                new XAttribute(Namespace.Main + "noVBand", format.HasFlag(TableConditionalFormatting.NoColumnBand) ? 1 : 0),
+                new XAttribute(Name.MainVal, format.ToHex(4)));
+        }
+
+        /// <summary>
+        /// Create and return a cell of a table
+        /// </summary>
+        public static XElement CreateTableCell(double? width = null)
+        {
+            string type = width == null ? "auto" : "dxa";
+            width ??= 0;
+
+            return new XElement(Namespace.Main + "tc",
+                    new XElement(Namespace.Main + "tcPr",
+                        new XElement(Namespace.Main + "tcW",
+                            new XAttribute(Namespace.Main + "type", type),
+                            new XAttribute(Namespace.Main + "w", width.Value * UnitConversion)
+                        )),
+                    // always has an empty paragraph
+                    new XElement(Name.Paragraph,
+                        new XAttribute(Name.ParagraphId,
+                            HelperFunctions.GenerateHexId()))
+            );
+        }
+
     }
 }
