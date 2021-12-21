@@ -1,31 +1,21 @@
-﻿using System.Linq;
+﻿using System;
+using System.IO;
 using DXPlus;
 
-var doc = Document.Create(@"C:\Users\mark\onedrive\desktop\tdx.docx");
+var doc = Document.Create(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "tdx.docx"));
 
-doc.AddParagraph("Heading").Style(HeadingType.Heading1)
-    .AddParagraph("This is a test");
+Table t = new Table(rows:1, columns:3);
 
-Table t = new Table(3, 2)
-{
-    Design = TableDesign.LightListAccent1,
-    TableCaption = "Welcome to the table",
-    ConditionalFormatting = TableConditionalFormatting.FirstRow
-};
+t.AddRow().MergeCells(0, 2);
+t.AddRow();
+t.AddRow();
+t.AddRow().MergeCells(0, 3);
+t.AddRow();
 
-// Header row
-var boldFont = new Formatting {Bold = true};
-var rows = t.Rows.ToList();
-rows[0].Cells[0].Paragraphs.Single().SetText("Id", boldFont);
-rows[0].Cells[1].Paragraphs.Single().SetText("Value", boldFont);
-
-for (int i = 0; i < 2; i++)
-{
-    rows[i+1].Cells[0].Paragraphs.Single().SetText(100+i.ToString());
-    rows[i + 1].Cells[1].Paragraphs.Single().SetText($"Value #{i+1}");
-}
+t.MergeCellsInColumn(2, 2, 2);
 
 doc.AddTable(t);
-doc.AddParagraph("Final paragraph");
 
 doc.Save();
+
+Console.WriteLine("Created document.");

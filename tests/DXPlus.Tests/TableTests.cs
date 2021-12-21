@@ -8,6 +8,25 @@ namespace DXPlus.Tests
     public class TableTests
     {
         [Fact]
+        public void TableRespectsExplicitWidthRequest()
+        {
+            Table t = new Table(1, 4);
+            t.SetTableWidth(TableWidthUnit.Dxa, Uom.FromInches(4));
+
+            double expectedSize = 4 * 1440.0;
+            Assert.Equal(expectedSize, t.PreferredTableWidth);
+            Assert.True(double.IsNaN(t.DefaultColumnWidths.First()));
+
+            var doc = Document.Create();
+            doc.AddTable(t);
+
+            Assert.False(double.IsNaN(t.DefaultColumnWidths.First()));
+            Assert.Equal(expectedSize / 4, t.DefaultColumnWidths.First());
+            Assert.Equal(expectedSize / 4, t.Rows.First().Cells[0].Width);
+            Assert.Equal(TableWidthUnit.Dxa, t.Rows.First().Cells[0].WidthUnit);
+        }
+
+        [Fact]
         public void CreateTableWithInvalidRowsOrColumnsThrowsException()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new Table(0, 1));
@@ -166,7 +185,7 @@ namespace DXPlus.Tests
             Assert.Equal(width, t.DefaultColumnWidths.ElementAt(2));
             Assert.Equal(width, t.DefaultColumnWidths.ElementAt(3));
 
-            Assert.Equal(TableWidthUnit.Auto, t.TableWidthUnit);
+            Assert.Equal(TableWidthUnit.Auto, t.PreferredTableWidthUnit);
             Assert.Equal(0, t.PreferredTableWidth);
         }
 

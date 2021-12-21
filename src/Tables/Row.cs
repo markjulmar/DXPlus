@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
+using DXPlus.Helpers;
 
 namespace DXPlus
 {
@@ -135,8 +137,16 @@ namespace DXPlus
                 // Add the contents of the cell to the starting cell and remove it.
                 if (cell != startCell)
                 {
-                    startCell.Xml.Add(cell.Xml.Elements(Name.Paragraph));
+                    startCell.Xml.Add(cell.Xml.Elements(Name.Paragraph).Where(p => !p.IsEmpty));
                     cell.Xml.Remove();
+
+                    // Cells were all empty -- just add one empty paragraph.
+                    if (startCell.Xml.Element(Name.Paragraph) == null)
+                    {
+                        startCell.Xml.Add(new XElement(Name.Paragraph,
+                        new XAttribute(Name.ParagraphId,
+                            HelperFunctions.GenerateHexId())));
+                    }
                 }
             }
 
@@ -178,21 +188,47 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Reset the column widths - used when the table changes shape.
+        /// Reset the column widths for this row. This is called
+        /// when the table changes shape.
         /// </summary>
-        /// <param name="columnWidths">New column widths</param>
-        internal void SetColumnWidths(IList<double> columnWidths)
+        /// <param name="columnWidths">Array of column widths</param>
+        internal void SetColumnWidths(double[] columnWidths)
         {
-            IReadOnlyList<Cell> cells = Cells;
-            if (cells.Count != columnWidths.Count)
+            var cells = Cells;
+            if (cells.Count != columnWidths.Length)
             {
-                throw new Exception($"Row column count {cells.Count} doesn't match passed column count {columnWidths.Count}.");
+                if (!cells.Any(c => c.GridSpan > 0))
+                    throw new Exception($"Row column count {cells.Count} does not match passed width count {columnWidths.Length}.");
+
+                // The passed array can have more values that we
+                // have columns if there are merged cells in this row.
+                // In this case, sum the columns leading up to the merge
+                List<double> cw = new(); int cellIndex = 0;
+                for (int index = 0; index < columnWidths.Length; index++)
+                {
+                    int span = cells[cellIndex++].GridSpan;
+                    double val = columnWidths[index];
+                    if (span == 1)
+                        cw.Add(val);
+                    else
+                    {
+                        for (int x = 1; x < span; x++)
+                        {
+                            index++;
+                            val += columnWidths[index];
+                        }
+                        cw.Add(val);
+                    }
+                }
+
+                columnWidths = cw.ToArray();
+                Debug.Assert(cells.Count == columnWidths.Length);
             }
 
-            int index = 0;
-            foreach (Cell cell in cells)
+            // Assign the widths
+            for (int index = 0; index < cells.Count; index++)
             {
-                cell.SetWidth(TableWidthUnit.Dxa, columnWidths[index++]);
+                cells[index].SetWidth(TableWidthUnit.Dxa, columnWidths[index]);
             }
         }
 

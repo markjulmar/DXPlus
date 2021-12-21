@@ -101,15 +101,39 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// The units this colum width is expressed in.
+        /// How the preferred table width is expressed.
         /// </summary>
-        public TableWidthUnit TableWidthUnit => Enum.TryParse<TableWidthUnit>(TblPr.Element(Namespace.Main + "tblW")?
+        public TableWidthUnit PreferredTableWidthUnit => Enum.TryParse<TableWidthUnit>(TblPr.Element(Namespace.Main + "tblW")?
                         .AttributeValue(Namespace.Main + "type"), ignoreCase: true, out var tbw) ? tbw : TableWidthUnit.Auto;
 
         /// <summary>
         /// Preferred table width.
         /// </summary>
         public double PreferredTableWidth => double.TryParse(TblPr.Element(Namespace.Main + "tblW")?.AttributeValue(Namespace.Main + "w"), out var d) ? d : 0;
+
+        /// <summary>
+        /// Sets the table width
+        /// </summary>
+        /// <param name="unitType">Units</param>
+        /// <param name="value">Expressed width in specified units</param>
+        public void SetTableWidth(TableWidthUnit unitType, double? value)
+        {
+            XElement tblW = TblPr.GetOrAddElement(Namespace.Main + "tblW");
+            if (unitType == TableWidthUnit.None || value == null || value < 0)
+            {
+                tblW.Remove();
+                return;
+            }
+
+            tblW.SetAttributeValue(Namespace.Main + "type", unitType.GetEnumName());
+            if (unitType == TableWidthUnit.Auto)
+                value = 0;
+
+            if (unitType == TableWidthUnit.Percentage)
+                tblW.SetAttributeValue(Namespace.Main + "w", value.Value + "%");
+            else
+                tblW.SetAttributeValue(Namespace.Main + "w", value.Value);
+        }
 
         /// <summary>
         /// True if the table will auto-fit the contents. This corresponds to the {tblLayout} value of the table properties.
@@ -239,7 +263,7 @@ namespace DXPlus
                 // Fixup any unsized columns
                 if (DefaultColumnWidths.Any(dc => double.IsNaN(dc)))
                 {
-                    OnSetColumnWidths(DefaultColumnWidths.ToList());
+                    OnSetColumnWidths(DefaultColumnWidths.ToArray());
                 }
             }
 
@@ -580,14 +604,14 @@ namespace DXPlus
         /// Supply all the column widths
         /// </summary>
         /// <param name="widths"></param>
-        public void SetColumnWidths(IList<double> widths)
+        public void SetColumnWidths(IEnumerable<double> widths)
         {
-            if (widths.Count != ColumnCount)
+            if (widths.Count() != ColumnCount)
             {
                 throw new ArgumentOutOfRangeException(nameof(widths), "Must supply widths for each column.");
             }
 
-            OnSetColumnWidths(widths);
+            OnSetColumnWidths(widths.ToArray());
         }
 
         /// <summary>
@@ -597,15 +621,15 @@ namespace DXPlus
         /// <param name="width">Column width</param>
         public void SetColumnWidth(int index, double width)
         {
-            List<double> columnWidths = DefaultColumnWidths?.ToList();
-            if (columnWidths == null || index > columnWidths.Count - 1)
+            double[] columnWidths = DefaultColumnWidths?.ToArray();
+            if (columnWidths == null || index > columnWidths.Length - 1)
             {
                 if (!Rows.Any())
                 {
                     throw new InvalidOperationException("Must have at least one row to determine column widths.");
                 }
 
-                columnWidths = Rows.ToList()[^1].Cells.Select(c => c.Width ?? 0).ToList();
+                columnWidths = Rows.ToList()[^1].Cells.Select(c => c.Width ?? 0).ToArray();
             }
 
             if (width >= 0)
@@ -620,15 +644,27 @@ namespace DXPlus
         /// Rewrite the tbl/tblGrid section with new column widths
         /// </summary>
         /// <param name="columnWidths">Set of widths</param>
-        private void OnSetColumnWidths(IList<double> columnWidths)
+        private void OnSetColumnWidths(double[] columnWidths)
         {
             // Fill in any missing values.
             if (columnWidths.Contains(double.NaN))
             {
-                double pageWidth = Document.Sections.First().Properties.AdjustedPageWidth;
+                double totalSpace;
+
+                if (PreferredTableWidthUnit == TableWidthUnit.Dxa)
+                    totalSpace = PreferredTableWidth;
+                else
+                {
+                    totalSpace = Document.Sections.First().Properties.AdjustedPageWidth;
+                    if (PreferredTableWidthUnit == TableWidthUnit.Percentage)
+                    {
+                        totalSpace *= PreferredTableWidth;
+                    }
+                }
+
                 double usedSpace = columnWidths.Where(c => !double.IsNaN(c)).Sum();
-                double eachColumn = (pageWidth - usedSpace) / columnWidths.Count(double.IsNaN);
-                for (int i = 0; i < columnWidths.Count; i++)
+                double eachColumn = (totalSpace - usedSpace) / columnWidths.Count(double.IsNaN);
+                for (int i = 0; i < columnWidths.Length; i++)
                 {
                     if (double.IsNaN(columnWidths[i]))
                     {
