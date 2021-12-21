@@ -1,21 +1,21 @@
 ﻿using System;
-using System.Drawing;
-using System.Linq;
+using System.IO;
 using DXPlus;
 
-var doc = Document.Create(@"C:\Users\mark\onedrive\desktop\t.docx");
+var doc = Document.Create(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "tdx.docx"));
 
-var s = doc.Styles.AddStyle("Code", StyleType.Paragraph);
-s.ParagraphFormatting.ShadeFill = Color.FromArgb(0xf0, 0xf0, 0xf0);
-s.ParagraphFormatting.SetBorders(BorderStyle.Single, Color.LightGray, 5);
-s.Formatting.Font = new FontFamily("Consolas");
+Table t = new Table(rows:1, columns:3);
 
-var p1 = doc.AddParagraph("This is the first paragraph.")
-    .Append("With multiple runs.").Append("Last run").Style(s);
+t.AddRow().MergeCells(0, 2);
+t.AddRow();
+t.AddRow();
+t.AddRow().MergeCells(0, 3);
+t.AddRow();
 
-doc.AddParagraph("This is the second and final paragraph");
+t.MergeCellsInColumn(2, 2, 2);
 
-p1.Runs.Last().Properties.ShadePattern = ShadePattern.DiagonalCross;
-p1.Runs.Last().Properties.ShadeColor = Color.Blue;
+doc.AddTable(t);
 
 doc.Save();
+
+Console.WriteLine("Created document.");

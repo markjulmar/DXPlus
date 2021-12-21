@@ -2,7 +2,6 @@
 
 namespace DXPlus
 {
-
     /// <summary>
     /// Designs\Styles that can be applied to a table.
     /// </summary>
@@ -14,6 +13,8 @@ namespace DXPlus
         TableNormal,
         [XmlAttribute("TableGrid")]
         TableGrid,
+        [XmlAttribute("TableGridLight")]
+        TableGridLight,
         [XmlAttribute("LightShading")]
         LightShading,
         [XmlAttribute("LightShading-Accent1")]

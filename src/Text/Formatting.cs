@@ -246,16 +246,22 @@ namespace DXPlus
 
         /// <summary>
         /// Specifies the amount of character pitch which shall be added or removed after each character
-        /// in this run before the following character is rendered in the document.
+        /// in this run before the following character is rendered in the document. This value is represented in dxa units.
         /// </summary>
         public double? Spacing
         {
-            // Represented in 20ths of a pt.
-            get => double.TryParse(Xml.Element(Name.Spacing).GetVal(), out var result) ? (double?)Math.Round(result/20.0,1) : null;
+            get => double.TryParse(Xml.Element(Name.Spacing).GetVal(), out var result) ? result : null;
             set
             {
-                Xml.AddElementVal(Name.Spacing,
-                    value == null ? null : Math.Round(value.Value * 20.0, 1).ToString(CultureInfo.InvariantCulture));
+                if (value == null)
+                {
+                    Xml.Attribute(Name.Spacing)?.Remove();
+                }
+                else
+                {
+                    Xml.AddElementVal(Name.Spacing, value?.ToString(CultureInfo.InvariantCulture));
+                }
+
                 setProperties.Add(nameof(Spacing));
             }
         }
@@ -444,7 +450,7 @@ namespace DXPlus
         /// </summary>
         public ShadePattern? ShadePattern
         {
-            get => Enum.TryParse<ShadePattern>(Xml.Element(Namespace.Main + "shd")?.GetVal(), out var sp) ? sp : null;
+            get => Enum.TryParse<ShadePattern>(Xml.Element(Namespace.Main + "shd")?.GetVal(), ignoreCase: true, out var sp) ? sp : null;
 
             set
             {

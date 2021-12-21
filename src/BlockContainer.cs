@@ -207,7 +207,7 @@ namespace DXPlus
             Paragraph insertPos = Document.FindParagraphByIndex(index);
             if (insertPos == null)
             {
-                AddParagraphToDocument(paragraph.Xml);
+                AddElementToDocument(paragraph.Xml);
             }
             else
             {
@@ -229,7 +229,7 @@ namespace DXPlus
             if (paragraph.InDom)
                 throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
-            AddParagraphToDocument(paragraph.Xml);
+            AddElementToDocument(paragraph.Xml);
             return OnAddParagraph(paragraph);
         }
 
@@ -251,23 +251,23 @@ namespace DXPlus
         /// <summary>
         /// Adds a new paragraph into the document structure
         /// </summary>
-        /// <param name="paragraphXml"></param>
-        private void AddParagraphToDocument(XElement paragraphXml)
+        /// <param name="xml"></param>
+        private void AddElementToDocument(XElement xml)
         {
-            // Add an ID if it's missing.
-            if (paragraphXml.Attribute(Name.ParagraphId) == null)
+            // On paragraphs, add an ID if it's missing.
+            if (xml.Name.LocalName == "p" && xml.Attribute(Name.ParagraphId) == null)
             {
-                paragraphXml.SetAttributeValue(Name.ParagraphId, HelperFunctions.GenerateHexId());
+                xml.SetAttributeValue(Name.ParagraphId, HelperFunctions.GenerateHexId());
             }
 
             XElement sectPr = Xml.Elements(Name.SectionProperties).SingleOrDefault();
             if (sectPr != null)
             {
-                sectPr.AddBeforeSelf(paragraphXml);
+                sectPr.AddBeforeSelf(xml);
             }
             else
             {
-                Xml.Add(paragraphXml);
+                Xml.Add(xml);
             }
         }
 
@@ -343,7 +343,7 @@ namespace DXPlus
             }
             else
             {
-                AddParagraphToDocument(newParagraph.Xml);
+                AddElementToDocument(newParagraph.Xml);
             }
 
             return OnAddParagraph(newParagraph);
@@ -354,7 +354,7 @@ namespace DXPlus
         /// </summary>
         public void AddSection()
         {
-            AddParagraphToDocument(new XElement(Name.Paragraph,
+            AddElementToDocument(new XElement(Name.Paragraph,
                           new XAttribute(Name.ParagraphId, HelperFunctions.GenerateHexId()),
                           new XElement(Name.ParagraphProperties,
                               new XElement(Name.SectionProperties,
@@ -367,7 +367,7 @@ namespace DXPlus
         /// </summary>
         public void AddPageBreak()
         {
-            AddParagraphToDocument(new XElement(Name.Paragraph,
+            AddElementToDocument(new XElement(Name.Paragraph,
                         new XAttribute(Name.ParagraphId, HelperFunctions.GenerateHexId()),
                         new XElement(Name.ParagraphProperties,
                             new XElement(Name.SectionProperties))));
@@ -387,7 +387,7 @@ namespace DXPlus
             }
 
             XElement paragraph = Paragraph.Create(text, formatting);
-            AddParagraphToDocument(paragraph);
+            AddElementToDocument(paragraph);
             return OnAddParagraph(new Paragraph(Document, paragraph, 0));
         }
 
@@ -395,20 +395,20 @@ namespace DXPlus
         /// Add a new table to the end of the container
         /// </summary>
         /// <param name="table">Table to add</param>
-        /// <returns>Table reference - may be copied if original table was already in document.</returns>
+        /// <returns>The table now associated with the document.</returns>
         public Table AddTable(Table table)
         {
             if (table.InDom)
                 throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
             table.BlockContainer = this;
-            AddParagraphToDocument(table.Xml);
+            AddElementToDocument(table.Xml);
 
             return table;
         }
 
         /// <summary>
-        /// Insert a Table into this document. The Table's source can be a completely different document.
+        /// Insert a Table into this document.
         /// </summary>
         /// <param name="index">The index to insert this Table at.</param>
         /// <param name="table">The Table to insert.</param>

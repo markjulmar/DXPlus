@@ -8,9 +8,6 @@ namespace DXPlus
     /// </summary>
     public sealed class SectionProperties
     {
-        private const int A4Width = 11906;
-        private const int A4Height = 16838;
-
         /// <summary>
         /// XML that makes up this element
         /// </summary>
@@ -79,19 +76,19 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Page width value in points. 1pt = 1/72 of an inch. Word internally writes docx using units = 1/20th of a point.
+        /// Page width adjusted by margins.
+        /// </summary>
+        public double AdjustedPageWidth => PageWidth - LeftMargin - RightMargin;
+
+        /// <summary>
+        /// Page width value in dxa units
         /// </summary>
         public double PageWidth
         {
-            get
-            {
-                var pgSz = Xml.Element(Namespace.Main + "pgSz");
-                var w = pgSz?.Attribute(Namespace.Main + "w");
-                return w != null && double.TryParse(w.Value, out var value) ? Math.Round(value / 20.0) : 12240.0 / 20.0;
-            }
+            get => double.TryParse(Xml.Element(Namespace.Main + "pgSz")?.AttributeValue(Namespace.Main + "w"), out var value) ? value : PageSize.LetterWidth;
 
             set => Xml.GetOrAddElement(Namespace.Main + "pgSz")
-                .SetAttributeValue(Namespace.Main + "w", value * 20.0);
+                .SetAttributeValue(Namespace.Main + "w", value);
         }
 
         /// <summary>
@@ -99,15 +96,8 @@ namespace DXPlus
         /// </summary>
         public double PageHeight
         {
-            get
-            {
-                var pgSz = Xml.Element(Namespace.Main + "pgSz");
-                var w = pgSz?.Attribute(Namespace.Main + "h");
-                return w != null && double.TryParse(w.Value, out double value) ? Math.Round(value / 20.0) : 15840.0 / 20.0;
-            }
-
-            set => Xml.GetOrAddElement(Namespace.Main + "pgSz")
-                .SetAttributeValue(Namespace.Main + "h", value * 20);
+            get => double.TryParse(Xml.Element(Namespace.Main + "pgSz")?.AttributeValue(Namespace.Main + "h"), out var value) ? value : PageSize.LetterHeight;
+            set => Xml.GetOrAddElement(Namespace.Main + "pgSz").SetAttributeValue(Namespace.Main + "h", value);
         }
 
         /// <summary>
@@ -122,17 +112,15 @@ namespace DXPlus
 
             set
             {
-                var pgSz = Xml.GetOrAddElement(Namespace.Main + "pgSz");
-                pgSz.SetAttributeValue(Namespace.Main + "orient", value.GetEnumName());
-                if (value == Orientation.Landscape)
+                if (value != Orientation)
                 {
-                    pgSz.SetAttributeValue(Namespace.Main + "w", A4Height);
-                    pgSz.SetAttributeValue(Namespace.Main + "h", A4Width);
-                }
-                else // if (value == Orientation.Portrait)
-                {
-                    pgSz.SetAttributeValue(Namespace.Main + "w", A4Width);
-                    pgSz.SetAttributeValue(Namespace.Main + "h", A4Height);
+                    double pw = PageWidth;
+                    double ph = PageHeight;
+
+                    var pgSz = Xml.GetOrAddElement(Namespace.Main + "pgSz");
+                    pgSz.SetAttributeValue(Namespace.Main + "orient", value.GetEnumName());
+                    pgSz.SetAttributeValue(Namespace.Main + "w", ph);
+                    pgSz.SetAttributeValue(Namespace.Main + "h", pw);
                 }
             }
         }
@@ -157,7 +145,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Bottom margin value in points. 1pt = 1/72 of an inch. Word internally writes docx using units = 1/20th of a point.
+        /// Bottom margin value in dxa units.
         /// </summary>
         public double BottomMargin
         {
@@ -166,7 +154,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Left margin value in points. 1pt = 1/72 of an inch. Word internally writes docx using units = 1/20th of a point.
+        /// Left margin value in dxa units.
         /// </summary>
         public double LeftMargin
         {
@@ -175,7 +163,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Right margin value in points. 1pt = 1/72 of an inch. Word internally writes docx using units = 1/20th of a point.
+        /// Right margin value in dxa units.
         /// </summary>
         public double RightMargin
         {
@@ -184,7 +172,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Top margin value in points. 1pt = 1/72 of an inch. Word internally writes docx using units = 1/20th of a point.
+        /// Top margin value in dxa units.
         /// </summary>
         public double TopMargin
         {
@@ -197,10 +185,7 @@ namespace DXPlus
         /// </summary>
         public int? StartPageNumber
         {
-            get => int.TryParse(Xml.AttributeValue(Namespace.Main + "pgNumType", Namespace.Main + "start"), out var result)
-                    ? (int?) result
-                    : null;
-
+            get => int.TryParse(Xml.AttributeValue(Namespace.Main + "pgNumType", Namespace.Main + "start"), out var result) ? result : null;
             set => Xml.SetAttributeValue(Namespace.Main + "pgNumType", Namespace.Main + "start", value?.ToString());
         }
 
@@ -235,22 +220,22 @@ namespace DXPlus
         /// Get a margin
         /// </summary>
         /// <param name="name">Margin to get</param>
-        /// <returns>Value in 1/20th pt.</returns>
+        /// <returns>Value in dxa units</returns>
         private double GetMarginAttribute(XName name)
         {
             var top = Xml.Element(Namespace.Main + "pgMar")?.Attribute(name);
-            return top != null && double.TryParse(top.Value, out var value) ? (int)(value / 20.0) : 0;
+            return top != null && double.TryParse(top.Value, out var value) ? value : 0;
         }
 
         /// <summary>
         /// Set a margin
         /// </summary>
         /// <param name="name">Margin to set</param>
-        /// <param name="value">Value in 1/20th pt</param>
+        /// <param name="value">Value in dxa units</param>
         private void SetMarginAttribute(XName name, double value)
         {
             Xml.GetOrAddElement(Namespace.Main + "pgMar")
-                .SetAttributeValue(name, value * 20.0);
+                .SetAttributeValue(name, value);
         }
     }
 }

@@ -53,7 +53,11 @@ namespace DXPlus
             if (paragraph.InDom)
                 throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
-            Xml.AddAfterSelf(paragraph.Xml);
+            if (this is Paragraph p && p.Table != null)
+            {
+                p.Table.Xml.AddAfterSelf(paragraph.Xml);
+            }
+            else Xml.AddAfterSelf(paragraph.Xml);
 
             if (owner != null)
             {

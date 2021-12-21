@@ -461,7 +461,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Return xml string for this value
+        /// Return XML string for this value
         /// </summary>
         /// <typeparam name="T">Enum type</typeparam>
         public static string GetEnumName<T>(this T value)
@@ -471,8 +471,8 @@ namespace DXPlus
                 throw new ArgumentNullException(nameof(value));
             }
 
-            FieldInfo fi = typeof(T).GetField(value.ToString());
-            return fi.GetCustomAttribute<XmlAttributeAttribute>()?.AttributeName ?? value.ToCamelCase();
+            FieldInfo fi = typeof(T).GetField(value.ToString()??"");
+            return fi?.GetCustomAttribute<XmlAttributeAttribute>()?.AttributeName ?? value.ToCamelCase();
         }
 
         /// <summary>

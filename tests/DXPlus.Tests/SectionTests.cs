@@ -49,8 +49,8 @@ namespace DXPlus.Tests
 
             var s2 = sections[1];
             Assert.Equal(5, s2.Paragraphs.Count());
-            Assert.Equal(144, s2.Properties.LeftMargin);
-            Assert.Equal(72, s2.Properties.TopMargin);
+            Assert.Equal(2880, s2.Properties.LeftMargin);
+            Assert.Equal(1440, s2.Properties.TopMargin);
             Assert.Empty(s2.Headers);
             Assert.Empty(s2.Footers);
 

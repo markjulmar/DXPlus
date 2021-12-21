@@ -1,4 +1,9 @@
-<w:abstractNum xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:abstractNumId="0">
+<w:abstractNum xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+               xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml"
+               xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+               mc:Ignorable="w15"
+               w15:restartNumberingAfterBreak="0"
+               w:abstractNumId="0">
   <w:nsid w:val="{nsid}"/>
   <w:multiLevelType w:val="hybridMultilevel"/>
   <w:lvl w:ilvl="0">
