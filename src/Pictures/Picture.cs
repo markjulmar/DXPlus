@@ -50,6 +50,9 @@ namespace DXPlus
             this.image = image;
         }
 
+        /// <summary>
+        /// Shape properties section
+        /// </summary>
         private XElement spPr => Xml.FirstLocalNameDescendant("spPr");
 
         /// <summary>
@@ -325,6 +328,11 @@ namespace DXPlus
         /// Returns the name of the image file for the picture.
         ///</summary>
         public string FileName => image.FileName;
+
+        /// <summary>
+        /// Get the underlying image
+        /// </summary>
+        public Image Image => image;
 
         /// <summary>
         /// Get or sets the width of the rendered picture in pixels.

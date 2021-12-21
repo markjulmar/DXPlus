@@ -36,6 +36,13 @@ namespace DXPlus
         IEnumerable<Comment> Comments { get; }
 
         /// <summary>
+        /// Retrieve a specific comment by ID
+        /// </summary>
+        /// <param name="id">comment Id</param>
+        /// <returns>Located comment or null</returns>
+        Comment GetComment(int id);
+
+        /// <summary>
         /// Retrieve comments in the document by a specific author
         /// </summary>
         IEnumerable<Comment> CommentsBy(string authorName);
@@ -218,5 +225,11 @@ namespace DXPlus
         /// </summary>
         /// <param name="newStreamDestination">The Stream to save this document to.</param>
         void SaveAs(Stream newStreamDestination);
+
+        /// <summary>
+        /// Returns the raw XML document
+        /// </summary>
+        /// <returns></returns>
+        string RawDocument();
     }
 }

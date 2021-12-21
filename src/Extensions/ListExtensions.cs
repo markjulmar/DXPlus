@@ -1,5 +1,6 @@
-﻿using DXPlus.Helpers;
-using System;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 
@@ -97,6 +98,30 @@ namespace DXPlus
             return numProperties == null
                 ? null
                 : int.Parse(numProperties.Element(Namespace.Main + "numId").GetVal());
+        }
+
+        /// <summary>
+        /// Retrieves all the paragraphs for a list based on the numId.
+        /// </summary>
+        /// <param name="numId">NumId</param>
+        /// <returns>Paragraphs associated with this list</returns>
+        public static IEnumerable<Paragraph> GetListById(this IContainer container, int listId)
+            => container.Paragraphs.Where(p => p.GetListNumId() == listId);
+
+        /// <summary>
+        /// Returns the index # of this paragrah if it's part of a list.
+        /// </summary>
+        /// <param name="p">Paragraph</param>
+        /// <returns>Index or null if not in a list.</returns>
+        public static int? GetListIndex(this Paragraph p)
+        {
+            int? listId = p.GetListNumId();
+            if (listId == null)
+                return null;
+
+            IContainer container = p.BlockContainer ?? p.Document;
+            return container?.GetListById(listId.Value)
+                    .ToList().FindIndex(p2 => p2.Equals(p));
         }
 
         /// <summary>

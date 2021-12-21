@@ -380,8 +380,9 @@ namespace DXPlus
         {
             AddElementToContainer(new XElement(Name.Paragraph,
                         new XAttribute(Name.ParagraphId, HelperFunctions.GenerateHexId()),
-                        new XElement(Name.ParagraphProperties,
-                            new XElement(Name.SectionProperties))));
+                        new XElement(Name.Run,
+                            new XElement(Name.Break,
+                                new XAttribute(Name.Type, "page")))));
         }
 
         /// <summary>

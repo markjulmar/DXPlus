@@ -132,6 +132,13 @@ namespace DXPlus
             => commentManager == null ? Enumerable.Empty<Comment>() : commentManager.Comments;
 
         /// <summary>
+        /// Retrieve a specific comment by id.
+        /// </summary>
+        /// <param name="id">Numeric id</param>
+        /// <returns>Comment or null if no comment exists.</returns>
+        public Comment GetComment(int id) => Comments.SingleOrDefault(c => c.Id == id);
+
+        /// <summary>
         /// Returns all comments for a specific author in the document.
         /// </summary>
         /// <param name="authorName">Author name</param>
@@ -1062,6 +1069,12 @@ namespace DXPlus
         }
 
         /// <summary>
+        /// Returns the raw XML document
+        /// </summary>
+        /// <returns></returns>
+        public string RawDocument() => Xml.ToString();
+
+        /// <summary>
         /// Create a new Picture.
         /// </summary>
         /// <param name="rid">A unique id that identifies an Image embedded in this document.</param>
@@ -1193,6 +1206,9 @@ namespace DXPlus
         /// </summary>
         internal Package Package { get; set; }
 
+        /// <summary>
+        /// Comment manager (separate XML document)
+        /// </summary>
         internal CommentManager CommentManager => commentManager;
 
         /// <summary>

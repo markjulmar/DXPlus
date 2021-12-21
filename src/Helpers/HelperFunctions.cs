@@ -241,15 +241,6 @@ namespace DXPlus.Helpers
 
                 case "t":
                 case "delText":
-                    if (e.Parent?.Name == Name.Run)
-                    {
-                        // Get the caps setting.
-                        Formatting props = new Formatting(e.Parent!.Element(Name.RunProperties));
-                        if (props.CapsStyle != CapsStyle.None)
-                        {
-                            return e.Value.ToUpper();
-                        }
-                    }
                     return e.Value;
 
                 default:

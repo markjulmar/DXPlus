@@ -47,7 +47,7 @@ namespace DXPlus
                 Name = text.Contains("DOCPROPERTY")
                     ? dpre.Match(text).Groups["name"].Value.Trim('"')
                     : text.Substring(0, text.IndexOf(' '));
-                Value = new Run(value, 0).Text;
+                Value = new Run(document, value, 0).Text;
             }
         }
     }

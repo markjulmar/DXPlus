@@ -1,5 +1,7 @@
 ﻿using DXPlus.Helpers;
 using System;
+using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Xml.Linq;
@@ -12,6 +14,11 @@ namespace DXPlus
     [DebuggerDisplay("{" + nameof(Text) + "}")]
     public class Run
     {
+        /// <summary>
+        /// Document for this run - used to retrieve images.
+        /// </summary>
+        internal IDocument Document { get; }
+
         /// <summary>
         /// XML backing storage
         /// </summary>
@@ -33,9 +40,34 @@ namespace DXPlus
         public bool HasText => Xml.Element(Name.Text) != null;
         
         /// <summary>
-        /// The raw text value of this run
+        /// The formatted text value of this run
         /// </summary>
         public string Text { get; }
+
+        /// <summary>
+        /// Returns the breaks in this run
+        /// </summary>
+        public IEnumerable<TextElement> Elements
+            => Xml.Elements()
+                .Where(e => e.Name != Name.RunProperties)
+                .Select(e => WrapTextChild(e));
+
+        /// <summary>
+        /// Wraps a child element in an accessor object.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private TextElement WrapTextChild(XElement child)
+        {
+            return child.Name.LocalName switch
+            {
+                "br" => new Break(this, child),
+                "t" => new Text(this, child),
+                "drawing" => new Drawing(this, child),
+                "commentReference" => new CommentRef(this, child),
+                _ => new TextElement(this, child),
+            };
+        }
 
         /// <summary>
         /// Style applied to this run
@@ -76,10 +108,12 @@ namespace DXPlus
         /// <summary>
         /// Constructor for a run of text
         /// </summary>
+        /// <param name="document">Document</param>
         /// <param name="xml"></param>
         /// <param name="startIndex"></param>
-        internal Run(XElement xml, int startIndex)
+        internal Run(IDocument document, XElement xml, int startIndex)
         {
+            Document = document; // can be null.
             Xml = xml ?? throw new ArgumentNullException(nameof(xml));
             StartIndex = startIndex;
             int currentPos = startIndex;

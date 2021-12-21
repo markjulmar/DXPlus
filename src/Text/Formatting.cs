@@ -565,5 +565,30 @@ namespace DXPlus
                     Xml.Add(el.Clone());
             }
         }
+
+        /// <summary>
+        /// Override for the ToString method
+        /// </summary>
+        /// <returns>Textual representation of this format</returns>
+        public override string ToString()
+        {
+            var props = new List<string>();
+            if (this.Bold) props.Add("Bold");
+            if (this.Italic) props.Add("Italic");
+            if (this.IsHidden) props.Add("Hidden");
+            if (this.CapsStyle != CapsStyle.None) props.Add("CapsStyle."+CapsStyle.ToString());
+            if (this.Color != Color.Empty) props.Add(this.Color.ToString());
+            if (this.Effect != Effect.None) props.Add("Effect."+this.Effect.ToString());
+            if (this.Emphasis != Emphasis.None) props.Add("Emphasis."+this.Emphasis.ToString());
+            if (this.ExpansionScale != null) props.Add("ExpansionScale."+this.ExpansionScale.ToString());
+            if (this.Font != null) props.Add(this.Font.Name);
+            if (this.FontSize != null) props.Add(this.FontSize.ToString() + "hpt");
+            if (this.Highlight != Highlight.None) props.Add("Highlight."+this.Highlight.ToString());
+            if (this.UnderlineStyle != UnderlineStyle.None) props.Add("Underline." + this.UnderlineStyle.ToString());
+            if (this.UnderlineColor != Color.Empty) props.Add("UnderlineColor-" + this.UnderlineColor.ToString());
+            if (this.NoProof) props.Add("NoProof");
+
+            return string.Join(' ', props);
+        }
     }
 }

@@ -13,6 +13,7 @@ namespace DXPlus
         public static readonly XName BookmarkEnd = Namespace.Main + "bookmarkEnd";
         public static readonly XName BookmarkStart = Namespace.Main + "bookmarkStart";
         public static readonly XName Bottom = Namespace.Main + "bottom";
+        public static readonly XName Break = Namespace.Main + "br";
         public static readonly XName Color = Namespace.Main + "color";
         public static readonly XName ComplexField = Namespace.Main + "fldChar";
         public static readonly XName DrawingProperties = Namespace.WordProcessingDrawing + "docPr";
@@ -53,6 +54,7 @@ namespace DXPlus
         public static readonly XName TableIndent = Namespace.Main + "tblInd";
         public static readonly XName Text = Namespace.Main + "t";
         public static readonly XName Top = Namespace.Main + "top";
+        public static readonly XName Type = Namespace.Main + "type";
         public static readonly XName Underline = Namespace.Main + "u";
         public static readonly XName Vanish = Namespace.Main + "vanish";
         public static readonly XName VerticalAlign = Namespace.Main + "vertAlign";

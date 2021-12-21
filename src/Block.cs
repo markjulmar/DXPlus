@@ -141,11 +141,10 @@ namespace DXPlus
                     return;
 
                 if (owner != null)
-                {
                     OnRemovedFromContainer(owner);
-                }
 
                 owner = value;
+
                 PackagePart = owner?.PackagePart;
                 Document = owner?.Document;
 

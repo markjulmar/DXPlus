@@ -47,6 +47,7 @@
     <None Remove="Resources\TocHyperLinkStyleBase.xml" />
     <None Remove="Resources\TocXmlBase.xml" />
     <None Remove="Resources\settings.xml" />
+    <None Remove="Text\Elements\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\comment.xml" />
@@ -72,5 +73,8 @@
     <PackageReference Include="System.IO.Packaging" Version="6.0.0" />
     <PackageReference Include="runtime.osx.10.10-x64.CoreCompat.System.Drawing" Version="5.8.64" />
     <PackageReference Include="System.Drawing.Common" Version="5.0.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Text\Elements\" />
   </ItemGroup>
 </Project>

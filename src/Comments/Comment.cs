@@ -68,6 +68,11 @@ namespace DXPlus
             Xml = Resource.CommentElement(authorName, authorInitials, dt.Value);
         }
 
+        /// <summary>
+        /// Turn an author name into initials by taking the first letter of each word.
+        /// </summary>
+        /// <param name="authorName"></param>
+        /// <returns></returns>
         private static string GetInitialsFromName(string authorName) 
             => string.Join("", authorName.Split(' ')
                                         .Where(w => w.Length > 0)
@@ -82,6 +87,10 @@ namespace DXPlus
         {
         }
 
+        /// <summary>
+        /// Override for Object.ToString().
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return $"{Id}: {Date?.ToString("s")} by {AuthorName}";

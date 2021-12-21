@@ -12,7 +12,7 @@ namespace DXPlus
     /// <summary>
     /// Represents a document paragraph.
     /// </summary>
-    [DebuggerDisplay("{" + nameof(Xml) + "}")]
+    [DebuggerDisplay("Paragraph {p.Id}")]
     public class Paragraph : Block, IEquatable<Paragraph>
     {
         /// <summary>
@@ -27,7 +27,7 @@ namespace DXPlus
                 foreach (var runXml in Xml.Descendants()
                              .Where(e => e.Name.LocalName == Name.Run.LocalName))
                 {
-                    var run = new Run(runXml, start);
+                    var run = new Run(Document, runXml, start);
                     yield return run;
                     start = run.EndIndex;
                 }
@@ -924,7 +924,7 @@ namespace DXPlus
                             XElement[] splitRunBefore = run.SplitAtIndex(index, EditType.Delete);
                             int min = Math.Min(index + (count - processed), run.EndIndex);
                             XElement[] splitRunAfter = run.SplitAtIndex(min, EditType.Delete);
-                            XElement middle = new Run(splitRunBefore[1], run.StartIndex + HelperFunctions.GetTextLength(splitRunBefore[0])).SplitAtIndex(min, EditType.Delete)[0];
+                            XElement middle = new Run(Document, splitRunBefore[1], run.StartIndex + HelperFunctions.GetTextLength(splitRunBefore[0])).SplitAtIndex(min, EditType.Delete)[0];
                             processed += HelperFunctions.GetTextLength(middle);
                             run.Xml.ReplaceWith(splitRunBefore[0], null, splitRunAfter[1]);
                         }
@@ -1139,7 +1139,7 @@ namespace DXPlus
         /// <param name="index">Index to look for</param>
         /// <param name="count">Total searched</param>
         /// <param name="run">The located text run</param>
-        private static void RecursiveSearchForRunByIndex(XElement el, EditType editType, int index, ref int count, ref Run run)
+        private void RecursiveSearchForRunByIndex(XElement el, EditType editType, int index, ref int count, ref Run run)
         {
             count += HelperFunctions.GetSize(el);
 
@@ -1162,7 +1162,7 @@ namespace DXPlus
                     return;
                 }
 
-                run = new Run(el, count);
+                run = new Run(Document, el, count);
             }
             else if (el.HasElements)
             {
@@ -1319,7 +1319,6 @@ namespace DXPlus
                 HelperFunctions.FormatInput(text, formatting?.Xml));
         }
 
-        /*
         /// <summary>
         /// Method to clone a paragraph into a new unowned paragraph.
         /// </summary>
@@ -1335,7 +1334,6 @@ namespace DXPlus
                 Id = HelperFunctions.GenerateHexId()
             };
         }
-        */
 
         /// <summary>
         /// Provides value equality for the paragraph.
@@ -1357,9 +1355,17 @@ namespace DXPlus
             return Text == other.Text && Id == other.Id;
         }
 
+        /// <summary>
+        /// Object equals override
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         public override bool Equals(object obj) => Equals(obj as Paragraph);
 
-        public override int GetHashCode()
-            => Text.GetHashCode() + Id.GetHashCode();
+        /// <summary>
+        /// Object GetHashCode override
+        /// </summary>
+        /// <returns></returns>
+        public override int GetHashCode() => Text.GetHashCode() + Id.GetHashCode();
     }
 }

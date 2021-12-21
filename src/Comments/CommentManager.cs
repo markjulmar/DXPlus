@@ -45,7 +45,8 @@ namespace DXPlus.Comments
         public IEnumerable<Comment> Comments 
             => Xml == null 
                 ? Enumerable.Empty<Comment>() 
-                : Xml.Elements(Namespace.Main + "comment").Select(e => new Comment(Document, e));
+                : Xml.Elements(Namespace.Main + "comment")
+                     .Select(e => new Comment(Document, e));
 
         /// <summary>
         /// The comment package part
@@ -127,8 +128,12 @@ namespace DXPlus.Comments
         public void Attach(Comment comment, Run runStart, Run runEnd)
         {
             runStart.Xml.AddBeforeSelf(
-                new XElement(CommentStart, new XAttribute(Namespace.Main + "id", comment.Id)));
-            var endNode = new XElement(CommentEnd, new XAttribute(Namespace.Main + "id", comment.Id));
+                new XElement(CommentStart,
+                    new XAttribute(Namespace.Main + "id", comment.Id)));
+
+            var endNode = new XElement(CommentEnd,
+                    new XAttribute(Namespace.Main + "id", comment.Id));
+
             runEnd.Xml.AddAfterSelf(endNode);
             endNode.AddAfterSelf(XElement.Parse(
                         $@"<w:r xmlns:w=""{Namespace.Main}"">

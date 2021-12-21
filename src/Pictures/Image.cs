@@ -22,14 +22,16 @@ namespace DXPlus
         /// <param name="mode">File mode</param>
         /// <param name="access">Access type</param>
         /// <returns>Open stream</returns>
-        public Stream GetStream(FileMode mode, FileAccess access)
+        public Stream OpenStream()
         {
             string temp = PackageRelationship.SourceUri.OriginalString;
             string start = temp.Remove(temp.LastIndexOf('/'));
             string end = PackageRelationship.TargetUri.OriginalString;
             string full = start + "/" + end;
 
-            return document.Package.GetPart(new Uri(full, UriKind.Relative)).GetStream(mode, access);
+            // Return a readonly stream to the image
+            return document.Package.GetPart(new Uri(full, UriKind.Relative))
+                           .GetStream(FileMode.Open, FileAccess.Read);
         }
 
         /// <summary>
