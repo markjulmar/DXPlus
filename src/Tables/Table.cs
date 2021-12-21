@@ -3,7 +3,6 @@ using DXPlus.Resources;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Drawing;
 using System.IO.Packaging;
 using System.Linq;
@@ -12,44 +11,52 @@ using System.Xml.Linq;
 namespace DXPlus
 {
     /// <summary>
-    /// Represents a Table in a document.
+    /// Represents a Table in a document {tbl}
     /// </summary>
     public class Table : Block
     {
-        public const double UnitConversion = 20.0;  // Height/Widths are represented in 20ths of a pt.
-        public const int MaxTableWidth = (int)(9350.0 / UnitConversion);
-
         private string customTableDesignName;
         private TableDesign tableDesign;
 
         /// <summary>
         /// Public constructor to create an empty table
         /// </summary>
-        /// <param name="columns">Columns</param>
-        public Table(int columns) : this(null, CreateTableRootXml(columns))
+        public Table() : this(null, CreateEmptyTableXml())
         {
         }
 
         /// <summary>
-        /// Create a table from a text array of rows, columns
+        /// Public constructor to create an empty uniform table
         /// </summary>
-        /// <param name="values"></param>
-        public Table(string[,] values) : this(null, CreateTable(values.GetLength(0), values.GetLength(1)))
+        /// <param name="rows">Rows</param>
+        /// <param name="columns">Columns</param>
+        public Table(int rows, int columns) : this()
         {
-            int rowIndex = 0, colIndex = 0;
-            foreach (var row in Rows)
+            if (rows <= 0)
+                throw new ArgumentOutOfRangeException("Rows must be >= 1", nameof(rows));
+            if (columns <= 0)
+                throw new ArgumentOutOfRangeException("Columns must be >= 1", nameof(columns));
+
+            WriteTableConditionalFormat(TblPr, TableConditionalFormatting.None);
+
+            var grid = Xml.GetOrAddElement(Namespace.Main + "tblGrid");
+            double width = double.NaN;
+            for (int i = 0; i < columns; i++)
             {
-                foreach (var cell in row.Cells)
-                {
-                    cell.Text = values[rowIndex, colIndex];
-                    colIndex++;
-                }
-                rowIndex++;
+                grid.Add(new XElement(Namespace.Main + "gridCol", new XAttribute(Namespace.Main + "w", width)));
+            }
+
+            for (int i = 0; i < rows; i++)
+            {
+                var row = new XElement(Namespace.Main + "tr");
+                foreach (var cw in DefaultColumnWidths)
+                    row.Add(CreateTableCell(cw));
+                Xml.Add(row);
             }
         }
 
         /// <summary>
-        /// Constructor for the table
+        /// Internal constructor for the table - wraps a {tbl} element.
         /// </summary>
         /// <param name="document">Document owner</param>
         /// <param name="xml">XML fragment representing the table</param>
@@ -90,7 +97,27 @@ namespace DXPlus
                 ? tcf
                 : TableConditionalFormatting.None;
 
-            set => TableHelpers.WriteTableConditionalFormat(TblPr, value);
+            set => WriteTableConditionalFormat(TblPr, value);
+        }
+
+        /// <summary>
+        /// The units this colum width is expressed in.
+        /// </summary>
+        public TableWidthUnit TableWidthUnit => Enum.TryParse<TableWidthUnit>(TblPr.Element(Namespace.Main + "tblW")?
+                        .AttributeValue(Namespace.Main + "type"), ignoreCase: true, out var tbw) ? tbw : TableWidthUnit.Auto;
+
+        /// <summary>
+        /// Preferred table width.
+        /// </summary>
+        public double PreferredTableWidth => double.TryParse(TblPr.Element(Namespace.Main + "tblW")?.AttributeValue(Namespace.Main + "w"), out var d) ? d : 0;
+
+        /// <summary>
+        /// True if the table will auto-fit the contents. This corresponds to the {tblLayout} value of the table properties.
+        /// </summary>
+        public bool AutoFit
+        {
+            get => string.Compare(TblPr.Element(Namespace.Main + "tblLayout")?.AttributeValue(Namespace.Main + "type"), "autofit", StringComparison.CurrentCultureIgnoreCase) == 0;
+            set => TblPr.GetOrAddElement(Namespace.Main + "tblLayout").SetAttributeValue(Namespace.Main + "type", value ? "autofit" : "fixed");
         }
 
         /// <summary>
@@ -109,7 +136,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Indentation in pixels
+        /// Indentation in dxa units
         /// </summary>
         public double? Indent
         {
@@ -118,7 +145,7 @@ namespace DXPlus
                 XAttribute value = TblPr.Element(Name.TableIndent)?
                                         .Attribute(Namespace.Main + "w");
                 if (value != null && double.TryParse(value.Value, out var indentUnits))
-                    return indentUnits / TableHelpers.UnitConversion;
+                    return indentUnits;
 
                 value?.Remove();
                 return null;
@@ -132,104 +159,9 @@ namespace DXPlus
                 }
                 else
                 {
-                    tblIndent.SetAttributeValue(Namespace.Main + "type", "dxa"); // Widths in 20th/pt.
-                    tblIndent.SetAttributeValue(Namespace.Main + "w", value * TableHelpers.UnitConversion);
+                    tblIndent.SetAttributeValue(Namespace.Main + "type", "dxa");
+                    tblIndent.SetAttributeValue(Namespace.Main + "w", value);
                 }
-            }
-        }
-
-        /// <summary>
-        /// Auto size this table according to some rule.
-        /// </summary>
-        public AutoFit AutoFit
-        {
-            get
-            {
-                string preferredTableWidth = TblPr.Element(Namespace.Main + "tblW").AttributeValue(Namespace.Main + "type", "auto");
-
-                if (string.Equals("auto", preferredTableWidth, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    return Xml.LocalNameDescendants("tcW")
-                              .All(e => e.AttributeValue(Namespace.Main + "type", "auto") == "auto")
-                        ? AutoFit.Contents
-                        : AutoFit.ColumnWidth;
-                }
-
-                if (string.Equals("pct", preferredTableWidth, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    return AutoFit.Window;
-                }
-
-                if (string.Equals("dxa", preferredTableWidth, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    return AutoFit.Fixed;
-                }
-
-                throw new InvalidOperationException($"Unsupported table width preference - {preferredTableWidth}.");
-            }
-
-            set
-            {
-                string preferredTableWidth = null, preferredColWidth = null;
-
-                switch (value)
-                {
-                    case AutoFit.ColumnWidth:
-                        preferredTableWidth = "auto";
-                        preferredColWidth = "dxa";
-                        // Disable "Automatically resize to fit contents" option
-                        TblPr.SetAttributeValue(Namespace.Main + "tblLayout", Namespace.Main + "type", "fixed");
-                        break;
-
-                    case AutoFit.Contents:
-                        preferredTableWidth = "auto";
-                        preferredColWidth = "auto";
-                        break;
-
-                    case AutoFit.Window:
-                        preferredTableWidth = "pct";
-                        preferredColWidth = "pct";
-                        break;
-
-                    case AutoFit.Fixed:
-                        preferredTableWidth = "dxa";
-                        preferredColWidth = "dxa";
-
-                        XElement tblLayout = TblPr?.Element(Namespace.Main + "tblLayout");
-                        if (tblLayout == null)
-                        {
-                            XElement tmp = TblPr?.Element(Namespace.Main + "tblInd") ??
-                                      TblPr?.Element(Namespace.Main + "tblW");
-                            if (tmp != null)
-                            {
-                                tmp.AddAfterSelf(new XElement(Namespace.Main + "tblLayout"));
-                                TblPr.Element(Namespace.Main + "tblLayout")
-                                    ?.SetAttributeValue(Namespace.Main + "type", "fixed");
-                                TblPr.Element(Namespace.Main + "tblW")
-                                    ?.SetAttributeValue(Namespace.Main + "w", DefaultColumnWidths.Sum());
-                            }
-                            break;
-                        }
-
-                        foreach (XAttribute type in Xml.LocalNameDescendants("tblLayout")
-                            .Attributes(Namespace.Main + "type"))
-                        {
-                            type.Value = "fixed";
-                        }
-
-                        // Set the table width based on the column widths
-                        TblPr.GetOrAddElement(Namespace.Main + "tblW")?
-                             .SetAttributeValue(Namespace.Main + "w", DefaultColumnWidths.Sum());
-                        break;
-                }
-
-                // Set preferred width exception type
-                foreach (var type in Xml.LocalNameDescendants("tblW"))
-                    type.SetAttributeValue(Namespace.Main + "type", preferredTableWidth);
-
-                // Set preferred table cell width type
-                foreach (var type in Xml.LocalNameDescendants("tcW"))
-                    type.SetAttributeValue(Namespace.Main + "type", preferredColWidth);
             }
         }
 
@@ -245,7 +177,7 @@ namespace DXPlus
         public IEnumerable<double> DefaultColumnWidths =>
             Xml.Element(Namespace.Main + "tblGrid")?
                 .Elements(Namespace.Main + "gridCol")
-                .Select(c => Convert.ToDouble(c.AttributeValue(Namespace.Main + "w")));
+                .Select(c => double.TryParse(c.AttributeValue(Namespace.Main + "w"), out var dbl) ? dbl : double.NaN);
 
         /// <summary>
         /// Custom Table Style name
@@ -287,7 +219,8 @@ namespace DXPlus
                     style.SetAttributeValue(Name.MainVal, tableDesign.GetEnumName());
                 }
 
-                ApplyTableStyleToDocumentOwner();
+                if(Document != null)
+                    ApplyTableStyleToDocumentOwner(Document);
             }
         }
 
@@ -298,9 +231,21 @@ namespace DXPlus
         {
             base.OnDocumentOwnerChanged(previousValue, newValue);
 
+            if (newValue != null)
+            {
+                if (ColumnCount == 0 || !Rows.Any())
+                    throw new Exception("Cannot add empty table to document.");
+
+                // Fixup any unsized columns
+                if (DefaultColumnWidths.Any(dc => double.IsNaN(dc)))
+                {
+                    OnSetColumnWidths(DefaultColumnWidths.ToList());
+                }
+            }
+
             if (newValue is Document doc && Xml != null)
             {
-                ApplyTableStyleToDocumentOwner();
+                ApplyTableStyleToDocumentOwner(doc);
                 Rows.ToList().ForEach(r => r.Document = doc);
             }
         }
@@ -317,21 +262,21 @@ namespace DXPlus
         /// <summary>
         /// This ensures the owning document has the table style applied.
         /// </summary>
-        private void ApplyTableStyleToDocumentOwner()
+        private void ApplyTableStyleToDocumentOwner(Document doc)
         {
-            if (Document == null)
-                return;
+            if (doc is null)
+                throw new ArgumentNullException(nameof(doc));
 
             string designName = TblPr.Element(Namespace.Main + "tblStyle").GetVal();
-            if (string.IsNullOrWhiteSpace(designName))
+            if (string.IsNullOrWhiteSpace(designName) || string.Compare(designName, "none", StringComparison.InvariantCultureIgnoreCase)==0)
                 return;
 
-            if (!Document.Styles.HasStyle(designName, StyleType.Table))
+            if (!doc.Styles.HasStyle(designName, StyleType.Table))
             {
                 var styleElement = Resource.DefaultTableStyles()
                                         .Descendants()
                                         .FindByAttrVal(Namespace.Main + "styleId", designName);
-                Document.Styles.Add(styleElement);
+                doc.Styles.Add(styleElement);
             }
         }
 
@@ -395,37 +340,39 @@ namespace DXPlus
         /// <param name="index">The index to insert the column at.</param>
         public void InsertColumn(int index)
         {
-            // Create a new column by reducing the width of the other columns
+            if (index < 0 || index > ColumnCount)
+                throw new ArgumentOutOfRangeException("Insert position must fall within existing column range", nameof(index));
+
+            bool insertAtEnd = (index == ColumnCount);
+
+            // Create a new column by splitting the last column in half.
             var grid = Xml.GetOrAddElement(Namespace.Main + "tblGrid");
-            var columns = grid.Elements(Namespace.Main + "gridCol").ToList();
-            int currentSize = columns.Sum(c => int.TryParse(c.AttributeValue(Namespace.Main + "w"), out int val) ? val : 0);
-            if (currentSize <= 0 || currentSize > TableHelpers.MaxTableWidth)
-                currentSize = TableHelpers.MaxTableWidth;
+            var gridColumns = grid.Elements(Namespace.Main + "gridCol").ToList();
 
-            var rows = Rows.ToList();
-            int columnCount = Math.Max(columns.Count, rows.Max(r => r.ColumnCount));
-            var columnWidths = TableHelpers.CalculateProportionalWidths(columnCount, currentSize);
+            XElement existingGridCol = insertAtEnd ? gridColumns.Last() : gridColumns[index];
+            double width = double.Parse(existingGridCol.AttributeValue(Namespace.Main + "w"));
+            existingGridCol.SetAttributeValue(Namespace.Main + "w", width);
 
-            columns.ForEach(c => c.Remove());
-            foreach (int width in columnWidths)
-            {
-                grid.Add(new XElement(Namespace.Main + "gridCol", new XAttribute(Namespace.Main + "w", width * TableHelpers.UnitConversion)));
-            }
+            // Add a new <gridCol> definition
+            var newColumnDef = new XElement(Namespace.Main + "gridCol", new XAttribute(Namespace.Main + "w", width));
+            if (insertAtEnd)
+                grid.Add(newColumnDef);
+            else
+                existingGridCol.AddBeforeSelf(newColumnDef);
 
             // Now add a blank column to each row and update the cell widths.
-            if (rows.Count>0)
+            var rows = Rows.ToList();
+            foreach (var row in rows)
             {
-                // Add a new Cell to each row
-                foreach (var row in rows)
+                var cell = CreateTableCell(width);
+                var cells = row.Cells;
+                if (insertAtEnd)
                 {
-                    var cell = TableHelpers.CreateTableCell();
-                    var cells = row.Cells;
-                    if (cells.Count == index)
-                        cells[index - 1].Xml.AddAfterSelf(cell);
-                    else
-                        cells[index].Xml.AddBeforeSelf(cell);
-                    for (var i = 0; i < cells.Count; i++)
-                        cells[i].Width = columnWidths[i];
+                    cells[index - 1].Xml.AddAfterSelf(cell);
+                }
+                else
+                {
+                    cells[index].Xml.AddBeforeSelf(cell);
                 }
             }
         }
@@ -445,7 +392,7 @@ namespace DXPlus
         {
             var rows = Rows.ToList();
 
-            if (index <= 0 || index > rows.Count) throw new ArgumentOutOfRangeException(nameof(index));
+            if (index < 0 || index > rows.Count) throw new ArgumentOutOfRangeException(nameof(index));
 
             var content = new List<XElement>();
             var columnWidths = DefaultColumnWidths.ToList();
@@ -457,7 +404,7 @@ namespace DXPlus
                     width = columnWidths[i];
                 }
 
-                content.Add(TableHelpers.CreateTableCell(width));
+                content.Add(CreateTableCell(width));
             }
 
             return InsertRow(index, content);
@@ -476,14 +423,14 @@ namespace DXPlus
             if (!content.Any())
                 throw new ArgumentException("Must have content to insert a row.", nameof(content));
 
-            var rows = Rows;
+            var rows = Rows.ToList();
             if (index < 0 || index > rows.Count)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
             var row = new Row(this, new XElement(Namespace.Main + "tr", content));
 
             if (index == rows.Count)
-                rows.Last().Xml.AddAfterSelf(row.Xml);
+                rows[^1].Xml.AddAfterSelf(row.Xml);
             else
                 rows[index].Xml.AddBeforeSelf(row.Xml);
 
@@ -502,15 +449,15 @@ namespace DXPlus
             if (startRow < 0 || startRow >= endRow)
                 throw new IndexOutOfRangeException(nameof(startRow));
 
-            if (endRow > Rows.Count)
+            if (endRow > Rows.Count())
                 throw new IndexOutOfRangeException(nameof(count));
 
-            var startRowElement = Rows[startRow].Cells[columnIndex].Xml;
+            var startRowElement = Rows.ElementAt(startRow).Cells[columnIndex].Xml;
 
             // Move the content over and add vMerge to each row cell
             for (int rowIndex = startRow; rowIndex <= endRow; rowIndex++)
             {
-                Cell cell = Rows[rowIndex].Cells[columnIndex];
+                Cell cell = Rows.ElementAt(rowIndex).Cells[columnIndex];
                 XElement vMerge = cell.Xml.GetOrAddElement(Namespace.Main + "tcPr")
                             .GetOrAddElement(Namespace.Main + "vMerge");
 
@@ -551,6 +498,9 @@ namespace DXPlus
             if (index < 0 || index > ColumnCount - 1)
                 throw new IndexOutOfRangeException();
 
+            // Remove the column from default columns.
+            Xml.Element(Namespace.Main + "tblGrid").Elements(Namespace.Main + "gridCol").ElementAt(index).Remove();
+
             foreach (var row in Rows)
                 row.Cells[index].Xml.Remove();
 
@@ -564,14 +514,14 @@ namespace DXPlus
         /// <param name="index">The row to remove.</param>
         public void RemoveRow(int index)
         {
-            List<Row> rows = Rows;
+            List<Row> rows = Rows.ToList();
             if (index < 0 || index > rows.Count - 1)
             {
                 throw new IndexOutOfRangeException();
             }
 
             rows[index].Xml.Remove();
-            if (Rows.Count == 0) // use real property
+            if (!Rows.Any()) // use real property
                 Remove();
         }
 
@@ -650,12 +600,12 @@ namespace DXPlus
             List<double> columnWidths = DefaultColumnWidths?.ToList();
             if (columnWidths == null || index > columnWidths.Count - 1)
             {
-                if (Rows.Count == 0)
+                if (!Rows.Any())
                 {
                     throw new InvalidOperationException("Must have at least one row to determine column widths.");
                 }
 
-                columnWidths = Rows[^1].Cells.Select(c => c.Width ?? 0).ToList();
+                columnWidths = Rows.ToList()[^1].Cells.Select(c => c.Width ?? 0).ToList();
             }
 
             if (width >= 0)
@@ -675,8 +625,7 @@ namespace DXPlus
             // Fill in any missing values.
             if (columnWidths.Contains(double.NaN))
             {
-                SectionProperties section = Document.Sections.First().Properties;
-                double pageWidth = section.PageWidth - section.LeftMargin - section.RightMargin;
+                double pageWidth = Document.Sections.First().Properties.AdjustedPageWidth;
                 double usedSpace = columnWidths.Where(c => !double.IsNaN(c)).Sum();
                 double eachColumn = (pageWidth - usedSpace) / columnWidths.Count(double.IsNaN);
                 for (int i = 0; i < columnWidths.Count; i++)
@@ -703,7 +652,7 @@ namespace DXPlus
             foreach (double width in columnWidths)
             {
                 grid.Add(new XElement(Namespace.Main + "gridCol",
-                    new XAttribute(Namespace.Main + "w", width * TableHelpers.UnitConversion)));
+                    new XAttribute(Namespace.Main + "w", width)));
             }
 
             // Reset cell widths
@@ -713,7 +662,7 @@ namespace DXPlus
             }
 
             // Set to fixed sizing
-            AutoFit = AutoFit.Fixed;
+            AutoFit = false;
         }
 
         /// <summary>
@@ -725,23 +674,21 @@ namespace DXPlus
         {
             return double.TryParse(TblPr.Element(Namespace.Main + "tblCellMar")?
                             .Element(Namespace.Main + type.GetEnumName())?
-                            .AttributeValue(Namespace.Main + "w"), out double result)
-                            ? (double?)result / TableHelpers.UnitConversion
-                            : null;
+                            .AttributeValue(Namespace.Main + "w"), out double result) ? result : null;
         }
 
         /// <summary>
         /// Set the specified cell margin for the table-level.
         /// </summary>
         /// <param name="type">The side of the cell margin.</param>
-        /// <param name="margin">The value for the specified cell margin.</param>
+        /// <param name="margin">The value for the specified cell margin in dxa units.</param>
         public void SetDefaultCellMargin(TableCellMarginType type, double? margin)
         {
             if (margin != null)
             {
                 XElement cellMargin = TblPr.GetOrAddElement(Namespace.Main + "tblCellMar")
                     .GetOrAddElement(Namespace.Main + type.GetEnumName());
-                cellMargin.SetAttributeValue(Namespace.Main + "w", margin * TableHelpers.UnitConversion);
+                cellMargin.SetAttributeValue(Namespace.Main + "w", margin);
                 cellMargin.SetAttributeValue(Namespace.Main + "type", "dxa");
             }
             else
@@ -759,43 +706,7 @@ namespace DXPlus
         /// Retrieves or create the table properties (tblPr) section.
         /// </summary>
         /// <returns>The w:tbl/tblPr element.</returns>
-        private XElement GetOrCreateTablePropertiesSection()
-        {
-            return Xml.GetOrAddElement(Namespace.Main + "tblPr");
-        }
-
-        private static XElement CreateTableRootXml(int columns)
-        {
-            if (columns < 1)
-                throw new ArgumentOutOfRangeException(nameof(columns), "Cannot be < 1");
-
-            var newTable = new XElement(Namespace.Main + "tbl",
-                new XElement(Namespace.Main + "tblPr",
-                    new XElement(Namespace.Main + "tblStyle",
-                        new XAttribute(Name.MainVal, TableDesign.TableGrid.GetEnumName())),
-                    new XElement(Namespace.Main + "tblW", new XAttribute(Namespace.Main + "w", 0),
-                        new XAttribute(Namespace.Main + "type", "auto"))));
-
-            WriteTableConditionalFormat(newTable.Element(Namespace.Main + "tblPr"), TableConditionalFormatting.None);
-
-            var grid = new XElement(Namespace.Main + "tblGrid");
-            newTable.Add(grid);
-            foreach (int width in columnWidths)
-            {
-                grid.Add(new XElement(Namespace.Main + "gridCol", new XAttribute(Namespace.Main + "w", width * UnitConversion)));
-            }
-
-            for (int i = 0; i < rows; i++)
-            {
-                var row = new XElement(Namespace.Main + "tr");
-                foreach (int width in columnWidths)
-                    row.Add(CreateTableCell(width));
-
-                newTable.Add(row);
-            }
-            return newTable;
-
-        }
+        private XElement GetOrCreateTablePropertiesSection() => Xml.GetOrAddElement(Namespace.Main + "tblPr");
 
         /// <summary>
         /// Write the element children for the TableConditionalFormatting
@@ -818,9 +729,22 @@ namespace DXPlus
         }
 
         /// <summary>
+        /// Create and return the default {tbl} root element
+        /// </summary>
+        private static XElement CreateEmptyTableXml() => new XElement(Name.Table,
+                new XElement(Namespace.Main + "tblPr",
+                    new XElement(Namespace.Main + "tblStyle",
+                        new XAttribute(Name.MainVal, "None")),
+                    new XElement(Namespace.Main + "tblW",
+                        new XAttribute(Namespace.Main + "type", "auto"),
+                        new XAttribute(Namespace.Main + "w", 0))),
+                new XElement(Namespace.Main + "tblGrid"));
+
+        /// <summary>
         /// Create and return a cell of a table
         /// </summary>
-        public static XElement CreateTableCell(double? width = null)
+        /// <param name="width">Optional width of the cell in dxa units</param>
+        private static XElement CreateTableCell(double? width = null)
         {
             string type = width == null ? "auto" : "dxa";
             width ??= 0;
@@ -829,7 +753,7 @@ namespace DXPlus
                     new XElement(Namespace.Main + "tcPr",
                         new XElement(Namespace.Main + "tcW",
                             new XAttribute(Namespace.Main + "type", type),
-                            new XAttribute(Namespace.Main + "w", width.Value * UnitConversion)
+                            new XAttribute(Namespace.Main + "w", width.Value)
                         )),
                     // always has an empty paragraph
                     new XElement(Name.Paragraph,
@@ -837,6 +761,5 @@ namespace DXPlus
                             HelperFunctions.GenerateHexId()))
             );
         }
-
     }
 }

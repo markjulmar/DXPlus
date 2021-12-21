@@ -1,4 +1,5 @@
 ﻿using DXPlus.Helpers;
+using System;
 using System.Linq;
 using System.Xml.Linq;
 using System.Xml.XPath;
@@ -8,6 +9,27 @@ namespace DXPlus.Tests
 {
     public class HelperTests
     {
+        [Fact]
+        public void InchesToDxaConvertsProperly()
+        {
+            double dxa = Uom.FromInches(.2097);
+            Assert.Equal(302, Math.Round(dxa,0));
+        }
+
+        [Fact]
+        public void InchesToDxaRoundTrips()
+        {
+            double dxa = Uom.FromInches(Uom.FromDxa(302).Inches);
+            Assert.Equal(302, Math.Round(dxa, 0));
+        }
+
+        [Fact]
+        public void HalfPointsConvertToPoints()
+        {
+            double pts = Uom.FromHalfPoints(30).Points;
+            Assert.Equal(15, pts);
+        }
+
         [Fact]
         public void BasicHexNumberTestsReturnTrueFalse()
         {

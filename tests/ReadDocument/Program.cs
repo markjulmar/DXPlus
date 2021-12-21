@@ -1,6 +1,4 @@
-﻿using System;
-using System.Drawing;
-using System.Linq;
+﻿using System.Linq;
 using DXPlus;
 
 var doc = Document.Create(@"C:\Users\mark\onedrive\desktop\tdx.docx");
@@ -17,13 +15,14 @@ Table t = new Table(3, 2)
 
 // Header row
 var boldFont = new Formatting {Bold = true};
-t.Rows[0].Cells[0].Paragraphs.Single().SetText("Id", boldFont);
-t.Rows[0].Cells[1].Paragraphs.Single().SetText("Value", boldFont);
+var rows = t.Rows.ToList();
+rows[0].Cells[0].Paragraphs.Single().SetText("Id", boldFont);
+rows[0].Cells[1].Paragraphs.Single().SetText("Value", boldFont);
 
 for (int i = 0; i < 2; i++)
 {
-    t.Rows[i+1].Cells[0].Paragraphs.Single().SetText(100+i.ToString());
-    t.Rows[i + 1].Cells[1].Paragraphs.Single().SetText($"Value #{i+1}");
+    rows[i+1].Cells[0].Paragraphs.Single().SetText(100+i.ToString());
+    rows[i + 1].Cells[1].Paragraphs.Single().SetText($"Value #{i+1}");
 }
 
 doc.AddTable(t);

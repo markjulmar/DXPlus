@@ -12,7 +12,32 @@ namespace DXPlus.Tests
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new Table(0, 1));
             Assert.Throws<ArgumentOutOfRangeException>(() => new Table(1, 0));
-            Table t= new Table(1,1);
+            _ = new Table(1,1);
+        }
+
+        [Fact]
+        public void AutoFitDefaultsToFalse()
+        {
+            var table = new Table();
+            Assert.False(table.AutoFit);
+        }
+
+        [Fact]
+        public void CannotAddEmptyTableToDoc()
+        {
+            var doc = Document.Create();
+
+            var table = new Table();
+            Assert.Throws<Exception>(() => doc.AddTable(table));
+        }
+
+        [Fact]
+        public void TableWithSingleRowCanBeAddedToDoc()
+        {
+            var doc = Document.Create();
+
+            var table = new Table(1,1);
+            _ = doc.AddTable(table);
         }
 
         [Fact]
@@ -38,17 +63,13 @@ namespace DXPlus.Tests
         {
             Table t = new Table(1, 1);
 
-            Assert.Equal(AutoFit.Fixed, t.AutoFit);
+            Assert.False(t.AutoFit);
 
-            t.AutoFit = AutoFit.Contents;
-            Assert.Equal(AutoFit.Contents, t.AutoFit);
+            t.AutoFit = true;
+            Assert.True(t.AutoFit);
 
-            // Can't set fixed without setting column widths
-            Assert.Throws<InvalidOperationException>(() => t.AutoFit = AutoFit.Fixed);
-
-            t.SetColumnWidths(new [] { 100.0 });
-            t.AutoFit = AutoFit.Fixed;
-            Assert.Equal(AutoFit.Fixed, t.AutoFit);
+            var e = t.Xml.RemoveNamespaces().XPathSelectElements("//tblPr/tblLayout[@type='autofit']");
+            Assert.Single(e);
         }
 
         [Fact]
@@ -56,13 +77,11 @@ namespace DXPlus.Tests
         {
             Table t = new Table(1, 1);
 
-            Assert.Equal(8192, t.Rows[0].Cells[0].Width);
-
             t.SetColumnWidths(new[] { 120.0 });
-            Assert.Equal(AutoFit.Fixed, t.AutoFit);
+            Assert.False(t.AutoFit);
 
-            Assert.Equal(120.0, t.Rows[0].Cells[0].Width);
-            Assert.Equal(120.0, t.GetDefaultColumnWidth(0));
+            Assert.Equal(120.0, t.Rows.First().Cells[0].Width);
+            Assert.Equal(120.0, t.DefaultColumnWidths.First());
         }
 
         [Fact]
@@ -70,7 +89,7 @@ namespace DXPlus.Tests
         {
             Table t = new Table(1,1);
 
-            Assert.Equal(TableDesign.TableGrid, t.Design);
+            Assert.Equal(TableDesign.None, t.Design);
 
             t.Design = TableDesign.ColorfulGrid;
             Assert.Equal(TableDesign.ColorfulGrid, t.Design);
@@ -87,18 +106,92 @@ namespace DXPlus.Tests
         }
 
         [Fact]
+        public void OrphanTableHasNoColumnSizes()
+        {
+            Table t = new Table(1, 4);
+
+            Assert.Equal(4, t.DefaultColumnWidths.Count());
+            double width = t.DefaultColumnWidths.First();
+            Assert.True(double.IsNaN(width));
+        }
+
+        [Fact]
+        public void AddToDocumentSetsColumnWidths()
+        {
+            Table t = new Table(1, 4);
+            var doc = Document.Create();
+
+            doc.AddTable(t);
+            Assert.Equal(4, t.DefaultColumnWidths.Count());
+            double width = t.DefaultColumnWidths.First();
+            Assert.False(double.IsNaN(width));
+        }
+
+        [Fact]
+        public void AddToDocumentSetsUniformColumnWidths()
+        {
+            Table t = new Table(1, 4);
+            var doc = Document.Create();
+
+            doc.AddTable(t);
+            Assert.Equal(4, t.DefaultColumnWidths.Count());
+            double width = t.DefaultColumnWidths.First();
+            var rows = t.Rows.ToList();
+
+            Assert.Equal(width, rows[0].Cells[0].Width);
+            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[0].WidthUnit);
+            Assert.Equal(width, rows[0].Cells[1].Width);
+            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[1].WidthUnit);
+            Assert.Equal(width, rows[0].Cells[2].Width);
+            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[2].WidthUnit);
+            Assert.Equal(width, rows[0].Cells[3].Width);
+            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[3].WidthUnit);
+
+            Assert.Equal(width, t.DefaultColumnWidths.First());
+            Assert.Equal(width, t.DefaultColumnWidths.ElementAt(1));
+            Assert.Equal(width, t.DefaultColumnWidths.ElementAt(2));
+            Assert.Equal(width, t.DefaultColumnWidths.Last());
+        }
+
+        [Fact]
+        public void NewTableCreatesUniformColumns()
+        {
+            Table t = new Table(1, 4);
+
+            Assert.Equal(4, t.DefaultColumnWidths.Count());
+
+            double width = t.DefaultColumnWidths.First();
+            Assert.Equal(width, t.DefaultColumnWidths.ElementAt(0));
+            Assert.Equal(width, t.DefaultColumnWidths.ElementAt(1));
+            Assert.Equal(width, t.DefaultColumnWidths.ElementAt(2));
+            Assert.Equal(width, t.DefaultColumnWidths.ElementAt(3));
+
+            Assert.Equal(TableWidthUnit.Auto, t.TableWidthUnit);
+            Assert.Equal(0, t.PreferredTableWidth);
+        }
+
+        [Fact]
         public void AddRowAddsToEndTable()
         {
             Table t = new Table(1,1);
 
-            t.Rows[0].Cells[0].Text = "1";
+            t.Rows.First().Cells[0].Text = "1";
             Assert.Single(t.Xml.RemoveNamespaces().XPathSelectElements("//tr"));
 
             t.AddRow().Cells[0].Text = "2";
             var rows = t.Xml.RemoveNamespaces().XPathSelectElements("//tr").ToList();
             Assert.Equal(2, rows.Count);
-            Assert.Equal("2", t.Rows[1].Cells[0].Paragraphs.First().Text);
-            Assert.Equal("2", rows.Last().Value);
+            Assert.Equal("1", t.Rows.First().Cells[0].Paragraphs.First().Text);
+            Assert.Equal("2", t.Rows.ElementAt(1).Cells[0].Paragraphs.First().Text);
+
+            var lastRow = t.Rows.Last();
+            Assert.Equal("2", lastRow.Cells[0].Text);
+            Assert.Equal(1, lastRow.Cells.Count);
+
+            t.AddRow().Cells[0].Text = "3";
+            rows = t.Xml.RemoveNamespaces().XPathSelectElements("//tr").ToList();
+            Assert.Equal(3, rows.Count);
+            Assert.Equal("3", rows.Last().Value);
         }
 
         [Fact]
@@ -106,13 +199,13 @@ namespace DXPlus.Tests
         {
             Table t = new Table(1, 1);
 
-            t.Rows[0].Cells[0].Text = "2";
+            t.Rows.First().Cells[0].Text = "2";
             Assert.Single(t.Xml.RemoveNamespaces().XPathSelectElements("//tr"));
 
             t.InsertRow(0).Cells[0].Text = "1";
             var rows = t.Xml.RemoveNamespaces().XPathSelectElements("//tr").ToList();
             Assert.Equal(2, rows.Count);
-            Assert.Equal("1", t.Rows[0].Cells[0].Paragraphs.First().Text);
+            Assert.Equal("1", t.Rows.First().Cells[0].Paragraphs.First().Text);
             Assert.Equal("1", rows[0].Value);
         }
 
@@ -137,7 +230,7 @@ namespace DXPlus.Tests
 
             var rows = t.Xml.RemoveNamespaces().XPathSelectElements("//tr").ToList();
             Assert.Equal(3, rows.Count);
-            Assert.Equal("test", t.Rows[1].Cells[0].Paragraphs.First().Text);
+            Assert.Equal("test", t.Rows.ElementAt(1).Cells[0].Paragraphs.First().Text);
             Assert.Equal("test", rows[1].Value);
         }
 
@@ -147,11 +240,11 @@ namespace DXPlus.Tests
             Table t = new Table(1, 1);
 
             Assert.Single(t.Xml.RemoveNamespaces().XPathSelectElements("//tr/tc/p"));
-            Assert.Equal(string.Empty, t.Rows[0].Cells[0].Text);
+            Assert.Equal(string.Empty, t.Rows.First().Cells[0].Text);
 
-            t.Rows[0].Cells[0].Text = "Hello";
+            t.Rows.First().Cells[0].Text = "Hello";
             Assert.Single(t.Xml.RemoveNamespaces().XPathSelectElements("//tr/tc/p"));
-            Assert.Equal("Hello", t.Rows[0].Cells[0].Text);
+            Assert.Equal("Hello", t.Rows.First().Cells[0].Text);
         }
 
         [Fact]
@@ -168,7 +261,7 @@ namespace DXPlus.Tests
             t.SetDefaultCellMargin(TableCellMarginType.Top, 100);
             Assert.Equal(100, t.GetDefaultCellMargin(TableCellMarginType.Top));
             Assert.Single(t.Xml.RemoveNamespaces().XPathSelectElements("//tblPr/tblCellMar"));
-            Assert.Single(t.Xml.RemoveNamespaces().XPathSelectElements("//tblPr/tblCellMar/top[@w='2000' and @type='dxa']"));
+            Assert.Single(t.Xml.RemoveNamespaces().XPathSelectElements("//tblPr/tblCellMar/top[@w='100' and @type='dxa']"));
 
             t.SetDefaultCellMargin(TableCellMarginType.Top, null);
             Assert.Null(t.GetDefaultCellMargin(TableCellMarginType.Top));
@@ -182,35 +275,42 @@ namespace DXPlus.Tests
 
             Assert.Equal(4, t.Xml.RemoveNamespaces().XPathSelectElements("//tr").Count());
 
-            t.Rows[0].Cells[0].Text = "1";
-            t.Rows[1].Cells[0].Text = "2";
-            t.Rows[2].Cells[0].Text = "3";
-            t.Rows[3].Cells[0].Text = "4";
-            Assert.Equal("3", t.Rows[2].Cells[0].Text);
+            var rows = t.Rows.ToList();
+            for (int i = 0; i < rows.Count; i++)
+            {
+                rows[i].Cells[0].Text = (i + 1).ToString();
+            }
+
+            Assert.Equal("3", rows[2].Cells[0].Text);
 
             t.RemoveRow(2);
             Assert.Equal(3, t.Xml.RemoveNamespaces().XPathSelectElements("//tr").Count());
-            Assert.Equal("4", t.Rows[2].Cells[0].Text);
+            Assert.Equal("4", t.Rows.ElementAt(2).Cells[0].Text);
         }
 
         [Fact]
         void RemoveColumnDeletesElement()
         {
-            Table t = new Table(1, 4);
+            Table t = new Table(rows: 1, columns: 4);
 
             Assert.Equal(4, t.Xml.RemoveNamespaces().XPathSelectElements("//tc").Count());
+            Assert.Equal(4, t.ColumnCount);
 
-            for (var cellIndex = 0; cellIndex < t.Rows[0].Cells.Count; cellIndex++)
+            Row row = t.Rows.First();
+            Assert.Equal(4, row.Cells.Count);
+
+            for (var cellIndex = 0; cellIndex < row.Cells.Count; cellIndex++)
             {
-                t.Rows[0].Cells[cellIndex].Text = (cellIndex + 1).ToString();
+                row.Cells[cellIndex].Text = (cellIndex + 1).ToString();
             }
 
-            Assert.Equal("2", t.Rows[0].Cells[1].Text);
+            Assert.Equal("2", row.Cells[1].Text);
 
             t.RemoveColumn(1);
 
-            Assert.Equal("3", t.Rows[0].Cells[1].Text);
-            Assert.Equal(3, t.Rows[0].Cells.Count);
+            row = t.Rows.First();
+            Assert.Equal("3", row.Cells[1].Text);
+            Assert.Equal(3, row.Cells.Count);
             Assert.Equal(3, t.ColumnCount);
         }
 
@@ -247,14 +347,16 @@ namespace DXPlus.Tests
         {
             Table t = new Table(2,2);
 
-            Assert.True(t.Rows[0].BreakAcrossPages);
-            Assert.Empty(t.Rows[0].Xml.RemoveNamespaces().XPathSelectElements("//trPr/cantSplit"));
+            Row row = t.Rows.First();
+            Assert.True(row.BreakAcrossPages);
+            Assert.Empty(row.Xml.RemoveNamespaces().XPathSelectElements("//trPr/cantSplit"));
 
-            t.Rows[0].BreakAcrossPages = false;
-            Assert.False(t.Rows[0].BreakAcrossPages);
-            Assert.Single(t.Rows[0].Xml.RemoveNamespaces().XPathSelectElements("//trPr/cantSplit"));
+            row.BreakAcrossPages = false;
+            Assert.False(row.BreakAcrossPages);
+            Assert.Single(row.Xml.RemoveNamespaces().XPathSelectElements("//trPr/cantSplit"));
         }
 
+        /*
         [Fact]
         public void MergeCellsAffectGridSpan()
         {
@@ -295,6 +397,7 @@ namespace DXPlus.Tests
             Assert.Equal(string.Empty, t.Rows[2].Cells[1].Text);
             Assert.Equal(string.Empty, t.Rows[3].Cells[1].Text);
         }
+        */
 
         [Fact]
         public void PackagePartSetWhenAddedToDoc()

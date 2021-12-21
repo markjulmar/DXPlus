@@ -28,7 +28,7 @@ namespace DXPlus
         /// <param name="table"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static Table AutoFit(this Table table, AutoFit value)
+        public static Table AutoFit(this Table table, bool value)
         {
             if (table == null)
                 throw new ArgumentNullException(nameof(table));

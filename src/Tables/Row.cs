@@ -1,5 +1,4 @@
-﻿using DXPlus.Helpers;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO.Packaging;
 using System.Linq;
@@ -26,7 +25,13 @@ namespace DXPlus
         {
             Table = table;
             PackagePart = table.PackagePart;
+            Document = table.Document;
         }
+
+        /// <summary>
+        /// Retrieve the row properites. This is optional and can be null.
+        /// </summary>
+        private XElement trPr(bool create = false) => create ? Xml.GetOrAddElement(Namespace.Main + "trPr") : Xml.Element(Namespace.Main + "trPr");
 
         /// <summary>
         /// Allow row to break across pages.
@@ -36,11 +41,9 @@ namespace DXPlus
         /// </summary>
         public bool BreakAcrossPages
         {
-            get => Xml.Element(Namespace.Main + "trPr")?
-                      .Element(Namespace.Main + "cantSplit") == null;
+            get => trPr(false)?.Element(Namespace.Main + "cantSplit") == null;
 
-            set => Xml.GetOrAddElement(Namespace.Main + "trPr")
-                      .SetElementValue(Namespace.Main + "cantSplit", value ? null : string.Empty);
+            set => trPr(true).SetElementValue(Namespace.Main + "cantSplit", value ? null : string.Empty);
         }
 
         /// <summary>
@@ -61,23 +64,20 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Height in pixels.
+        /// Row height (can be null). Value is in dxa units
         /// </summary>
         public double? Height
         {
             get
             {
-                XAttribute value = Xml.Element(Namespace.Main + "trPr")?
-                               .Element(Namespace.Main + "trHeight")?
-                               .GetValAttr();
-
-                if (value == null || !double.TryParse(value.Value, out double heightInWordUnits))
+                XAttribute value = trPr()?.Element(Namespace.Main + "trHeight")?.GetValAttr();
+                if (value == null || !double.TryParse(value.Value, out double heightInDxa))
                 {
                     value?.Remove();
                     return null;
                 }
 
-                return heightInWordUnits / TableHelpers.UnitConversion;
+                return heightInDxa;
             }
             set => SetHeight(value, true);
         }
@@ -87,18 +87,17 @@ namespace DXPlus
         /// </summary>
         public bool TableHeader
         {
-            get => Xml.Element(Namespace.Main + "trPr")?
-                      .Element(Namespace.Main + "tblHeader") != null;
+            get => trPr(false)?.Element(Namespace.Main + "tblHeader") != null;
             set
             {
-                XElement trPr = Xml.GetOrAddElement(Namespace.Main + "trPr");
+                var trPr = this.trPr(true);
                 XElement tblHeader = trPr.Element(Namespace.Main + "tblHeader");
 
                 if (tblHeader == null && value)
                 {
                     trPr.SetElementValue(Namespace.Main + "tblHeader", string.Empty);
                 }
-                if (tblHeader != null && !value)
+                else if (tblHeader != null && !value)
                 {
                     tblHeader.Remove();
                 }
@@ -148,38 +147,33 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Remove this row
+        /// Remove this row. If this is the last row, an exception is thrown.
         /// </summary>
         public void Remove()
         {
-            XElement tableOwner = Xml.Parent;
+            if (Table.Rows.Count() == 1)
+                throw new Exception("Cannot remove final row from table. Must delete table instead.");
+
             Xml.Remove();
-            if (tableOwner?.Elements(Namespace.Main + "tr").Any() == false)
-            {
-                tableOwner.Remove();
-            }
         }
 
         /// <summary>
         /// Helper method to set either the exact height or the min-height
         /// </summary>
-        /// <param name="height">The height value to set (in pixels)</param>
+        /// <param name="height">The height value to set in dxa units</param>
         /// <param name="exact">If true, the height will be forced, otherwise it will be treated as a minimum height, auto growing past it if need be.
         /// </param>
         private void SetHeight(double? height, bool exact)
         {
             if (height != null)
             {
-                XElement trPr = Xml.GetOrAddElement(Namespace.Main + "trPr");
-                XElement trHeight = trPr.GetOrAddElement(Namespace.Main + "trHeight");
+                XElement trHeight = trPr(true).GetOrAddElement(Namespace.Main + "trHeight");
                 trHeight.SetAttributeValue(Namespace.Main + "hRule", exact ? "exact" : "atLeast");
-                trHeight.SetAttributeValue(Name.MainVal, height * TableHelpers.UnitConversion);
+                trHeight.SetAttributeValue(Name.MainVal, height);
             }
             else
             {
-                Xml.Element(Namespace.Main + "trPr")?
-                    .Element(Namespace.Main + "trHeight")?
-                    .Remove();
+                trPr()?.Element(Namespace.Main + "trHeight")?.Remove();
             }
         }
 
@@ -198,7 +192,7 @@ namespace DXPlus
             int index = 0;
             foreach (Cell cell in cells)
             {
-                cell.Width = columnWidths[index++];
+                cell.SetWidth(TableWidthUnit.Dxa, columnWidths[index++]);
             }
         }
 

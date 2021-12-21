@@ -33,13 +33,23 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Specifies the spacing offset. Values are specified in points (1/72nd of an inch).
+        /// Specifies the spacing offset in dxa units
         /// </summary>
         public double? Spacing
         {
             // Represented in 20ths of a pt.
-            get => double.TryParse(Xml.AttributeValue(Namespace.Main + "space"), out var result) ? Math.Round(result / 20.0, 1) : null;
-            set => Xml.AddElementVal(Namespace.Main + "space", value == null ? null : Math.Round(value.Value * 20.0, 1).ToString(CultureInfo.InvariantCulture));
+            get => double.TryParse(Xml.AttributeValue(Namespace.Main + "space"), out var result) ? result : null;
+            set
+            {
+                if (value == null)
+                {
+                    Xml.Attribute(Namespace.Main + "space")?.Remove();
+                }
+                else
+                {
+                    Xml.AddElementVal(Namespace.Main + "space", value?.ToString(CultureInfo.InvariantCulture));
+                }
+            }
         }
 
         /// <summary>
@@ -62,7 +72,7 @@ namespace DXPlus
         /// </summary>
         public BorderStyle Style
         {
-            get => Enum.TryParse<BorderStyle>(Xml.AttributeValue(Name.MainVal, "None"), out var bd) ? bd : BorderStyle.None;
+            get => Enum.TryParse<BorderStyle>(Xml.AttributeValue(Name.MainVal, "None"), ignoreCase:true, out var bd) ? bd : BorderStyle.None;
             set => Xml.SetAttributeValue(Name.MainVal, value.GetEnumName());
         }
 

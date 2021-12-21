@@ -95,11 +95,11 @@ namespace DXPlus
         /// Helper method to get spacing/xyz
         /// </summary>
         /// <param name="type">type of line spacing to retrieve</param>
-        /// <returns>Value or null if not set</returns>
+        /// <returns>Value in dxa units, or null if not set</returns>
         private double? GetLineSpacing(string type)
         {
             var value = Xml.Element(Name.Spacing).AttributeValue(Namespace.Main + type, null);
-            return value != null ? Math.Round(double.Parse(value) / 20.0, 2) : null;
+            return value != null ? double.Parse(value) : null;
         }
 
         /// <summary>
@@ -111,8 +111,7 @@ namespace DXPlus
         {
             if (value != null)
             {
-                Xml.GetOrAddElement(Name.Spacing)
-                   .SetAttributeValue(Namespace.Main + type, Math.Round(value.Value*20.0, 2));
+                Xml.GetOrAddElement(Name.Spacing).SetAttributeValue(Namespace.Main + type, value);
             }
             else
             {
@@ -131,7 +130,7 @@ namespace DXPlus
         /// </summary>
         public double LeftIndent
         {
-            get => Math.Round(double.Parse(Xml.AttributeValue(Name.Indent, Name.Left) ?? "0") / 20.0, 2);
+            get => double.TryParse(Xml.AttributeValue(Name.Indent, Name.Left), out var v) ? v : 0;
             set
             {
                 if (value == 0)
@@ -143,7 +142,7 @@ namespace DXPlus
                 }
                 else
                 {
-                    Xml.SetAttributeValue(Name.Indent, Name.Left, Math.Round(value * 20.0, 2));
+                    Xml.SetAttributeValue(Name.Indent, Name.Left, value);
                 }
             }
         }
@@ -153,7 +152,7 @@ namespace DXPlus
         /// </summary>
         public double RightIndent
         {
-            get => Math.Round(double.Parse(Xml.AttributeValue(Name.Indent, Name.Right) ?? "0") / 20.0, 2);
+            get => double.TryParse(Xml.AttributeValue(Name.Indent, Name.Right), out var v) ? v : 0;
             set
             {
                 if (value == 0)
@@ -165,7 +164,7 @@ namespace DXPlus
                 }
                 else
                 {
-                    Xml.SetAttributeValue(Name.Indent, Name.Right, Math.Round(value * 20.0, 2));
+                    Xml.SetAttributeValue(Name.Indent, Name.Right, value);
                 }
             }
         }
@@ -175,7 +174,7 @@ namespace DXPlus
         /// </summary>
         public ShadePattern? ShadePattern
         {
-            get => Enum.TryParse<ShadePattern>(Xml.Element(Namespace.Main + "shd")?.GetVal(), out var sp) ? sp : null;
+            get => Enum.TryParse<ShadePattern>(Xml.Element(Namespace.Main + "shd")?.GetVal(), ignoreCase: true, out var sp) ? sp : null;
 
             set
             {
@@ -358,7 +357,7 @@ namespace DXPlus
         /// </summary>
         public double FirstLineIndent
         {
-            get => Math.Round(double.Parse(Xml.AttributeValue(Name.Indent, Name.FirstLine) ?? "0") / 20.0, 2);
+            get => double.TryParse(Xml.AttributeValue(Name.Indent, Name.FirstLine), out var v) ? v : 0;
             set
             {
                 var e = Xml.Element(Name.Indent);
@@ -371,7 +370,7 @@ namespace DXPlus
                 else
                 {
                     e?.Attribute(Name.Hanging)?.Remove();
-                    Xml.SetAttributeValue(Name.Indent, Name.FirstLine, Math.Round(value * 20.0, 2));
+                    Xml.SetAttributeValue(Name.Indent, Name.FirstLine, value);
                 }
             }
         }
@@ -381,7 +380,7 @@ namespace DXPlus
         /// </summary>
         public double HangingIndent
         {
-            get => Math.Round(double.Parse(Xml.AttributeValue(Name.Indent, Name.Hanging) ?? "0") / 20.0, 2);
+            get => double.TryParse(Xml.AttributeValue(Name.Indent, Name.Hanging), out var v) ? v : 0;
 
             set
             {
@@ -395,7 +394,7 @@ namespace DXPlus
                 else
                 {
                     e?.Attribute(Name.FirstLine)?.Remove();
-                    Xml.SetAttributeValue(Name.Indent, Name.Hanging, Math.Round(value * 20.0, 2));
+                    Xml.SetAttributeValue(Name.Indent, Name.Hanging, value);
                 }
             }
         }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel;
-using DXPlus.Helpers;
 using System.Drawing;
 using System.Linq;
 using System.Xml.Linq;
@@ -8,7 +7,8 @@ using System.Xml.Linq;
 namespace DXPlus
 {
     /// <summary>
-    /// A single cell in a Word table
+    /// A single cell in a Word table. All content in a table is contained in a cell.
+    /// A cell also has several properties affecting its size, appearance, and how the content it contains is formatted.
     /// </summary>
     public class Cell : BlockContainer
     {
@@ -29,20 +29,22 @@ namespace DXPlus
         public Row Row { get; }
 
         /// <summary>
+        /// The table cell properties
+        /// </summary>
+        private XElement tcPr => Xml.GetOrAddElement(Namespace.Main + "tcPr");
+
+        /// <summary>
         /// Gets or Sets the fill color of this Cell.
         /// </summary>
         public Color FillColor
         {
-            get => Xml.Element(Namespace.Main + "tcPr")?
-                      .Element(Namespace.Main + "shd")?
+            get => tcPr.Element(Namespace.Main + "shd")?
                       .Attribute(Namespace.Main + "fill")
                       .ToColor() ?? Color.Empty;
 
             set
             {
-                XElement tcPr = Xml.GetOrAddElement(Namespace.Main + "tcPr");
                 XElement shd = tcPr.GetOrAddElement(Namespace.Main + "shd");
-
                 shd.SetAttributeValue(Name.MainVal, "clear");
                 shd.SetAttributeValue(Name.Color, "auto");
                 shd.SetAttributeValue(Namespace.Main + "fill", value.ToHex());
@@ -53,8 +55,7 @@ namespace DXPlus
         /// Get the applied gridSpan based on cell merges.
         /// </summary>
         public int GridSpan =>
-            int.TryParse(Xml.Element(Namespace.Main + "tcPr")?
-                .Element(Namespace.Main + "gridSpan")?
+            int.TryParse(tcPr.Element(Namespace.Main + "gridSpan")?
                 .GetVal(), out int result)
                 ? result
                 : 1;
@@ -102,8 +103,7 @@ namespace DXPlus
         {
             get
             {
-                var fill = Xml.Element(Namespace.Main + "tcPr")?
-                    .Element(Namespace.Main + "shd")?
+                var fill = tcPr.Element(Namespace.Main + "shd")?
                     .Attribute(Namespace.Main + "fill");
 
                 return fill == null
@@ -113,7 +113,6 @@ namespace DXPlus
 
             set
             {
-                var tcPr = Xml.GetOrAddElement(Namespace.Main + "tcPr");
                 var shd = tcPr.GetOrAddElement(Namespace.Main + "shd");
 
                 // The val attribute needs to be set to clear
@@ -126,7 +125,9 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Gets or sets all the text for a paragraph
+        /// Gets or sets all the text for a paragraph. This will replace any existing paragraph(s)
+        /// tied to the table. The <seealso cref="Paragraph"/> property can also be used to manipulate
+        /// the content of the cell.
         /// </summary>
         public string Text
         {
@@ -159,10 +160,7 @@ namespace DXPlus
         {
             get
             {
-                XAttribute val = Xml.Element(Namespace.Main + "tcPr")?
-                    .Element(Namespace.Main + "textDirection")?
-                    .GetValAttr();
-
+                XAttribute val = tcPr.Element(Namespace.Main + "textDirection")?.GetValAttr();
                 if (!val.TryGetEnumValue(out TextDirection result))
                 {
                     val?.Remove();
@@ -173,7 +171,6 @@ namespace DXPlus
             }
             set
             {
-                XElement tcPr = Xml.GetOrAddElement(Namespace.Main + "tcPr");
                 XElement textDirection = tcPr.GetOrAddElement(Namespace.Main + "textDirection");
                 textDirection.SetAttributeValue(Name.MainVal, value.GetEnumName());
             }
@@ -186,10 +183,7 @@ namespace DXPlus
         {
             get
             {
-                XAttribute val = Xml.Element(Namespace.Main + "tcPr")?
-                    .Element(Namespace.Main + "vAlign")?
-                    .GetValAttr();
-
+                XAttribute val = tcPr.Element(Namespace.Main + "vAlign")?.GetValAttr();
                 if (!val.TryGetEnumValue(out VerticalAlignment result))
                 {
                     val?.Remove();
@@ -200,47 +194,57 @@ namespace DXPlus
 
             set
             {
-                XElement tcPr = Xml.GetOrAddElement(Namespace.Main + "tcPr");
                 XElement vAlign = tcPr.GetOrAddElement(Namespace.Main + "vAlign");
                 vAlign.SetAttributeValue(Name.MainVal, value.GetEnumName());
             }
         }
 
         /// <summary>
-        /// Width in pixels
+        /// The units this colum width is expressed in.
+        /// </summary>
+        public TableWidthUnit WidthUnit => Enum.TryParse<TableWidthUnit>(tcPr.Element(Namespace.Main + "tcW")?
+                                                    .AttributeValue(Namespace.Main + "type"), ignoreCase: true, out var tbw) ? tbw : TableWidthUnit.Auto;
+
+        /// <summary>
+        /// Width in points
         /// </summary>
         public double? Width
         {
             get
             {
-                XAttribute value = Xml.Element(Namespace.Main + "tcPr")?
-                    .Element(Namespace.Main + "tcW")?
-                    .Attribute(Namespace.Main + "w");
-
+                XAttribute value = tcPr.Element(Namespace.Main + "tcW")?.Attribute(Namespace.Main + "w");
                 if (value == null || !double.TryParse(value.Value, out double widthUnits))
                 {
                     value?.Remove();
                     return null;
                 }
 
-                return widthUnits / TableHelpers.UnitConversion;
+                return widthUnits;
             }
+        }
 
-            set
+        /// <summary>
+        /// Sets the column width
+        /// </summary>
+        /// <param name="unitType">Unit type</param>
+        /// <param name="value">Width in dxa or % units</param>
+        public void SetWidth(TableWidthUnit unitType, double? value)
+        {
+            XElement tcW = tcPr.GetOrAddElement(Namespace.Main + "tcW");
+            if (unitType == TableWidthUnit.None || value == null || value < 0)
             {
-                XElement tcPr = Xml.GetOrAddElement(Namespace.Main + "tcPr");
-                XElement tcW = tcPr.GetOrAddElement(Namespace.Main + "tcW");
-
-                if (value == null || value < 0)
-                {
-                    tcW.Remove();
-                }
-                else
-                {
-                    tcW.SetAttributeValue(Namespace.Main + "type", "dxa"); // Widths in 20th/pt.
-                    tcW.SetAttributeValue(Namespace.Main + "w", value * TableHelpers.UnitConversion);
-                }
+                tcW.Remove();
+                return;
             }
+
+            tcW.SetAttributeValue(Namespace.Main + "type", unitType.GetEnumName());
+            if (unitType == TableWidthUnit.Auto)
+                value = 0;
+
+            if (unitType == TableWidthUnit.Percentage)
+                tcW.SetAttributeValue(Namespace.Main + "w", value.Value + "%");
+            else
+                tcW.SetAttributeValue(Namespace.Main + "w", value.Value);
         }
 
         /// <summary>
@@ -252,10 +256,14 @@ namespace DXPlus
             LeftMargin = RightMargin = TopMargin = BottomMargin = margin;
         }
 
+        /// <summary>
+        /// Internal method to retrieve a specific margin by name
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns>Margin in dxa units</returns>
         private double? GetMargin(string name)
         {
-            XAttribute w = Xml.Element(Namespace.Main + "tcPr")?
-                .Element(Namespace.Main + "tcMar")?
+            XAttribute w = tcPr.Element(Namespace.Main + "tcMar")?
                 .Element(Namespace.Main + name)?
                 .Attribute(Namespace.Main + "w");
 
@@ -265,21 +273,23 @@ namespace DXPlus
                 return null;
             }
 
-            // Convert margin to pixels.
-            return margin / TableHelpers.UnitConversion;
+            return margin;
         }
 
+        /// <summary>
+        /// Internal method to set a specific margin by name
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="value in dxa units"></param>
         private void SetMargin(string name, double? value)
         {
-            XElement tcPr = Xml.GetOrAddElement(Namespace.Main + "tcPr");
-
             if (value != null)
             {
                 XElement tcMar = tcPr.GetOrAddElement(Namespace.Main + "tcMar");
                 XElement margin = tcMar.GetOrAddElement(Namespace.Main + name);
 
                 margin.SetAttributeValue(Namespace.Main + "type", "dxa");
-                margin.SetAttributeValue(Namespace.Main + "w", value * TableHelpers.UnitConversion);
+                margin.SetAttributeValue(Namespace.Main + "w", value);
             }
             else
             {
@@ -293,8 +303,7 @@ namespace DXPlus
         /// <param name="borderType">The table cell border to get</param>
         public Border GetBorder(TableCellBorderType borderType)
         {
-            var tcBorder = Xml.Element(Namespace.Main + "tcPr")?
-                .Element(Namespace.Main + "tcBorders")?
+            var tcBorder = tcPr.Element(Namespace.Main + "tcBorders")?
                 .Element(Namespace.Main + borderType.GetEnumName());
             
             return tcBorder != null ? new Border(tcBorder) : null;
@@ -321,7 +330,6 @@ namespace DXPlus
             if (!Enum.IsDefined(typeof(ParagraphBorderType), borderType))
                 throw new InvalidEnumArgumentException(nameof(borderType), (int)borderType, typeof(ParagraphBorderType));
 
-            var tcPr = Xml.GetOrAddElement(Namespace.Main + "tcPr");
             tcPr.Element(Namespace.Main + "tcBorders")?
                 .Element(Namespace.Main.NamespaceName + borderType.GetEnumName())?.Remove();
 
