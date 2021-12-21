@@ -4,17 +4,19 @@ using DXPlus;
 
 var doc = Document.Create(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "tdx.docx"));
 
-Table t = new Table(rows:1, columns:3);
+doc.AddParagraph("First page!").Style(HeadingType.Heading1);
+doc.AddParagraph("This is the first page of the document.");
+doc.AddParagraph();
 
-t.AddRow().MergeCells(0, 2);
-t.AddRow();
-t.AddRow();
-t.AddRow().MergeCells(0, 3);
-t.AddRow();
+doc.AddSection(); // all paragraphs above this section.
 
-t.MergeCellsInColumn(2, 2, 2);
+doc.AddParagraph("This is a new section in landscape.");
+doc.AddSection().Properties.Orientation = Orientation.Landscape;
 
-doc.AddTable(t);
+doc.AddParagraph("Third page in portrait.");
+doc.AddSection().Properties.Orientation = Orientation.Portrait;
+
+doc.AddParagraph("Last page in portrait.");
 
 doc.Save();
 

@@ -263,6 +263,11 @@ namespace DXPlus
         public Table Table { get; internal set; }
 
         /// <summary>
+        /// Returns the section this paragraph is associated with.
+        /// </summary>
+        public Section Section => Document?.Sections.SingleOrDefault(s => s.Paragraphs.Contains(this));
+
+        /// <summary>
         /// Add a new table after this paragraph
         /// </summary>
         /// <param name="table">Table to add</param>

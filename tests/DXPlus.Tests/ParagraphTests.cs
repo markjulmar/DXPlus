@@ -72,6 +72,56 @@ namespace DXPlus.Tests
         }
 
         [Fact]
+        public void SingleSectionOwnsAllParagraphs()
+        {
+            var doc = Document.Create();
+            for (int i = 0; i < 10; i++)
+            {
+                doc.AddParagraph($"Paragraph #{i + 1}");
+            }
+
+            Assert.Equal(10, doc.Paragraphs.Count());
+            Assert.Single(doc.Sections);
+
+            var bodySection = doc.Sections.Single();
+            foreach (var p in doc.Paragraphs)
+            {
+                Assert.True(bodySection.Equals(p.Section));
+            }
+        }
+
+        [Fact]
+        public void MultiSectionContainsSpecificParagraphs()
+        {
+            var doc = Document.Create();
+            int i;
+            for (i = 0; i < 5; i++)
+            {
+                doc.AddParagraph($"Paragraph #{i + 1}");
+            }
+
+            doc.AddSection(); // All paragraphs above.
+
+            for (; i < 10; i++)
+            {
+                doc.AddParagraph($"Paragraph #{i + 1}");
+            }
+
+            Assert.Equal(11, doc.Paragraphs.Count()); // add one for section
+            Assert.Equal(2, doc.Sections.Count());
+
+            var firstSection = doc.Sections.First();
+            var bodySection = doc.Sections.Last();
+
+            i = 0;
+            foreach (var p in doc.Paragraphs)
+            {
+                Assert.True(((i<5) ? firstSection : bodySection).Equals(p.Section));
+            }
+
+        }
+
+        [Fact]
         public void CheckHyperlinksInDoc()
         {
             var microsoftUrl = new Uri("http://www.microsoft.com");

@@ -207,7 +207,7 @@ namespace DXPlus
             Paragraph insertPos = Document.FindParagraphByIndex(index);
             if (insertPos == null)
             {
-                AddElementToDocument(paragraph.Xml);
+                AddElementToContainer(paragraph.Xml);
             }
             else
             {
@@ -229,7 +229,7 @@ namespace DXPlus
             if (paragraph.InDom)
                 throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
-            AddElementToDocument(paragraph.Xml);
+            AddElementToContainer(paragraph.Xml);
             return OnAddParagraph(paragraph);
         }
 
@@ -252,23 +252,29 @@ namespace DXPlus
         /// Adds a new paragraph into the document structure
         /// </summary>
         /// <param name="xml"></param>
-        private void AddElementToDocument(XElement xml)
+        private XElement AddElementToContainer(XElement xml)
         {
             // On paragraphs, add an ID if it's missing.
-            if (xml.Name.LocalName == "p" && xml.Attribute(Name.ParagraphId) == null)
+            if (xml.Name == Name.Paragraph
+                && xml.Attribute(Name.ParagraphId) == null)
             {
                 xml.SetAttributeValue(Name.ParagraphId, HelperFunctions.GenerateHexId());
             }
 
+            // If this is the body document, then add the paragraph just before the
+            // body section -- this must always be the final thing in the document.
             XElement sectPr = Xml.Elements(Name.SectionProperties).SingleOrDefault();
             if (sectPr != null)
             {
                 sectPr.AddBeforeSelf(xml);
             }
+            // Otherwise, we can just add to the end of the XML block.
             else
             {
                 Xml.Add(xml);
             }
+
+            return xml;
         }
 
         /// <summary>
@@ -343,7 +349,7 @@ namespace DXPlus
             }
             else
             {
-                AddElementToDocument(newParagraph.Xml);
+                AddElementToContainer(newParagraph.Xml);
             }
 
             return OnAddParagraph(newParagraph);
@@ -352,14 +358,19 @@ namespace DXPlus
         /// <summary>
         /// Add a new section to the container
         /// </summary>
-        public void AddSection()
+        /// <param name="breakType">The type of section break to insert</param>
+        public Section AddSection(SectionBreakType breakType)
         {
-            AddElementToDocument(new XElement(Name.Paragraph,
-                          new XAttribute(Name.ParagraphId, HelperFunctions.GenerateHexId()),
-                          new XElement(Name.ParagraphProperties,
-                              new XElement(Name.SectionProperties,
-                                  new XElement(Namespace.Main + "type",
-                                      new XAttribute(Name.MainVal, SectionBreakType.Continuous.GetEnumName()))))));
+            var xml = AddElementToContainer(
+                new XElement(Name.Paragraph,
+                    new XAttribute(Name.ParagraphId, HelperFunctions.GenerateHexId()),
+                    new XElement(Name.ParagraphProperties,
+                        new XElement(Name.SectionProperties,
+                            new XElement(Namespace.Main + "type", new XAttribute(Name.MainVal, breakType.GetEnumName())),
+                            new XElement(Namespace.Main + "cols", new XAttribute(Namespace.Main + "space", 720)),
+                            new XElement(Namespace.Main + "docGrid", new XAttribute(Namespace.Main+"linePitch", 360))))));
+
+            return new Section(Document, xml);
         }
 
         /// <summary>
@@ -367,7 +378,7 @@ namespace DXPlus
         /// </summary>
         public void AddPageBreak()
         {
-            AddElementToDocument(new XElement(Name.Paragraph,
+            AddElementToContainer(new XElement(Name.Paragraph,
                         new XAttribute(Name.ParagraphId, HelperFunctions.GenerateHexId()),
                         new XElement(Name.ParagraphProperties,
                             new XElement(Name.SectionProperties))));
@@ -387,7 +398,7 @@ namespace DXPlus
             }
 
             XElement paragraph = Paragraph.Create(text, formatting);
-            AddElementToDocument(paragraph);
+            AddElementToContainer(paragraph);
             return OnAddParagraph(new Paragraph(Document, paragraph, 0));
         }
 
@@ -402,7 +413,7 @@ namespace DXPlus
                 throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
             table.BlockContainer = this;
-            AddElementToDocument(table.Xml);
+            AddElementToContainer(table.Xml);
 
             return table;
         }

@@ -101,7 +101,7 @@ namespace DXPlus
         /// <summary>
         /// Add a new section to the container
         /// </summary>
-        void AddSection();
+        Section AddSection(SectionBreakType breakType = SectionBreakType.NextPage);
 
         /// <summary>
         /// Add a new page break to the container

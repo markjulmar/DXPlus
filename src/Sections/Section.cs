@@ -8,7 +8,7 @@ namespace DXPlus
     /// <summary>
     /// Identified sections in a document
     /// </summary>
-    public class Section : DocXElement
+    public class Section : DocXElement, IEquatable<Section>
     {
         /// <summary>
         /// Returns a collection of Headers in this section of the document.
@@ -93,6 +93,31 @@ namespace DXPlus
             // Load headers/footers
             Headers = new HeaderCollection(document, this);
             Footers = new FooterCollection(document, this);
+        }
+
+        /// <summary>
+        /// Returns equality matching for the section
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool Equals(Section other)
+        {
+            if (other == null)
+                return false;
+
+            // Same actual reference?
+            if (ReferenceEquals(this, other))
+                return true;
+
+            // Compare paragraph IDs.
+            var id1 = Xml.AttributeValue(Name.ParagraphId);
+            var id2 = Xml.AttributeValue(Name.ParagraphId);
+            if (!string.IsNullOrEmpty(id1) && !string.IsNullOrEmpty(id2))
+                return (id1 == id2);
+
+            // Main section?
+            return Xml.Name.LocalName == "body"
+                && other.Xml.Name.LocalName == "body";
         }
     }
 }

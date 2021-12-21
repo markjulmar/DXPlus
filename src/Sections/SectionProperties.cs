@@ -29,7 +29,7 @@ namespace DXPlus
         {
             get => Xml.Element(Namespace.Main + "type").GetVal()
                 .TryGetEnumValue<SectionBreakType>(out var result)
-                ? result : SectionBreakType.DefaultNextPage;
+                ? result : SectionBreakType.NextPage;
             set => Xml.AddElementVal(Namespace.Main + "type", value.GetEnumName());
         }
 
