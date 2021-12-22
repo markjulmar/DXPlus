@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO.Packaging;
+﻿using System.IO.Packaging;
 using System.Xml.Linq;
 
 namespace DXPlus
@@ -8,7 +7,7 @@ namespace DXPlus
     /// All Document types are derived from DocXElement.
     /// This class contains properties which every element of a Document must contain.
     /// </summary>
-    public abstract class DocXElement : IEquatable<DocXElement>
+    public abstract class DocXElement
     {
         protected Document document;
         protected PackagePart packagePart;
@@ -68,7 +67,7 @@ namespace DXPlus
         /// <summary>
         /// This is the actual Xml that gives this element substance.
         /// </summary>
-        internal XElement Xml { get; set; }
+        internal virtual XElement Xml { get; set; }
 
         /// <summary>
         /// This is a reference to the document object that this element belongs to.
@@ -81,27 +80,6 @@ namespace DXPlus
         /// </summary>
         protected virtual void OnDocumentOwnerChanged()
         {
-        }
-
-        /// <summary>
-        /// Equality operator
-        /// </summary>
-        /// <param name="other"></param>
-        /// <returns>True/False</returns>
-        public bool Equals(DocXElement other)
-        {
-            if (other == null) return false;
-            return this.Xml == other.Xml;
-        }
-
-        /// <summary>
-        /// Handler for Equals method.
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
-        public override bool Equals(object obj)
-        {
-            return Equals(obj as DocXElement);
         }
     }
 }

@@ -96,8 +96,6 @@ namespace DXPlus.Tests
             var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
 
             var section = doc.Sections.Single();
-
-            section.Headers.Default.Add();
             var header = section.Headers.Default;
 
             var p = header.AddParagraph("List in paragraph").ListStyle(nd);

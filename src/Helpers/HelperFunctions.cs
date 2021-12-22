@@ -12,6 +12,9 @@ using System.Xml.XPath;
 
 namespace DXPlus.Helpers
 {
+    /// <summary>
+    /// Internal helper classes.
+    /// </summary>
     internal static class HelperFunctions
     {
         internal static XElement CreateDefaultShadeElement(XElement parent)
@@ -48,12 +51,16 @@ namespace DXPlus.Helpers
             }
             else if (e.Name.LocalName == "hdr")
             {
+                return document.Sections.SelectMany(s => s.Headers)
+                    .SingleOrDefault(h => h.Xml == e);
             }
             else if (e.Name.LocalName == "ftr")
             {
+                return document.Sections.SelectMany(s => s.Footers)
+                    .SingleOrDefault(h => h.Xml == e);
             }
 
-            return null;
+            throw new Exception($"Unrecognized container type {e.Name}");
         }
 
         /// <summary>

@@ -67,6 +67,9 @@ namespace DXPlus
             string id = GetReferenceId(headerType);
             if (id == null)
             {
+                // Does not exist yet in the underlying document/package.
+                // Leave that null for now - when this is added to the document
+                // we can set the owners.
                 return new T
                 {
                     Type = headerType,

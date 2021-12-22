@@ -12,7 +12,7 @@ namespace DXPlus
     /// Represents a single run of text with optional formatting in a paragraph
     /// </summary>
     [DebuggerDisplay("{" + nameof(Text) + "}")]
-    public class Run
+    public class Run : IEquatable<Run>
     {
         /// <summary>
         /// Document for this run - used to retrieve images.
@@ -248,6 +248,20 @@ namespace DXPlus
                 }
             }
             return default;
+        }
+
+        /// <summary>
+        /// Determines equality for a run
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool Equals(Run other)
+        {
+            if (other == null)
+                return false;
+            if (ReferenceEquals(this, other))
+                return true;
+            return Xml == other.Xml;
         }
     }
 }

@@ -8,7 +8,7 @@ using DXPlus.Resources;
 
 namespace DXPlus
 {
-    public sealed class Comment : DocXElement
+    public sealed class Comment : DocXElement, IEquatable<Comment>
     {
         private const string ParagraphStyle = "CommentText";
         private const string RunStyle = "CommentReference";
@@ -178,6 +178,20 @@ namespace DXPlus
 
             // Add it to this document
             Xml.Add(paragraph.Xml);
+        }
+
+        /// <summary>
+        /// Determines equality for comments.
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool Equals(Comment other)
+        {
+            if (other == null)
+                return false;
+            if (ReferenceEquals(this, other))
+                return true;
+            return Xml == other.Xml;
         }
     }
 }

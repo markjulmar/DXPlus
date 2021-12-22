@@ -9,14 +9,31 @@ namespace Tester
     {
         public static void Main(string[] args)
         {
-            CreateTableWithList();
-        }
-
-        static void CreateTableWithList()
-        {
             string fn = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "test.docx");
             using var doc = Document.Create(fn);
 
+            CreateDocWithHeaderAndFooter(doc);
+
+            doc.Save();
+            Console.WriteLine("Wrote document");
+        }
+
+        private static void CreateDocWithHeaderAndFooter(IDocument doc)
+        {
+            var mainSection = doc.Sections.First();
+            var header = mainSection.Headers.Default;
+
+            var p1 = header.MainParagraph;
+            p1.SetText("This is some text - ");
+            p1.AddPageNumber(PageNumberFormat.Normal);
+
+            doc.AddParagraph("This is the firt paragraph");
+            doc.AddPageBreak();
+            doc.AddParagraph("This is page 2");
+        }
+
+        static void CreateTableWithList(IDocument doc)
+        {
             int rows = 2;
             int columns = 2;
 
@@ -36,10 +53,6 @@ namespace Tester
             documentTable.AutoFit = true;
 
             var t = doc.AddTable(3, 3);
-
-            doc.Save();
-
-            Console.WriteLine("Wrote document");
         }
 
         private static void AddListToCell(TableCell cell, NumberingDefinition nd, string[] terms)

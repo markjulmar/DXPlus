@@ -131,9 +131,10 @@ namespace DXPlus.Tests
             var bodySection = doc.Sections.Last();
 
             i = 0;
-            foreach (var p in doc.Paragraphs)
+            foreach (var p in doc.Paragraphs.Where(p => !p.IsSectionParagraph))
             {
                 Assert.True(((i<5) ? firstSection : bodySection).Equals(p.Section));
+                i++;
             }
 
         }
@@ -201,7 +202,7 @@ namespace DXPlus.Tests
             Assert.False(section.Headers.First.Exists);
             Assert.False(section.Properties.DifferentFirstPage);
 
-            section.Headers.First.Add().SetText("Page Header 1");
+            section.Headers.First.Paragraphs.First().SetText("Page Header 1");
             Assert.False(section.Headers.Even.Exists);
             Assert.False(section.Headers.Default.Exists);
             Assert.True(section.Headers.First.Exists);
@@ -218,7 +219,7 @@ namespace DXPlus.Tests
             var section = doc.Sections.Single();
             Assert.NotNull(section.Headers);
 
-            section.Headers.First.Add().SetText("Page Header 1");
+            section.Headers.First.MainParagraph.SetText("Page Header 1");
             Assert.False(section.Headers.Even.Exists);
             Assert.False(section.Headers.Default.Exists);
             Assert.True(section.Headers.First.Exists);
@@ -245,9 +246,9 @@ namespace DXPlus.Tests
             Assert.False(section.Headers.Default.Exists);
             Assert.False(section.Headers.First.Exists);
 
-            section.Headers.First.Add();
+            _ = section.Headers.First.MainParagraph;
             Assert.Equal("/word/header1.xml", section.Headers.First.Uri.OriginalString);
-            section.Headers.Even.Add();
+            _ = section.Headers.Even.MainParagraph;
             Assert.Equal("/word/header2.xml", section.Headers.Even.Uri.OriginalString);
 
             Assert.True(section.Headers.Even.Exists);

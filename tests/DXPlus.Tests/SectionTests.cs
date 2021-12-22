@@ -13,6 +13,43 @@ namespace DXPlus.Tests
         }
 
         [Fact]
+        public void CanFindContainerFromHeaderParagraph()
+        {
+            using var doc = Document.Create();
+            var mainSection = doc.Sections.First();
+            var header = mainSection.Headers.Default;
+
+            var p1 = header.Paragraphs.Single();
+            p1.SetText("This is some text - ");
+            p1.AddPageNumber(PageNumberFormat.Normal);
+
+            doc.AddParagraph("P1");
+            doc.AddPageBreak();
+            doc.AddParagraph("P2");
+
+            var p2 = header.Paragraphs.First();
+            Assert.Equal(p1, p2);
+
+            Assert.NotNull(p2.Container);
+            Assert.Equal(header, p2.Container);
+        }
+
+        [Fact]
+        public void CanFindContainerFromFooterParagraph()
+        {
+            using var doc = Document.Create();
+            var mainSection = doc.Sections.First();
+            var header = mainSection.Headers.Default;
+
+            var footer = mainSection.Footers.Default;
+            var p = footer.Paragraphs.Single()
+                .AddParagraph("New paragraph");
+
+            Assert.NotNull(p.Container);
+            Assert.Equal(footer, p.Container);
+        }
+
+        [Fact]
         public void DefaultSectionIncludesAllParagraphs()
         {
             var doc = Document.Create();

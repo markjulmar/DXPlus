@@ -98,7 +98,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Returns equality matching for the section
+        /// Determines equality for a section
         /// </summary>
         /// <param name="other"></param>
         /// <returns></returns>
@@ -106,20 +106,9 @@ namespace DXPlus
         {
             if (other == null)
                 return false;
-
-            // Same actual reference?
             if (ReferenceEquals(this, other))
                 return true;
-
-            // Compare paragraph IDs.
-            var id1 = Xml.AttributeValue(Name.ParagraphId);
-            var id2 = Xml.AttributeValue(Name.ParagraphId);
-            if (!string.IsNullOrEmpty(id1) && !string.IsNullOrEmpty(id2))
-                return (id1 == id2);
-
-            // Main section?
-            return Xml.Name.LocalName == "body"
-                && other.Xml.Name.LocalName == "body";
+            return Xml == other.Xml;
         }
     }
 }

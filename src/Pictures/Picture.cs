@@ -11,7 +11,7 @@ namespace DXPlus
     /// <summary>
     /// Represents a drawing (vector or image) in this document.
     /// </summary>
-    public class Picture : DocXElement
+    public class Picture : DocXElement, IEquatable<Picture>
     {
         /// <summary>
         /// GUID for the decorative image extension
@@ -409,6 +409,20 @@ namespace DXPlus
                        .SingleOrDefault() ??
                    PackagePart.CreateRelationship(image.PackageRelationship.TargetUri,
                        TargetMode.Internal, Namespace.RelatedDoc.NamespaceName + "/image").Id;
+        }
+
+        /// <summary>
+        /// Determines equality for pictures
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool Equals(Picture other)
+        {
+            if (other == null)
+                return false;
+            if (ReferenceEquals(this, other))
+                return true;
+            return Xml == other.Xml;
         }
     }
 }

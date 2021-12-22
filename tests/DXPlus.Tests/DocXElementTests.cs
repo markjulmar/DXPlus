@@ -15,8 +15,9 @@ namespace DXPlus.Tests
 
             Assert.False(object.ReferenceEquals(p1, p2));
             Assert.False(p1 == p2); // should be ref test
-            Assert.True(object.Equals(p1, p2));
+            Assert.False(object.Equals(p1, p2));
             Assert.True(p1.Equals(p2));
+            Assert.Equal(p1, p2);
         }
 
         [Fact]
@@ -30,7 +31,7 @@ namespace DXPlus.Tests
 
             Assert.False(object.ReferenceEquals(hl1,hl2));
             Assert.False(hl1 == hl2); // should be ref test
-            Assert.True(object.Equals(hl1, hl2));
+            Assert.False(object.Equals(hl1, hl2));
             Assert.True(hl1.Equals(hl2));
         }
     }

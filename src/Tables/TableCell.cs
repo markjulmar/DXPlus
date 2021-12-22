@@ -10,7 +10,7 @@ namespace DXPlus
     /// A single cell in a Word table. All content in a table is contained in a cell.
     /// A cell also has several properties affecting its size, appearance, and how the content it contains is formatted.
     /// </summary>
-    public class TableCell : BlockContainer
+    public class TableCell : BlockContainer, IEquatable<TableCell>
     {
         /// <summary>
         /// Constructor
@@ -346,6 +346,20 @@ namespace DXPlus
                 borderXml.Add(new XAttribute(Namespace.Main + "space", spacing));
 
             tcBorders.Add(borderXml);
+        }
+
+        /// <summary>
+        /// Determines equality for a table cell
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool Equals(TableCell other)
+        {
+            if (other == null)
+                return false;
+            if (ReferenceEquals(this, other))
+                return true;
+            return Xml == other.Xml;
         }
     }
 }

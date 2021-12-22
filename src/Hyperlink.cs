@@ -11,7 +11,7 @@ namespace DXPlus
     /// <summary>
     /// Represents a Hyperlink in a document.
     /// </summary>
-    public class Hyperlink : DocXElement
+    public class Hyperlink : DocXElement, IEquatable<Hyperlink>
     {
         private Uri uri;
         private string text;
@@ -260,6 +260,20 @@ namespace DXPlus
         protected override void OnDocumentOwnerChanged()
         {
             Document?.AddHyperlinkStyle();
+        }
+
+        /// <summary>
+        /// Determines equality for hyperlinks
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool Equals(Hyperlink other)
+        {
+            if (other == null)
+                return false;
+            if (ReferenceEquals(this, other))
+                return true;
+            return Xml == other.Xml;
         }
     }
 }

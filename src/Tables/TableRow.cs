@@ -11,7 +11,7 @@ namespace DXPlus
     /// <summary>
     /// Represents a single row in a Table.
     /// </summary>
-    public class TableRow : DocXElement
+    public class TableRow : DocXElement, IEquatable<TableRow>
     {
         /// <summary>
         /// Table owner
@@ -237,6 +237,20 @@ namespace DXPlus
         {
             foreach (TableCell cell in Cells)
                 cell.SetOwner(Document, PackagePart);
+        }
+
+        /// <summary>
+        /// Determines equality for table rows
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool Equals(TableRow other)
+        {
+            if (other == null)
+                return false;
+            if (ReferenceEquals(this, other))
+                return true;
+            return Xml == other.Xml;
         }
     }
 }

@@ -92,17 +92,13 @@ namespace DXPlus
         {
             get
             {
-                foreach (var para in Paragraphs)
-                {
-                    if (para.Xml.Element(Name.ParagraphProperties, Name.SectionProperties) != null)
-                        yield return new Section(Document, PackagePart, para.Xml);
-                }
+                // Return all the section dividers.
+                foreach (var p in Paragraphs.Where(p => p.IsSectionParagraph))
+                    yield return new Section(Document, PackagePart, p.Xml);
 
                 // Return the final section if this is the mainDoc.
                 if (Xml.Element(Name.SectionProperties) != null)
-                {
                     yield return new Section(Document, PackagePart, Xml);
-                }
             }
         }
 
@@ -252,7 +248,7 @@ namespace DXPlus
         /// </summary>
         /// <param name="paragraph">New paragraph</param>
         /// <returns>Added paragraph</returns>
-        private Paragraph OnAddParagraph(Paragraph paragraph)
+        protected virtual Paragraph OnAddParagraph(Paragraph paragraph)
         {
             InsertMissingStyles(paragraph);
 
@@ -266,7 +262,7 @@ namespace DXPlus
         /// Adds a new paragraph into the document structure
         /// </summary>
         /// <param name="xml"></param>
-        private XElement AddElementToContainer(XElement xml)
+        protected virtual XElement AddElementToContainer(XElement xml)
         {
             // On paragraphs, add an ID if it's missing.
             if (xml.Name == Name.Paragraph
@@ -373,7 +369,7 @@ namespace DXPlus
         /// Add a new section to the container
         /// </summary>
         /// <param name="breakType">The type of section break to insert</param>
-        public Section AddSection(SectionBreakType breakType)
+        public virtual Section AddSection(SectionBreakType breakType)
         {
             var xml = AddElementToContainer(
                 new XElement(Name.Paragraph,
@@ -390,7 +386,7 @@ namespace DXPlus
         /// <summary>
         /// Add a new page break to the container
         /// </summary>
-        public void AddPageBreak()
+        public virtual void AddPageBreak()
         {
             AddElementToContainer(new XElement(Name.Paragraph,
                         new XAttribute(Name.ParagraphId, HelperFunctions.GenerateHexId()),

@@ -9,7 +9,7 @@ namespace DXPlus
     /// <summary>
     /// Represents a table of contents in the document
     /// </summary>
-    public sealed class TableOfContents : DocXElement
+    public sealed class TableOfContents : DocXElement, IEquatable<TableOfContents>
     {
         private const string HeaderStyle = "TOCHeading";
         private const int RightTabPos = 9350;
@@ -101,6 +101,20 @@ namespace DXPlus
                     mgr.Add(xml);
                 }
             }
+        }
+
+        /// <summary>
+        /// Determines equality for the TOC
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool Equals(TableOfContents other)
+        {
+            if (other == null)
+                return false;
+            if (ReferenceEquals(this, other))
+                return true;
+            return Xml == other.Xml;
         }
     }
 }

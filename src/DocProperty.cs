@@ -1,4 +1,5 @@
-﻿using System.IO.Packaging;
+﻿using System;
+using System.IO.Packaging;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -9,7 +10,7 @@ namespace DXPlus
     /// Represents a field in the document.
     /// This field displays the value stored in a document or custom property.
     /// </summary>
-    public class DocProperty : DocXElement
+    public class DocProperty : DocXElement, IEquatable<DocProperty>
     {
         /// <summary>
         /// Name of the property
@@ -50,6 +51,20 @@ namespace DXPlus
                     : text.Substring(0, text.IndexOf(' '));
                 Value = new Run(document, value, 0).Text;
             }
+        }
+
+        /// <summary>
+        /// Determines equality for doc properties
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool Equals(DocProperty other)
+        {
+            if (other == null)
+                return false;
+            if (ReferenceEquals(this, other))
+                return true;
+            return Xml == other.Xml;
         }
     }
 }

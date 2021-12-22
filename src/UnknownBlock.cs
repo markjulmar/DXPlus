@@ -1,4 +1,5 @@
-﻿using System.IO.Packaging;
+﻿using System;
+using System.IO.Packaging;
 using System.Xml.Linq;
 
 namespace DXPlus
@@ -6,7 +7,7 @@ namespace DXPlus
     /// <summary>
     /// This wraps unknown blocks found when enumerating the document.
     /// </summary>
-    public class UnknownBlock : Block
+    public class UnknownBlock : Block, IEquatable<UnknownBlock>
     {
         /// <summary>
         /// Constructor
@@ -22,5 +23,19 @@ namespace DXPlus
         /// Returns the name of this block in the document.
         /// </summary>
         public string Name => Xml.Name.LocalName;
+
+        /// <summary>
+        /// Determines equality for an unknown block
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool Equals(UnknownBlock other)
+        {
+            if (other == null)
+                return false;
+            if (ReferenceEquals(this, other))
+                return true;
+            return Xml == other.Xml;
+        }
     }
 }

@@ -13,7 +13,7 @@ namespace DXPlus
     /// <summary>
     /// Represents a Table in a document {tbl}
     /// </summary>
-    public class Table : Block
+    public class Table : Block, IEquatable<Table>
     {
         private string customTableDesignName;
         private TableDesign tableDesign;
@@ -781,6 +781,20 @@ namespace DXPlus
                         new XAttribute(Name.ParagraphId,
                             HelperFunctions.GenerateHexId()))
             );
+        }
+
+        /// <summary>
+        /// Determines equality for a table object
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool Equals(Table other)
+        {
+            if (other == null)
+                return false;
+            if (ReferenceEquals(this, other))
+                return true;
+            return Xml == other.Xml;
         }
     }
 }

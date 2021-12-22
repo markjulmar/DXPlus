@@ -278,6 +278,12 @@ namespace DXPlus
         }
 
         /// <summary>
+        /// True if this paragraph is a section divider.
+        /// </summary>
+        public bool IsSectionParagraph =>
+            Xml.Element(Name.ParagraphProperties, Name.SectionProperties) != null;
+
+        /// <summary>
         /// Returns the section this paragraph is associated with.
         /// </summary>
         public Section Section => Document?.Sections.SingleOrDefault(s => s.Paragraphs.Contains(this));
@@ -511,13 +517,13 @@ namespace DXPlus
         /// Append a PageCount place holder onto the end of a paragraph.
         /// </summary>
         /// <param name="format">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
-        public void AppendPageCount(PageNumberFormat format) => AddPageNumberInfo(format, "numPages");
+        public void AddPageCount(PageNumberFormat format) => AddPageNumberInfo(format, "numPages");
 
         /// <summary>
         /// Append a PageNumber place holder onto the end of a paragraph.
         /// </summary>
         /// <param name="format">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
-        public void AppendPageNumber(PageNumberFormat format) => AddPageNumberInfo(format, "page");
+        public void AddPageNumber(PageNumberFormat format) => AddPageNumberInfo(format, "page");
 
         /// <summary>
         /// Insert a PageCount place holder into a paragraph.
@@ -1332,36 +1338,17 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Provides value equality for the paragraph.
+        /// Determines equality for paragraphs
         /// </summary>
         /// <param name="other"></param>
         /// <returns></returns>
         public bool Equals(Paragraph other)
         {
-            if (other is null)
-            {
+            if (other == null)
                 return false;
-            }
-
             if (ReferenceEquals(this, other))
-            {
                 return true;
-            }
-
-            return Text == other.Text && Id == other.Id;
+            return Xml == other.Xml;
         }
-
-        /// <summary>
-        /// Object equals override
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
-        public override bool Equals(object obj) => Equals(obj as Paragraph);
-
-        /// <summary>
-        /// Object GetHashCode override
-        /// </summary>
-        /// <returns></returns>
-        public override int GetHashCode() => Text.GetHashCode() + Id.GetHashCode();
     }
 }
