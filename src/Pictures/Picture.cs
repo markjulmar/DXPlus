@@ -40,9 +40,10 @@ namespace DXPlus
         /// Wraps a drawing or pict element in Word XML.
         /// </summary>
         /// <param name="document">Document owner</param>
+        /// <param name="packagePart">Package owner</param>
         /// <param name="xml">The XElement to wrap</param>
         /// <param name="image">The image to display</param>
-        internal Picture(IDocument document, XElement xml, Image image) : base(document, xml)
+        internal Picture(IDocument document, PackagePart packagePart, XElement xml, Image image) : base(document, packagePart, xml)
         {
             if (xml.Name.LocalName != "drawing")
                 throw new ArgumentException("Root element must be <drawing> for picture.");

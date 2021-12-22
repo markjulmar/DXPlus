@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
 
@@ -82,8 +83,9 @@ namespace DXPlus
         /// Create a new section
         /// </summary>
         /// <param name="document">Document owner</param>
+        /// <param name="packagePart"></param>
         /// <param name="xml">Parent of sectionProps</param>
-        internal Section(Document document, XElement xml) : base(document, xml)
+        internal Section(Document document, PackagePart packagePart, XElement xml) : base(document, packagePart, xml)
         {
             var eProps = xml.Element(Name.SectionProperties) ??
                          xml.Element(Name.ParagraphProperties, Name.SectionProperties);

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO.Packaging;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -12,7 +13,7 @@ namespace DXPlus
     /// <summary>
     /// Represents a document paragraph.
     /// </summary>
-    [DebuggerDisplay("Paragraph {p.Id}")]
+    [DebuggerDisplay("{Id}: {Text}")]
     public class Paragraph : Block, IEquatable<Paragraph>
     {
         /// <summary>
@@ -52,7 +53,7 @@ namespace DXPlus
         /// <summary>
         /// Public constructor for the paragraph
         /// </summary>
-        public Paragraph() : this(null, Create(null, null), 0)
+        public Paragraph() : this(null, null, Create(null, null), 0)
         {
         }
 
@@ -61,7 +62,7 @@ namespace DXPlus
         /// </summary>
         /// <param name="text"></param>
         public Paragraph(string text) 
-            : this (null, Create(text, null), 0)
+            : this (null, null, Create(text, null), 0)
         {
         }
 
@@ -71,7 +72,7 @@ namespace DXPlus
         /// <param name="text"></param>
         /// <param name="formatting"></param>
         public Paragraph(string text, Formatting formatting) 
-            : this(null, Create(text, formatting), 0)
+            : this(null, null, Create(text, formatting), 0)
         {
         }
 
@@ -79,10 +80,11 @@ namespace DXPlus
         /// Constructor for the paragraph
         /// </summary>
         /// <param name="document">Document owner</param>
+        /// <param name="packagePart">Package owner</param>
         /// <param name="xml">XML for the paragraph</param>
         /// <param name="startIndex">Starting position in the doc</param>
-        internal Paragraph(IDocument document, XElement xml, int startIndex)
-            : base(document, xml)
+        internal Paragraph(IDocument document, PackagePart packagePart, XElement xml, int startIndex)
+            : base(document, packagePart, xml)
         {
             StartIndex = startIndex;
             EndIndex = startIndex + HelperFunctions.GetTextLength(Xml);
@@ -207,7 +209,7 @@ namespace DXPlus
                 if (Document == null)
                     throw new InvalidOperationException("Cannot use document properties without a document owner.");
 
-                var properties = Xml.Descendants(Name.SimpleField).Select(el => new DocProperty(Document, el, null)).ToList();
+                var properties = Xml.Descendants(Name.SimpleField).Select(el => new DocProperty(Document, Document.PackagePart, el, null)).ToList();
 
                 // Look for complex field insertions in the paragraph. These should always be in run elements and
                 // have a start, name, sep, value section.
@@ -250,17 +252,30 @@ namespace DXPlus
 
                     if (valueNode != null)
                     {
-                        properties.Add(new DocProperty(Document, nameNode, valueNode));
+                        properties.Add(new DocProperty(Document, Document.PackagePart, nameNode, valueNode));
                     }
                 }
                 return properties;
             }
         }
 
+        private Table tableAfterParagraph;
+
         ///<summary>
         /// If a Table (tbl) follows this paragraph, then this property will have a reference to it.
         ///</summary>
-        public Table Table { get; internal set; }
+        public Table Table
+        {
+            get
+            {
+                // Not in a document yet?
+                return !InDom
+                    ? tableAfterParagraph
+                    : Xml.NextNode is XElement e
+                        && e.Name == Name.Table
+                        ? new Table(Document, PackagePart, e) : null;
+            }
+        }
 
         /// <summary>
         /// Returns the section this paragraph is associated with.
@@ -276,13 +291,15 @@ namespace DXPlus
             if (table.InDom)
                 throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
-            table.BlockContainer = this.BlockContainer;
+            table.SetOwner(Document, PackagePart);
 
             if (Table != null)
-                throw new Exception("Can only add one table after the a paragraph.");
-            Table = table;
+                throw new Exception("Can only add one table after a paragraph. Must add paragraph separators between tables or they merge.");
 
-            Xml?.AddAfterSelf(table.Xml);
+            if (InDom)
+                Xml.AddAfterSelf(table.Xml);
+            else
+                tableAfterParagraph = table;
 
             return this;
         }
@@ -336,13 +353,13 @@ namespace DXPlus
                     let id = p.FirstLocalNameDescendant("blip").AttributeValue(Namespace.RelatedDoc + "embed")
                     where id != null
                     let img = new Image(Document, Document?.PackagePart?.GetRelationship(id), id)
-                    select new Picture(Document, p, img) { PackagePart = this.PackagePart }
+                    select new Picture(Document, PackagePart, p, img)
                 ).Union(
                     from p in Xml.LocalNameDescendants("pict")
                     let id = p.FirstLocalNameDescendant("imagedata").AttributeValue(Namespace.RelatedDoc + "id")
                     where id != null
                     let img = new Image(Document, Document?.PackagePart?.GetRelationship(id), id)
-                    select new Picture(Document, p, img) { PackagePart = this.PackagePart }
+                    select new Picture(Document, PackagePart, p, img)
                 ).ToList();
 
         /// <summary>
@@ -429,8 +446,7 @@ namespace DXPlus
         {
             if (Document != null)
             {
-                hyperlink.Document = Document;
-                hyperlink.PackagePart = PackagePart;
+                hyperlink.SetOwner(Document, PackagePart);
                 _ = hyperlink.GetOrCreateRelationship();
             }
             else
@@ -479,8 +495,7 @@ namespace DXPlus
         {
             if (Document != null)
             {
-                hyperlink.Document = Document;
-                hyperlink.PackagePart = PackagePart;
+                hyperlink.SetOwner(Document, PackagePart);
                 _ = hyperlink.GetOrCreateRelationship();
             }
             else
@@ -571,8 +586,7 @@ namespace DXPlus
         {
             if (Document != null)
             {
-                picture.Document = this.Document;
-                picture.PackagePart = this.PackagePart;
+                picture.SetOwner(Document, PackagePart);
                 picture.RelationshipId = picture.GetOrCreateRelationship();
             }
 
@@ -715,7 +729,7 @@ namespace DXPlus
             );
 
             Xml.Add(start, pdef, sep, value, end);
-            return new DocProperty(Document, pdef, value);
+            return new DocProperty(Document, PackagePart, pdef, value);
         }
 
         //TODO: add simple field property
@@ -753,8 +767,7 @@ namespace DXPlus
         {
             if (Document != null)
             {
-                picture.Document = this.Document;
-                picture.PackagePart = this.PackagePart;
+                picture.SetOwner(Document, PackagePart);
                 picture.RelationshipId = picture.GetOrCreateRelationship();
             }
 
@@ -1236,62 +1249,45 @@ namespace DXPlus
             return new[] { splitLeft, splitRight };
         }
 
-        protected override void OnDocumentOwnerChanged(IDocument previousValue, IDocument newValue)
+        protected override void OnDocumentOwnerChanged()
         {
-            base.OnDocumentOwnerChanged(previousValue, newValue);
+            // Update bookmark IDs.
+            foreach (var bookmark in GetBookmarks())
+                bookmark.Id = Document.GetNextDocumentId();
 
-            if (newValue is Document document)
+            if (Hyperlinks.Any())
             {
-                // Update bookmark IDs.
-                foreach (var bookmark in GetBookmarks())
-                    bookmark.Id = document.GetNextDocumentId();
+                // Ensure the owner document has the hyperlink styles.
+                Document.AddHyperlinkStyle();
+                _ = Document.EnsureRelsPathExists(PackagePart);
 
-                if (Hyperlinks.Any())
+                // Fixup hyperlinks
+                foreach (var hyperlink in Hyperlinks)
                 {
-                    // Ensure the owner document has the hyperlink styles.
-                    document.AddHyperlinkStyle();
-                    _ = document.EnsureRelsPathExists(this.PackagePart);
-
-                    // Fixup hyperlinks
-                    foreach (var hyperlink in Hyperlinks)
-                    {
-                        hyperlink.Document = document;
-                        hyperlink.PackagePart = this.PackagePart;
-                        _ = hyperlink.GetOrCreateRelationship();
-                    }
-                    unownedHyperlinks = null;
+                    hyperlink.SetOwner(Document, PackagePart);
+                    _ = hyperlink.GetOrCreateRelationship();
                 }
-
-                if (Table != null)
-                {
-                    Table.Document = document;
-                    Table.PackagePart = this.PackagePart;
-                    Xml.AddAfterSelf(Table.Xml);
-                }
-
-                if (Pictures.Any())
-                {
-                    // Check to see if the .rels file exists and create it if not.
-                    _ = document.EnsureRelsPathExists(PackagePart);
-
-                    // Fixup pictures
-                    foreach (var picture in Pictures)
-                    {
-                        picture.Document = document;
-                        picture.PackagePart = this.PackagePart;
-                        picture.RelationshipId = picture.GetOrCreateRelationship();
-                    }
-                }
+                unownedHyperlinks = null;
             }
-        }
 
-        protected override void OnAddedToContainer(BlockContainer blockContainer)
-        {
-            base.OnAddedToContainer(blockContainer);
-
-            if (Table != null)
+            if (tableAfterParagraph != null)
             {
-                Table.BlockContainer = blockContainer;
+                tableAfterParagraph.SetOwner(Document, PackagePart);
+                Xml.AddAfterSelf(tableAfterParagraph.Xml);
+                tableAfterParagraph = null;
+            }
+
+            if (Pictures.Any())
+            {
+                // Check to see if the .rels file exists and create it if not.
+                _ = Document.EnsureRelsPathExists(PackagePart);
+
+                // Fixup pictures
+                foreach (var picture in Pictures)
+                {
+                    picture.SetOwner(Document, PackagePart);
+                    picture.RelationshipId = picture.GetOrCreateRelationship();
+                }
             }
         }
 

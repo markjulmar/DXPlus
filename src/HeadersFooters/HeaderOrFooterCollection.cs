@@ -29,7 +29,8 @@ namespace DXPlus
         /// <param name="rootElementName">Root XML element name</param>
         /// <param name="relation">Relation name</param>
         /// <param name="typeName">Type name</param>
-        internal HeaderOrFooterCollection(Document documentOwner, Section sectionOwner, string rootElementName, Relationship relation, string typeName)
+        internal HeaderOrFooterCollection(Document documentOwner, Section sectionOwner,
+            string rootElementName, Relationship relation, string typeName)
         {
             this.documentOwner = documentOwner;
             this.sectionOwner = sectionOwner;
@@ -79,17 +80,18 @@ namespace DXPlus
             documentOwner.FindHeaderFooterById(id, out var part, out var doc);
 
             // Create the header/footer wrapper object from the loaded information
-            return new T
+            var hf = new T
             {
-                Document = documentOwner,
                 Xml = doc.Element(Namespace.Main + rootElementName),
                 Id = id,
                 Type = headerType,
-                PackagePart = part,
                 CreateFunc = Create,
                 DeleteFunc = Delete,
                 ExistsFunc = Exists
             };
+
+            hf.SetOwner(documentOwner, part);
+            return hf;
         }
 
         /// <summary>
@@ -163,10 +165,9 @@ namespace DXPlus
             documentOwner.AdjustHeaderFooterCache(relationship.Id, xmlFragment);
 
             // Fill in the details.
-            headerFooter.Document = documentOwner;
             headerFooter.Xml = xmlFragment.Root;
             headerFooter.Id = relationship.Id;
-            headerFooter.PackagePart = packagePart;
+            headerFooter.SetOwner(documentOwner, packagePart);
 
             // If this is the first page header, then set the document.titlePg element
             if (headerFooter == First)

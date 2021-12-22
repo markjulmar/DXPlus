@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.IO.Packaging;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
@@ -26,7 +27,7 @@ namespace DXPlus
         /// <param name="document"></param>
         /// <param name="name"></param>
         /// <param name="value"></param>
-        internal DocProperty(IDocument document, XElement name, XElement value) : base(document, name)
+        internal DocProperty(IDocument document, PackagePart packagePart, XElement name, XElement value) : base(document, packagePart, name)
         {
             var dpre = new Regex("DOCPROPERTY (?<name>.*) \\*");
 

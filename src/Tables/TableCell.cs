@@ -10,23 +10,22 @@ namespace DXPlus
     /// A single cell in a Word table. All content in a table is contained in a cell.
     /// A cell also has several properties affecting its size, appearance, and how the content it contains is formatted.
     /// </summary>
-    public class Cell : BlockContainer
+    public class TableCell : BlockContainer
     {
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="row">Owner Row</param>
         /// <param name="xml">XML representing this cell</param>
-        internal Cell(Row row, XElement xml) : base(row.Document, xml)
+        internal TableCell(TableRow row, XElement xml) : base(row.Document, row.PackagePart, xml)
         {
             Row = row;
-            PackagePart = row.PackagePart;
         }
 
         /// <summary>
         /// Row owner
         /// </summary>
-        public Row Row { get; }
+        public TableRow Row { get; }
 
         /// <summary>
         /// The table cell properties

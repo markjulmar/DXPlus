@@ -13,6 +13,7 @@ namespace DXPlus.Comments
         private XDocument commentsDoc;
         private XDocument peopleDoc;
         private PackagePart peoplePackagePart;
+        private PackagePart commentsPackagePart;
 
         private static readonly XName CommentStart = Namespace.Main + "commentRangeStart";
         private static readonly XName CommentEnd = Namespace.Main + "commentRangeEnd";
@@ -22,14 +23,28 @@ namespace DXPlus.Comments
         /// </summary>
         /// <param name="documentOwner">Owning document</param>
         public CommentManager(IDocument documentOwner) 
-            : base(documentOwner, null)
+            : base(documentOwner, null, null)
         {
+        }
+
+        /// <summary>
+        /// Retrieve the comments package part
+        /// </summary>
+        internal PackagePart CommentsPackagePart
+        {
+            get => commentsPackagePart;
+            set
+            {
+                commentsPackagePart = value;
+                commentsDoc = PackagePart.Load();
+                Xml = commentsDoc?.Root;
+            }
         }
 
         /// <summary>
         /// Loads the people.xml from the document
         /// </summary>
-        public PackagePart PeoplePackagePart
+        internal PackagePart PeoplePackagePart
         {
             get => peoplePackagePart;
             set
@@ -46,21 +61,12 @@ namespace DXPlus.Comments
             => Xml == null 
                 ? Enumerable.Empty<Comment>() 
                 : Xml.Elements(Namespace.Main + "comment")
-                     .Select(e => new Comment(Document, e));
+                     .Select(e => new Comment(Document, CommentsPackagePart, e));
 
         /// <summary>
         /// The comment package part
         /// </summary>
-        public PackagePart CommentPackagePart
-        {
-            get => PackagePart;
-            set
-            {
-                PackagePart = value;
-                commentsDoc = PackagePart.Load();
-                Xml = commentsDoc?.Root;
-            }
-        }
+        internal override PackagePart PackagePart => commentsPackagePart;
 
         /// <summary>
         /// Creates a new comment with a blank paragraph
@@ -80,13 +86,13 @@ namespace DXPlus.Comments
                 peopleDoc = peoplePackagePart.Load();
             }
 
-            if (PackagePart == null)
+            if (commentsPackagePart == null)
             {
-                PackagePart = Document.Package.CreatePart(Relations.Comments.Uri, Relations.Comments.ContentType, CompressionOption.Maximum);
+                commentsPackagePart = Document.Package.CreatePart(Relations.Comments.Uri, Relations.Comments.ContentType, CompressionOption.Maximum);
                 var template = Resource.CommentsDocument();
-                PackagePart.Save(template);
-                Document.PackagePart.CreateRelationship(PackagePart.Uri, TargetMode.Internal, Relations.Comments.RelType);
-                commentsDoc = PackagePart.Load();
+                commentsPackagePart.Save(template);
+                Document.PackagePart.CreateRelationship(commentsPackagePart.Uri, TargetMode.Internal, Relations.Comments.RelType);
+                commentsDoc = commentsPackagePart.Load();
                 Xml = commentsDoc.Root;
             }
 
@@ -97,10 +103,9 @@ namespace DXPlus.Comments
                 AddPersonEntity(authorName);
             }
 
-            var comment = new Comment(Document, authorName, dt, authorInitials)
+            var comment = new Comment(Document, commentsPackagePart, authorName, dt, authorInitials)
             {
                 Id = Comments.Any() ? Comments.Max(c => c.Id) + 1 : 1,
-                PackagePart = PackagePart
             };
 
             // Insert into the DOM

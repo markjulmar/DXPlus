@@ -12,6 +12,23 @@ namespace DXPlus.Tests
         private const string Filename = "test.docx";
 
         [Fact]
+        public void CannotAddParagraphToOrphanParagraph()
+        {
+            var p = new Paragraph();
+            Assert.Throws<InvalidOperationException>(() => p.AddParagraph());
+        }
+
+        [Fact]
+        public void OnceParentedCanAddParagraphs()
+        {
+            using var doc = Document.Create();
+            var p = new Paragraph();
+            doc.AddParagraph(p);
+            p.AddParagraph();
+            Assert.Equal(2, doc.Paragraphs.Count());
+        }
+
+        [Fact]
         public void AddCustomDocumentProperty()
         {
             using var doc = Document.Create();
@@ -453,7 +470,7 @@ namespace DXPlus.Tests
                 new XElement(Name.Run,
                     new XElement(Name.Text, "here.")));
 
-            var p = new Paragraph(null, e, 0);
+            var p = new Paragraph(null, null, e, 0);
             Assert.Equal("Some text goes here.", p.Text);
             Assert.Equal(0, p.StartIndex);
 
@@ -473,7 +490,7 @@ namespace DXPlus.Tests
                 new XElement(Name.Run,
                     new XElement(Name.Text, "here.")));
 
-            var p = new Paragraph(null, e, 0);
+            var p = new Paragraph(null, null, e, 0);
             Assert.Equal("Some text goes here.", p.Text);
             Assert.Equal(0, p.StartIndex);
 

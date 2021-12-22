@@ -90,11 +90,13 @@ namespace DXPlus
         public static IDocument CreateTemplate(string filename = null) 
             => Create(filename, DocumentTypes.Template);
 
+
         /// <summary>
         /// Default constructor
         /// </summary>
-        private Document() : base(null, null)
+        private Document() : base(null, null, null)
         {
+            base.document = this;
         }
 
         /// <summary>
@@ -793,7 +795,6 @@ namespace DXPlus
         private static Document CreateDocumentFromPackage(Package package)
         {
             var document = new Document { Package = package };
-            document.Document = document;
             document.OnLoadDocument();
 
             return document;
@@ -843,7 +844,7 @@ namespace DXPlus
             ThrowIfObjectDisposed();
 
             // Get the main document part
-            PackagePart = Package.GetParts().Single(p =>
+            base.packagePart = Package.GetParts().Single(p =>
                 p.ContentType.Equals(DocxContentType.Document, StringComparison.CurrentCultureIgnoreCase) ||
                 p.ContentType.Equals(DocxContentType.Template, StringComparison.CurrentCultureIgnoreCase));
 
@@ -867,7 +868,7 @@ namespace DXPlus
                 else if (rel.RelationshipType == Relations.People.RelType)
                     commentManager.PeoplePackagePart = Package.GetPart(Relations.People.Uri);
                 else if (rel.RelationshipType == Relations.Comments.RelType)
-                    commentManager.CommentPackagePart = Package.GetPart(Relations.Comments.Uri);
+                    commentManager.CommentsPackagePart = Package.GetPart(Relations.Comments.Uri);
             }
         }
 
@@ -1098,7 +1099,7 @@ namespace DXPlus
                 cy = img.Height * 9526;
             }
 
-            return new Picture(this, Resource.DrawingElement(id, name, description, cx, cy, rid),
+            return new Picture(this, PackagePart, Resource.DrawingElement(id, name, description, cx, cy, rid),
                                 new Image(this, relationship));
         }
 
@@ -1111,6 +1112,9 @@ namespace DXPlus
         /// <returns>URI for the given part</returns>
         internal Uri EnsureRelsPathExists(PackagePart part)
         {
+            if (part is null)
+                throw new ArgumentNullException(nameof(part));
+
             // Convert the path of this mainPart to its equivalent rels file path.
             string path = part.Uri.OriginalString.Replace("/word/", "");
             Uri relationshipPath = new Uri($"/word/_rels/{path}.rels", UriKind.Relative);

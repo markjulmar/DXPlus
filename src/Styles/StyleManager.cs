@@ -26,9 +26,10 @@ namespace DXPlus
         /// </summary>
         /// <param name="documentOwner">Owning document</param>
         /// <param name="stylesPart">Numbering part</param>
-        public StyleManager(IDocument documentOwner, PackagePart stylesPart) : base(documentOwner, null)
+        public StyleManager(IDocument documentOwner, PackagePart stylesPart) : base(documentOwner, stylesPart, null)
         {
-            PackagePart = stylesPart ?? throw new ArgumentNullException(nameof(stylesPart));
+            if (stylesPart==null)
+                throw new ArgumentNullException(nameof(stylesPart));
             stylesDoc = stylesPart.Load();
             Xml = stylesDoc.Root;
         }

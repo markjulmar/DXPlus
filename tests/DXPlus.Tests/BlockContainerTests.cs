@@ -6,6 +6,16 @@ namespace DXPlus.Tests
     public class BlockContainerTests
     {
         [Fact]
+        public void ParagraphCanFindDocumentOwner()
+        {
+            using var doc = Document.Create();
+
+            var p = doc.AddParagraph("This is a paragraph.");
+            Assert.NotNull(p.Container);
+            Assert.Equal(doc as BlockContainer, p.Container);
+        }
+
+        [Fact]
         public void CanEnumerateAllBlocks()
         {
             var doc = Document.Create();
@@ -21,6 +31,11 @@ namespace DXPlus.Tests
             Assert.IsType<Paragraph>(blocks[0]);
             Assert.IsType<Paragraph>(blocks[1]);
             Assert.NotNull(blocks[0].Table);
+
+            Assert.Equal(3, doc.Blocks.Count());
+            Assert.IsType<Paragraph>(doc.Blocks.First());
+            Assert.IsType<Table>(doc.Blocks.ElementAt(1));
+            Assert.IsType<Paragraph>(doc.Blocks.Last());
         }
 
         [Fact]

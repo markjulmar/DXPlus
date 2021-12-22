@@ -163,8 +163,9 @@ namespace DXPlus
         /// Internal constructor used when creating hyperlinks out of the document
         /// </summary>
         /// <param name="document">Document owner</param>
+        /// <param name="packagePart">Package owner</param>
         /// <param name="xml">XML fragment representing hyperlink</param>
-        private Hyperlink(IDocument document, XElement xml) : base(document, xml)
+        private Hyperlink(IDocument document, PackagePart packagePart, XElement xml) : base(document, packagePart, xml)
         {
             type = 0;
             Id = xml.AttributeValue(Namespace.RelatedDoc + "id");
@@ -175,9 +176,10 @@ namespace DXPlus
         /// Internal constructor used when creating hyperlinks out of the document
         /// </summary>
         /// <param name="document">Document owner</param>
+        /// <param name="packagePart">Package owner</param>
         /// <param name="instrText">Text with field codes</param>
         /// <param name="runs">Text runs making up this hyperlink</param>
-        private Hyperlink(IDocument document, XElement instrText, List<XElement> runs) : base(document, null)
+        private Hyperlink(IDocument document, PackagePart packagePart, XElement instrText, List<XElement> runs) : base(document, packagePart, null)
         {
             type = 1;
             this.instrText = instrText;
@@ -214,7 +216,7 @@ namespace DXPlus
                     }
 
                     Debug.Assert(owner.Document != null);
-                    yield return new Hyperlink(owner.Document, he) { PackagePart = owner.PackagePart };
+                    yield return new Hyperlink(owner.Document, owner.PackagePart, he);
                 }
                 else
                 {
@@ -243,7 +245,7 @@ namespace DXPlus
                             XAttribute fldCharType = fldChar.Attribute(Namespace.Main + "fldCharType");
                             if (fldCharType?.Value.Equals("end", StringComparison.CurrentCultureIgnoreCase) == true)
                             {
-                                yield return new Hyperlink(owner.Document, he, hyperLinkRuns) { PackagePart = owner.PackagePart };
+                                yield return new Hyperlink(owner.Document, owner.PackagePart, he, hyperLinkRuns);
                                 break;
                             }
                         }
@@ -255,11 +257,9 @@ namespace DXPlus
         /// <summary>
         /// Called when the document owner is changed.
         /// </summary>
-        protected override void OnDocumentOwnerChanged(IDocument previousValue, IDocument newValue)
+        protected override void OnDocumentOwnerChanged()
         {
-            base.OnDocumentOwnerChanged(previousValue, newValue);
-            // Add the hyperlink styles to the document if missing.
-            (newValue as Document)?.AddHyperlinkStyle();
+            Document?.AddHyperlinkStyle();
         }
     }
 }

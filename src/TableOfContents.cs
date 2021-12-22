@@ -1,5 +1,6 @@
 ﻿using DXPlus.Resources;
 using System;
+using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
 
@@ -17,8 +18,9 @@ namespace DXPlus
         /// Constructor
         /// </summary>
         /// <param name="document">Document owner</param>
+        /// <param name="packagePart">Package owner</param>
         /// <param name="xml">XML data</param>
-        private TableOfContents(IDocument document, XElement xml) : base(document, xml)
+        private TableOfContents(IDocument document, PackagePart packagePart, XElement xml) : base(document, packagePart, xml)
         {
         }
 
@@ -46,7 +48,7 @@ namespace DXPlus
             EnsureTocStylesArePresent(document, headerStyle);
 
             // Create the TOC
-            return new TableOfContents(document,
+            return new TableOfContents(document, document.PackagePart,
                 Resource.TocXmlBase(headerStyle, title, rightTabPos,
                     BuildSwitchString(switches, lastIncludeLevel)));
         }

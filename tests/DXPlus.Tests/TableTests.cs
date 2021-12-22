@@ -8,6 +8,34 @@ namespace DXPlus.Tests
     public class TableTests
     {
         [Fact]
+        public void CheckExistingTablePropertyAfterInsert()
+        {
+            using var doc = Document.Create();
+
+            var p = doc.AddParagraph("This is a test paragraph");
+            Assert.Null(p.Table);
+            doc.AddTable(1, 1);
+            Assert.NotNull(p.Table);
+        }
+        
+        [Fact]
+        public void SeparatorParagraphInsertedBetweenTables()
+        {
+            using var doc = Document.Create();
+
+            Assert.Empty(doc.Paragraphs);
+            doc.AddTable(1, 1);
+            Assert.Empty(doc.Paragraphs);
+
+            doc.AddTable(2, 2);
+            Assert.Single(doc.Paragraphs);
+
+            Assert.IsType<Table>(doc.Blocks.First());
+            Assert.IsType<Paragraph>(doc.Blocks.ElementAt(1));
+            Assert.IsType<Table>(doc.Blocks.Last());
+        }
+
+        [Fact]
         public void TableRespectsExplicitWidthRequest()
         {
             Table t = new Table(1, 4);
@@ -315,7 +343,7 @@ namespace DXPlus.Tests
             Assert.Equal(4, t.Xml.RemoveNamespaces().XPathSelectElements("//tc").Count());
             Assert.Equal(4, t.ColumnCount);
 
-            Row row = t.Rows.First();
+            TableRow row = t.Rows.First();
             Assert.Equal(4, row.Cells.Count);
 
             for (var cellIndex = 0; cellIndex < row.Cells.Count; cellIndex++)
@@ -366,7 +394,7 @@ namespace DXPlus.Tests
         {
             Table t = new Table(2,2);
 
-            Row row = t.Rows.First();
+            TableRow row = t.Rows.First();
             Assert.True(row.BreakAcrossPages);
             Assert.Empty(row.Xml.RemoveNamespaces().XPathSelectElements("//trPr/cantSplit"));
 

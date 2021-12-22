@@ -21,7 +21,7 @@ namespace DXPlus
         /// <summary>
         /// Public constructor to create an empty table
         /// </summary>
-        public Table() : this(null, CreateEmptyTableXml())
+        public Table() : this(null, null, CreateEmptyTableXml())
         {
         }
 
@@ -59,8 +59,9 @@ namespace DXPlus
         /// Internal constructor for the table - wraps a {tbl} element.
         /// </summary>
         /// <param name="document">Document owner</param>
+        /// <param name="packagePart">Package owner</param>
         /// <param name="xml">XML fragment representing the table</param>
-        internal Table(IDocument document, XElement xml) : base(document, xml)
+        internal Table(IDocument document, PackagePart packagePart, XElement xml) : base(document, packagePart, xml)
         {
             if (xml == null)
                 throw new ArgumentNullException(nameof(xml));
@@ -243,64 +244,48 @@ namespace DXPlus
                     style.SetAttributeValue(Name.MainVal, tableDesign.GetEnumName());
                 }
 
-                if(Document != null)
-                    ApplyTableStyleToDocumentOwner(Document);
+                ApplyTableStyleToDocumentOwner();
             }
         }
 
         /// <summary>
         /// Called when the document owner is changed.
         /// </summary>
-        protected override void OnDocumentOwnerChanged(IDocument previousValue, IDocument newValue)
+        protected override void OnDocumentOwnerChanged()
         {
-            base.OnDocumentOwnerChanged(previousValue, newValue);
+            if (ColumnCount == 0 || !Rows.Any())
+                throw new Exception("Cannot add empty table to document.");
 
-            if (newValue != null)
+            // Fixup any unsized columns
+            if (DefaultColumnWidths.Any(dc => double.IsNaN(dc)))
             {
-                if (ColumnCount == 0 || !Rows.Any())
-                    throw new Exception("Cannot add empty table to document.");
-
-                // Fixup any unsized columns
-                if (DefaultColumnWidths.Any(dc => double.IsNaN(dc)))
-                {
-                    OnSetColumnWidths(DefaultColumnWidths.ToArray());
-                }
+                OnSetColumnWidths(DefaultColumnWidths.ToArray());
             }
 
-            if (newValue is Document doc && Xml != null)
-            {
-                ApplyTableStyleToDocumentOwner(doc);
-                Rows.ToList().ForEach(r => r.Document = doc);
-            }
-        }
+            // Add any required styles
+            ApplyTableStyleToDocumentOwner();
 
-        /// <summary>
-        /// Called when the package part is changed.
-        /// </summary>
-        protected override void OnPackagePartChanged(PackagePart previousValue, PackagePart newValue)
-        {
-            base.OnPackagePartChanged(previousValue, newValue);
-            Rows.ToList().ForEach(r => r.PackagePart = newValue);
+            // Set the document/package for each row.
+            Rows.ToList().ForEach(r => r.SetOwner(Document, PackagePart));
         }
 
         /// <summary>
         /// This ensures the owning document has the table style applied.
         /// </summary>
-        private void ApplyTableStyleToDocumentOwner(Document doc)
+        private void ApplyTableStyleToDocumentOwner()
         {
-            if (doc is null)
-                throw new ArgumentNullException(nameof(doc));
+            if (Document == null) return;
 
             string designName = TblPr.Element(Namespace.Main + "tblStyle").GetVal();
             if (string.IsNullOrWhiteSpace(designName) || string.Compare(designName, "none", StringComparison.InvariantCultureIgnoreCase)==0)
                 return;
 
-            if (!doc.Styles.HasStyle(designName, StyleType.Table))
+            if (!Document.Styles.HasStyle(designName, StyleType.Table))
             {
                 var styleElement = Resource.DefaultTableStyles()
                                         .Descendants()
                                         .FindByAttrVal(Namespace.Main + "styleId", designName);
-                doc.Styles.Add(styleElement);
+                Document.Styles.Add(styleElement);
             }
         }
 
@@ -322,7 +307,7 @@ namespace DXPlus
         /// <summary>
         /// Returns a list of rows in this table.
         /// </summary>
-        public IEnumerable<Row> Rows => Xml.Elements(Namespace.Main + "tr").Select(r => new Row(this, r));
+        public IEnumerable<TableRow> Rows => Xml.Elements(Namespace.Main + "tr").Select(r => new TableRow(this, r));
 
         /// <summary>
         /// Gets or Sets the value of the Table Caption (Alternate Text Title) of this table.
@@ -404,7 +389,7 @@ namespace DXPlus
         /// <summary>
         /// Insert a blank row at the end of this table.
         /// </summary>
-        public Row AddRow()
+        public TableRow AddRow()
         {
             return InsertRow(Rows.Count());
         }
@@ -412,7 +397,7 @@ namespace DXPlus
         /// <summary>
         /// Insert a row into this table.
         /// </summary>
-        public Row InsertRow(int index)
+        public TableRow InsertRow(int index)
         {
             var rows = Rows.ToList();
 
@@ -440,7 +425,7 @@ namespace DXPlus
         /// <param name="index"></param>
         /// <param name="content"></param>
         /// <returns></returns>
-        private Row InsertRow(int index, IEnumerable<XElement> content)
+        private TableRow InsertRow(int index, IEnumerable<XElement> content)
         {
             if (content == null)
                 throw new ArgumentNullException(nameof(content));
@@ -451,7 +436,7 @@ namespace DXPlus
             if (index < 0 || index > rows.Count)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            var row = new Row(this, new XElement(Namespace.Main + "tr", content));
+            var row = new TableRow(this, new XElement(Namespace.Main + "tr", content));
 
             if (index == rows.Count)
                 rows[^1].Xml.AddAfterSelf(row.Xml);
@@ -481,7 +466,7 @@ namespace DXPlus
             // Move the content over and add vMerge to each row cell
             for (int rowIndex = startRow; rowIndex <= endRow; rowIndex++)
             {
-                Cell cell = Rows.ElementAt(rowIndex).Cells[columnIndex];
+                TableCell cell = Rows.ElementAt(rowIndex).Cells[columnIndex];
                 XElement vMerge = cell.Xml.GetOrAddElement(Namespace.Main + "tcPr")
                             .GetOrAddElement(Namespace.Main + "vMerge");
 
@@ -538,7 +523,7 @@ namespace DXPlus
         /// <param name="index">The row to remove.</param>
         public void RemoveRow(int index)
         {
-            List<Row> rows = Rows.ToList();
+            List<TableRow> rows = Rows.ToList();
             if (index < 0 || index > rows.Count - 1)
             {
                 throw new IndexOutOfRangeException();
@@ -692,7 +677,7 @@ namespace DXPlus
             }
 
             // Reset cell widths
-            foreach (Row row in Rows)
+            foreach (TableRow row in Rows)
             {
                 row.SetColumnWidths(columnWidths);
             }

@@ -1,4 +1,5 @@
-﻿using System.IO.Packaging;
+﻿using System;
+using System.IO.Packaging;
 using System.Xml.Linq;
 
 namespace DXPlus
@@ -7,45 +8,37 @@ namespace DXPlus
     /// All Document types are derived from DocXElement.
     /// This class contains properties which every element of a Document must contain.
     /// </summary>
-    public abstract class DocXElement
+    public abstract class DocXElement : IEquatable<DocXElement>
     {
-        private XElement xml;
-        private Document document;
-        private PackagePart packagePart;
+        protected Document document;
+        protected PackagePart packagePart;
 
         /// <summary>
         /// The document owner
         /// </summary>
-        internal Document Document
+        internal virtual Document Document => document;
+
+        /// <summary>
+        /// This is used to assign an owner to the element. The owner
+        /// consists of the owning document object + a zip package.
+        /// </summary>
+        /// <param name="document">Document</param>
+        /// <param name="packagePart">Package</param>
+        internal void SetOwner(Document document, PackagePart packagePart)
         {
-            get => document;
-            set
+            this.document = document;
+            this.packagePart = packagePart;
+
+            if (document != null)
             {
-                if (document != value)
-                {
-                    var previousValue = document;
-                    document = value;
-                    OnDocumentOwnerChanged(previousValue, document);
-                }
+                OnDocumentOwnerChanged();
             }
         }
 
         /// <summary>
         /// PackagePart (file) this element is stored in.
         /// </summary>
-        internal PackagePart PackagePart
-        {
-            get => packagePart;
-            set
-            {
-                if (packagePart != value)
-                {
-                    var previousValue = packagePart;
-                    packagePart = value;
-                    OnPackagePartChanged(previousValue, packagePart);
-                }
-            }
-        }
+        internal virtual PackagePart PackagePart => packagePart;
 
         /// <summary>
         /// Default constructor
@@ -58,11 +51,13 @@ namespace DXPlus
         /// Store both the document and xml so that they can be accessed by derived types.
         /// </summary>
         /// <param name="document">The document that this element belongs to.</param>
+        /// <param name="packagePart">The package this element is in.</param>
         /// <param name="xml">The Xml that gives this element substance</param>
-        internal DocXElement(IDocument document, XElement xml)
+        internal DocXElement(IDocument document, PackagePart packagePart, XElement xml)
         {
-            this.xml = xml;
+            this.packagePart = packagePart;
             this.document = (Document) document;
+            Xml = xml;
         }
 
         /// <summary>
@@ -73,42 +68,40 @@ namespace DXPlus
         /// <summary>
         /// This is the actual Xml that gives this element substance.
         /// </summary>
-        internal XElement Xml
-        {
-            get => xml;
-            set
-            {
-                var previousValue = xml;
-                xml = value;
-                OnElementChanged(previousValue, xml);
-            }
-        }
-
-        /// <summary>
-        /// Called when the XML element is changed
-        /// </summary>
-        protected virtual void OnElementChanged(XElement previousValue, XElement newValue)
-        {
-        }
+        internal XElement Xml { get; set; }
 
         /// <summary>
         /// This is a reference to the document object that this element belongs to.
-        /// Every Document element is connected to a document.
+        /// It can be null if the given element hasn't been added to a document yet.
         /// </summary>
-        public IDocument Owner => document;
+        public IDocument Owner => Document;
 
         /// <summary>
         /// Called when the document owner is changed.
         /// </summary>
-        protected virtual void OnDocumentOwnerChanged(IDocument previousValue, IDocument newValue)
+        protected virtual void OnDocumentOwnerChanged()
         {
         }
 
         /// <summary>
-        /// Called when the package part is changed.
+        /// Equality operator
         /// </summary>
-        protected virtual void OnPackagePartChanged(PackagePart previousValue, PackagePart newValue)
+        /// <param name="other"></param>
+        /// <returns>True/False</returns>
+        public bool Equals(DocXElement other)
         {
+            if (other == null) return false;
+            return this.Xml == other.Xml;
+        }
+
+        /// <summary>
+        /// Handler for Equals method.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as DocXElement);
         }
     }
 }

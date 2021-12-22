@@ -5,16 +5,31 @@ using DXPlus;
 
 public static class Program
 {
-    public static void Main(string[] args)
+    public static void Main()
     {
-        var doc = Document.Load(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "doc.docx"));
+        var doc = Document.Load(Path.Combine(
+            Environment.GetFolderPath(
+                Environment.SpecialFolder.Desktop), "doc.docx"));
 
-        //Console.WriteLine(doc.RawDocument());
-        //Console.WriteLine();
+        Console.WriteLine(doc.RawDocument());
+        Console.WriteLine();
 
-        foreach (var p in doc.Paragraphs)
+        foreach (var block in doc.Blocks)
         {
-            DumpParagraph(p, 0);
+            DumpBlock(block, 0);
+        }
+    }
+
+    private static void DumpBlock(Block block, int level)
+    {
+        if (block is Paragraph p)
+            DumpParagraph(p, level);
+        else if (block is Table t)
+            DumpTable(t, level);
+        else if (block is UnknownBlock ub)
+        {
+            string prefix = new string(' ', level * 3);
+            Console.WriteLine($"{prefix}{ub.Name}");
         }
     }
 
@@ -33,11 +48,6 @@ public static class Program
         {
             DumpRun(run, level+1);
         }
-
-        if (block.Table != null)
-        {
-            DumpTable(block.Table, level + 1);
-        }
     }
 
     private static void DumpTable(Table table, int level)
@@ -50,7 +60,7 @@ public static class Program
         }
     }
 
-    private static void DumpRow(Row row, int level)
+    private static void DumpRow(TableRow row, int level)
     {
         string prefix = new string(' ', level * 3);
         Console.WriteLine($"{prefix}tr");
@@ -60,7 +70,7 @@ public static class Program
         }
     }
 
-    private static void DumpCell(Cell cell, int level)
+    private static void DumpCell(TableCell cell, int level)
     {
         string prefix = new string(' ', level * 3);
         Console.WriteLine($"{prefix}tc");

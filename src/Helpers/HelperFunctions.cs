@@ -24,18 +24,78 @@ namespace DXPlus.Helpers
             return e;
         }
 
-        internal static Paragraph WrapParagraphElement(XElement element, IDocument document, PackagePart packagePart, ref int position)
+        /// <summary>
+        /// Wraps a block container from the document. These are elements
+        /// which contain other elements.
+        /// </summary>
+        /// <param name="document">Document owner</param>
+        /// <param name="packagePart">Package part</param>
+        /// <param name="e">Element</param>
+        /// <returns></returns>
+        internal static BlockContainer WrapElementBlockContainer(IDocument document, PackagePart packagePart, XElement e)
         {
+            if (e.Name == Name.TableCell)
+            {
+                var rowXml = e.Parent;
+                var tableXml = rowXml.Parent;
+                var table = new Table(document, packagePart, tableXml);
+                var row = new TableRow(table, rowXml);
+                return new TableCell(row, e);
+            }
+            else if (e.Name == Name.Body)
+            {
+                return (Document) document;
+            }
+            else if (e.Name.LocalName == "hdr")
+            {
+            }
+            else if (e.Name.LocalName == "ftr")
+            {
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Wraps a paragraph object
+        /// </summary>
+        /// <param name="element">XML element</param>
+        /// <param name="document">Document owner</param>
+        /// <param name="packagePart">Package paragraph is in</param>
+        /// <param name="position">Text position</param>
+        /// <returns>Paragraph wrapper</returns>
+        internal static Paragraph WrapParagraphElement(XElement element, IDocument document, PackagePart packagePart, ref int position)
+            {
             if (element.Name != Name.Paragraph)
                 throw new ArgumentException($"Passed element {element.Name} not a {Name.Paragraph}.", nameof(element));
 
-            var p = new Paragraph(document, element, position) { PackagePart = packagePart };
-            var nextNode = p.Xml.ElementsAfterSelf().FirstOrDefault();
-            if (nextNode?.Name.Equals(Name.Table) == true)
-                p.Table = new Table(document, nextNode);
+            var p = new Paragraph(document, packagePart, element, position);
             position += GetText(element).Length;
-
             return p;
+        }
+
+        /// <summary>
+        /// Helper to create a block from an element in the document.
+        /// </summary>
+        /// <param name="blockContainer">Owning container</param>
+        /// <param name="e">XML element</param>
+        /// <param name="current">Current text position for paragraph tracking</param>
+        /// <returns>Block wrapper</returns>
+        internal static Block WrapElementBlock(BlockContainer blockContainer, XElement e, ref int current)
+        {
+            if (e.Name == Name.Paragraph)
+            {
+                return WrapParagraphElement(e, blockContainer.Document, blockContainer.PackagePart, ref current);
+            }
+            if (e.Name == Name.Table)
+            {
+                return new Table(blockContainer.Document, blockContainer.PackagePart, e);
+            }
+            if (e.Name != Name.SectionProperties)
+            {
+                return new UnknownBlock(blockContainer.Document, blockContainer.PackagePart, e);
+            }
+            return null;
         }
 
         /// <summary>

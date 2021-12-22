@@ -9,6 +9,7 @@ namespace DXPlus
     /// </summary>
     internal static class Name
     {
+        public static readonly XName Body = Namespace.Main + "body";
         public static readonly XName Bold = Namespace.Main + "b";
         public static readonly XName BookmarkEnd = Namespace.Main + "bookmarkEnd";
         public static readonly XName BookmarkStart = Namespace.Main + "bookmarkStart";
@@ -51,6 +52,7 @@ namespace DXPlus
         public static readonly XName Size = Namespace.Main + "sz";
         public static readonly XName Spacing = Namespace.Main + "spacing";
         public static readonly XName Table = Namespace.Main + "tbl";
+        public static readonly XName TableCell = Namespace.Main + "tc";
         public static readonly XName TableIndent = Namespace.Main + "tblInd";
         public static readonly XName Text = Namespace.Main + "t";
         public static readonly XName Top = Namespace.Main + "top";

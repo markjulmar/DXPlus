@@ -15,12 +15,17 @@ namespace DXPlus
         IDocument Owner { get; }
 
         /// <summary>
-        /// Returns a list of all Paragraphs inside this container.
+        /// Enumerate all blocks in the container.
+        /// </summary>
+        IEnumerable<Block> Blocks { get; }
+
+        /// <summary>
+        /// Enumerate all paragraphs inside this container.
         /// </summary>
         IEnumerable<Paragraph> Paragraphs { get; }
 
         /// <summary>
-        /// Returns all the sections associated with this container.
+        /// Enumerate all sections associated with this container.
         /// </summary>
         IEnumerable<Section> Sections { get; }
 

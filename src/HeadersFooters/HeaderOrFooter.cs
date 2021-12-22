@@ -43,7 +43,7 @@ namespace DXPlus
         /// <summary>
         /// Constructor
         /// </summary>
-        internal HeaderOrFooter() : base(null, null)
+        internal HeaderOrFooter() : base(null, null, null)
         {
         }
 
@@ -73,8 +73,7 @@ namespace DXPlus
                 DeleteFunc.Invoke(this);
                 Xml = null;
                 Id = null;
-                PackagePart = null;
-                Document = null;
+                SetOwner(null, null);
             }
         }
 
@@ -85,7 +84,8 @@ namespace DXPlus
         {
             if (Exists)
             {
-                PackagePart.Save(new XDocument(new XDeclaration("1.0", "UTF-8", "yes"), Xml));
+                PackagePart.Save(new XDocument(
+                    new XDeclaration("1.0", "UTF-8", "yes"), Xml));
             }
         }
     }

@@ -11,7 +11,7 @@ namespace DXPlus
     /// <summary>
     /// Represents a single row in a Table.
     /// </summary>
-    public class Row : DocXElement
+    public class TableRow : DocXElement
     {
         /// <summary>
         /// Table owner
@@ -23,11 +23,9 @@ namespace DXPlus
         /// </summary>
         /// <param name="table"></param>
         /// <param name="xml"></param>
-        internal Row(Table table, XElement xml) : base(table.Document, xml)
+        internal TableRow(Table table, XElement xml) : base(table.Document, table.PackagePart, xml)
         {
             Table = table;
-            PackagePart = table.PackagePart;
-            Document = table.Document;
         }
 
         /// <summary>
@@ -51,7 +49,7 @@ namespace DXPlus
         /// <summary>
         /// A list of Cells in this Row.
         /// </summary>
-        public IReadOnlyList<Cell> Cells => Xml.Elements(Namespace.Main + "tc").Select(e => new Cell(this, e)).ToList();
+        public IReadOnlyList<TableCell> Cells => Xml.Elements(Namespace.Main + "tc").Select(e => new TableCell(this, e)).ToList();
 
         /// <summary>
         /// Calculates columns count in the row, taking spanned cells into account
@@ -60,7 +58,7 @@ namespace DXPlus
         {
             get
             {
-                IReadOnlyList<Cell> cells = Cells;
+                IReadOnlyList<TableCell> cells = Cells;
                 return cells.Count + cells.Select(cell => cell.GridSpan - 1).Sum();
             }
         }
@@ -124,14 +122,14 @@ namespace DXPlus
                 throw new IndexOutOfRangeException(nameof(count));
             }
 
-            IReadOnlyList<Cell> cells = Cells;
-            Cell startCell = cells[startIndex];
+            IReadOnlyList<TableCell> cells = Cells;
+            TableCell startCell = cells[startIndex];
             int gridSpanSum = 0;
 
             // Merge all the cells beyond startIndex up to the ending index.
             for (int i = startIndex; i <= endIndex; i++)
             {
-                Cell cell = cells[i];
+                TableCell cell = cells[i];
                 gridSpanSum += cell.GridSpan - 1;
 
                 // Add the contents of the cell to the starting cell and remove it.
@@ -235,25 +233,10 @@ namespace DXPlus
         /// <summary>
         /// Called when the document owner is changed.
         /// </summary>
-        protected override void OnDocumentOwnerChanged(IDocument previousValue, IDocument newValue)
+        protected override void OnDocumentOwnerChanged()
         {
-            base.OnDocumentOwnerChanged(previousValue, newValue);
-            foreach (Cell cell in Cells)
-            {
-                cell.Document = (Document)newValue;
-            }
-        }
-
-        /// <summary>
-        /// Called when the package part is changed.
-        /// </summary>
-        protected override void OnPackagePartChanged(PackagePart previousValue, PackagePart newValue)
-        {
-            base.OnPackagePartChanged(previousValue, newValue);
-            foreach (Cell cell in Cells)
-            {
-                cell.PackagePart = newValue;
-            }
+            foreach (TableCell cell in Cells)
+                cell.SetOwner(Document, PackagePart);
         }
     }
 }

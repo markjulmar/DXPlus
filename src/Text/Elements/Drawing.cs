@@ -17,7 +17,7 @@ namespace DXPlus
                 if (!string.IsNullOrEmpty(id))
                 {
                     var img = new Image(document, document?.PackagePart?.GetRelationship(id), id);
-                    return new Picture(document, Xml, img) { PackagePart = document.PackagePart };
+                    return new Picture(document, document.PackagePart, Xml, img);
                 }
                 return null;
             }

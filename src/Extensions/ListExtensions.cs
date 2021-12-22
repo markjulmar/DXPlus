@@ -119,9 +119,9 @@ namespace DXPlus
             if (listId == null)
                 return null;
 
-            IContainer container = p.BlockContainer ?? p.Document;
-            return container?.GetListById(listId.Value)
-                    .ToList().FindIndex(p2 => p2.Equals(p));
+            IContainer container = p.Container ?? p.Document;
+            var theList = container?.GetListById(listId.Value).ToList();
+            return theList.FindIndex(p2 => p2.Equals(p));
         }
 
         /// <summary>

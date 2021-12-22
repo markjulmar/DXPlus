@@ -49,9 +49,11 @@ namespace DXPlus
         /// </summary>
         /// <param name="documentOwner">Owning document</param>
         /// <param name="numberingPart">Numbering part</param>
-        public NumberingStyleManager(IDocument documentOwner, PackagePart numberingPart) : base(documentOwner, null)
+        public NumberingStyleManager(IDocument documentOwner, PackagePart numberingPart) : base(documentOwner, numberingPart, null)
         {
-            PackagePart = numberingPart ?? throw new ArgumentNullException(nameof(numberingPart));
+            if (numberingPart == null)
+                throw new ArgumentNullException(nameof(numberingPart));
+
             numberingDoc = numberingPart.Load();
             Xml = numberingDoc.Root;
         }

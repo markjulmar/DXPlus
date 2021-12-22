@@ -17,26 +17,40 @@ namespace DXPlus
         /// Constructor
         /// </summary>
         /// <param name="document"></param>
+        /// <param name="packagePart">Package owner</param>
         /// <param name="xml"></param>
-        internal BlockContainer(IDocument document, XElement xml)
-            : base(document, xml)
+        internal BlockContainer(IDocument document, PackagePart packagePart, XElement xml)
+            : base(document, packagePart, xml)
         {
         }
 
         /// <summary>
-        /// Returns a list of all Paragraphs inside this container.
+        /// Enumerates all blocks in this block container.
+        /// </summary>
+        public IEnumerable<Block> Blocks
+        {
+            get
+            {
+                int current = 0;
+                foreach (var e in Xml.Elements())
+                {
+                    var block = HelperFunctions.WrapElementBlock(this, e, ref current);
+                    if (block != null) yield return block;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Enumerates the paragraphs inside this container.
         /// </summary>
         public IEnumerable<Paragraph> Paragraphs
         {
             get
             {
-                if (Xml != null)
+                int current = 0;
+                foreach (var e in Xml.Elements(Name.Paragraph))
                 {
-                    int current = 0;
-                    foreach (var e in Xml.Elements(Name.Paragraph))
-                    {
-                        yield return HelperFunctions.WrapParagraphElement(e, Document, PackagePart, ref current);
-                    }
+                    yield return HelperFunctions.WrapParagraphElement(e, Document, PackagePart, ref current);
                 }
             }
         }
@@ -63,7 +77,7 @@ namespace DXPlus
         /// <returns>True if removed</returns>
         public bool RemoveParagraph(Paragraph paragraph)
         {
-            if (paragraph.BlockContainer == this)
+            if (paragraph.Container == this)
             {
                 paragraph.Xml.Remove();
                 return true;
@@ -81,13 +95,13 @@ namespace DXPlus
                 foreach (var para in Paragraphs)
                 {
                     if (para.Xml.Element(Name.ParagraphProperties, Name.SectionProperties) != null)
-                        yield return new Section(Document, para.Xml) {PackagePart = PackagePart};
+                        yield return new Section(Document, PackagePart, para.Xml);
                 }
 
                 // Return the final section if this is the mainDoc.
                 if (Xml.Element(Name.SectionProperties) != null)
                 {
-                    yield return new Section(Document, Xml) {PackagePart = PackagePart}; 
+                    yield return new Section(Document, PackagePart, Xml);
                 }
             }
         }
@@ -96,7 +110,7 @@ namespace DXPlus
         /// Retrieve a list of all Table objects in the document
         /// </summary>
         public IEnumerable<Table> Tables => Xml.Descendants(Name.Table)
-                          .Select(t => new Table(Document, t));
+                          .Select(t => new Table(Document, PackagePart, t));
 
         /// <summary>
         /// Retrieve a list of all hyperlinks in the document
@@ -242,7 +256,7 @@ namespace DXPlus
         {
             InsertMissingStyles(paragraph);
 
-            paragraph.BlockContainer = this;
+            paragraph.SetOwner(Document, PackagePart);
             paragraph.SetStartIndex(Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
 
             return paragraph;
@@ -332,7 +346,7 @@ namespace DXPlus
         /// <returns></returns>
         public Paragraph InsertParagraph(int index, string text, Formatting formatting)
         {
-            Paragraph newParagraph = new Paragraph(Document, Paragraph.Create(text, formatting), index);
+            Paragraph newParagraph = new Paragraph(Document, PackagePart, Paragraph.Create(text, formatting), index);
             Paragraph firstPar = Document.FindParagraphByIndex(index);
             if (firstPar != null)
             {
@@ -370,7 +384,7 @@ namespace DXPlus
                             new XElement(Namespace.Main + "cols", new XAttribute(Namespace.Main + "space", 720)),
                             new XElement(Namespace.Main + "docGrid", new XAttribute(Namespace.Main+"linePitch", 360))))));
 
-            return new Section(Document, xml);
+            return new Section(Document, PackagePart, xml);
         }
 
         /// <summary>
@@ -400,7 +414,7 @@ namespace DXPlus
 
             XElement paragraph = Paragraph.Create(text, formatting);
             AddElementToContainer(paragraph);
-            return OnAddParagraph(new Paragraph(Document, paragraph, 0));
+            return OnAddParagraph(new Paragraph(Document, PackagePart, paragraph, 0));
         }
 
         /// <summary>
@@ -413,7 +427,20 @@ namespace DXPlus
             if (table.InDom)
                 throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
-            table.BlockContainer = this;
+            table.SetOwner(Document, PackagePart);
+
+            // The table will be added to the end of the document. If the
+            // prior element is _also_ a table, then we need to insert a blank
+            // paragraph first - otherwise Word will merge the tables. It's
+            // acceptable to have a table be the only element.
+            var lastElementInDoc = Xml.Elements()
+                .Where(e => e.Name != Name.SectionProperties)
+                .LastOrDefault();
+            if (lastElementInDoc?.Name == Name.Table)
+            {
+                this.AddParagraph();
+            }
+
             AddElementToContainer(table.Xml);
 
             return table;
@@ -430,7 +457,7 @@ namespace DXPlus
             if (table.InDom)
                 throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
-            table.BlockContainer = this;
+            table.SetOwner(Document, PackagePart);
 
             Paragraph firstParagraph = Document.FindParagraphByIndex(index);
             XElement[] split = SplitParagraph(firstParagraph, index - firstParagraph.StartIndex);
@@ -442,15 +469,10 @@ namespace DXPlus
         /// <summary>
         /// Called when the document owner is changed.
         /// </summary>
-        protected override void OnDocumentOwnerChanged(IDocument previousValue, IDocument newValue)
+        protected override void OnDocumentOwnerChanged()
         {
-            base.OnDocumentOwnerChanged(previousValue, newValue);
-
             // Make sure we have all the styles in our document owner.
-            if (newValue != null && Xml != null)
-            {
-                Paragraphs.ToList().ForEach(InsertMissingStyles);
-            }
+            Paragraphs.ToList().ForEach(InsertMissingStyles);
         }
         
         /// <summary>

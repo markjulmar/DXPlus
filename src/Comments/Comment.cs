@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
 using DXPlus.Helpers;
@@ -52,11 +53,12 @@ namespace DXPlus
         /// Constructor for the comment
         /// </summary>
         /// <param name="document"></param>
+        /// <param name="packagePart"></param>
         /// <param name="authorName">Author</param>
         /// <param name="dt">Date</param>
         /// <param name="authorInitials">Initials</param>
         /// <exception cref="ArgumentNullException"></exception>
-        internal Comment(Document document, string authorName, DateTime? dt = null, string authorInitials = null)
+        internal Comment(Document document, PackagePart packagePart, string authorName, DateTime? dt = null, string authorInitials = null)
         {
             if (string.IsNullOrEmpty(authorName)) 
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(authorName));
@@ -64,7 +66,7 @@ namespace DXPlus
             authorInitials ??= GetInitialsFromName(authorName);
             dt ??= DateTime.Now;
 
-            Document = document;
+            SetOwner(document, packagePart);
             Xml = Resource.CommentElement(authorName, authorInitials, dt.Value);
         }
 
@@ -82,8 +84,9 @@ namespace DXPlus
         /// Constructor when pulling from an existing document
         /// </summary>
         /// <param name="document"></param>
+        /// <param name="packagePart"></param>
         /// <param name="xml"></param>
-        internal Comment(IDocument document, XElement xml) : base(document, xml)
+        internal Comment(IDocument document, PackagePart packagePart, XElement xml) : base(document, packagePart, xml)
         {
         }
 

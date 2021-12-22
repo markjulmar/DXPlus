@@ -1,5 +1,6 @@
 ﻿using DXPlus.Helpers;
 using System;
+using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
 
@@ -10,10 +11,8 @@ namespace DXPlus
     /// </summary>
     public abstract class Block : DocXElement
     {
-        private BlockContainer owner;
-
         /// <summary>
-        /// Default constructor used with Lists/Tables
+        /// Default constructor
         /// </summary>
         internal Block()
         {
@@ -23,10 +22,26 @@ namespace DXPlus
         /// Constructor
         /// </summary>
         /// <param name="document"></param>
+        /// <param name="packagePart"></param>
         /// <param name="xml"></param>
-        protected Block(IDocument document, XElement xml) : base(document, xml)
+        protected Block(IDocument document, PackagePart packagePart, XElement xml)
+            : base(document, packagePart, xml)
         {
         }
+
+        /// <summary>
+        /// Retrieves the container owner (TableCell, Document, Header/Footer).
+        /// </summary>
+        internal BlockContainer Container
+        {
+            get
+            {
+                if (!InDom) return null;
+                if (Xml.Parent?.Name == Name.Body) return this.Document;
+                return HelperFunctions.WrapElementBlockContainer(this.Document, this.PackagePart, Xml.Parent);
+            }
+        }
+
 
         /// <summary>
         /// Add a page break after the current element.
@@ -40,6 +55,10 @@ namespace DXPlus
         public void InsertPageBreakBefore() =>
             Xml.AddBeforeSelf(HelperFunctions.PageBreak());
 
+        /// <summary>
+        /// Add an empty paragraph after the current element.
+        /// </summary>
+        /// <returns>Created empty paragraph</returns>
         public Paragraph AddParagraph() => AddParagraph(string.Empty, null);
 
         /// <summary>
@@ -48,22 +67,25 @@ namespace DXPlus
         /// <param name="paragraph">FirstParagraph to insert</param>
         public Paragraph AddParagraph(Paragraph paragraph)
         {
+            if (!this.InDom)
+                throw new InvalidOperationException("Cannot add paragraphs to unowned paragraphs - must be part of a document structure.");
             if (paragraph == null) 
                 throw new ArgumentNullException(nameof(paragraph));
             if (paragraph.InDom)
                 throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
+            // If this element is a paragraph and it currently
+            // has a table after it, then add the given paragraph
+            // after the table.
             if (this is Paragraph p && p.Table != null)
             {
                 p.Table.Xml.AddAfterSelf(paragraph.Xml);
             }
+            // Otherwise, just add the paragraph.
             else Xml.AddAfterSelf(paragraph.Xml);
 
-            if (owner != null)
-            {
-                paragraph.BlockContainer = owner;
-                paragraph.SetStartIndex(owner.Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
-            }
+            // Determine the starting index using the container owner.
+            paragraph.SetStartIndex(Container.Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
 
             return paragraph;
         }
@@ -76,7 +98,7 @@ namespace DXPlus
         /// <returns>Newly created paragraph</returns>
         public Paragraph AddParagraph(string text, Formatting formatting)
         {
-            var paragraph = new Paragraph(Document, Paragraph.Create(text, formatting), -1);
+            var paragraph = new Paragraph(Document, PackagePart, Paragraph.Create(text, formatting), -1);
             AddParagraph(paragraph);
             return paragraph;
         }
@@ -94,11 +116,7 @@ namespace DXPlus
 
             Xml.AddBeforeSelf(paragraph.Xml);
 
-            if (owner != null)
-            {
-                paragraph.BlockContainer = owner;
-                paragraph.SetStartIndex(owner.Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
-            }
+            paragraph.SetStartIndex(Container.Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
         }
 
         /// <summary>
@@ -109,7 +127,7 @@ namespace DXPlus
         /// <returns></returns>
         public Paragraph InsertParagraphBefore(string text, Formatting formatting)
         {
-            var paragraph = new Paragraph(Document, Paragraph.Create(text, formatting), -1);
+            var paragraph = new Paragraph(Document, PackagePart, Paragraph.Create(text, formatting), -1);
             InsertParagraphBefore(paragraph);
             return paragraph;
         }
@@ -125,50 +143,8 @@ namespace DXPlus
             if (table.InDom)
                 throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
-            table.BlockContainer = BlockContainer;
+            table.SetOwner(Document, PackagePart);
             Xml.AddBeforeSelf(table.Xml);
-        }
-
-        /// <summary>
-        /// Set the container owner for this element.
-        /// </summary>
-        internal BlockContainer BlockContainer
-        {
-            get => owner;
-            set
-            {
-                if (owner == value)
-                    return;
-
-                if (owner != null)
-                    OnRemovedFromContainer(owner);
-
-                owner = value;
-
-                PackagePart = owner?.PackagePart;
-                Document = owner?.Document;
-
-                if (owner != null)
-                {
-                    OnAddedToContainer(owner);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Invoked when this element is added to a container.
-        /// </summary>
-        /// <param name="blockContainer">Current Container owner</param>
-        protected virtual void OnAddedToContainer(BlockContainer blockContainer)
-        {
-        }
-
-        /// <summary>
-        /// Invoked when this element is removed from a container.
-        /// </summary>
-        /// <param name="blockContainer">Current Container owner</param>
-        protected virtual void OnRemovedFromContainer(BlockContainer blockContainer)
-        {
         }
     }
 }
