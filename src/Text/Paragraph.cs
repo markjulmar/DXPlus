@@ -893,20 +893,6 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Remove the Hyperlink at the provided index. The first hyperlink is at index 0.
-        /// Using a negative index or an index greater than the index of the last hyperlink will cause an ArgumentOutOfRangeException() to be thrown.
-        /// </summary>
-        /// <param name="index">The index of the hyperlink to be removed.</param>
-        public void RemoveHyperlink(int index)
-        {
-            int count = 0;
-            if (index < 0 || !RemoveHyperlinkRecursive(Xml, index, ref count))
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-        }
-
-        /// <summary>
         /// Removes characters from a DXPlus.Document.paragraph.
         /// </summary>
         /// <param name="index">The position to begin deleting characters.</param>
@@ -1193,38 +1179,6 @@ namespace DXPlus
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Removes a specific hyperlink by index through a recursive search
-        /// </summary>
-        /// <param name="element">Element to search</param>
-        /// <param name="index">Index to look for</param>
-        /// <param name="count"># of hyperlinks found so far</param>
-        /// <returns>True when hyperlink is removed</returns>
-        private static bool RemoveHyperlinkRecursive(XElement element, int index, ref int count)
-        {
-            if (element.Name.LocalName.Equals("hyperlink", StringComparison.CurrentCultureIgnoreCase))
-            {
-                // Count the number of hyperlinks we've found so far. When we hit the
-                // index, that's the one we want to remove.
-                if (count == index)
-                {
-                    element.Remove();
-                    return true;
-                }
-                count++;
-            }
-
-            foreach (XElement e in element.Elements())
-            {
-                if (RemoveHyperlinkRecursive(e, index, ref count))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         /// <summary>

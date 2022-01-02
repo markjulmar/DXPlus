@@ -1,7 +1,6 @@
 ﻿using DXPlus.Helpers;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Xml.Linq;
@@ -23,6 +22,28 @@ namespace DXPlus
         /// XML backing storage
         /// </summary>
         internal XElement Xml { get; }
+
+        /// <summary>
+        /// Retrieves the parent (if any) of this run. This will be a paragraph, hyperlink, etc.
+        /// </summary>
+        public DocXElement Parent
+        {
+            get
+            {
+                if (Xml.Parent == null)
+                    return null;
+
+                XElement parentXml = Xml.Parent;
+                while (parentXml != null)
+                {
+                    var wrapper = HelperFunctions.WrapDocumentElement(this.Document, ((Document)this.Document).PackagePart, parentXml);
+                    if (wrapper != null) return wrapper;
+                    parentXml = parentXml.Parent;
+                }
+
+                return null;
+            }
+        }
 
         /// <summary>
         /// Gets the start index of this Text (text length before this text)
@@ -50,12 +71,12 @@ namespace DXPlus
         public IEnumerable<TextElement> Elements
             => Xml.Elements()
                 .Where(e => e.Name != Name.RunProperties)
-                .Select(e => WrapTextChild(e));
+                .Select(WrapTextChild);
 
         /// <summary>
         /// Wraps a child element in an accessor object.
         /// </summary>
-        /// <param name="e"></param>
+        /// <param name="child"></param>
         /// <returns></returns>
         private TextElement WrapTextChild(XElement child)
         {

@@ -15,7 +15,7 @@ namespace DXPlus
         /// <summary>
         /// The document owner
         /// </summary>
-        internal virtual Document Document => document;
+        internal Document Document => document;
 
         /// <summary>
         /// This is used to assign an owner to the element. The owner
@@ -56,7 +56,7 @@ namespace DXPlus
         {
             this.packagePart = packagePart;
             this.document = (Document) document;
-            Xml = xml;
+            this.Xml = xml;
         }
 
         /// <summary>

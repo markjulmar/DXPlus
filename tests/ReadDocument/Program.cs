@@ -1,15 +1,22 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using DXPlus;
 
 public static class Program
 {
-    public static void Main()
+    public static void Main(string[] args)
     {
-        var doc = Document.Load(Path.Combine(
-            Environment.GetFolderPath(
-                Environment.SpecialFolder.Desktop), "doc.docx"));
+        string filename = args.FirstOrDefault();
+        if (string.IsNullOrEmpty(filename)
+            || !File.Exists(filename))
+        {
+            Console.WriteLine("Missing or invalid filename.");
+            return;
+        }
+
+        var doc = Document.Load(filename);
 
         Console.WriteLine(doc.RawDocument());
         Console.WriteLine();
@@ -43,7 +50,7 @@ public static class Program
             listInfo = $"{block.GetNumberingFormat()} {block.GetListLevel()} #{block.GetListIndex()+1}";
         }
 
-        Console.WriteLine($"{prefix}p: {block.Id} {block.Properties.StyleName} {listInfo}{block.Properties.DefaultFormatting}");
+        Console.WriteLine($"{prefix}p: {block.Id} StyleName=\"{block.Properties.StyleName}\" {listInfo}{DumpObject(block.Properties.DefaultFormatting)}");
         foreach (var run in block.Runs)
         {
             DumpRun(run, level+1);
@@ -83,8 +90,16 @@ public static class Program
     private static void DumpRun(Run run, int level)
     {
         string prefix = new string(' ', level*3);
-        Console.WriteLine($"{prefix}r: {run.Properties}");
 
+        var parent = run.Parent;
+        if (parent is Hyperlink hl)
+        {
+            Console.WriteLine($"{prefix}hyperlink: {hl.Id} <{hl.Uri}> \"{hl.Text}\"");
+            prefix += "   ";
+            level++;
+        }
+
+        Console.WriteLine($"{prefix}r: {DumpObject(run.Properties)}");
         foreach (var item in run.Elements)
         {
             DumpRunElement(item, level + 1);
@@ -128,5 +143,26 @@ public static class Program
         }
 
         Console.WriteLine($"{prefix}{item.Name}: {text}");
+    }
+
+    private static string DumpObject(object obj)
+    {
+        var sb = new StringBuilder();
+        Type t = obj.GetType();
+
+        sb.Append($"{t.Name}: [");
+        for (var index = 0; index < t.GetProperties().Length; index++)
+        {
+            var pi = t.GetProperties()[index];
+            object val = pi.GetValue(obj);
+            if (val != null)
+            {
+                if (index > 0) sb.Append(", ");
+                sb.Append($"{pi.Name}={val}");
+            }
+        }
+
+        sb.Append("]");
+        return sb.ToString();
     }
 }

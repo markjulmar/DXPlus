@@ -45,22 +45,49 @@ namespace DXPlus.Helpers
                 var row = new TableRow(table, rowXml);
                 return new TableCell(row, e);
             }
-            else if (e.Name == Name.Body)
+
+            if (e.Name == Name.Body)
             {
                 return (Document) document;
             }
-            else if (e.Name.LocalName == "hdr")
+
+            if (e.Name.LocalName == "hdr")
             {
                 return document.Sections.SelectMany(s => s.Headers)
                     .SingleOrDefault(h => h.Xml == e);
             }
-            else if (e.Name.LocalName == "ftr")
+
+            if (e.Name.LocalName == "ftr")
             {
                 return document.Sections.SelectMany(s => s.Footers)
                     .SingleOrDefault(h => h.Xml == e);
             }
 
             throw new Exception($"Unrecognized container type {e.Name}");
+        }
+
+        /// <summary>
+        /// Wrap an element
+        /// </summary>
+        /// <param name="document">Document owner</param>
+        /// <param name="packagePart">Package part owner</param>
+        /// <param name="xml">XML fragment</param>
+        /// <returns>Element wrapper</returns>
+        public static DocXElement WrapDocumentElement(IDocument document, PackagePart packagePart, XElement xml)
+        {
+            if (xml.Name.LocalName == "hyperlink")
+                return new Hyperlink(document, packagePart, xml);
+            if (xml.Name == Name.Paragraph)
+            {
+                // See if we can find it first. That way we get the proper index.
+                var p = document.Paragraphs.FirstOrDefault(p => p.Xml == xml);
+                if (p != null) return p;
+
+                // Hmm. Unowned perhaps?
+                int pos = 0;
+                return WrapParagraphElement(xml, document, packagePart, ref pos);
+            }
+            return null;
         }
 
         /// <summary>
@@ -72,7 +99,7 @@ namespace DXPlus.Helpers
         /// <param name="position">Text position</param>
         /// <returns>Paragraph wrapper</returns>
         internal static Paragraph WrapParagraphElement(XElement element, IDocument document, PackagePart packagePart, ref int position)
-            {
+        {
             if (element.Name != Name.Paragraph)
                 throw new ArgumentException($"Passed element {element.Name} not a {Name.Paragraph}.", nameof(element));
 

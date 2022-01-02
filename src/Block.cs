@@ -12,13 +12,6 @@ namespace DXPlus
     public abstract class Block : DocXElement
     {
         /// <summary>
-        /// Default constructor
-        /// </summary>
-        internal Block()
-        {
-        }
-
-        /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="document"></param>

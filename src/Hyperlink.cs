@@ -25,11 +25,14 @@ namespace DXPlus
         public string Id { get; private set; }
 
         /// <summary>
-        /// Remove a Hyperlink from this FirstParagraph only.
+        /// Remove the hyperlink from the owning paragraph.
         /// </summary>
         public void Remove()
         {
-            Xml.Remove();
+            if (Xml.Parent != null)
+            {
+                Xml.Remove();
+            }
         }
 
         /// <summary>
@@ -114,7 +117,7 @@ namespace DXPlus
         /// <param name="uri">Link URI</param>
         public Hyperlink(string text, Uri uri)
         {
-            Xml = new XElement(Namespace.Main + "hyperlink",
+            base.Xml = new XElement(Namespace.Main + "hyperlink",
                 new XAttribute(Namespace.RelatedDoc + "id", string.Empty),
                 new XAttribute(Namespace.Main + "history", "1"),
                 new XElement(Name.Run,
@@ -165,7 +168,7 @@ namespace DXPlus
         /// <param name="document">Document owner</param>
         /// <param name="packagePart">Package owner</param>
         /// <param name="xml">XML fragment representing hyperlink</param>
-        private Hyperlink(IDocument document, PackagePart packagePart, XElement xml) : base(document, packagePart, xml)
+        internal Hyperlink(IDocument document, PackagePart packagePart, XElement xml) : base(document, packagePart, xml)
         {
             type = 0;
             Id = xml.AttributeValue(Namespace.RelatedDoc + "id");
@@ -202,9 +205,9 @@ namespace DXPlus
         /// <returns></returns>
         internal static IEnumerable<Hyperlink> Enumerate(DocXElement owner, List<Hyperlink> unownedHyperlinks = null)
         {
-            foreach (XElement he in owner.Xml.Descendants()
-                                .Where(h => h.Name.LocalName == "hyperlink"
-                                    || h.Name.LocalName == "instrText").ToList())
+            foreach (var he in owner.Xml.Descendants()
+                        .Where(h => h.Name.LocalName is "hyperlink" or "instrText")
+                        .ToList())
             {
                 if (he.Name.LocalName == "hyperlink")
                 {
@@ -233,8 +236,8 @@ namespace DXPlus
                     }
 
                     // Take every element until we reach w:fldCharType="end"
-                    List<XElement> hyperLinkRuns = new List<XElement>();
-                    foreach (XElement run in e.ElementsAfterSelf(Name.Run))
+                    var hyperLinkRuns = new List<XElement>();
+                    foreach (var run in e.ElementsAfterSelf(Name.Run))
                     {
                         // Add this run to the list.
                         hyperLinkRuns.Add(run);
