@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Xml.Linq;
 using System.Xml.XPath;
 using Xunit;
 
@@ -254,6 +255,36 @@ namespace DXPlus.Tests
             Assert.Equal(2, rows.Count);
             Assert.Equal("1", t.Rows.First().Cells[0].Paragraphs.First().Text);
             Assert.Equal("1", rows[0].Value);
+        }
+
+        [Fact]
+        public void ConditionalFormattingParsesCorrectly()
+        {
+            Table t = new Table(1, 1);
+            t.ConditionalFormatting = TableConditionalFormatting.FirstColumn | TableConditionalFormatting.FirstRow | TableConditionalFormatting.NoColumnBand;
+
+            string val = t.Xml.RemoveNamespaces().XPathSelectElement("//tblLook").GetVal();
+            Assert.Equal("04A0", val);
+        }
+
+        [Fact]
+        public void ConditionalFormattingParsesCorrectlyBothDirections()
+        {
+            var flags = TableConditionalFormatting.FirstColumn | TableConditionalFormatting.FirstRow | TableConditionalFormatting.NoColumnBand;
+
+            Table t = new Table(1, 1);
+            t.ConditionalFormatting = flags;
+
+            Assert.Equal(flags, t.ConditionalFormatting);
+        }
+
+        [Fact]
+        public void ConditionalFormattingReturnsNoneOnBadValue()
+        {
+            Table t = new Table(1, 1);
+            var e = t.Xml.Element(Namespace.Main + "tblPr").Element(Namespace.Main + "tblLook");
+            e.SetAttributeValue(Name.MainVal, "badvalue");
+            Assert.Equal(TableConditionalFormatting.None, t.ConditionalFormatting);
         }
 
         [Fact]

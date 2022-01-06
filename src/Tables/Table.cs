@@ -93,11 +93,7 @@ namespace DXPlus
         /// </summary>
         public TableConditionalFormatting ConditionalFormatting
         {
-            get => Enum.TryParse<TableConditionalFormatting>(TblPr.Element(Namespace.Main + "tblLook")?.GetVal(),
-                out var tcf)
-                ? tcf
-                : TableConditionalFormatting.None;
-
+            get => ReadTableConditionalFormatting(TblPr);
             set => WriteTableConditionalFormat(TblPr, value);
         }
 
@@ -728,6 +724,31 @@ namespace DXPlus
         /// </summary>
         /// <returns>The w:tbl/tblPr element.</returns>
         private XElement GetOrCreateTablePropertiesSection() => Xml.GetOrAddElement(Namespace.Main + "tblPr");
+
+        /// <summary>
+        /// Read the hex value for table conditional formatting and turn it back
+        /// into an enumeration.
+        /// </summary>
+        /// <param name="tblPr">Table properties</param>
+        /// <returns>Enum value</returns>
+        private static TableConditionalFormatting ReadTableConditionalFormatting(XElement tblPr)
+        {
+            string value = tblPr.Element(Namespace.Main + "tblLook")?.GetVal();
+            if (!string.IsNullOrEmpty(value))
+            {
+                // It's represented as a hex value, we need to turn it back to
+                // an integer base-10 value to use Enum.Parse.
+                if (int.TryParse(value, System.Globalization.NumberStyles.HexNumber,
+                    null, out int num))
+                {
+                    return Enum.TryParse<TableConditionalFormatting>(
+                        num.ToString(), out var tcf)
+                    ? tcf
+                    : TableConditionalFormatting.None;
+                }
+            }
+            return TableConditionalFormatting.None;
+        }
 
         /// <summary>
         /// Write the element children for the TableConditionalFormatting
