@@ -60,7 +60,7 @@ public static class Program
     private static void DumpTable(Table table, int level)
     {
         string prefix = new string(' ', level*3);
-        Console.WriteLine($"{prefix}tbl");
+        Console.WriteLine($"{prefix}tbl Design={table.Design} {table.CustomTableDesignName} {table.ConditionalFormatting}");
         foreach (var row in table.Rows)
         {
             DumpRow(row, level + 1);
