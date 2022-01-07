@@ -302,6 +302,11 @@ namespace DXPlus.Helpers
                 throw new ArgumentNullException(nameof(xml));
             }
 
+            // Skip property blocks.
+            if (xml.Name == Name.ParagraphProperties
+                || xml.Name == Name.RunProperties)
+                return sb;
+                
             string text = ToText(xml);
             if (!string.IsNullOrEmpty(text))
             {
