@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Drawing;
 using System.Globalization;
-using System.Reflection;
 using System.Xml.Linq;
 
 namespace DXPlus

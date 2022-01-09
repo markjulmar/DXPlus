@@ -128,13 +128,18 @@ public static class Program
             if (d.Picture != null)
             {
                 var p = d.Picture;
-                text = $"{p.FileName} ({Math.Round(p.Width,0)}x{Math.Round(p.Height,0)}) - {p.Name}: \"{p.Description}\"";
+                text = $"Id={p.DrawingId} {p.RelationshipId} {p.FileName} ({Math.Round(p.Width,0)}x{Math.Round(p.Height,0)}) - {p.Name}: \"{p.Description}\"";
 
+                if (p.HasRelatedSvg)
+                {
+                    text += $", SvgId={p.SvgRelationshipId} ({p.SvgImage.FileName})";
+                }
+
+                /*
                 string fn = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
                     p.FileName);
 
-                /*
                 using var input = p.Image.OpenStream();
                 using var output = File.OpenWrite(fn);
                 input.CopyTo(output);

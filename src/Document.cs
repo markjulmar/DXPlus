@@ -305,40 +305,146 @@ namespace DXPlus
         /// Add an Image into this document from a fully qualified or relative filename.
         /// </summary>
         /// <param name="imageFileName">The fully qualified or relative filename.</param>
+        /// <param name="contentType">Content type</param>
         /// <returns>An Image file.</returns>
-        public Image AddImage(string imageFileName)
+        public Image AddImage(string imageFileName, string contentType)
         {
-            // The extension this file has will be taken to be its format.
-            string contentType = Path.GetExtension(imageFileName) switch
+            ThrowIfObjectDisposed();
+
+            if (imageFileName is null)
+                throw new ArgumentNullException(nameof(imageFileName));
+
+            if (!File.Exists(imageFileName))
+                throw new ArgumentException("Missing image file.", nameof(imageFileName));
+
+            if (string.IsNullOrEmpty(contentType))
             {
-                ".tiff" => "image/tif",
-                ".tif" => "image/tif",
-                ".png" => "image/png",
-                ".bmp" => "image/png",
-                ".gif" => "image/gif",
-                ".jpg" => "image/jpg",
-                ".jpeg" => "image/jpeg",
-                ".svg" => "image/svg",
-                _ => "image/jpg",
-            };
+                // The extension this file has will be taken to be its format.
+                contentType = Path.GetExtension(imageFileName).ToLower() switch
+                {
+                    ".tiff" => ImageContentType.Tiff,
+                    ".tif" => ImageContentType.Tiff,
+                    ".png" => ImageContentType.Png,
+                    ".bmp" => ImageContentType.Png,
+                    ".gif" => ImageContentType.Gif,
+                    ".jpg" => ImageContentType.Jpg,
+                    ".jpeg" => ImageContentType.Jpeg,
+                    ".svg" => ImageContentType.Svg,
+                    _ => throw new ArgumentException("Unable to determine content type from filename.", nameof(imageFileName)),
+                };
+            }
+
+            contentType = contentType.ToLower();
+            ValidateContentType(contentType);
 
             using var fs = new FileStream(imageFileName, FileMode.Open, FileAccess.Read);
-            return AddImage(fs, contentType);
+            return AddImage(fs, contentType, Path.GetFileName(imageFileName));
         }
 
         /// <summary>
         /// Add an Image into this document from a Stream.
         /// </summary>
         /// <param name="imageStream">A Stream stream.</param>
-        /// <param name="contentType">Content type - image/jpg</param>
+        /// <param name="contentType">Content type to add</param>
         /// <returns>An Image file.</returns>
-        public Image AddImage(Stream imageStream, string contentType = "image/jpg")
+        public Image AddImage(Stream stream, string contentType)
+            => AddImage(stream, contentType, "image");
+
+        /// <summary>
+        /// Validates the passed image content type
+        /// </summary>
+        /// <param name="contentType"></param>
+        private static void ValidateContentType(string contentType)
+        {
+            if (typeof(ImageContentType).GetProperties(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public)
+                .FirstOrDefault(pi => pi.GetValue(null).ToString() == contentType) != null)
+                return;
+
+            throw new ArgumentException("Bad content type - use one of the constants from ImageContentType.", nameof(contentType));
+        }
+
+        /// <summary>
+        /// Add an Image into this document from a Stream.
+        /// </summary>
+        /// <param name="imageStream">A Stream stream.</param>
+        /// <param name="contentType">Content type to add</param>
+        /// <param name="filename">Filename (if any)</param>
+        /// <returns>An Image file.</returns>
+        private Image AddImage(Stream imageStream, string contentType, string filename)
         {
             ThrowIfObjectDisposed();
 
             if (imageStream == null)
                 throw new ArgumentNullException(nameof(imageStream));
+            if (string.IsNullOrEmpty(contentType))
+                throw new ArgumentException($"'{nameof(contentType)}' cannot be null or empty.", nameof(contentType));
 
+            contentType = contentType.ToLower();
+            ValidateContentType(contentType);
+
+            // See if the image is already in the document. If so, we'll
+            // reuse the image.
+            var existingImage = LocateExistingImageResource(imageStream);
+            if (existingImage != null)
+                return existingImage;
+
+            // This is a new image which needs to be added to the rels document.
+            string extension = contentType[(contentType.LastIndexOf("/", StringComparison.Ordinal) + 1)..];
+            if (string.IsNullOrEmpty(filename))
+                filename = "image";
+            else
+                filename = Path.GetFileNameWithoutExtension(filename);
+
+            // Get a unique imgPartUriPath - start with the existing
+            // filename and then append numerics to get something unique.
+            string imgPartUriPath = $"/word/media/{filename}.{extension}";
+            if (Package.PartExists(new Uri(imgPartUriPath, UriKind.Relative)))
+            {
+                int i = 1;
+                do
+                {
+                    imgPartUriPath = $"/word/media/{filename}{i}.{extension}";
+                    i++;
+                } while (Package.PartExists(new Uri(imgPartUriPath, UriKind.Relative)));
+            }
+
+            // Create the package part
+            var imagePackagePart = Package.CreatePart(new Uri(imgPartUriPath, UriKind.Relative), contentType, CompressionOption.Normal);
+
+            // Create a new image relationship
+            var imageRelation = PackagePart.CreateRelationship(imagePackagePart.Uri, TargetMode.Internal, $"{Namespace.RelatedDoc.NamespaceName}/image");
+
+            // Open a Stream to the newly created Image part.
+            using (var imageWriter = imagePackagePart.GetStream(FileMode.Create, FileAccess.Write))
+            {
+                // Using the Stream to the real image, copy this streams data into the newly create Image part.
+                using (imageStream)
+                {
+                    if (imageStream.CanSeek)
+                    {
+                        imageStream.Seek(0, SeekOrigin.Begin);
+                        imageStream.CopyTo(imageWriter);
+                    }
+                    else
+                    {
+                        byte[] bytes = new byte[imageStream.Length];
+                        imageStream.Read(bytes, 0, (int)imageStream.Length);
+                        imageWriter.Write(bytes, 0, (int)imageStream.Length);
+                    }
+                }
+            }
+
+            return new Image(this, imageRelation);
+        }
+
+        /// <summary>
+        /// Locates an existing image resource by comparing bitmap images
+        /// contained in the resource parts
+        /// </summary>
+        /// <param name="imageStream">Image stream to locate</param>
+        /// <returns>Image or null if it's not in the document</returns>
+        private Image LocateExistingImageResource(Stream imageStream)
+        {
             // Get all image parts in word\document.xml
             var relationshipsByImages = PackagePart.GetRelationshipsByType($"{Namespace.RelatedDoc.NamespaceName}/image");
             var imageParts = relationshipsByImages.Select(ir => Package.GetParts()
@@ -346,8 +452,9 @@ namespace DXPlus
                         .Where(e => e != null)
                         .ToList();
 
-            foreach (var relsPart in Package.GetParts().Where(part => part.Uri.ToString().Contains("/word/")
-                                            && part.ContentType.Equals(DocxContentType.Relationships)))
+            foreach (var relsPart in Package.GetParts()
+                        .Where(part => part.Uri.ToString().Contains("/word/")
+                                && part.ContentType.Equals(DocxContentType.Relationships)))
             {
                 var relsPartContent = relsPart.Load();
                 if (relsPartContent.Root == null)
@@ -394,41 +501,8 @@ namespace DXPlus
                 }
             }
 
-            string imgPartUriPath;
-            string extension = contentType.Substring(contentType.LastIndexOf("/", StringComparison.Ordinal) + 1);
-
-            // Get a unique imgPartUriPath
-            do
-            {
-                imgPartUriPath = $"/word/media/{Guid.NewGuid()}.{extension}";
-            } while (Package.PartExists(new Uri(imgPartUriPath, UriKind.Relative)));
-
-            var imagePackagePart = Package.CreatePart(new Uri(imgPartUriPath, UriKind.Relative), contentType, CompressionOption.Normal);
-
-            // Create a new image relationship
-            var imageRelation = PackagePart.CreateRelationship(imagePackagePart.Uri, TargetMode.Internal, $"{Namespace.RelatedDoc.NamespaceName}/image");
-
-            // Open a Stream to the newly created Image part.
-            using (var imageWriter = imagePackagePart.GetStream(FileMode.Create, FileAccess.Write))
-            {
-                // Using the Stream to the real image, copy this streams data into the newly create Image part.
-                using (imageStream)
-                {
-                    if (imageStream.CanSeek)
-                    {
-                        imageStream.Seek(0, SeekOrigin.Begin);
-                        imageStream.CopyTo(imageWriter);
-                    }
-                    else
-                    {
-                        byte[] bytes = new byte[imageStream.Length];
-                        imageStream.Read(bytes, 0, (int)imageStream.Length);
-                        imageWriter.Write(bytes, 0, (int)imageStream.Length);
-                    }
-                }
-            }
-
-            return new Image(this, imageRelation);
+            // No matching image
+            return null;
         }
 
         ///<summary>
@@ -1076,31 +1150,144 @@ namespace DXPlus
         public string RawDocument() => Xml.ToString();
 
         /// <summary>
-        /// Create a new Picture.
+        /// Create a new Picture from a loaded image relationship.
         /// </summary>
         /// <param name="rid">A unique id that identifies an Image embedded in this document.</param>
         /// <param name="name">The name of this Picture.</param>
         /// <param name="description">The description of this Picture.</param>
+        /// <param name="imageFileName">The filename for the image (if any)</param>
         internal Picture CreatePicture(string rid, string name, string description)
         {
             if (string.IsNullOrWhiteSpace(rid))
-            {
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(rid));
-            }
 
             long id = GetNextDocumentId();
-            int cx, cy;
+            var (cx, cy) = GetImageDimensions(rid);
+            var image = GetRelatedImage(rid);
+
+            string renderedImageRid = rid;
+            Image svgImage = null;
+
+            // If this image is an SVG, then we need to create a PNG version
+            // of the same image. The PNG is what gets rendered in the document
+            // but we can keep the SVG to pull out in source format later.
+            if (image.ImageType == ".svg")
+            {
+                svgImage = image; // original image
+                image = CreatePngFromSvg(image); // placeholder
+            }
+
+            // Create the picture with either the original image, or the placeholder.
+            var picture = new Picture(this, PackagePart,
+                Resource.DrawingElement(id, name, description, cx, cy, renderedImageRid, image.FileName),
+                image);
+
+            if (svgImage != null)
+            {
+                // Override local DPI.
+                picture.UseLocalDpi = false;
+                // Add in the SVG extension.
+                picture.SvgRelationshipId = svgImage.Id;
+            }
+
+            return picture;
+        }
+
+        /// <summary>
+        /// Generate a placeholder PNG from an SVG image.
+        /// </summary>
+        /// <param name="image">SVG image object</param>
+        /// <returns>PNG image object</returns>
+        private Image CreatePngFromSvg(Image image)
+        {
+            // Load the svg
+            var svg = new SkiaSharp.Extended.Svg.SKSvg();
+            var relationship = PackagePart.GetRelationship(image.Id);
+            SkiaSharp.SKPicture pict = null;
+
+            using (var svgStream = Package.GetPart(relationship.TargetUri).GetStream())
+            {
+                pict = svg.Load(svgStream);
+            }
+
+            // Get the dimensions.
+            var dimen = new SkiaSharp.SKSizeI(
+                (int)Math.Ceiling(pict.CullRect.Width),
+                (int)Math.Ceiling(pict.CullRect.Height));
+            var matrix = SkiaSharp.SKMatrix.MakeScale(1, 1);
+            var img = SkiaSharp.SKImage.FromPicture(pict, dimen, matrix);
+
+            // convert to PNG
+            var skdata = img.Encode(SkiaSharp.SKEncodedImageFormat.Png, quality:100);
+            using var pngStream = new MemoryStream();
+            skdata.SaveTo(pngStream);
+
+            // Create an image + relationship from the stream.
+            pngStream.Seek(0, SeekOrigin.Begin);
+            return AddImage(pngStream, ImageContentType.Png);
+        }
+
+        /// <summary>
+        /// Returns the image dimension
+        /// </summary>
+        /// <param name="rid"></param>
+        /// <returns></returns>
+        internal (int width, int height) GetImageDimensions(string rid)
+        {
+            if (string.IsNullOrEmpty(rid))
+                throw new ArgumentException($"'{nameof(rid)}' cannot be null or empty.", nameof(rid));
+
+            //TODO: find a better way to do this.
+            int cx = 100;
+            int cy = 100;
 
             var relationship = PackagePart.GetRelationship(rid);
             using (var partStream = Package.GetPart(relationship.TargetUri).GetStream())
-            using (var img = System.Drawing.Image.FromStream(partStream))
             {
-                cx = img.Width * 9526;
-                cy = img.Height * 9526;
+                if (Path.GetExtension(relationship.TargetUri?.ToString() ?? "").ToLower() == ".svg")
+                {
+                    string svg = new StreamReader(partStream).ReadToEnd();
+                    int sp = svg.IndexOf("viewBox=\"");
+                    if (sp > 0)
+                    {
+                        sp += 9;
+                        int ep = svg.IndexOf("\"", sp);
+                        var values = svg.Substring(sp, ep - sp);
+                        var split = values.Split(' ');
+                        if (split.Length == 4)
+                        {
+                            cx = int.Parse(split[2]);
+                            cy = int.Parse(split[3]);
+                        }
+                    }
+                }
+                else
+                {
+                    using var img = System.Drawing.Image.FromStream(partStream);
+                    cx = img.Width;
+                    cy = img.Height;
+                }
             }
 
-            return new Picture(this, PackagePart, Resource.DrawingElement(id, name, description, cx, cy, rid),
-                                new Image(this, relationship));
+            // Return in EMUs.
+            return (cx * (int)Uom.EmuConversion, cy * (int)Uom.EmuConversion);
+        }
+
+        /// <summary>
+        /// Returns an image object from a relationship ID.
+        /// </summary>
+        /// <param name="rid">Relationship id</param>
+        /// <returns>Image</returns>
+        internal Image GetRelatedImage(string rid)
+        {
+            if (string.IsNullOrEmpty(rid))
+                throw new ArgumentException($"'{nameof(rid)}' cannot be null or empty.", nameof(rid));
+
+            var relationship = PackagePart.GetRelationship(rid);
+            if (relationship == null)
+                throw new ArgumentException("Missing relationship", nameof(rid));
+
+            return new Image(this, relationship);
         }
 
         /// <summary>

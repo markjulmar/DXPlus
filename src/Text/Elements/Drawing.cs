@@ -14,12 +14,10 @@ namespace DXPlus
                 var document = (Document) Parent.Document;
 
                 var id = Xml.FirstLocalNameDescendant("blip").AttributeValue(Namespace.RelatedDoc + "embed");
-                if (!string.IsNullOrEmpty(id))
-                {
-                    var img = new Image(document, document?.PackagePart?.GetRelationship(id), id);
-                    return new Picture(document, document.PackagePart, Xml, img);
-                }
-                return null;
+                return !string.IsNullOrEmpty(id)
+                    ? new Picture(document, document.PackagePart, Xml,
+                        document.GetRelatedImage(id))
+                    : null;
             }
         }
 

@@ -18,9 +18,16 @@ namespace DXPlus
         /// </summary>
         private const string DecorativeImageId = "{C183D7F6-B498-43B3-948B-1728B52AA6E4}";
 
-        // English Metric Units are used for coordinates and sizes of drawings/pictures.
-        // 1in == 914400 EMUs. Pixels are measured at 72dpi.
-        private const int EmusInPixel = 914400 / 72;
+        /// <summary>
+        /// GUID for the SVG image extension
+        /// </summary>
+        private const string SvgExtensionId = "{96DAC541-7B7A-43D3-8B79-37D633B846F1}";
+
+        /// <summary>
+        /// A UseLocalDpi element that specifies a flag indicating that the local
+        /// BLIP compression setting overrides the document default compression setting.
+        /// </summary>
+        private const string UseLocalDpiExtensionId = "{28A0092B-C50C-407E-A947-70E740481C1C}";
 
         // The binary image being rendered by this Picture element. Note that images can be 
         // shared across different pictures.
@@ -55,6 +62,67 @@ namespace DXPlus
         /// Shape properties section
         /// </summary>
         private XElement spPr => Xml.FirstLocalNameDescendant("spPr");
+
+        /// <summary>
+        /// Binary image properties
+        /// </summary>
+        private XElement blip => Xml.FirstLocalNameDescendant("blip");
+
+        /// <summary>
+        /// True if this image includes an embedded .svg. In this case,
+        /// we always have a .png which is rendered in the document and a
+        /// .svg which is _also_ in the relationship.
+        /// </summary>
+        public bool HasRelatedSvg => FindDrawingExtension(blip, SvgExtensionId, false) != null;
+
+        /// <summary>
+        /// Specifies a flag indicating that the local BLIP compression
+        /// setting overrides the document default compression setting.
+        /// </summary>
+        public bool? UseLocalDpi
+        {
+            get
+            {
+                var val = FindDrawingExtension(blip, UseLocalDpiExtensionId, false)?
+                        .FirstLocalNameDescendant("useLocalDpi")
+                        .GetVal(null);
+                if (val == null) return null;
+                return (val == "1" || val.ToLower() == "true");
+            }
+
+            set
+            {
+                FindDrawingExtension(blip, UseLocalDpiExtensionId, true)
+                    .GetOrAddElement(Namespace.DrawingA14 + "useLocalDpi")
+                    .SetAttributeValue("val", value==true ? "1" : "0");
+            }
+        }
+
+        /// <summary>
+        /// Returns the relationship ID for the related SVG (if any).
+        /// </summary>
+        public string SvgRelationshipId
+        {
+            get => FindDrawingExtension(blip, SvgExtensionId, false)?
+                    .FirstLocalNameDescendant("svgBlip")
+                    .AttributeValue(Namespace.RelatedDoc + "embed");
+
+            set => FindDrawingExtension(blip, SvgExtensionId, true)
+                    .GetOrAddElement(Namespace.ASvg + "svgBlip")
+                    .SetAttributeValue(Namespace.RelatedDoc + "embed", value);
+        }
+
+        /// <summary>
+        /// Returns any related SVG image, null if none.
+        /// </summary>
+        public Image SvgImage
+        {
+            get
+            {
+                var rid = SvgRelationshipId;
+                return !string.IsNullOrEmpty(rid) ? Document.GetRelatedImage(SvgRelationshipId) : null;
+            }
+        }
 
         /// <summary>
         /// Set a border line around the picture
@@ -300,7 +368,7 @@ namespace DXPlus
         /// <param name="id">ID to look for</param>
         /// <param name="create">True to create it</param>
         /// <returns>XElement of [a:ext]</returns>
-        private XElement FindDrawingExtension(XElement owner, string id, bool create)
+        private static XElement FindDrawingExtension(XElement owner, string id, bool create)
         {
             if (string.IsNullOrWhiteSpace(id))
                 throw new ArgumentException("Value cannot be null or empty.", nameof(id));
@@ -320,6 +388,7 @@ namespace DXPlus
             {
                 extension = new XElement(Namespace.DrawingMain + "ext",
                     new XAttribute("uri", id));
+                extList.Add(extension);
             }
 
             return extension;
@@ -351,14 +420,14 @@ namespace DXPlus
                         var fromWidth = style.Value.Substring(style.Value.IndexOf(widthStr, StringComparison.Ordinal) + widthStr.Length);
                         cx = double.Parse(fromWidth.Substring(0,
                                             fromWidth.IndexOf("pt", StringComparison.Ordinal)),
-                                                CultureInfo.InvariantCulture) / EmusInPixel;
+                                                CultureInfo.InvariantCulture) / Uom.EmuConversion;
                     }
                 }
 
-                return cx / EmusInPixel;
+                return cx / Uom.EmuConversion;
             }
 
-            set => Xml.DescendantAttributes("cx").ToList().ForEach(a => a.Value = (value * EmusInPixel).ToString(CultureInfo.InvariantCulture));
+            set => Xml.DescendantAttributes("cx").ToList().ForEach(a => a.Value = (value * Uom.EmuConversion).ToString(CultureInfo.InvariantCulture));
         }
 
         /// <summary>
@@ -377,14 +446,14 @@ namespace DXPlus
                         var fromWidth = style.Value.Substring(style.Value.IndexOf(widthStr, StringComparison.Ordinal) + widthStr.Length);
                         cy = double.Parse(fromWidth.Substring(0,
                                 fromWidth.IndexOf("pt", StringComparison.Ordinal)),
-                            CultureInfo.InvariantCulture) / EmusInPixel;
+                            CultureInfo.InvariantCulture) / Uom.EmuConversion;
                     }
                 }
 
-                return cy / EmusInPixel;
+                return cy / Uom.EmuConversion;
             }
 
-            set => Xml.DescendantAttributes("cy").ToList().ForEach(a => a.Value = (value * EmusInPixel).ToString(CultureInfo.InvariantCulture));
+            set => Xml.DescendantAttributes("cy").ToList().ForEach(a => a.Value = (value * Uom.EmuConversion).ToString(CultureInfo.InvariantCulture));
         }
 
         /// <summary>

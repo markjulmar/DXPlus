@@ -11,6 +11,7 @@
     {
         public const double DxaConversion = 20.0;
         public const double InchConversion = 1440.0;
+        public const double EmuConversion = 914400.0 / 96.0; // 91440/inch, 96px/inch
 
         /// <summary>
         /// Internally we represent this as dxa (1/20 of a 

@@ -45,6 +45,11 @@ namespace DXPlus
         public string FileName => PackageRelationship != null ? Path.GetFileName(PackageRelationship.TargetUri.ToString()) : string.Empty;
 
         /// <summary>
+        /// Returns the image type (extension) such as .png, .jpg, .svg, etc.
+        /// </summary>
+        public string ImageType => Path.GetExtension(FileName)?.ToLower();
+
+        /// <summary>
         /// Internal constructor to create an image from a package relationship.
         /// </summary>
         /// <param name="document"></param>
@@ -70,15 +75,19 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Create a new picture and insert it into a paragraph.
+        /// Create a new picture which can be added to a paragraph from this image.
         /// </summary>
+        /// <param name="name">Name of the image</param>
+        /// <param name="description">Description of the image</param>
         /// <returns>New picture</returns>
         public Picture CreatePicture(string name = null, string description = null) =>
             document.CreatePicture(Id, name??string.Empty, description??string.Empty);
 
         /// <summary>
-        /// Create a new picture with specific dimensions and insert it into a paragraph.
+        /// Create a new picture which can be added to a paragraph from this image.
         /// </summary>
+        /// <param name="width">Width of the picture</param>
+        /// <param name="height">Height of the picture</param>
         /// <returns>New picture</returns>
         public Picture CreatePicture(int width, int height) =>
             CreatePicture(string.Empty, string.Empty, width, height);
@@ -86,6 +95,10 @@ namespace DXPlus
         /// <summary>
         /// Create a new picture with specific dimensions and insert it into a paragraph.
         /// </summary>
+        /// <param name="name">Name of the picture</param>
+        /// <param name="description">Description of the picture</param>
+        /// <param name="height">Rendered height</param>
+        /// <param name="width">Rendered width</param>
         /// <returns>New picture</returns>
         public Picture CreatePicture(string name, string description, int width, int height)
         {

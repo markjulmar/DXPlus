@@ -8,16 +8,16 @@
     <PackageId>Julmar.DxPlus</PackageId>
     <Authors>Mark Smith, Cathal Coffey</Authors>
     <Description>OpenXml .NET Core library to work with .docx format. Fork of DocX from Cathal Coffey.</Description>
-    <PackageVersion>1.0.11</PackageVersion>
+    <PackageVersion>1.0.12</PackageVersion>
     <CompanyName>julmar.com</CompanyName>
     <Owners>julmar.com</Owners>
     <PackageProjectUrl>https://github.com/markjulmar/DXPlus</PackageProjectUrl>
     <Summary>.NET Core wrapper around .docx documents</Summary>
     <Title>OpenXML DocX Utility Library</Title>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <ReleaseVersion>1.0.11</ReleaseVersion>
+    <ReleaseVersion>1.0.12</ReleaseVersion>
     <SynchReleaseVersion>false</SynchReleaseVersion>
-    <Copyright>(c) 2020,2021 julmar.com</Copyright>
+    <Copyright>(c) 2020-2022 julmar.com</Copyright>
     <RepositoryUrl>https://github.com/markjulmar/dxplus</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>docx;openxml;.net;dotnet</PackageTags>        
@@ -70,6 +70,7 @@
     <EmbeddedResource Include="Resources\settings.xml" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="SkiaSharp.Svg" Version="1.60.0" />
     <PackageReference Include="System.IO.Packaging" Version="6.0.0" />
     <PackageReference Include="runtime.osx.10.10-x64.CoreCompat.System.Drawing" Version="5.8.64" />
     <PackageReference Include="System.Drawing.Common" Version="5.0.3" />

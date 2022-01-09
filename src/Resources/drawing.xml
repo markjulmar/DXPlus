@@ -14,7 +14,7 @@
       <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
         <pic:pic>
           <pic:nvPicPr>
-            <pic:cNvPr id="{id}" name="{name}" />
+            <pic:cNvPr id="{id}" name="{filename}" />
             <pic:cNvPicPr />
           </pic:nvPicPr>
           <pic:blipFill>

@@ -118,16 +118,17 @@ namespace DXPlus
         /// Add an Image into this document from a fully qualified or relative filename.
         /// </summary>
         /// <param name="imageFileName">The fully qualified or relative filename.</param>
+        /// <param name="contentType">The content type to add - use ImageContentType constants. If not supplied, the filename will be used to determine the content type.</param>
         /// <returns>An Image file.</returns>
-        Image AddImage(string imageFileName);
+        Image AddImage(string imageFileName, string contentType = null);
 
         /// <summary>
         /// Add an Image into this document from a Stream.
         /// </summary>
         /// <param name="imageStream">A Stream stream.</param>
-        /// <param name="contentType">Content type - image/jpg</param>
+        /// <param name="contentType">Content type to add - use ImageContentType constants.</param>
         /// <returns>An Image file.</returns>
-        Image AddImage(Stream imageStream, string contentType = "image/jpg");
+        Image AddImage(Stream imageStream, string contentType);
 
         ///<summary>
         /// Applies document template to the document. Document template may include styles, headers, footers, properties, etc. as well as text content.

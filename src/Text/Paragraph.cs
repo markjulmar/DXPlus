@@ -358,14 +358,12 @@ namespace DXPlus
                     from p in Xml.LocalNameDescendants("drawing")
                     let id = p.FirstLocalNameDescendant("blip").AttributeValue(Namespace.RelatedDoc + "embed")
                     where id != null
-                    let img = new Image(Document, Document?.PackagePart?.GetRelationship(id), id)
-                    select new Picture(Document, PackagePart, p, img)
+                    select new Picture(Document, PackagePart, p, Document.GetRelatedImage(id))
                 ).Union(
                     from p in Xml.LocalNameDescendants("pict")
                     let id = p.FirstLocalNameDescendant("imagedata").AttributeValue(Namespace.RelatedDoc + "id")
                     where id != null
-                    let img = new Image(Document, Document?.PackagePart?.GetRelationship(id), id)
-                    select new Picture(Document, PackagePart, p, img)
+                    select new Picture(Document, PackagePart, p, Document.GetRelatedImage(id))
                 ).ToList();
 
         /// <summary>

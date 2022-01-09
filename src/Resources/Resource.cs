@@ -57,8 +57,8 @@ namespace DXPlus.Resources
         /// <param name="cy">height</param>
         /// <param name="rid">BLIP relationship id</param>
         /// <returns></returns>
-        public static XElement DrawingElement(long id, string name, string description, int cx, int cy, string rid)
-                => GetElement("DXPlus.Resources.drawing.xml", new { id, name, description, cx, cy, rid });
+        public static XElement DrawingElement(long id, string name, string description, int cx, int cy, string rid, string filename)
+                => GetElement("DXPlus.Resources.drawing.xml", new { id, name, description, cx, cy, rid, filename });
 
         /// <summary>
         /// The TOC base XML element inserted when a new TOC is created.

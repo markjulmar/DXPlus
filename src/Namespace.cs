@@ -135,6 +135,7 @@ namespace DXPlus
         public static readonly XNamespace CustomVTypesSchema = "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes";
         public static readonly XNamespace WordProcessingDrawing = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing";
         public static readonly XNamespace DrawingMain = "http://schemas.openxmlformats.org/drawingml/2006/main";
+        public static readonly XNamespace DrawingA14 = "http://schemas.microsoft.com/office/drawing/2010/main";
         public static readonly XNamespace Chart = "http://schemas.openxmlformats.org/drawingml/2006/chart";
         public static readonly XNamespace VML = "urn:schemas-microsoft-com:vml";
         public static readonly XNamespace RelatedDoc = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
@@ -143,6 +144,7 @@ namespace DXPlus
         public static readonly XNamespace Picture = "http://schemas.openxmlformats.org/drawingml/2006/picture";
         public static readonly XNamespace W2012 = "http://schemas.microsoft.com/office/word/2012/wordml";
         public static readonly XNamespace W2012Rel = "http://schemas.microsoft.com/office/2011/relationships";
+        public static readonly XNamespace ASvg = "http://schemas.microsoft.com/office/drawing/2016/SVG/main";
 
         /// <summary>
         /// Returns an XmlNamespaceManager which can be used with XQuery
