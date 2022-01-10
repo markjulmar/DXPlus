@@ -221,7 +221,7 @@ namespace DXPlus
             }
             else
             {
-                XElement[] split = SplitParagraph(insertPos, index - insertPos.StartIndex);
+                var split = SplitParagraph(insertPos, index - insertPos.StartIndex);
                 insertPos.Xml.ReplaceWith(split[0], paragraph.Xml, split[1]);
             }
 
@@ -248,8 +248,13 @@ namespace DXPlus
         /// </summary>
         /// <param name="paragraph">New paragraph</param>
         /// <returns>Added paragraph</returns>
-        private Paragraph OnAddParagraph(Paragraph paragraph)
+        internal Paragraph OnAddParagraph(Paragraph paragraph)
         {
+            if (string.IsNullOrEmpty(paragraph.Id))
+            {
+                paragraph.Xml.SetAttributeValue(Name.ParagraphId, HelperFunctions.GenerateHexId());
+            }
+
             InsertMissingStyles(paragraph);
 
             paragraph.SetOwner(Document, PackagePart);

@@ -15,15 +15,16 @@ namespace Tester
             //AddImageToDoc(doc);
             //CreateDocWithHeaderAndFooter(doc);
 
-            WriteTitle();
+            WriteTitle(doc);
             
             doc.Save();
             Console.WriteLine("Wrote document");
         }
 
-        private static void WriteTitle()
+        private static void WriteTitle(IDocument doc)
         {
-            using var doc = Document.Load("/users/mark/downloads/pandoc.docx");
+            doc.AddParagraph("Introduction").Style(HeadingType.Heading1);
+            doc.AddParagraph("This is some text");
 
             var p = doc.Paragraphs.First();
             p.InsertBefore(new Paragraph("This is a title").Style(HeadingType.Title))

@@ -297,8 +297,11 @@ namespace DXPlus
         {
             if (!InDom)
                 throw new InvalidOperationException("Can only append to paragraphs in an existing document structure.");
+            if (paragraph.InDom)
+                throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
-            Document.InsertParagraph(this.EndIndex, paragraph);
+            Xml.AddAfterSelf(paragraph.Xml);
+            Document.OnAddParagraph(paragraph);
             return paragraph;
         }
 
@@ -311,8 +314,11 @@ namespace DXPlus
         {
             if (!InDom)
                 throw new InvalidOperationException("Can only append to paragraphs in an existing document structure.");
+            if (paragraph.InDom)
+                throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
-            Document.InsertParagraph(this.StartIndex, paragraph);
+            Xml.AddBeforeSelf(paragraph.Xml);
+            Document.OnAddParagraph(paragraph);
             return paragraph;
         }
 
