@@ -13,7 +13,7 @@ namespace DXPlus
     /// <summary>
     /// Represents a document paragraph.
     /// </summary>
-    [DebuggerDisplay("{Id}: {Text}")]
+    [DebuggerDisplay("({StartIndex}-{EndIndex}) - {Text}")]
     public class Paragraph : Block, IEquatable<Paragraph>
     {
         /// <summary>
@@ -289,6 +289,40 @@ namespace DXPlus
         public Section Section => Document?.Sections.SingleOrDefault(s => s.Paragraphs.Contains(this));
 
         /// <summary>
+        /// Append a paragraph after this one in the document.
+        /// </summary>
+        /// <param name="paragraph">Paragraph to add.</param>
+        /// <returns>Added paragraph</returns>
+        public Paragraph Append(Paragraph paragraph)
+        {
+            if (!InDom)
+                throw new InvalidOperationException("Can only append to paragraphs in an existing document structure.");
+            if (paragraph.InDom)
+                throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
+
+            Xml.AddAfterSelf(paragraph.Xml);
+            Document.OnAddParagraph(paragraph);
+            return paragraph;
+        }
+
+        /// <summary>
+        /// Insert a paragraph before this one in the document.
+        /// </summary>
+        /// <param name="paragraph">Paragraph to add.</param>
+        /// <returns>Added paragraph</returns>
+        public Paragraph InsertBefore(Paragraph paragraph)
+        {
+            if (!InDom)
+                throw new InvalidOperationException("Can only append to paragraphs in an existing document structure.");
+            if (paragraph.InDom)
+                throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
+
+            Xml.AddBeforeSelf(paragraph.Xml);
+            Document.OnAddParagraph(paragraph);
+            return paragraph;
+        }
+
+        /// <summary>
         /// Add a new table after this paragraph
         /// </summary>
         /// <param name="table">Table to add</param>
@@ -355,7 +389,7 @@ namespace DXPlus
         /// Returns a list of all Pictures in a paragraph.
         /// </summary>
         public List<Picture> Pictures => (
-                    from p in Xml.LocalNameDescendants("drawing")
+                    from p in Xml.LocalNameDescendants("pic")
                     let id = p.FirstLocalNameDescendant("blip").AttributeValue(Namespace.RelatedDoc + "embed")
                     where id != null
                     select new Picture(Document, PackagePart, p, new Image(Document, Document?.PackagePart?.GetRelationship(id), id))
@@ -584,13 +618,14 @@ namespace DXPlus
         /// <summary>
         /// Add an image to a document, create a custom view of that image (picture) and then insert it into a paragraph using append.
         /// </summary>
-        /// <param name="picture">The Picture to append.</param>
+        /// <param name="drawing">The Picture to append.</param>
         /// <returns>The paragraph with the Picture now appended.</returns>
-        public Paragraph Append(Picture picture)
+        public Paragraph Append(Drawing drawing)
         {
             if (Document != null)
             {
-                picture.SetOwner(Document, PackagePart);
+                drawing.SetOwner(Document, PackagePart);
+                var picture = drawing.Picture;
                 picture.RelationshipId = picture.GetOrCreateRelationship();
             }
 
@@ -598,7 +633,7 @@ namespace DXPlus
             var run = new XElement(Name.Run,
                 new XElement(Name.RunProperties,
                     new XElement(Namespace.Main + "noProof")),
-                picture.Xml);
+                drawing.Xml);
             Xml.Add(run);
 
             return this;

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Drawing;
-using System.Globalization;
 using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
@@ -9,39 +8,18 @@ using DXPlus.Shapes;
 namespace DXPlus
 {
     /// <summary>
-    /// Represents a drawing (vector or image) in this document.
+    /// Represents a picture in this document.
     /// </summary>
-    public class Picture : DocXElement, IEquatable<Picture>
+    public sealed class Picture : DocXElement, IEquatable<Picture>
     {
-        /// <summary>
-        /// GUID for the decorative image extension
-        /// </summary>
-        private const string DecorativeImageId = "{C183D7F6-B498-43B3-948B-1728B52AA6E4}";
-
-        /// <summary>
-        /// GUID for the SVG image extension
-        /// </summary>
-        private const string SvgExtensionId = "{96DAC541-7B7A-43D3-8B79-37D633B846F1}";
-
-        /// <summary>
-        /// A UseLocalDpi element that specifies a flag indicating that the local
-        /// BLIP compression setting overrides the document default compression setting.
-        /// </summary>
-        private const string UseLocalDpiExtensionId = "{28A0092B-C50C-407E-A947-70E740481C1C}";
-
         // The binary image being rendered by this Picture element. Note that images can be 
         // shared across different pictures.
         private readonly Image image;
 
         /// <summary>
-        /// The non-visual properties for the drawing object. This should always be present.
-        /// </summary>
-        private XElement DocPr => Xml.Descendants(Namespace.WordProcessingDrawing + "docPr").Single();
-
-        /// <summary>
         /// The non-visual properties for the picture contained in the drawing object.
         /// </summary>
-        private XElement CNvPr => Xml.Descendants(Namespace.WordProcessingDrawing + "cNvPr").SingleOrDefault();
+        private XElement CNvPr => Xml.Descendants(Namespace.Picture + "cNvPr").SingleOrDefault();
 
         /// <summary>
         /// Wraps a drawing or pict element in Word XML.
@@ -52,8 +30,8 @@ namespace DXPlus
         /// <param name="image">The image to display</param>
         internal Picture(IDocument document, PackagePart packagePart, XElement xml, Image image) : base(document, packagePart, xml)
         {
-            if (xml.Name.LocalName != "drawing")
-                throw new ArgumentException("Root element must be <drawing> for picture.");
+            if (xml.Name.LocalName != "pic")
+                throw new ArgumentException("Root element must be <pic> for picture.");
 
             this.image = image;
         }
@@ -73,7 +51,7 @@ namespace DXPlus
         /// we always have a .png which is rendered in the document and a
         /// .svg which is _also_ in the relationship.
         /// </summary>
-        public bool HasRelatedSvg => FindDrawingExtension(blip, SvgExtensionId, false) != null;
+        public bool HasRelatedSvg => DrawingExtension.Get(blip, DrawingExtension.SvgExtensionId, false) != null;
 
         /// <summary>
         /// Specifies a flag indicating that the local BLIP compression
@@ -83,31 +61,48 @@ namespace DXPlus
         {
             get
             {
-                var val = FindDrawingExtension(blip, UseLocalDpiExtensionId, false)?
+                var val = DrawingExtension.Get(blip, DrawingExtension.UseLocalDpiExtensionId, false)?
                         .FirstLocalNameDescendant("useLocalDpi")
                         .GetVal(null);
                 if (val == null) return null;
                 return (val == "1" || val.ToLower() == "true");
             }
 
-            set
-            {
-                FindDrawingExtension(blip, UseLocalDpiExtensionId, true)
+            set =>
+                DrawingExtension.Get(blip, DrawingExtension.UseLocalDpiExtensionId, true)
                     .GetOrAddElement(Namespace.DrawingA14 + "useLocalDpi")
                     .SetAttributeValue("val", value==true ? "1" : "0");
-            }
         }
 
+        /// <summary>
+        /// Returns the drawing owner of this picture.
+        /// </summary>
+        public Drawing Drawing
+        {
+            get
+            {
+                var xml = Xml;
+                while (xml.Parent != null)
+                {
+                    if (xml.Parent.Name.LocalName == "drawing")
+                    {
+                        return new Drawing(document, packagePart, xml.Parent);
+                    }
+                }
+                return null;
+            }
+        }
+        
         /// <summary>
         /// Returns the relationship ID for the related SVG (if any).
         /// </summary>
         public string SvgRelationshipId
         {
-            get => FindDrawingExtension(blip, SvgExtensionId, false)?
+            get => DrawingExtension.Get(blip, DrawingExtension.SvgExtensionId, false)?
                     .FirstLocalNameDescendant("svgBlip")
                     .AttributeValue(Namespace.RelatedDoc + "embed");
 
-            set => FindDrawingExtension(blip, SvgExtensionId, true)
+            set => DrawingExtension.Get(blip, DrawingExtension.SvgExtensionId, true)
                     .GetOrAddElement(Namespace.ASvg + "svgBlip")
                     .SetAttributeValue(Namespace.RelatedDoc + "embed", value);
         }
@@ -246,11 +241,6 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// The unique id assigned to this drawing within the document.
-        /// </summary>
-        public int DrawingId => int.Parse(DocPr.AttributeValue("id"));
-
-        /// <summary>
         /// Flip this Picture Horizontally.
         /// </summary>
         public bool FlipHorizontal
@@ -287,16 +277,21 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Gets or sets the name of this Image.
+        /// Id assigned to this picture
+        /// </summary>
+        public string Id
+        {
+            get => CNvPr.AttributeValue("id");
+            set => CNvPr?.SetAttributeValue("id", value ?? "");
+        }
+        
+        /// <summary>
+        /// Gets or sets the name of this picture.
         /// </summary>
         public string Name
         {
-            get => DocPr.AttributeValue("name");
-            set
-            {
-                DocPr.SetAttributeValue("name", value ?? "");
-                CNvPr?.SetAttributeValue("name", value ?? "");
-            }
+            get => CNvPr.AttributeValue("name");
+            set => CNvPr?.SetAttributeValue("name", value ?? "");
         }
 
         /// <summary>
@@ -304,12 +299,8 @@ namespace DXPlus
         /// </summary>
         public bool Hidden
         {
-            get => DocPr.BoolAttributeValue("hidden");
-            set
-            {
-                DocPr.SetAttributeValue("hidden", value ? "1" : null);
-                CNvPr?.SetAttributeValue("hidden", value ? "1" : null);
-            }
+            get => CNvPr.BoolAttributeValue("hidden");
+            set => CNvPr?.SetAttributeValue("hidden", value ? "1" : null);
         }
 
         /// <summary>
@@ -317,13 +308,11 @@ namespace DXPlus
         /// </summary>
         public string Description
         {
-            get => DocPr.AttributeValue("descr");
+            get => CNvPr.AttributeValue("descr");
             set
             {
                 if (string.IsNullOrWhiteSpace(value))
                     value = null;
-
-                DocPr.SetAttributeValue("descr", value);
                 CNvPr?.SetAttributeValue("descr", value);
             }
         }
@@ -333,65 +322,23 @@ namespace DXPlus
         /// </summary>
         public bool IsDecorative
         {
-            get => Xml.Descendants(Namespace.ADec + "decorative").FirstOrDefault()?.BoolAttributeValue("val") == true;
-            set => SetDecorativeExtension(value);
-        }
-
-        /// <summary>
-        /// Method to change the [adec:decorative] extension value.
-        /// </summary>
-        /// <param name="value">True/False to add/remove</param>
-        private void SetDecorativeExtension(in bool value)
-        {
-            if (value)
+            get => DrawingExtension.Get(CNvPr, DrawingExtension.DecorativeImageId, false)?
+                .Element(Namespace.ADec + "decorative")?
+                .BoolAttributeValue("val") == true;
+            set
             {
-                FindDrawingExtension(DocPr, DecorativeImageId, true)
-                    .GetOrAddElement(Namespace.ADec + "decorative")
-                    .SetElementValue("val", "1");
-
-                FindDrawingExtension(CNvPr, DecorativeImageId, true)?
-                    .GetOrAddElement(Namespace.ADec + "decorative")
-                    .SetElementValue("val", "1");
+                if (value)
+                {
+                    DrawingExtension.Get(CNvPr, DrawingExtension.DecorativeImageId, true)
+                        .GetOrAddElement(Namespace.ADec + "decorative")
+                        .SetElementValue("val", "1");
+                }
+                else
+                {
+                    // Remove the extension.
+                    DrawingExtension.Get(CNvPr, DrawingExtension.DecorativeImageId, false)?.Remove();
+                }
             }
-            else
-            {
-                // Remove the extension.
-                FindDrawingExtension(DocPr, DecorativeImageId, false)?.Remove();
-                FindDrawingExtension(CNvPr, DecorativeImageId, false)?.Remove();
-            }
-        }
-
-        /// <summary>
-        /// Method to scan an extension list for a specific extension id
-        /// </summary>
-        /// <param name="owner">List owner</param>
-        /// <param name="id">ID to look for</param>
-        /// <param name="create">True to create it</param>
-        /// <returns>XElement of [a:ext]</returns>
-        private static XElement FindDrawingExtension(XElement owner, string id, bool create)
-        {
-            if (string.IsNullOrWhiteSpace(id))
-                throw new ArgumentException("Value cannot be null or empty.", nameof(id));
-            if (owner == null)
-                return null;
-
-            var extList = owner.Element(Namespace.DrawingMain + "extLst");
-            if (extList == null && create)
-            {
-                extList = new XElement(Namespace.DrawingMain + "extLst");
-                owner.Add(extList);
-            }
-
-            var extension = extList?.Elements(Namespace.DrawingMain + "ext")
-                .SingleOrDefault(e => e.AttributeValue("uri") == id);
-            if (extension == null && create)
-            {
-                extension = new XElement(Namespace.DrawingMain + "ext",
-                    new XAttribute("uri", id));
-                extList.Add(extension);
-            }
-
-            return extension;
         }
 
         ///<summary>
@@ -405,29 +352,54 @@ namespace DXPlus
         public Image Image => image;
 
         /// <summary>
+        /// Get or sets the X-offset of the rendered picture in pixels.
+        /// </summary>
+        public double OffsetX
+        {
+            get => double.TryParse(spPr.Element(Namespace.DrawingMain + "xfrm")?
+                    .Element(Namespace.DrawingMain + "off")
+                    .AttributeValue("x"), out var result) ? result : 0;
+
+            set => spPr.GetOrAddElement(Namespace.DrawingMain + "xfrm")
+                    .GetOrAddElement(Namespace.DrawingMain + "off")
+                    .SetAttributeValue("x");
+        }
+
+        /// <summary>
+        /// Get or sets the Y-offset of the rendered picture in pixels.
+        /// </summary>
+        public double OffsetY
+        {
+            get => double.TryParse(spPr.Element(Namespace.DrawingMain + "xfrm")?
+                .Element(Namespace.DrawingMain + "off")
+                .AttributeValue("y"), out var result) ? result : 0;
+
+            set => spPr.GetOrAddElement(Namespace.DrawingMain + "xfrm")
+                .GetOrAddElement(Namespace.DrawingMain + "off")
+                .SetAttributeValue("y");
+        }
+
+        /// <summary>
         /// Get or sets the width of the rendered picture in pixels.
         /// </summary>
         public double Width
         {
             get
             {
-                if (!double.TryParse(Xml.DescendantAttributeValues("cx").FirstOrDefault(), out var cx))
-                {
-                    var style = Xml.DescendantAttributes("style").FirstOrDefault();
-                    if (style != null)
-                    {
-                        const string widthStr = "width:";
-                        var fromWidth = style.Value.Substring(style.Value.IndexOf(widthStr, StringComparison.Ordinal) + widthStr.Length);
-                        cx = double.Parse(fromWidth.Substring(0,
-                                            fromWidth.IndexOf("pt", StringComparison.Ordinal)),
-                                                CultureInfo.InvariantCulture) / Uom.EmuConversion;
-                    }
-                }
-
-                return cx / Uom.EmuConversion;
+                var ext = spPr.Element(Namespace.DrawingMain + "xfrm")?
+                    .Element(Namespace.DrawingMain + "ext");
+                if (ext == null) return 0;
+                return double.Parse(ext.AttributeValue("cx")) / Uom.EmuConversion;
             }
 
-            set => Xml.DescendantAttributes("cx").ToList().ForEach(a => a.Value = (value * Uom.EmuConversion).ToString(CultureInfo.InvariantCulture));
+            set
+            {
+                if (value is < 0 or > Drawing.MaxExtentValue)
+                    throw new ArgumentOutOfRangeException($"{nameof(Height)} cannot exceed {Drawing.MaxExtentValue}", nameof(Width));
+                var ext = spPr.GetOrAddElement(Namespace.DrawingMain + "xfrm")
+                    .GetOrAddElement(Namespace.DrawingMain + "ext");
+                ext.SetAttributeValue("cx", value * Uom.EmuConversion);
+            }
         }
 
         /// <summary>
@@ -437,31 +409,20 @@ namespace DXPlus
         {
             get
             {
-                if (!double.TryParse(Xml.DescendantAttributeValues("cy").FirstOrDefault(), out var cy))
-                {
-                    var style = Xml.DescendantAttributes("style").FirstOrDefault();
-                    if (style != null)
-                    {
-                        const string widthStr = "width:";
-                        var fromWidth = style.Value.Substring(style.Value.IndexOf(widthStr, StringComparison.Ordinal) + widthStr.Length);
-                        cy = double.Parse(fromWidth.Substring(0,
-                                fromWidth.IndexOf("pt", StringComparison.Ordinal)),
-                            CultureInfo.InvariantCulture) / Uom.EmuConversion;
-                    }
-                }
-
-                return cy / Uom.EmuConversion;
+                var ext = spPr.Element(Namespace.DrawingMain + "xfrm")?
+                    .Element(Namespace.DrawingMain + "ext");
+                if (ext == null) return 0;
+                return double.Parse(ext.AttributeValue("cy")) / Uom.EmuConversion;
             }
 
-            set => Xml.DescendantAttributes("cy").ToList().ForEach(a => a.Value = (value * Uom.EmuConversion).ToString(CultureInfo.InvariantCulture));
-        }
-
-        /// <summary>
-        /// Remove this Picture from this document.
-        /// </summary>
-        public void Remove()
-        {
-            Xml.Remove();
+            set
+            {
+                if (value is < 0 or > Drawing.MaxExtentValue)
+                    throw new ArgumentOutOfRangeException($"{nameof(Height)} cannot exceed {Drawing.MaxExtentValue}", nameof(Width));
+                var ext = spPr.GetOrAddElement(Namespace.DrawingMain + "xfrm")
+                    .GetOrAddElement(Namespace.DrawingMain + "ext");
+                ext.SetAttributeValue("cy", value * Uom.EmuConversion);
+            }
         }
 
         /// <summary>

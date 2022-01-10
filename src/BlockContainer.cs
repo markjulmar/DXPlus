@@ -214,14 +214,14 @@ namespace DXPlus
             if (paragraph.InDom)
                 throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
-            Paragraph insertPos = Document.FindParagraphByIndex(index);
+            var insertPos = Document.FindParagraphByIndex(index);
             if (insertPos == null)
             {
                 AddElementToContainer(paragraph.Xml);
             }
             else
             {
-                XElement[] split = SplitParagraph(insertPos, index - insertPos.StartIndex);
+                var split = SplitParagraph(insertPos, index - insertPos.StartIndex);
                 insertPos.Xml.ReplaceWith(split[0], paragraph.Xml, split[1]);
             }
 
@@ -248,8 +248,13 @@ namespace DXPlus
         /// </summary>
         /// <param name="paragraph">New paragraph</param>
         /// <returns>Added paragraph</returns>
-        protected virtual Paragraph OnAddParagraph(Paragraph paragraph)
+        internal Paragraph OnAddParagraph(Paragraph paragraph)
         {
+            if (string.IsNullOrEmpty(paragraph.Id))
+            {
+                paragraph.Xml.SetAttributeValue(Name.ParagraphId, HelperFunctions.GenerateHexId());
+            }
+
             InsertMissingStyles(paragraph);
 
             paragraph.SetOwner(Document, PackagePart);

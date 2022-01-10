@@ -106,36 +106,35 @@ public static class Program
         }
     }
 
-    private static void DumpRunElement(TextElement item, int level)
+    private static void DumpRunElement(ITextElement item, int level)
     {
         string prefix = new string(' ', level * 3);
 
         string text = "";
-        if (item is Text t)
+        switch (item)
         {
-            text = "\"" + t.Value + "\"";
-        }
-        else if (item is Break b)
-        {
-            text = b.Type.ToString()+"Break";
-        }
-        else if (item is CommentRef cr)
-        {
-            text = $"{cr.Id} - {string.Join(". ", cr.Comment.Paragraphs.Select(p => p.Text))}";
-        }
-        else if (item is Drawing d)
-        {
-            if (d.Picture != null)
+            case Text t:
+                text = "\"" + t.Value + "\"";
+                break;
+            case Break b:
+                text = b.Type+"Break";
+                break;
+            case CommentRef cr:
+                text = $"{cr.Id} - {string.Join(". ", cr.Comment.Paragraphs.Select(p => p.Text))}";
+                break;
+            case Drawing d:
             {
+                text = $"{prefix}{item.ElementType}: Id={d.Id} ({Math.Round(d.Width,0)}x{Math.Round(d.Height,0)}) - {d.Name}: \"{d.Description}\"";
                 var p = d.Picture;
-                text = $"Id={p.DrawingId} {p.RelationshipId} {p.FileName} ({Math.Round(p.Width,0)}x{Math.Round(p.Height,0)}) - {p.Name}: \"{p.Description}\"";
-
-                if (p.HasRelatedSvg)
+                if (p != null)
                 {
-                    text += $", SvgId={p.SvgRelationshipId} ({p.SvgImage.FileName})";
-                }
+                    text += $"{Environment.NewLine}{prefix}   pic: Id={p.Id}, Rid=\"{p.RelationshipId}\" {p.FileName} ({Math.Round(p.Width,0)}x{Math.Round(p.Height,0)}) - {p.Name}: \"{p.Description}\"";
+                    if (p.HasRelatedSvg)
+                    {
+                        text += $", SvgId={p.SvgRelationshipId} ({p.SvgImage.FileName})";
+                    }
 
-                /*
+                    /*
                 string fn = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
                     p.FileName);
@@ -144,10 +143,16 @@ public static class Program
                 using var output = File.OpenWrite(fn);
                 input.CopyTo(output);
                 */
+                }
+
+                Console.WriteLine(text);
+                text = null;
+                break;
             }
         }
 
-        Console.WriteLine($"{prefix}{item.Name}: {text}");
+        if (text != null)
+            Console.WriteLine($"{prefix}{item.ElementType}: {text}");
     }
 
     private static string DumpObject(object obj)
