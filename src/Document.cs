@@ -1155,8 +1155,7 @@ namespace DXPlus
         /// <param name="rid">A unique id that identifies an Image embedded in this document.</param>
         /// <param name="name">The name of this Picture.</param>
         /// <param name="description">The description of this Picture.</param>
-        /// <param name="imageFileName">The filename for the image (if any)</param>
-        internal Picture CreatePicture(string rid, string name, string description)
+        internal Drawing CreateDrawingWithEmbeddedPicture(string rid, string name, string description)
         {
             if (string.IsNullOrWhiteSpace(rid))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(rid));
@@ -1177,9 +1176,15 @@ namespace DXPlus
                 image = CreatePngFromSvg(image); // placeholder
             }
 
-            // Create the picture with either the original image, or the placeholder.
+            // Create the XML block to represent the drawing + picture.
+            var drawingXml = Resource.DrawingElement(id, name, description, cx, cy, renderedImageRid, image.FileName);
+            
+            // Create the drawing owner.
+            var drawing = new Drawing(this, PackagePart, drawingXml);
+            
+            // Create the picture.
             var picture = new Picture(this, PackagePart,
-                Resource.DrawingElement(id, name, description, cx, cy, renderedImageRid, image.FileName),
+                drawingXml.FirstLocalNameDescendant("pic"),
                 image);
 
             if (svgImage != null)
@@ -1190,7 +1195,7 @@ namespace DXPlus
                 picture.SvgRelationshipId = svgImage.Id;
             }
 
-            return picture;
+            return drawing;
         }
 
         /// <summary>
@@ -1371,8 +1376,12 @@ namespace DXPlus
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
+            // Collect all the paragraphs based on what character they end on.
+            var lookup = Paragraphs
+                .Where(p => p.StartIndex < p.EndIndex)
+                .ToDictionary(paragraph => paragraph.EndIndex);
+
             // If the insertion position is first (0) and there are no paragraphs, then return null.
-            var lookup = Paragraphs.ToDictionary(paragraph => paragraph.EndIndex);
             if (lookup.Keys.Count == 0 && index == 0)
             {
                 return null;

@@ -385,6 +385,68 @@ namespace DXPlus.Tests
         */
 
         [Fact]
+        public void AppendAddsParagraph()
+        {
+            using var doc = Document.Create();
+            var firstParagraph = doc.AddParagraph("First paragraph");
+            var secondParagraph = doc.AddParagraph("Another paragraph");
+
+            var p = firstParagraph.Append(new Paragraph("Injected paragraph"));
+            Assert.Equal(3, doc.Paragraphs.Count());
+
+            var ps = doc.Paragraphs.ToList();
+            Assert.Equal(p.Id, ps[1].Id);
+        }
+
+        [Fact]
+        public void InsertBeforeAddsParagraph()
+        {
+            using var doc = Document.Create();
+            var firstParagraph = doc.AddParagraph("First paragraph");
+            var secondParagraph = doc.AddParagraph("Another paragraph");
+
+            var p = secondParagraph.InsertBefore(new Paragraph("Injected paragraph"));
+            Assert.Equal(3, doc.Paragraphs.Count());
+
+            var ps = doc.Paragraphs.ToList();
+            Assert.Equal(p.Id, ps[1].Id);
+        }
+
+        [Fact]
+        public void InsertBeforeFirstParagraphAddsNewIntro()
+        {
+            using var doc = Document.Create();
+            doc.AddParagraph("Introduction").Style(HeadingType.Heading1);
+            
+            doc.AddParagraph("Some text goes here.")
+                .Append("With more text");
+
+            Assert.Equal(2, doc.Paragraphs.Count());
+
+            var p = doc.Paragraphs.First()
+                .InsertBefore(new Paragraph("Title").Style(HeadingType.Title));
+            Assert.Equal(3, doc.Paragraphs.Count());
+
+            var ps = doc.Paragraphs.ToList();
+            Assert.Equal(p.Id, ps[0].Id);
+            Assert.Equal(HeadingType.Heading1.ToString(), ps[1].Properties.StyleName);
+        }
+
+        [Fact]
+        public void AppendToLastParagraphAddsSummary()
+        {
+            using var doc = Document.Create();
+            var firstParagraph = doc.AddParagraph("First paragraph");
+            var secondParagraph = doc.AddParagraph("Another paragraph");
+
+            var p = secondParagraph.Append(new Paragraph("Injected paragraph"));
+            Assert.Equal(3, doc.Paragraphs.Count());
+
+            var ps = doc.Paragraphs.ToList();
+            Assert.Equal(p.Id, ps.Last().Id);
+        }
+
+        [Fact]
         public void InsertParagraphAtZeroAddsToBeginning()
         {
             using var doc = Document.Create(Filename);
@@ -401,7 +463,7 @@ namespace DXPlus.Tests
 
             Assert.Equal(" Inserted Text ", doc.Paragraphs.First().Text);
         }
-
+        
         [Fact]
         public void InsertParagraphInMiddleSplitsParagraph()
         {
@@ -593,13 +655,14 @@ namespace DXPlus.Tests
         {
             var document = Document.Create();
             var image = document.AddImage("1022.jpg");
-            Picture picture = image.CreatePicture(150, 150);
+            var drawing = image.CreatePicture(150, 150);
+            var pic = drawing.Picture;
 
             var paragraph = new Paragraph();
-            paragraph.Append(picture);
+            paragraph.Append(drawing);
 
             Assert.Single(paragraph.Pictures);
-            Assert.Same(picture.Xml, paragraph.Pictures.Single().Xml);
+            Assert.Same(pic.Xml, paragraph.Pictures.Single().Xml);
         }
 
         [Fact]
@@ -607,7 +670,7 @@ namespace DXPlus.Tests
         {
             var document = Document.Create();
             var image = document.AddImage("1022.jpg");
-            Picture picture = image.CreatePicture(150, 150);
+            var picture = image.CreatePicture(150, 150);
 
             var paragraph = new Paragraph();
             paragraph.Append(picture);

@@ -12,11 +12,25 @@ namespace Tester
             string fn = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "test.docx");
             using var doc = Document.Create(fn);
 
-            AddImageToDoc(doc);
+            //AddImageToDoc(doc);
             //CreateDocWithHeaderAndFooter(doc);
 
+            WriteTitle();
+            
             doc.Save();
             Console.WriteLine("Wrote document");
+        }
+
+        private static void WriteTitle()
+        {
+            using var doc = Document.Load("/users/mark/downloads/pandoc.docx");
+
+            var p = doc.Paragraphs.First();
+            p.InsertBefore(new Paragraph("This is a title").Style(HeadingType.Title))
+                .Append(new Paragraph($"Last edited at {DateTime.Now.ToShortDateString()} by M. Smith").Style(
+                    HeadingType.Subtitle));
+            
+            doc.Save();
         }
 
         private static void AddImageToDoc(IDocument doc)

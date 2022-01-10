@@ -214,7 +214,7 @@ namespace DXPlus
             if (paragraph.InDom)
                 throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
-            Paragraph insertPos = Document.FindParagraphByIndex(index);
+            var insertPos = Document.FindParagraphByIndex(index);
             if (insertPos == null)
             {
                 AddElementToContainer(paragraph.Xml);
@@ -248,7 +248,7 @@ namespace DXPlus
         /// </summary>
         /// <param name="paragraph">New paragraph</param>
         /// <returns>Added paragraph</returns>
-        protected virtual Paragraph OnAddParagraph(Paragraph paragraph)
+        private Paragraph OnAddParagraph(Paragraph paragraph)
         {
             InsertMissingStyles(paragraph);
 

@@ -68,7 +68,7 @@ namespace DXPlus
         /// <summary>
         /// Returns the breaks in this run
         /// </summary>
-        public IEnumerable<TextElement> Elements
+        public IEnumerable<ITextElement> Elements
             => Xml.Elements()
                 .Where(e => e.Name != Name.RunProperties)
                 .Select(WrapTextChild);
@@ -78,13 +78,15 @@ namespace DXPlus
         /// </summary>
         /// <param name="child"></param>
         /// <returns></returns>
-        private TextElement WrapTextChild(XElement child)
+        private ITextElement WrapTextChild(XElement child)
         {
+            var document = (Document) this.Document;
+            
             return child.Name.LocalName switch
             {
                 "br" => new Break(this, child),
                 "t" => new Text(this, child),
-                "drawing" => new Drawing(this, child),
+                "drawing" => new Drawing(document, document.PackagePart, child),
                 "commentReference" => new CommentRef(this, child),
                 _ => new TextElement(this, child),
             };
@@ -211,7 +213,7 @@ namespace DXPlus
 
             XElement splitLeft = null, splitRight = null;
 
-            if (xml.Name.LocalName == "t" || xml.Name.LocalName == "delText")
+            if (xml.Name.LocalName is "t" or "delText")
             {
                 // The original text element, now containing only the text before the index point.
                 splitLeft = new XElement(xml.Name, xml.Attributes(), xml.Value.Substring(0, index - startIndex));

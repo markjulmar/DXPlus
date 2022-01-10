@@ -80,8 +80,8 @@ namespace DXPlus
         /// <param name="name">Name of the image</param>
         /// <param name="description">Description of the image</param>
         /// <returns>New picture</returns>
-        public Picture CreatePicture(string name = null, string description = null) =>
-            document.CreatePicture(Id, name??string.Empty, description??string.Empty);
+        public Drawing CreatePicture(string name = null, string description = null) =>
+            document.CreateDrawingWithEmbeddedPicture(Id, name??string.Empty, description??string.Empty);
 
         /// <summary>
         /// Create a new picture which can be added to a paragraph from this image.
@@ -89,7 +89,7 @@ namespace DXPlus
         /// <param name="width">Width of the picture</param>
         /// <param name="height">Height of the picture</param>
         /// <returns>New picture</returns>
-        public Picture CreatePicture(int width, int height) =>
+        public Drawing CreatePicture(int width, int height) =>
             CreatePicture(string.Empty, string.Empty, width, height);
 
         /// <summary>
@@ -100,12 +100,21 @@ namespace DXPlus
         /// <param name="height">Rendered height</param>
         /// <param name="width">Rendered width</param>
         /// <returns>New picture</returns>
-        public Picture CreatePicture(string name, string description, int width, int height)
+        public Drawing CreatePicture(string name, string description, int width, int height)
         {
-            var picture = CreatePicture(name, description);
-            picture.Width = width;
-            picture.Height = height;
-            return picture;
+            // Create the drawing.
+            var drawing = CreatePicture(name, description);
+            
+            // Set the extent on the drawing
+            drawing.Width = width;
+            drawing.Height = height;
+
+            // Use the same values for the embedded picture.
+            var pic = drawing.Picture;
+            pic.Width = width;
+            pic.Height = height;
+            
+            return drawing;
         }
     }
 }
