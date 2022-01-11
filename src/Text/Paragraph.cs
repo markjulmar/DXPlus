@@ -626,7 +626,7 @@ namespace DXPlus
             {
                 drawing.SetOwner(Document, PackagePart);
                 var picture = drawing.Picture;
-                picture.RelationshipId = picture.GetOrCreateRelationship();
+                picture.RelationshipId = picture.GetOrCreateImageRelationship();
             }
 
             // Add a new run with the given drawing to the paragraph.
@@ -807,7 +807,7 @@ namespace DXPlus
             if (Document != null)
             {
                 picture.SetOwner(Document, PackagePart);
-                picture.RelationshipId = picture.GetOrCreateRelationship();
+                picture.RelationshipId = picture.GetOrCreateImageRelationship();
             }
 
             // Create a run for the picture
@@ -1279,7 +1279,7 @@ namespace DXPlus
                 foreach (var picture in Pictures)
                 {
                     picture.SetOwner(Document, PackagePart);
-                    picture.RelationshipId = picture.GetOrCreateRelationship();
+                    picture.RelationshipId = picture.GetOrCreateImageRelationship();
                 }
             }
         }

@@ -95,7 +95,7 @@
         /// <param name="picture">Picture</param>
         /// <param name="value">New value</param>
         /// <returns>Picture object</returns>
-        public static Picture IsDecorative(this Picture picture, bool value)
+        public static Picture SetDecorative(this Picture picture, bool value)
         {
             picture.IsDecorative = value;
             return picture;

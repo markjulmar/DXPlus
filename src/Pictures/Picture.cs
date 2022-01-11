@@ -3,6 +3,7 @@ using System.Drawing;
 using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
+using DXPlus.Helpers;
 using DXPlus.Shapes;
 
 namespace DXPlus
@@ -15,7 +16,7 @@ namespace DXPlus
         // The binary image being rendered by this Picture element. Note that images can be 
         // shared across different pictures.
         private readonly Image image;
-
+        
         /// <summary>
         /// The non-visual properties for the picture contained in the drawing object.
         /// </summary>
@@ -47,33 +48,19 @@ namespace DXPlus
         private XElement blip => Xml.FirstLocalNameDescendant("blip");
 
         /// <summary>
-        /// True if this image includes an embedded .svg. In this case,
-        /// we always have a .png which is rendered in the document and a
-        /// .svg which is _also_ in the relationship.
+        /// Extensions associated with this picture
         /// </summary>
-        public bool HasRelatedSvg => DrawingExtension.Get(blip, DrawingExtension.SvgExtensionId, false) != null;
+        public ExtensionWrapper Extensions => new(document, blip);
 
         /// <summary>
-        /// Specifies a flag indicating that the local BLIP compression
-        /// setting overrides the document default compression setting.
+        /// Hyperlink to navigate to if the image is clicked.
         /// </summary>
-        public bool? UseLocalDpi
+        public Uri Hyperlink
         {
-            get
-            {
-                var val = DrawingExtension.Get(blip, DrawingExtension.UseLocalDpiExtensionId, false)?
-                        .FirstLocalNameDescendant("useLocalDpi")
-                        .GetVal(null);
-                if (val == null) return null;
-                return (val == "1" || val.ToLower() == "true");
-            }
-
-            set =>
-                DrawingExtension.Get(blip, DrawingExtension.UseLocalDpiExtensionId, true)
-                    .GetOrAddElement(Namespace.DrawingA14 + "useLocalDpi")
-                    .SetAttributeValue("val", value==true ? "1" : "0");
+            get => HelperFunctions.GetHlinkClick(CNvPr, this.PackagePart);
+            set => HelperFunctions.SetHlinkClick(CNvPr, this.PackagePart, value);
         }
-
+        
         /// <summary>
         /// Returns the drawing owner of this picture.
         /// </summary>
@@ -93,32 +80,7 @@ namespace DXPlus
             }
         }
         
-        /// <summary>
-        /// Returns the relationship ID for the related SVG (if any).
-        /// </summary>
-        public string SvgRelationshipId
-        {
-            get => DrawingExtension.Get(blip, DrawingExtension.SvgExtensionId, false)?
-                    .FirstLocalNameDescendant("svgBlip")
-                    .AttributeValue(Namespace.RelatedDoc + "embed");
-
-            set => DrawingExtension.Get(blip, DrawingExtension.SvgExtensionId, true)
-                    .GetOrAddElement(Namespace.ASvg + "svgBlip")
-                    .SetAttributeValue(Namespace.RelatedDoc + "embed", value);
-        }
-
-        /// <summary>
-        /// Returns any related SVG image, null if none.
-        /// </summary>
-        public Image SvgImage
-        {
-            get
-            {
-                var rid = SvgRelationshipId;
-                return !string.IsNullOrEmpty(rid) ? Document.GetRelatedImage(SvgRelationshipId) : null;
-            }
-        }
-
+        
         /// <summary>
         /// Set a border line around the picture
         /// </summary>
@@ -317,30 +279,6 @@ namespace DXPlus
             }
         }
 
-        /// <summary>
-        /// Returns whether the picture is decorative.
-        /// </summary>
-        public bool IsDecorative
-        {
-            get => DrawingExtension.Get(CNvPr, DrawingExtension.DecorativeImageId, false)?
-                .Element(Namespace.ADec + "decorative")?
-                .BoolAttributeValue("val") == true;
-            set
-            {
-                if (value)
-                {
-                    DrawingExtension.Get(CNvPr, DrawingExtension.DecorativeImageId, true)
-                        .GetOrAddElement(Namespace.ADec + "decorative")
-                        .SetElementValue("val", "1");
-                }
-                else
-                {
-                    // Remove the extension.
-                    DrawingExtension.Get(CNvPr, DrawingExtension.DecorativeImageId, false)?.Remove();
-                }
-            }
-        }
-
         ///<summary>
         /// Returns the name of the image file for the picture.
         ///</summary>
@@ -362,7 +300,7 @@ namespace DXPlus
 
             set => spPr.GetOrAddElement(Namespace.DrawingMain + "xfrm")
                     .GetOrAddElement(Namespace.DrawingMain + "off")
-                    .SetAttributeValue("x");
+                    .SetAttributeValue("x", value);
         }
 
         /// <summary>
@@ -376,7 +314,7 @@ namespace DXPlus
 
             set => spPr.GetOrAddElement(Namespace.DrawingMain + "xfrm")
                 .GetOrAddElement(Namespace.DrawingMain + "off")
-                .SetAttributeValue("y");
+                .SetAttributeValue("y", value);
         }
 
         /// <summary>
@@ -426,13 +364,31 @@ namespace DXPlus
         }
 
         /// <summary>
+        /// True if this is a decorative picture
+        /// </summary>
+        public bool IsDecorative
+        {
+            get => Extensions.Get<DecorativeImageExtension>()?.Value??false;
+            set
+            {
+                if (value)
+                {
+                    Extensions.Add(new DecorativeImageExtension(true));
+                }
+                else
+                {
+                    Extensions.Remove(DecorativeImageExtension.ExtensionId);
+                }
+            }
+        }
+
+        /// <summary>
         /// Get or create a relationship link to a picture
         /// </summary>
         /// <returns>Relationship id</returns>
-        internal string GetOrCreateRelationship()
+        internal string GetOrCreateImageRelationship()
         {
             string uri = image.PackageRelationship.TargetUri.OriginalString;
-
             return PackagePart.GetRelationshipsByType(Namespace.RelatedDoc.NamespaceName + "/image")
                        .Where(r => r.TargetUri.OriginalString == uri)
                        .Select(r => r.Id)

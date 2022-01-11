@@ -141,7 +141,7 @@ namespace DXPlus.Resources
         /// </summary>
         /// <param name="rsid"></param>
         /// <returns></returns>
-        public static XDocument SettingsXml(string rsid) => GetDocument("DXPlus.Resources.settings.xml", new { rsid });
+        public static XDocument SettingsXml(string rsid, string docid1, string docid2) => GetDocument("DXPlus.Resources.settings.xml", new { rsid, docid1, docid2 });
 
         /// <summary>
         /// Initial Core Properties document

@@ -17,6 +17,47 @@ namespace DXPlus.Helpers
     /// </summary>
     internal static class HelperFunctions
     {
+        internal static Uri GetHlinkClick(XElement xmlOwner, PackagePart part)
+        {
+            string id = xmlOwner.Element(Namespace.DrawingMain + "hlinkClick")
+                ?.AttributeValue(Namespace.RelatedDoc + "id");
+            return string.IsNullOrEmpty(id) 
+                ? null 
+                : part.GetRelationship(id).TargetUri;
+        }
+
+        internal static void SetHlinkClick(XElement xmlOwner, PackagePart part, Uri uri)
+        {
+            if (uri == null)
+            {
+                // Delete the relationship
+                string id = xmlOwner.Element(Namespace.DrawingMain + "hlinkClick")
+                    ?.AttributeValue(Namespace.RelatedDoc + "id");
+                if (!string.IsNullOrEmpty(id))
+                    part.DeleteRelationship(id);
+                xmlOwner.Element(Namespace.DrawingMain + "hlinkClick")?.Remove();
+                return;
+            }
+
+            // Create a new relationship.
+            TargetMode targetMode = TargetMode.External;
+            string relationshipType = $"{Namespace.RelatedDoc.NamespaceName}/hyperlink";
+            string url = uri.OriginalString;
+            string rid = part.GetRelationshipsByType(relationshipType)
+                             .Where(r => r.TargetUri.OriginalString == url)
+                             .Select(r => r.Id)
+                             .SingleOrDefault() ??
+                         part.CreateRelationship(uri, targetMode, relationshipType).Id;
+
+            part.DeleteRelationship(rid);
+            part.CreateRelationship(uri, targetMode, relationshipType, rid);
+                
+            // Add the hyperlink to the XML.
+            xmlOwner.Element(Namespace.DrawingMain + "hlinkClick")?.Remove();
+            xmlOwner.Add(new XElement(Namespace.DrawingMain + "hlinkClick",
+                new XAttribute(Namespace.RelatedDoc + "id", rid)));
+        }
+        
         internal static XElement CreateDefaultShadeElement(XElement parent)
         {
             var e = new XElement(Namespace.Main + "shd",
@@ -427,7 +468,8 @@ namespace DXPlus.Helpers
 
             // Add the settings package part and document
             PackagePart settingsPart = package.CreatePart(Relations.Settings.Uri, Relations.Settings.ContentType, CompressionOption.Maximum);
-            XDocument settings = Resource.SettingsXml(rsid);
+            var docId = Guid.NewGuid().ToString();
+            XDocument settings = Resource.SettingsXml(rsid, docId[..8], "{" + docId + "}");
 
             Debug.Assert(settings.Root != null);
 

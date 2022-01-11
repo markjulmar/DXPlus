@@ -1190,9 +1190,9 @@ namespace DXPlus
             if (svgImage != null)
             {
                 // Override local DPI.
-                picture.UseLocalDpi = false;
+                picture.Extensions.Add(new LocalDpiExtension(false));
                 // Add in the SVG extension.
-                picture.SvgRelationshipId = svgImage.Id;
+                picture.Extensions.Add(new SvgExtension(svgImage.Id));
             }
 
             return drawing;
@@ -1286,7 +1286,7 @@ namespace DXPlus
         internal Image GetRelatedImage(string rid)
         {
             if (string.IsNullOrEmpty(rid))
-                throw new ArgumentException($"'{nameof(rid)}' cannot be null or empty.", nameof(rid));
+                return null;
 
             var relationship = PackagePart.GetRelationship(rid);
             if (relationship == null)

@@ -14,11 +14,27 @@ namespace Tester
 
             //AddImageToDoc(doc);
             //CreateDocWithHeaderAndFooter(doc);
-
-            WriteTitle(doc);
+            //WriteTitle(doc);
+            
+            AddVideoToDoc(doc);
             
             doc.Save();
             Console.WriteLine("Wrote document");
+        }
+
+        private static void AddVideoToDoc(IDocument doc)
+        {
+            doc.AddParagraph("This is an introduction.");
+            
+            var p = doc.AddParagraph();
+            p.Properties.Alignment = Alignment.Center;
+
+            p.Append(doc.CreateVideo(
+                "video-placeholder.png",
+                new Uri("https://www.microsoft.com/en-us/videoplayer/embed/RWwMdr", UriKind.Absolute),
+                400, 225));
+            
+            doc.AddParagraph("And a closing paragraph.");
         }
 
         private static void WriteTitle(IDocument doc)

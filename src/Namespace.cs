@@ -63,7 +63,7 @@ namespace DXPlus
     }
 
     /// <summary>
-    /// Define the comment relationships in OpenXML.
+    /// Define the relationships in OpenXML.
     /// </summary>
     internal static class Relations
     {
@@ -145,6 +145,7 @@ namespace DXPlus
         public static readonly XNamespace W2012 = "http://schemas.microsoft.com/office/word/2012/wordml";
         public static readonly XNamespace W2012Rel = "http://schemas.microsoft.com/office/2011/relationships";
         public static readonly XNamespace ASvg = "http://schemas.microsoft.com/office/drawing/2016/SVG/main";
+        public static readonly XNamespace WP15 = "http://schemas.microsoft.com/office/word/2012/wordprocessingDrawing";
 
         /// <summary>
         /// Returns an XmlNamespaceManager which can be used with XQuery

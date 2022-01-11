@@ -1,18 +1,13 @@
-﻿<?xml version="1.0" encoding="UTF-8" ?>
-<w:settings
-	xmlns:o='urn:schemas-microsoft-com:office:office'
-	xmlns:r='http://schemas.openxmlformats.org/officeDocument/2006/relationships'
-	xmlns:m='http://schemas.openxmlformats.org/officeDocument/2006/math'
-	xmlns:v='urn:schemas-microsoft-com:vml'
-	xmlns:w10='urn:schemas-microsoft-com:office:word'
-	xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'
-	xmlns:sl='http://schemas.openxmlformats.org/schemaLibrary/2006/main'>
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings mc:Ignorable="w14 w15 w16se w16cid w16 w16cex w16sdtdh" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:sl="http://schemas.openxmlformats.org/schemaLibrary/2006/main" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16="http://schemas.microsoft.com/office/word/2018/wordml" xmlns:w16cex="http://schemas.microsoft.com/office/word/2018/wordml/cex" xmlns:w16cid="http://schemas.microsoft.com/office/word/2016/wordml/cid" xmlns:w16sdtdh="http://schemas.microsoft.com/office/word/2020/wordml/sdtdatahash" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex">
 	<w:zoom w:percent='100' />
 	<w:defaultTabStop w:val='720' />
 	<w:characterSpacingControl w:val='doNotCompress' />
 	<w:embedSystemFonts />
 	<w:savePreviewPicture />
-	<w:compat />
+	<w:compat>
+		<w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/>
+	</w:compat>
 	<w:rsids>
 		<w:rsidRoot w:val='{rsid}' />
 		<w:rsid w:val='{rsid}' />
@@ -40,4 +35,6 @@
 	</w:shapeDefaults>
 	<w:decimalSymbol w:val='.' />
 	<w:listSeparator w:val=',' />
+	<w14:docId w14:val="{docid1}" />
+	<w15:docId w15:val="{docid2}"/>
 </w:settings>

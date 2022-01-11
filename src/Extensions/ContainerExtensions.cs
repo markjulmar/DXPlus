@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -85,6 +87,53 @@ namespace DXPlus
                     yield return (index: index + p.StartIndex, text);
                 }
             }
+        }
+
+        /// <summary>
+        /// Helper to create a video + thumbnail to insert into the document.
+        /// </summary>
+        /// <param name="document">Document</param>
+        /// <param name="imageFile">Thumbnail</param>
+        /// <param name="video">Video URL</param>
+        /// <param name="width">Width</param>
+        /// <param name="height">Height</param>
+        /// <returns>Drawing object to insert</returns>
+        public static Drawing CreateVideo(this IDocument document, string imageFile, Uri video, 
+            int width, int height)
+        {
+            var img = document.AddImage(imageFile);
+            var drawing = img.CreatePicture(width,height);
+            drawing.Hyperlink = video;
+            
+            var pic = drawing.Picture;
+            pic.Hyperlink = video; 
+            pic.Extensions.Add(new VideoExtension(video.OriginalString, width, height));
+
+            return drawing;
+        }
+
+        /// <summary>
+        /// Helper to create a video + thumbnail to insert into the document.
+        /// </summary>
+        /// <param name="document">Document</param>
+        /// <param name="image">Thumbnail</param>
+        /// <param name="imageContentType">Image content type</param>
+        /// <param name="video">Video URL</param>
+        /// <param name="width">Width</param>
+        /// <param name="height">Height</param>
+        /// <returns>Drawing object to insert</returns>
+        public static Drawing CreateVideo(this IDocument document, Stream image, string imageContentType, Uri video,
+            int width, int height)
+        {
+            var img = document.AddImage(image, imageContentType);
+            var drawing = img.CreatePicture(width,height);
+            drawing.Hyperlink = video;
+            
+            var pic = drawing.Picture;
+            pic.Hyperlink = video; 
+            pic.Extensions.Add(new VideoExtension(video.OriginalString, width, height));
+
+            return drawing;
         }
     }
 }

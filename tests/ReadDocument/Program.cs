@@ -125,13 +125,49 @@ public static class Program
             case Drawing d:
             {
                 text = $"{prefix}{item.ElementType}: Id={d.Id} ({Math.Round(d.Width,0)}x{Math.Round(d.Height,0)}) - {d.Name}: \"{d.Description}\"";
+                if (d.Hyperlink != null)
+                {
+                    text += $", Hyperlink=\"{d.Hyperlink.OriginalString}\"";
+                }
+                
                 var p = d.Picture;
                 if (p != null)
                 {
                     text += $"{Environment.NewLine}{prefix}   pic: Id={p.Id}, Rid=\"{p.RelationshipId}\" {p.FileName} ({Math.Round(p.Width,0)}x{Math.Round(p.Height,0)}) - {p.Name}: \"{p.Description}\"";
-                    if (p.HasRelatedSvg)
+                    if (p.Hyperlink != null)
                     {
-                        text += $", SvgId={p.SvgRelationshipId} ({p.SvgImage.FileName})";
+                        text += $", Hyperlink=\"{p.Hyperlink.OriginalString}\"";
+                    }
+
+                    foreach (var ext in p.Extensions)
+                    {
+                        if (ext is SvgExtension svg)
+                        {
+                            text += $"{Environment.NewLine}{prefix}      SvgId={svg.RelationshipId} ({svg.Image.FileName})";
+                        }
+                        else if (ext is VideoExtension video)
+                        {
+                            text += $"{Environment.NewLine}{prefix}      Video=\"{video.Source}\" H={video.Height}, W={video.Width}";
+                        }
+                        else if (ext is DecorativeImageExtension dix)
+                        {
+                            text += $"{Environment.NewLine}{prefix}      DecorativeImage={dix.Value}";
+                        }
+                        else if (ext is LocalDpiExtension dpi)
+                        {
+                            text += $"{Environment.NewLine}{prefix}      LocalDpiOverride={dpi.Value}";
+                        }
+                        else
+                        {
+                            text += $"{Environment.NewLine}{prefix}      Extension {ext.UriId}";
+                        }
+                    }
+                    
+                    if (p.Extensions.Contains(SvgExtension.ExtensionId))
+                    {
+                        var svgExt = (SvgExtension) p.Extensions.Get(SvgExtension.ExtensionId);
+                        
+                        text += $", SvgId={svgExt.RelationshipId} ({svgExt.Image.FileName})";
                     }
 
                     /*

@@ -1,8 +1,8 @@
 using System;
 using System.IO.Packaging;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 using System.Xml.Linq;
+using DXPlus.Helpers;
 
 namespace DXPlus
 {
@@ -67,27 +67,36 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Returns whether the picture is decorative.
+        /// Extensions associated with this drawing
+        /// </summary>
+        public ExtensionWrapper Extensions => new(document, DocPr);
+        
+        /// <summary>
+        /// True if this is a decorative picture
         /// </summary>
         public bool IsDecorative
         {
-            get => DrawingExtension.Get(DocPr, DrawingExtension.DecorativeImageId, false)?
-                    .Element(Namespace.ADec + "decorative")?
-                    .BoolAttributeValue("val") == true;
+            get => Extensions.Get<DecorativeImageExtension>()?.Value??false;
             set
             {
                 if (value)
                 {
-                    DrawingExtension.Get(DocPr, DrawingExtension.DecorativeImageId, true)
-                        .GetOrAddElement(Namespace.ADec + "decorative")
-                        .SetElementValue("val", "1");
+                    Extensions.Add(new DecorativeImageExtension(true));
                 }
                 else
                 {
-                    // Remove the extension.
-                    DrawingExtension.Get(DocPr, DrawingExtension.DecorativeImageId, false)?.Remove();
+                    Extensions.Remove(DecorativeImageExtension.ExtensionId);
                 }
             }
+        }
+        
+        /// <summary>
+        /// Hyperlink to navigate to if the image is clicked.
+        /// </summary>
+        public Uri Hyperlink
+        {
+            get => HelperFunctions.GetHlinkClick(DocPr, this.PackagePart);
+            set => HelperFunctions.SetHlinkClick(DocPr, this.PackagePart, value);
         }
 
         /// <summary>
@@ -153,21 +162,20 @@ namespace DXPlus
                 
                 // Retrieve the related image.
                 var id = blip.AttributeValue(Namespace.RelatedDoc + "embed");
-                if (!string.IsNullOrEmpty(id))
-                    return new Picture(document, document.PackagePart, pic,
-                        document.GetRelatedImage(id));
-                
-                // See if there's only an SVG. This happens on newer documents.
-                var svgExtension = DrawingExtension.Get(blip, DrawingExtension.SvgExtensionId, false);
-                if (svgExtension != null)
+                if (string.IsNullOrEmpty(id))
                 {
-                    id = svgExtension.FirstLocalNameDescendant("svgBlip")
-                        .AttributeValue(Namespace.RelatedDoc + "embed");
-                    if (!string.IsNullOrEmpty(id))
-                        return new Picture(document, document.PackagePart, pic,
-                            document.GetRelatedImage(id));
+                    // See if there's only an SVG. This is malformed, but Word still renders it.
+                    var svgExtension = blip.Element(Namespace.DrawingMain + "extLst")?
+                        .Elements(Namespace.DrawingMain + "ext")
+                        .SingleOrDefault(e => e.AttributeValue("uri") == SvgExtension.ExtensionId);
+                    if (svgExtension != null)
+                    {
+                        id = svgExtension.FirstLocalNameDescendant("svgBlip")
+                            .AttributeValue(Namespace.RelatedDoc + "embed");
+                    }
                 }
-                return null;
+                
+                return new Picture(document, document.PackagePart, pic, Document.GetRelatedImage(id));
             }
         }
         
