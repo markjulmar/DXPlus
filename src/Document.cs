@@ -344,11 +344,11 @@ namespace DXPlus
         /// <summary>
         /// Add an Image into this document from a Stream.
         /// </summary>
-        /// <param name="imageStream">A Stream stream.</param>
+        /// <param name="imageStream">A stream with the image.</param>
         /// <param name="contentType">Content type to add</param>
         /// <returns>An Image file.</returns>
-        public Image AddImage(Stream stream, string contentType)
-            => AddImage(stream, contentType, "image");
+        public Image AddImage(Stream imageStream, string contentType)
+            => AddImage(imageStream, contentType, "image");
 
         /// <summary>
         /// Validates the passed image content type
@@ -368,9 +368,9 @@ namespace DXPlus
         /// </summary>
         /// <param name="imageStream">A Stream stream.</param>
         /// <param name="contentType">Content type to add</param>
-        /// <param name="filename">Filename (if any)</param>
+        /// <param name="imageFileName">Filename (if any)</param>
         /// <returns>An Image file.</returns>
-        private Image AddImage(Stream imageStream, string contentType, string filename)
+        private Image AddImage(Stream imageStream, string contentType, string imageFileName)
         {
             ThrowIfObjectDisposed();
 
@@ -390,20 +390,17 @@ namespace DXPlus
 
             // This is a new image which needs to be added to the rels document.
             string extension = contentType[(contentType.LastIndexOf("/", StringComparison.Ordinal) + 1)..];
-            if (string.IsNullOrEmpty(filename))
-                filename = "image";
-            else
-                filename = Path.GetFileNameWithoutExtension(filename);
+            imageFileName = string.IsNullOrEmpty(imageFileName) ? "image" : Path.GetFileNameWithoutExtension(imageFileName);
 
             // Get a unique imgPartUriPath - start with the existing
-            // filename and then append numerics to get something unique.
-            string imgPartUriPath = $"/word/media/{filename}.{extension}";
+            // filename and then append numeric to get something unique.
+            string imgPartUriPath = $"/word/media/{imageFileName}.{extension}";
             if (Package.PartExists(new Uri(imgPartUriPath, UriKind.Relative)))
             {
                 int i = 1;
                 do
                 {
-                    imgPartUriPath = $"/word/media/{filename}{i}.{extension}";
+                    imgPartUriPath = $"/word/media/{imageFileName}{i}.{extension}";
                     i++;
                 } while (Package.PartExists(new Uri(imgPartUriPath, UriKind.Relative)));
             }
@@ -1164,7 +1161,6 @@ namespace DXPlus
             var (cx, cy) = GetImageDimensions(rid);
             var image = GetRelatedImage(rid);
 
-            string renderedImageRid = rid;
             Image svgImage = null;
 
             // If this image is an SVG, then we need to create a PNG version
@@ -1177,7 +1173,7 @@ namespace DXPlus
             }
 
             // Create the XML block to represent the drawing + picture.
-            var drawingXml = Resource.DrawingElement(id, name, description, cx, cy, renderedImageRid, image.FileName);
+            var drawingXml = Resource.DrawingElement(id, name, description, cx, cy, image.Id, image.FileName);
             
             // Create the drawing owner.
             var drawing = new Drawing(this, PackagePart, drawingXml);

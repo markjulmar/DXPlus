@@ -19,18 +19,19 @@ namespace DXPlus
         /// <summary>
         /// Get the stream for the picture
         /// </summary>
-        /// <param name="mode">File mode</param>
-        /// <param name="access">Access type</param>
         /// <returns>Open stream</returns>
         public Stream OpenStream()
         {
-            string temp = PackageRelationship.SourceUri.OriginalString;
-            string start = temp.Remove(temp.LastIndexOf('/'));
-            string end = PackageRelationship.TargetUri.OriginalString;
-            string full = start + "/" + end;
+            string targetUrl = PackageRelationship.TargetUri.OriginalString;
+            if (targetUrl[0] != '/')
+            {
+                string temp = PackageRelationship.SourceUri.OriginalString;
+                string start = temp.Remove(temp.LastIndexOf('/'));
+                targetUrl = start + "/" + targetUrl;
+            }
 
             // Return a readonly stream to the image
-            return document.Package.GetPart(new Uri(full, UriKind.Relative))
+            return document.Package.GetPart(new Uri(targetUrl, UriKind.Relative))
                            .GetStream(FileMode.Open, FileAccess.Read);
         }
 

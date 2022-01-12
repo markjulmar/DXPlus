@@ -12,11 +12,10 @@ namespace Tester
             string fn = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "test.docx");
             using var doc = Document.Create(fn);
 
-            //AddImageToDoc(doc);
+            AddImageToDoc(doc);
             //CreateDocWithHeaderAndFooter(doc);
             //WriteTitle(doc);
-            
-            AddVideoToDoc(doc);
+            //AddVideoToDoc(doc);
             
             doc.Save();
             Console.WriteLine("Wrote document");
@@ -60,7 +59,7 @@ namespace Tester
             p.Append(im2.CreatePicture());
 
             // Add with different size.
-            p = doc.AddParagraph("And a final pic:");
+            p = doc.AddParagraph("And a final pic (dup of svg!):");
             p.Append(img.CreatePicture(50, 50));
         }
 
