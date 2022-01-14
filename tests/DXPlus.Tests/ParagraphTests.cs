@@ -79,6 +79,71 @@ namespace DXPlus.Tests
             Assert.Equal(text, prop.Value);
         }
 
+        [Fact]
+        public void SingleParaDocReturnsNoNextPrevParagraph()
+        {
+            using var doc = Document.Create();
+            var p = doc.AddParagraph("1");
+
+            Assert.Null(p.NextParagagraph);
+            Assert.Null(p.PreviousParagagraph);
+        }
+
+        [Fact]
+        public void FirstParagraphReturnsNullPrevParagraph()
+        {
+            using var doc = Document.Create();
+            var p = doc.AddParagraph("1");
+            doc.AddParagraph("2");
+            doc.AddParagraph("3");
+
+            Assert.Null(p.PreviousParagagraph);
+            Assert.NotNull(p.NextParagagraph);
+        }
+
+        [Fact]
+        public void LastParagraphReturnsNullNextParagraph()
+        {
+            using var doc = Document.Create();
+            doc.AddParagraph("1");
+            doc.AddParagraph("2");
+            var p = doc.AddParagraph("3");
+
+            Assert.NotNull(p.PreviousParagagraph);
+            Assert.Null(p.NextParagagraph);
+        }
+
+        [Fact]
+        public void PreviousParagraphReturnsProperObject()
+        {
+            using var doc = Document.Create();
+            doc.AddParagraph("1");
+            doc.AddParagraph("2");
+            var p1 = doc.AddParagraph("3");
+            doc.AddParagraph("4");
+            var p2 = doc.AddParagraph("5");
+            var p3 = doc.AddParagraph("6");
+
+            Assert.Equal("2", p1.PreviousParagagraph.Text);
+            Assert.Equal("4", p2.PreviousParagagraph.Text);
+            Assert.Equal("5", p3.PreviousParagagraph.Text);
+        }
+
+        [Fact]
+        public void NextParagraphReturnsProperObject()
+        {
+            using var doc = Document.Create();
+            var p1 = doc.AddParagraph("1");
+            doc.AddParagraph("2");
+            var p2 = doc.AddParagraph("3");
+            doc.AddParagraph("4");
+            var p3 = doc.AddParagraph("5");
+            doc.AddParagraph("6");
+
+            Assert.Equal("2", p1.NextParagagraph.Text);
+            Assert.Equal("4", p2.NextParagagraph.Text);
+            Assert.Equal("6", p3.NextParagagraph.Text);
+        }
 
         [Fact]
         public void CheckHeading1()

@@ -2,7 +2,9 @@
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Xml;
 using DXPlus;
+using Formatting = DXPlus.Formatting;
 
 namespace ReadDocument
 {
@@ -20,7 +22,9 @@ namespace ReadDocument
 
             var doc = Document.Load(filename);
 
-            Console.WriteLine(doc.RawDocument());
+            Console.WriteLine(FormatXml(doc.RawDocument()));
+            Console.WriteLine();
+            Console.WriteLine(new string('-',10));
             Console.WriteLine();
 
             foreach (var block in doc.Blocks)
@@ -49,7 +53,7 @@ namespace ReadDocument
             string listInfo = "";
             if (block.IsListItem())
             {
-                listInfo = $"{block.GetNumberingFormat()} {block.GetListLevel()} #{block.GetListIndex()+1}";
+                listInfo = $"{block.GetNumberingFormat()} {block.GetListLevel()} #{block.GetListIndex()+1} ";
             }
 
             Console.WriteLine($"{prefix}p: {block.Id} StyleName=\"{block.Properties.StyleName}\" {listInfo}{DumpObject(block.Properties.DefaultFormatting)}");
@@ -216,6 +220,21 @@ namespace ReadDocument
 
             sb.Append(']');
             return sb.ToString();
+        }
+
+        public static string FormatXml(string inputXml)
+        {
+            var document = new XmlDocument();
+            document.Load(new StringReader(inputXml));
+
+            var builder = new StringBuilder();
+            using (var writer = new XmlTextWriter(new StringWriter(builder)))
+            {
+                writer.Formatting = System.Xml.Formatting.Indented;
+                document.Save(writer);
+            }
+
+            return builder.ToString();
         }
     }
 }

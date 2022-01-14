@@ -691,29 +691,6 @@
 		</w:pPr>
 		<w:qFormat />
 	</w:style>
-	<w:style w:type="character" w:customStyle="1" w:styleId="SourceCodeChar">
-		<w:name w:val="SourceCode Char"/>
-		<w:basedOn w:val="DefaultParagraphFont"/>
-		<w:link w:val="SourceCode"/>
-		<w:rsid w:val="007B0CE9"/>
-		<w:rPr>
-			<w:rFonts w:ascii="Consolas" w:hAnsi="Consolas"/>
-			<w:sz w:val="22"/>
-		</w:rPr>
-	</w:style>
-	<w:style w:type="paragraph" w:customStyle="1" w:styleId="SourceCode">
-		<w:name w:val="Source Code"/>
-		<w:basedOn w:val="Normal"/>
-		<w:link w:val="SourceCodeChar"/>
-		<w:rsid w:val="007B0CE9"/>
-		<w:pPr>
-			<w:wordWrap w:val="0"/>
-		</w:pPr>
-		<w:rPr>
-			<w:rFonts w:ascii="Consolas" w:hAnsi="Consolas"/>
-			<w:sz w:val="22"/>
-		</w:rPr>
-	</w:style>
 	<w:style w:styleId="Hyperlink" w:type="character">
 		<w:name w:val="Hyperlink"/>
 		<w:basedOn w:val="DefaultParagraphFont"/>

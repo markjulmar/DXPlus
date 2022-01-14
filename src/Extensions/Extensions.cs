@@ -20,7 +20,7 @@ namespace DXPlus
             string text = value?.ToString();
             if (!string.IsNullOrEmpty(text) && char.IsUpper(text[0]))
             {
-                text = char.ToLower(text[0]) + text.Substring(1);
+                text = char.ToLower(text[0]) + text[1..];
             }
 
             return text;
@@ -33,7 +33,9 @@ namespace DXPlus
         /// <returns></returns>
         public static string ToHex(this Color color)
         {
-            return $"{color.R:X2}{color.G:X2}{color.B:X2}";
+            return color == Color.Transparent || color == Color.Empty
+                ? "auto" 
+                : $"{color.R:X2}{color.G:X2}{color.B:X2}";
         }
 
         /// <summary>
@@ -57,6 +59,9 @@ namespace DXPlus
         {
             if (color != null)
             {
+                if (color.Value.Trim().ToLower() == "auto")
+                    return Color.Transparent;
+
                 var rgb = int.Parse(color.Value.Replace("#", ""), NumberStyles.HexNumber) | 0xff000000;
                 return Color.FromArgb((int) rgb);
             }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Drawing;
+using System.Xml;
 using System.Xml.Linq;
 using DXPlus.Helpers;
 
@@ -397,6 +398,15 @@ namespace DXPlus
                     Xml.SetAttributeValue(Name.Indent, Name.Hanging, value);
                 }
             }
+        }
+
+        /// <summary>
+        /// Allow line breaking at the character level.
+        /// </summary>
+        public bool WordWrap
+        {
+            get => Xml.Element(Name.WordWrap)?.BoolAttributeValue(Name.MainVal) ?? false;
+            set => Xml.GetOrAddElement(Name.WordWrap).SetAttributeValue(Name.MainVal, value ? 1 : 0);
         }
 
         /// <summary>

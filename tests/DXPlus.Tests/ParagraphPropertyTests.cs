@@ -44,6 +44,37 @@ namespace DXPlus.Tests
         }
 
         [Fact]
+        public void WordWrapDefaultsToFalse()
+        {
+            var p = new ParagraphProperties();
+            Assert.False(p.WordWrap);
+        }
+
+        [Fact]
+        public void WordWrapSetToTrueAddsElement()
+        {
+            var p = new ParagraphProperties();
+            Assert.False(p.WordWrap);
+
+            p.WordWrap = true;
+            Assert.True(p.WordWrap);
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("wordWrap"));
+            Assert.Equal("1", p.Xml.RemoveNamespaces().XPathSelectElement("wordWrap")?.GetVal());
+        }
+
+        [Fact]
+        public void WordWrapSetToFalseAddsElement()
+        {
+            var p = new ParagraphProperties();
+            Assert.False(p.WordWrap);
+
+            p.WordWrap = false;
+            Assert.False(p.WordWrap);
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("wordWrap"));
+            Assert.Equal("0", p.Xml.RemoveNamespaces().XPathSelectElement("wordWrap")?.GetVal());
+        }
+
+        [Fact]
         public void AlignmentGetAndSetAreAligned()
         {
             var p = new ParagraphProperties();

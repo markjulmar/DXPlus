@@ -69,12 +69,12 @@ namespace DXPlus
         /// <summary>
         /// Returns the applied text color, or None for default.
         /// </summary>
-        public Color Color
+        public Color? Color
         {
-            get => Xml.Element(Name.Color)?.GetValAttr().ToColor() ?? Color.Empty;
+            get => Xml.Element(Name.Color)?.GetValAttr().ToColor();
             set
             {
-                Xml.AddElementVal(Name.Color, value == Color.Empty ? null : value.ToHex());
+                Xml.AddElementVal(Name.Color, !value.HasValue || value == System.Drawing.Color.Empty ? null : value.Value.ToHex());
                 setProperties.Add(nameof(Color));
             }
         }
@@ -377,24 +377,24 @@ namespace DXPlus
         /// <summary>
         /// Get or set the underline style for this paragraph
         /// </summary>
-        public Color UnderlineColor
+        public Color? UnderlineColor
         {
             get
             {
                 var attr = Xml.Element(Name.Underline)?.Attribute(Name.Color);
-                return attr == null || attr.Value == "auto" ? Color.Empty : attr.ToColor();
+                return attr?.ToColor();
             }
 
             set
             {
-                if (value != Color.Empty)
+                if (value.HasValue && value != System.Drawing.Color.Empty)
                 {
                     var e = Xml.GetOrAddElement(Name.Underline);
                     if (e.GetValAttr() == null) // no underline?
                     {
                         e.SetAttributeValue(Name.MainVal, UnderlineStyle.SingleLine.GetEnumName());
                     }
-                    e.SetAttributeValue(Name.Color, value.ToHex());
+                    e.SetAttributeValue(Name.Color, value.Value.ToHex());
                 }
                 else
                 {
@@ -471,12 +471,7 @@ namespace DXPlus
         /// </summary>
         public Color? ShadeColor
         {
-            get
-            {
-                var color = Xml.Element(Namespace.Main + "shd")?.AttributeValue(Name.Color);
-                return string.IsNullOrEmpty(color) ? null :
-                    color.ToLower() == "auto" ? Color.Empty : ColorTranslator.FromHtml($"#{color}");
-            }
+            get => Xml.Element(Namespace.Main + "shd")?.Attribute(Name.Color)?.ToColor();
 
             set
             {
@@ -484,11 +479,11 @@ namespace DXPlus
                 if (value == null)
                 {
                     if (e == null) return;
-                    value = Color.Empty;
+                    value = System.Drawing.Color.Empty;
                 }
 
                 e ??= HelperFunctions.CreateDefaultShadeElement(Xml);
-                e.SetAttributeValue(Name.Color, value == Color.Empty ? "auto" : value.Value.ToHex());
+                e.SetAttributeValue(Name.Color, value.Value.ToHex());
                 setProperties.Add(nameof(ShadeColor));
             }
         }
@@ -498,12 +493,7 @@ namespace DXPlus
         /// </summary>
         public Color? ShadeFill
         {
-            get
-            {
-                var color = Xml.Element(Namespace.Main + "shd")?.AttributeValue(Namespace.Main + "fill");
-                return string.IsNullOrEmpty(color) ? null :
-                    color.ToLower() == "auto" ? Color.Empty : ColorTranslator.FromHtml($"#{color}");
-            }
+            get => Xml.Element(Namespace.Main + "shd")?.Attribute(Namespace.Main + "fill")?.ToColor();
 
             set
             {
@@ -511,11 +501,11 @@ namespace DXPlus
                 if (value == null)
                 {
                     if (e == null) return;
-                    value = Color.Empty;
+                    value = System.Drawing.Color.Empty;
                 }
 
                 e ??= HelperFunctions.CreateDefaultShadeElement(Xml);
-                e.SetAttributeValue(Namespace.Main + "fill", value == Color.Empty ? "auto" : value.Value.ToHex());
+                e.SetAttributeValue(Name.Color, value.Value.ToHex());
                 setProperties.Add(nameof(ShadeFill));
             }
         }
@@ -564,31 +554,6 @@ namespace DXPlus
                 if (Xml.Element(el.Name) == null)
                     Xml.Add(el.Clone());
             }
-        }
-
-        /// <summary>
-        /// Override for the ToString method
-        /// </summary>
-        /// <returns>Textual representation of this format</returns>
-        public override string ToString()
-        {
-            var props = new List<string>();
-            if (this.Bold) props.Add("Bold");
-            if (this.Italic) props.Add("Italic");
-            if (this.IsHidden) props.Add("Hidden");
-            if (this.CapsStyle != CapsStyle.None) props.Add("CapsStyle."+CapsStyle.ToString());
-            if (this.Color != Color.Empty) props.Add(this.Color.ToString());
-            if (this.Effect != Effect.None) props.Add("Effect."+this.Effect.ToString());
-            if (this.Emphasis != Emphasis.None) props.Add("Emphasis."+this.Emphasis.ToString());
-            if (this.ExpansionScale != null) props.Add("ExpansionScale."+this.ExpansionScale.ToString());
-            if (this.Font != null) props.Add(this.Font.Name);
-            if (this.FontSize != null) props.Add(this.FontSize.ToString() + "hpt");
-            if (this.Highlight != Highlight.None) props.Add("Highlight."+this.Highlight.ToString());
-            if (this.UnderlineStyle != UnderlineStyle.None) props.Add("Underline." + this.UnderlineStyle.ToString());
-            if (this.UnderlineColor != Color.Empty) props.Add("UnderlineColor-" + this.UnderlineColor.ToString());
-            if (this.NoProof) props.Add("NoProof");
-
-            return string.Join(' ', props);
         }
     }
 }

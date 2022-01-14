@@ -278,6 +278,36 @@ namespace DXPlus
         }
 
         /// <summary>
+        /// Retrieve the previous paragraph sibling.
+        /// </summary>
+        public Paragraph PreviousParagagraph
+        {
+            get
+            {
+                if (!InDom) 
+                    return null;
+                var ps = Document.Paragraphs.ToList();
+                int pos = ps.IndexOf(this);
+                return pos > 0 ? ps[pos - 1] : null;
+            }
+        }
+
+        /// <summary>
+        /// Retrieve the next paragraph sibling.
+        /// </summary>
+        public Paragraph NextParagagraph
+        {
+            get
+            {
+                if (!InDom)
+                    return null;
+                var ps = Document.Paragraphs.ToList();
+                int pos = ps.IndexOf(this);
+                return pos >= 0 && pos < ps.Count-1 ? ps[pos+1] : null;
+            }
+        }
+
+        /// <summary>
         /// True if this paragraph is a section divider.
         /// </summary>
         public bool IsSectionParagraph =>

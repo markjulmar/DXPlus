@@ -264,7 +264,7 @@ namespace DXPlus
                 return null;
             }
 
-            XAttribute valAttr = el.Attribute("val");
+            XAttribute valAttr = el.Attribute(Name.MainVal.LocalName);
             return valAttr ?? el.Attribute(Name.MainVal);
         }
 
@@ -288,7 +288,9 @@ namespace DXPlus
             }
 
             string val = attr.Value.Trim();
-            return string.Equals(val, "true", StringComparison.OrdinalIgnoreCase) || val == "1";
+            return string.Equals(val, "true", StringComparison.OrdinalIgnoreCase) 
+                   || string.Equals(val, "on", StringComparison.OrdinalIgnoreCase)
+                   || val == "1";
         }
 
         public static IEnumerable<XElement> LocalNameElements(this XContainer xml, string localName)
