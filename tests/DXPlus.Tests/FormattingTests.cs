@@ -70,14 +70,14 @@ namespace DXPlus.Tests
         public void ColorAddsRemovesElement()
         {
             var rPr = new Formatting();
-            Assert.Equal(Color.Empty, rPr.Color);
+            Assert.Null(rPr.Color);
 
             rPr.Color = Color.Red;
             Assert.NotStrictEqual(Color.Red, rPr.Color);
             Assert.NotNull(rPr.Xml.RemoveNamespaces().XPathSelectElement("color[@val='FF0000']"));
 
-            rPr.Color = Color.Empty;
-            Assert.Equal(Color.Empty, rPr.Color);
+            rPr.Color = null;
+            Assert.Null(rPr.Color);
             Assert.Null(rPr.Xml.RemoveNamespaces().XPathSelectElement("color"));
         }
 
@@ -419,15 +419,15 @@ namespace DXPlus.Tests
         public void UnderlineColorAddsRemovesElement()
         {
             var rPr = new Formatting();
-            Assert.Equal(Color.Empty, rPr.UnderlineColor);
+            Assert.Null(rPr.UnderlineColor);
 
             rPr.UnderlineColor = Color.Red;
             Assert.NotStrictEqual(Color.Red, rPr.UnderlineColor);
             Assert.Equal(UnderlineStyle.SingleLine, rPr.UnderlineStyle);
             Assert.NotNull(rPr.Xml.RemoveNamespaces().XPathSelectElement("u[@color='FF0000']"));
 
-            rPr.UnderlineColor = Color.Empty;
-            Assert.Equal(Color.Empty, rPr.UnderlineColor);
+            rPr.UnderlineColor = null;
+            Assert.Null(rPr.UnderlineColor);
             Assert.Null(rPr.Xml.RemoveNamespaces().XPathSelectElement("u[@color='FF0000']"));
         }
 
