@@ -56,6 +56,7 @@ namespace DXPlus.Resources
         /// <param name="cx">width</param>
         /// <param name="cy">height</param>
         /// <param name="rid">BLIP relationship id</param>
+        /// <param name="filename">Filename for the image</param>
         /// <returns></returns>
         public static XElement DrawingElement(long id, string name, string description, int cx, int cy, string rid, string filename)
                 => GetElement("DXPlus.Resources.drawing.xml", new { id, name, description, cx, cy, rid, filename });
@@ -232,6 +233,10 @@ namespace DXPlus.Resources
             {
                 string key = "{" + name + "}";
                 string value = obj?.ToString() ?? string.Empty;
+
+                // Escape any XML characters.
+                value = new XAttribute("__n", value).ToString()[5..].TrimEnd('\"');
+
                 sb.Replace(key, value);
             }
 
