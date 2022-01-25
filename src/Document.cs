@@ -1233,7 +1233,7 @@ namespace DXPlus
         /// </summary>
         /// <param name="rid"></param>
         /// <returns></returns>
-        internal (int width, int height) GetImageDimensions(string rid)
+        private (int width, int height) GetImageDimensions(string rid)
         {
             if (string.IsNullOrEmpty(rid))
                 throw new ArgumentException($"'{nameof(rid)}' cannot be null or empty.", nameof(rid));
@@ -1245,20 +1245,20 @@ namespace DXPlus
             var relationship = PackagePart.GetRelationship(rid);
             using (var partStream = Package.GetPart(relationship.TargetUri).GetStream())
             {
-                if (Path.GetExtension(relationship.TargetUri?.ToString() ?? "").ToLower() == ".svg")
+                if (Path.GetExtension(relationship.TargetUri.ToString()).ToLower() == ".svg")
                 {
                     string svg = new StreamReader(partStream).ReadToEnd();
-                    int sp = svg.IndexOf("viewBox=\"");
+                    int sp = svg.IndexOf("viewBox=\"", StringComparison.Ordinal);
                     if (sp > 0)
                     {
                         sp += 9;
-                        int ep = svg.IndexOf("\"", sp);
+                        int ep = svg.IndexOf("\"", sp, StringComparison.Ordinal);
                         var values = svg.Substring(sp, ep - sp);
                         var split = values.Split(' ');
                         if (split.Length == 4)
                         {
-                            cx = int.Parse(split[2]);
-                            cy = int.Parse(split[3]);
+                            cx = (int) double.Parse(split[2]);
+                            cy = (int) double.Parse(split[3]);
                         }
                     }
                 }
