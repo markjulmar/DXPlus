@@ -331,6 +331,11 @@ namespace DXPlus.Helpers
             }
         }
 
+        public static int? GetId(XElement element)
+        {
+            return int.TryParse(element.Attribute(Name.Id)?.Value ?? "", out var value) ? value : null;
+        }
+
         public static string GetText(XElement e)
         {
             return GetTextRecursive(e)?.ToString() ?? string.Empty;

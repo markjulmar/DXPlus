@@ -8,6 +8,46 @@ using DXPlus.Resources;
 
 namespace DXPlus
 {
+    /// <summary>
+    /// This ties a comment to a range set.
+    /// </summary>
+    public sealed class CommentRange
+    {
+        /// <summary>
+        /// The comment
+        /// </summary>
+        public Comment Comment { get; }
+
+        /// <summary>
+        /// The paragraph owner
+        /// </summary>
+        public Paragraph Owner { get; }
+
+        /// <summary>
+        /// Starting run
+        /// </summary>
+        public Run RangeStart { get; }
+
+        /// <summary>
+        /// Ending run - might be the same as start
+        /// </summary>
+        public Run RangeEnd { get; }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        internal CommentRange(Paragraph owner, Run start, Run end, Comment comment)
+        {
+            this.Owner = owner;
+            this.RangeStart = start;
+            this.RangeEnd = end;
+            this.Comment = comment;
+        }
+    }
+
+    /// <summary>
+    /// This is a comment tied to one or more text runs.
+    /// </summary>
     public sealed class Comment : DocXElement, IEquatable<Comment>
     {
         private const string ParagraphStyle = "CommentText";
@@ -18,8 +58,8 @@ namespace DXPlus
         /// </summary>
         public int Id
         {
-            get => int.TryParse(Xml.AttributeValue(Namespace.Main + "id"), out var result) ? result : 0;
-            set => Xml.SetAttributeValue(Namespace.Main + "id", value);
+            get => HelperFunctions.GetId(Xml) ?? 0;
+            set => Xml.SetAttributeValue(Name.Id, value);
         }
 
         /// <summary>

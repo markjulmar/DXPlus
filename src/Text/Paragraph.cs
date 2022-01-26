@@ -7,6 +7,7 @@ using System.IO.Packaging;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using DXPlus.Comments;
 
 namespace DXPlus
 {
@@ -120,8 +121,14 @@ namespace DXPlus
                 throw new Exception(
                     "Cannot attached comments with unowned paragraph. Add the paragraph to a document first.");
 
-            Document.CommentManager.Attach(comment, runStart, runEnd);
+            CommentManager.Attach(comment, runStart, runEnd);
         }
+
+        /// <summary>
+        /// Comments tied to this paragraph
+        /// </summary>
+        public IEnumerable<CommentRange> Comments 
+            => Document.CommentManager.GetCommentsForParagraph(this);
 
         /// <summary>
         /// The default run properties applied at the paragraph level

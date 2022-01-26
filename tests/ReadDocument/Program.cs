@@ -61,6 +61,23 @@ namespace ReadDocument
             {
                 DumpRun(run, level+1);
             }
+
+            foreach (var comment in block.Comments)
+            {
+                DumpCommentRef(comment, level+1);
+            }
+        }
+
+        private static void DumpCommentRef(CommentRange comment, int level)
+        {
+            string prefix = new string(' ', level * 3);
+
+            Console.WriteLine($"{prefix}Comment id={comment.Comment.Id} by {comment.Comment.AuthorName} ({comment.Comment.AuthorInitials})");
+            Console.WriteLine($"{prefix}   > start: {comment.RangeStart.Text}, end: {comment.RangeEnd.Text}");
+            foreach (var p in comment.Comment.Paragraphs)
+            {
+                DumpParagraph(p, level + 1);
+            }
         }
 
         private static void DumpTable(Table table, int level)

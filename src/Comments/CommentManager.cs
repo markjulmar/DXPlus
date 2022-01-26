@@ -125,19 +125,48 @@ namespace DXPlus.Comments
         }
 
         /// <summary>
+        /// Retrieve the comments tied to a specific paragraph in the document.
+        /// </summary>
+        /// <param name="owner">Paragraph owner</param>
+        /// <returns>Enumerable of comment ranges</returns>
+        public IEnumerable<CommentRange> GetCommentsForParagraph(Paragraph owner)
+        {
+            var runs = owner.Runs.ToList();
+
+            foreach (var commentStart in owner.Xml.Descendants(CommentStart))
+            {
+                var id = HelperFunctions.GetId(commentStart) ?? -1;
+                if (id == -1) continue;
+
+                var commentEnd = owner.Xml.Elements(CommentEnd).SingleOrDefault(xe => HelperFunctions.GetId(xe) == id);
+
+                var xerStart = commentStart.NextSiblingByName(Name.Run);
+                var runStart = runs.SingleOrDefault(r => r.Xml == xerStart);
+
+                var xerEnd = commentEnd.PreviousSiblingByName(Name.Run);
+                var runEnd = (xerEnd != null)
+                    ? runs.SingleOrDefault(r => r.Xml == xerEnd)
+                    : runStart;
+
+                var comment = Comments.Single(c => c.Id == id);
+                yield return new CommentRange(owner, runStart, runEnd, comment);
+            }
+        }
+
+        /// <summary>
         /// Attach a comment to a run
         /// </summary>
         /// <param name="comment"></param>
         /// <param name="runStart"></param>
         /// <param name="runEnd"></param>
-        public void Attach(Comment comment, Run runStart, Run runEnd)
+        public static void Attach(Comment comment, Run runStart, Run runEnd)
         {
             runStart.Xml.AddBeforeSelf(
                 new XElement(CommentStart,
-                    new XAttribute(Namespace.Main + "id", comment.Id)));
+                    new XAttribute(Name.Id, comment.Id)));
 
             var endNode = new XElement(CommentEnd,
-                    new XAttribute(Namespace.Main + "id", comment.Id));
+                    new XAttribute(Name.Id, comment.Id));
 
             runEnd.Xml.AddAfterSelf(endNode);
             endNode.AddAfterSelf(XElement.Parse(
