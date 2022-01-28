@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using DXPlus;
-using Formatting = DXPlus.Formatting;
 
 namespace ReadDocument
 {
@@ -162,6 +161,11 @@ namespace ReadDocument
                             text += $", Hyperlink=\"{p.Hyperlink.OriginalString}\"";
                         }
 
+                        if (p.BorderColor != null)
+                        {
+                            text += $", BorderColor={p.BorderColor}";
+                        }
+
                         foreach (var ext in p.Extensions)
                         {
                             if (ext is SvgExtension svg)
@@ -186,26 +190,28 @@ namespace ReadDocument
                             }
                         }
 
-                        string fn;
-                        Image theImage;
-                        if (p.Extensions.Contains(SvgExtension.ExtensionId))
-                        {
-                            var svgExt = (SvgExtension) p.Extensions.Get(SvgExtension.ExtensionId);
-                            theImage = svgExt.Image;
-                            fn = theImage.FileName;
-                            text += $", SvgId={svgExt.RelationshipId} ({theImage.FileName})";
-                        }
-                        else
-                        {
-                            fn = p.FileName;
-                            theImage = p.Image;
-                        }
+                            /*
+                            string fn;
+                            Image theImage;
+                            if (p.Extensions.Contains(SvgExtension.ExtensionId))
+                            {
+                                var svgExt = (SvgExtension) p.Extensions.Get(SvgExtension.ExtensionId);
+                                theImage = svgExt.Image;
+                                fn = theImage.FileName;
+                                text += $", SvgId={svgExt.RelationshipId} ({theImage.FileName})";
+                            }
+                            else
+                            {
+                                fn = p.FileName;
+                                theImage = p.Image;
+                            }
 
-                        fn = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), fn);
+                            fn = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), fn);
 
-                        using var input = theImage.OpenStream();
-                        using var output = File.OpenWrite(fn);
-                        input.CopyTo(output);
+                            using var input = theImage.OpenStream();
+                            using var output = File.OpenWrite(fn);
+                            input.CopyTo(output);
+                            */
                     }
 
                     Console.WriteLine(text);

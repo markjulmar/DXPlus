@@ -23,7 +23,7 @@ namespace DXPlus.Shapes
                 var value = rgb.GetValAttr();
                 if (value != null)
                 {
-                    return ColorTranslator.FromHtml($"#{value}");
+                    return ColorTranslator.FromHtml($"#{value.Value}");
                 }
 
                 int.TryParse(rgb.AttributeValue("r") ?? "0", out int r);

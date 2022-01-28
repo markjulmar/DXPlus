@@ -93,8 +93,8 @@ namespace DXPlus
                 
                 // Try solid color.
                 var solidFill = border?.Element(Namespace.DrawingMain + "solidFill");
-                if (solidFill != null)
-                    return ShapeHelpers.ParseColorElement(solidFill.Element());
+                if (solidFill is {HasElements: true})
+                    return ShapeHelpers.ParseColorElement(solidFill);
 
                 return null;
             }
