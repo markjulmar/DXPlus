@@ -1392,6 +1392,16 @@ namespace DXPlus
             throw new ArgumentOutOfRangeException(nameof(index));
         }
 
+        /// <summary>
+        /// Returns a Run object for a specific XML fragment if it's part of the document structure.
+        /// </summary>
+        /// <param name="xml">Xml element to look for</param>
+        /// <returns>Created run object</returns>
+        internal Run FindRunByElement(XElement xml) =>
+            Paragraphs.Union(Tables.SelectMany(t => t.Paragraphs))
+                .SelectMany(p => p.Runs)
+                .FirstOrDefault(r => r.Xml == xml);
+
         private string filename;               // The filename that this document was loaded from; can be null;
         private Stream stream;                 // The stream that this document was loaded from; can be null.
         private MemoryStream memoryStream;     // The in-memory document (with changes)

@@ -40,7 +40,7 @@ namespace ReadDocument
                 DumpTable(t, level);
             else if (block is UnknownBlock ub)
             {
-                string prefix = new string(' ', level * 3);
+                string prefix = new(' ', level * 3);
                 Console.WriteLine($"{prefix}{ub.Name}");
             }
         }

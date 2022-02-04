@@ -303,6 +303,11 @@ namespace DXPlus
             return nodes?.FirstOrDefault(node => node.AttributeValue(name).Equals(attributeValue));
         }
 
+        /// <summary>
+        /// Retrieve the "val" or "w:val" attribute from an element tag.
+        /// </summary>
+        /// <param name="el">Element to examine</param>
+        /// <returns>Attribute object, or null if the XML attribute is missing.</returns>
         public static XAttribute GetValAttr(this XElement el)
         {
             if (el == null)
@@ -310,88 +315,99 @@ namespace DXPlus
                 return null;
             }
 
-            XAttribute valAttr = el.Attribute(Name.MainVal.LocalName);
+            var valAttr = el.Attribute(Name.MainVal.LocalName);
             return valAttr ?? el.Attribute(Name.MainVal);
         }
 
-        public static string GetVal(this XElement el, string defaultValue = "")
-        {
-            return GetValAttr(el)?.Value ?? defaultValue;
-        }
+        /// <summary>
+        /// Retrieves the text value of the "val" or "w:val" attribute on an element tag.
+        /// </summary>
+        /// <param name="el">Element to examine</param>
+        /// <param name="defaultValue">Value to return if the attribute does not exist.</param>
+        /// <returns>Value of the attribute, or the default value if it doesn't exist.</returns>
+        public static string GetVal(this XElement el, string defaultValue = "") 
+            => GetValAttr(el)?.Value ?? defaultValue;
 
+        /// <summary>
+        /// Retrieves the text value of the specified attribute name on an element tag.
+        /// </summary>
+        /// <param name="el">Element to examine</param>
+        /// <param name="name">Name to look for</param>
+        /// <param name="defaultValue">Value to return if attribute is missing</param>
+        /// <returns>Value of the attribute, or the default</returns>
         public static string AttributeValue(this XElement el, XName name, string defaultValue = "")
         {
-            XAttribute attr = el?.Attribute(name);
+            var attr = el?.Attribute(name);
             return attr != null ? attr.Value : defaultValue;
         }
 
+        /// <summary>
+        /// Retrieves a true/false boolean value for an attribute on the specified element tag.
+        /// </summary>
+        /// <param name="el">Element to examine</param>
+        /// <param name="name">Name of the attribute</param>
+        /// <param name="defaultValue">Default value, defaults to false</param>
+        /// <returns>Value of the boolean attribute, or the default value</returns>
         public static bool BoolAttributeValue(this XElement el, XName name, bool defaultValue = false)
         {
-            XAttribute attr = el?.Attribute(name);
-            if (attr == null)
-            {
-                return defaultValue;
-            }
+            var attr = el?.Attribute(name);
+            if (attr == null) return defaultValue;
 
-            string val = attr.Value.Trim();
+            var val = attr.Value.Trim();
             return string.Equals(val, "true", StringComparison.OrdinalIgnoreCase) 
                    || string.Equals(val, "on", StringComparison.OrdinalIgnoreCase)
                    || val == "1";
         }
 
-        public static IEnumerable<XElement> LocalNameElements(this XContainer xml, string localName)
-        {
-            return xml.Elements().Where(e => e.Name.LocalName.Equals(localName));
-        }
+        /// <summary>
+        /// Returns all elements in the given XML container that match a specific name ignoring namespaces.
+        /// </summary>
+        /// <param name="xml">XML container</param>
+        /// <param name="localName">Name to look for</param>
+        /// <returns>All matching elements</returns>
+        public static IEnumerable<XElement> LocalNameElements(this XContainer xml, string localName) 
+            => xml.Elements().Where(e => e.Name.LocalName.Equals(localName));
 
-        public static XElement FirstLocalNameDescendant(this XContainer e, string localName)
-        {
-            return e.LocalNameDescendants(localName).FirstOrDefault();
-        }
+        /// <summary>
+        /// Returns the first matching element in the given container by name ignoring namespaces.
+        /// </summary>
+        /// <param name="e">XML container</param>
+        /// <param name="localName">Name to look for</param>
+        /// <returns>Matching element, or null</returns>
+        public static XElement FirstLocalNameDescendant(this XContainer e, string localName) 
+            => e.LocalNameDescendants(localName).FirstOrDefault();
 
+        /// <summary>
+        /// Returns all matching descendent elements in the given container by name ignoring namespaces.
+        /// </summary>
+        /// <param name="xml">XML container</param>
+        /// <param name="localName">Name to look for</param>
+        /// <returns>Matching elements</returns>
         public static IEnumerable<XElement> LocalNameDescendants(this XContainer xml, string localName)
         {
             if (xml == null)
-            {
                 yield break;
-            }
 
             if (string.IsNullOrWhiteSpace(localName))
-            {
                 throw new ArgumentNullException(nameof(localName));
-            }
 
             if (localName.Contains('/'))
             {
                 int pos = localName.IndexOf('/');
-                string name = localName.Substring(0, pos);
-                localName = localName.Substring(pos + 1);
+                string name = localName[..pos];
+                localName = localName[(pos + 1)..];
 
-                foreach (XElement item in xml.Descendants().Where(e => e.Name.LocalName == name))
+                foreach (var item in xml.Descendants().Where(e => e.Name.LocalName == name))
                 {
-                    foreach (XElement child in LocalNameDescendants(item, localName))
-                    {
+                    foreach (var child in LocalNameDescendants(item, localName))
                         yield return child;
-                    }
                 }
             }
             else
             {
-                foreach (XElement item in xml.Descendants().Where(e => e.Name.LocalName == localName))
-                {
+                foreach (var item in xml.Descendants().Where(e => e.Name.LocalName == localName))
                     yield return item;
-                }
             }
-        }
-
-        public static IEnumerable<XAttribute> DescendantAttributes(this XContainer xml, XName attribName)
-        {
-            return xml.Descendants().Attributes(attribName);
-        }
-
-        public static IEnumerable<string> DescendantAttributeValues(this XElement xml, XName attribName)
-        {
-            return xml.DescendantAttributes(attribName).Select(a => a.Value);
         }
 
         /// <summary>
@@ -401,15 +417,9 @@ namespace DXPlus
         public static T GetEnumValue<T>(this XElement element)
         {
             if (element == null)
-            {
                 throw new ArgumentNullException(nameof(element));
-            }
-
             if (!TryGetEnumValue(element, out T result))
-            {
                 throw new ArgumentException($"{element.GetVal()} could not be matched to enum {typeof(T).Name}.");
-            }
-
             return result;
         }
 
@@ -420,10 +430,7 @@ namespace DXPlus
         public static T GetEnumValue<T>(this XAttribute attr)
         {
             if (!TryGetEnumValue(attr, out T result))
-            {
                 throw new ArgumentException($"{attr.Value} could not be matched to enum {typeof(T).Name}.");
-            }
-
             return result;
         }
 
@@ -455,12 +462,19 @@ namespace DXPlus
                 string value = attr.Value;
                 foreach (T e in Enum.GetValues(typeof(T)))
                 {
-                    FieldInfo fi = typeof(T).GetField(e.ToString());
-                    string name = fi.GetCustomAttribute<XmlAttributeAttribute>()?.AttributeName ?? e.ToString();
-                    if (string.Equals(name, value, StringComparison.OrdinalIgnoreCase))
+                    var valueName = e.ToString();
+                    if (valueName != null)
                     {
-                        result = e;
-                        return true;
+                        var fi = typeof(T).GetField(valueName);
+                        if (fi != null)
+                        {
+                            string name = fi.GetCustomAttribute<XmlAttributeAttribute>()?.AttributeName ?? valueName;
+                            if (string.Equals(name, value, StringComparison.OrdinalIgnoreCase))
+                            {
+                                result = e;
+                                return true;
+                            }
+                        }
                     }
                 }
             }
@@ -503,10 +517,8 @@ namespace DXPlus
         /// <param name="element"></param>
         /// <param name="result"></param>
         /// <returns></returns>
-        public static bool TryGetEnumValue<T>(this XElement element, out T result)
-        {
-            return TryGetEnumValue(element?.GetVal(), out result);
-        }
+        public static bool TryGetEnumValue<T>(this XElement element, out T result) 
+            => TryGetEnumValue(element?.GetVal(), out result);
 
         /// <summary>
         /// Return XML string for this value
@@ -515,10 +527,8 @@ namespace DXPlus
         public static string GetEnumName<T>(this T value)
         {
             if (value == null)
-            {
                 throw new ArgumentNullException(nameof(value));
-            }
-
+ 
             FieldInfo fi = typeof(T).GetField(value.ToString()??"");
             return fi?.GetCustomAttribute<XmlAttributeAttribute>()?.AttributeName ?? value.ToCamelCase();
         }

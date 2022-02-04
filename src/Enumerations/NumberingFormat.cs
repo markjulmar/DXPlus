@@ -68,6 +68,7 @@ namespace DXPlus
         HindiCounting,
         ThaiLetters,
         ThaiNumbers,
-        ThaiCounting
+        ThaiCounting,
+        Removed
     }
 }

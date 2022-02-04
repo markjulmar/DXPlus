@@ -17,6 +17,7 @@ namespace DXPlus.Comments
 
         private static readonly XName CommentStart = Namespace.Main + "commentRangeStart";
         private static readonly XName CommentEnd = Namespace.Main + "commentRangeEnd";
+        private static readonly XName CommentReference = Namespace.Main + "commentReference";
 
         /// <summary>
         /// Constructor
@@ -114,6 +115,11 @@ namespace DXPlus.Comments
             return comment;
         }
 
+        /// <summary>
+        /// Add a new person to the comment authors document.
+        /// TODO: it doesn't support any auth providers.
+        /// </summary>
+        /// <param name="authorName">Author name to add</param>
         private void AddPersonEntity(string authorName)
         {
             peopleDoc.Root?.Add(
@@ -131,26 +137,44 @@ namespace DXPlus.Comments
         /// <returns>Enumerable of comment ranges</returns>
         public IEnumerable<CommentRange> GetCommentsForParagraph(Paragraph owner)
         {
-            var runs = owner.Runs.ToList();
+            // Look for a w:commentReference tag in the paragraph.
+            return owner.Xml.Descendants(CommentReference)
+                            .Select(commentRef => ParseComment(owner, commentRef))
+                            .Where(comment => comment != null);
+        }
 
-            foreach (var commentStart in owner.Xml.Descendants(CommentStart))
-            {
-                var id = HelperFunctions.GetId(commentStart) ?? -1;
-                if (id == -1) continue;
+        /// <summary>
+        /// Parses out the range for a given comment.
+        /// </summary>
+        /// <param name="owner"></param>
+        /// <param name="commentReference"></param>
+        /// <returns></returns>
+        private CommentRange ParseComment(Paragraph owner, XElement commentReference)
+        {
+            var commentId = HelperFunctions.GetId(commentReference) ?? -1;
+            if (commentId == -1) 
+                return null;
 
-                var commentEnd = owner.Xml.Elements(CommentEnd).SingleOrDefault(xe => HelperFunctions.GetId(xe) == id);
+            // Find the commentRangeStart for this id.
+            var commentStart = Document.Xml.Descendants(CommentStart)
+                .Single(cs => HelperFunctions.GetId(cs) == commentId);
+            var commentEnd = Document.Xml.Descendants(CommentEnd)
+                .Single(cs => HelperFunctions.GetId(cs) == commentId);
 
-                var xerStart = commentStart.NextSiblingByName(Name.Run);
-                var runStart = runs.SingleOrDefault(r => r.Xml == xerStart);
+            // Now find all the runs between these two tags.
+            var nodes = Document.Xml.Descendants()
+                .SkipWhile(node => node != commentStart)
+                .TakeWhile(node => node != commentEnd)
+                .Where(e => e.Name == Name.Run && !e.Descendants(CommentReference).Any())
+                .ToList();
 
-                var xerEnd = commentEnd.PreviousSiblingByName(Name.Run);
-                var runEnd = (xerEnd != null)
-                    ? runs.SingleOrDefault(r => r.Xml == xerEnd)
-                    : runStart;
+            var srXml = nodes.FirstOrDefault();
+            var erXml = nodes.LastOrDefault();
 
-                var comment = Comments.Single(c => c.Id == id);
-                yield return new CommentRange(owner, runStart, runEnd, comment);
-            }
+            var startRun = srXml != null ? Document.FindRunByElement(srXml) : null;
+            var endRun = erXml == null ? null : erXml == srXml ? startRun : Document.FindRunByElement(erXml);
+
+            return new CommentRange(owner, startRun, endRun, Comments.Single(c => c.Id == commentId));
         }
 
         /// <summary>

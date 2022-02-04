@@ -147,8 +147,12 @@ namespace DXPlus
             if (numProperties == null)
                 return NumberingFormat.None;
 
-            int level = int.Parse(numProperties.Element(Namespace.Main + "ilvl").GetVal());
             int numId = int.Parse(numProperties.Element(Namespace.Main + "numId").GetVal());
+
+            // A value of 0 for the @val attribute indicates the removal of numbering properties at
+            // a particular level in the style hierarchy (typically via direct formatting).
+            if (numId == 0)
+                return NumberingFormat.Removed;
 
             // Find the number definition instance.
             var styles = p.Document.NumberingStyles;
@@ -159,6 +163,8 @@ namespace DXPlus
                     $"Number reference w:numId('{numId}') used in document but not defined in /word/numbering.xml");
             }
 
+            // Get the level
+            int level = int.Parse(numProperties.Element(Namespace.Main + "ilvl").GetVal());
             return definition.Style.Levels
                 .Single(l => l.Level == level)
                 .Format;
