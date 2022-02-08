@@ -1,5 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Xml.Linq;
 
 namespace DXPlus
@@ -108,12 +110,13 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Public constructor to add a new style to the document.
+        /// Constructor to add a new style to the document.
         /// </summary>
         /// <param name="owner">Style manager owner</param>
         /// <param name="id">Name of the style</param>
         /// <param name="type">Style type</param>
-        internal Style(XDocument owner, string id, StyleType type)
+        /// <param name="latentStyle"></param>
+        internal Style(XDocument owner, string id, StyleType type, XElement latentStyle)
         {
             if (owner == null) throw new ArgumentNullException(nameof(owner));
 
@@ -121,12 +124,32 @@ namespace DXPlus
 		            <w:name w:val="Normal"/>
 		            <w:qFormat/>
 	            </w:style>  */
+
             Xml = new XElement(Namespace.Main + "style",
                 new XAttribute(Namespace.Main + "styleId", id),
-                new XAttribute(Namespace.Main + "customStyle", 1),
-                new XAttribute(Namespace.Main + "type", type.ToString().ToLower()),
-                new XElement(Namespace.Main + "name", new XAttribute(Namespace.Main + "val", id)),
-                new XElement(Namespace.Main + "qFormat"));
+                new XAttribute(Namespace.Main + "type", type.ToString().ToLower()));
+
+            if (latentStyle == null)
+            {
+                Xml.Add(new XElement(Namespace.Main + "name", new XAttribute(Namespace.Main + "val", id)));
+                Xml.Add(new XAttribute(Namespace.Main + "customStyle", 1));
+                Xml.Add(new XElement(Namespace.Main + "qFormat"));
+            }
+            else
+            {
+                //<w:lsdException w:name="caption" w:qFormat="1" w:semiHidden="1" w:uiPriority="35" w:unhideWhenUsed="1"/>
+                foreach (XAttribute attr in latentStyle.Attributes())
+                {
+                    if (attr.Value == "1" || attr.Value.ToLower() == "true")
+                    {
+                        Xml.Add(new XElement(attr.Name));
+                    }
+                    else if (attr.Value != "0")
+                    {
+                        Xml.Add(new XElement(attr.Name, new XAttribute(Namespace.Main + "val", attr.Value)));
+                    }
+                }
+            }
 
             owner.Root!.Add(Xml);
         }

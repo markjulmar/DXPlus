@@ -124,13 +124,11 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Get or set the font size of this paragraph
+        /// Get or set the font size of this paragraph in points
         /// </summary>
         public double? FontSize
         {
-            get => double.TryParse(Xml.Element(Name.Size)?.GetVal(), out var result)
-                ? (double?)(result / 2)
-                : null;
+            get => double.TryParse(Xml.Element(Name.Size)?.GetVal(), out var result) ? result / 2 : null;
 
             set
             {

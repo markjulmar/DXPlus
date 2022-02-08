@@ -63,5 +63,8 @@ namespace DXPlus
 
         [XmlAttribute("IntenseReference")]
         IntenseReference,
+
+        [XmlAttribute("Caption")]
+        Caption,
     }
 }

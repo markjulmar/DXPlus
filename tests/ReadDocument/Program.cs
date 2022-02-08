@@ -166,7 +166,13 @@ namespace ReadDocument
                             text += $", BorderColor={p.BorderColor}";
                         }
 
-                        foreach (var ext in p.Extensions)
+                        string captionText = d.GetCaption();
+                        if (captionText != null)
+                        {
+                            text += $", Caption=\"{captionText}\"";
+                        }
+
+                        foreach (var ext in p.ImageExtensions)
                         {
                             if (ext is SvgExtension svg)
                             {
@@ -193,9 +199,9 @@ namespace ReadDocument
                             /*
                             string fn;
                             Image theImage;
-                            if (p.Extensions.Contains(SvgExtension.ExtensionId))
+                            if (p.ImageExtensions.Contains(SvgExtension.ExtensionId))
                             {
-                                var svgExt = (SvgExtension) p.Extensions.Get(SvgExtension.ExtensionId);
+                                var svgExt = (SvgExtension) p.ImageExtensions.Get(SvgExtension.ExtensionId);
                                 theImage = svgExt.Image;
                                 fn = theImage.FileName;
                                 text += $", SvgId={svgExt.RelationshipId} ({theImage.FileName})";

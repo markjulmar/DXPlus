@@ -1186,9 +1186,9 @@ namespace DXPlus
             if (svgImage != null)
             {
                 // Override local DPI.
-                picture.Extensions.Add(new LocalDpiExtension(false));
+                picture.ImageExtensions.Add(new LocalDpiExtension(false));
                 // Add in the SVG extension.
-                picture.Extensions.Add(new SvgExtension(svgImage.Id));
+                picture.ImageExtensions.Add(new SvgExtension(svgImage.Id));
             }
 
             return drawing;

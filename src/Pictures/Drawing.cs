@@ -67,7 +67,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Extensions associated with this drawing
+        /// ImageExtensions associated with this drawing
         /// </summary>
         public ExtensionWrapper Extensions => new(document, DocPr);
         

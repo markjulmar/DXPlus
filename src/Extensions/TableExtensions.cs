@@ -3,7 +3,7 @@
 namespace DXPlus
 {
     /// <summary>
-    /// Extensions for the Table (w:tbl) element
+    /// ImageExtensions for the Table (w:tbl) element
     /// </summary>
     public static class TableExtensions
     {

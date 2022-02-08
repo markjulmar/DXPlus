@@ -24,6 +24,7 @@ namespace DXPlus
         public static readonly XName Highlight = Namespace.Main + "highlight";
         public static readonly XName Id = Namespace.Main + "id";
         public static readonly XName Indent = Namespace.Main + "ind";
+        public static readonly XName Instr = Namespace.Main + "instr";
         public static readonly XName Italic = Namespace.Main + "i";
         public static readonly XName KeepLines = Namespace.Main + "keepLines";
         public static readonly XName KeepNext = Namespace.Main + "keepNext";

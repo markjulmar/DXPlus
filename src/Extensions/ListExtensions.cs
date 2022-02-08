@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
@@ -92,42 +91,84 @@ namespace DXPlus
         /// </summary>
         /// <param name="p"></param>
         /// <returns></returns>
-        internal static int? GetListNumId(this Paragraph p)
+        internal static int? GetListNumberingDefinitionId(this Paragraph p)
         {
+            if (!p.IsListItem())
+                return null;
+
             var numProperties = ParagraphNumberProperties(p);
+            if (numProperties == null)
+            {
+                // Backup and try to find a previous ListItem style with properties.
+                // This paragraph would inherit that.
+                p = p.PreviousParagagraph;
+                while (p != null && p.IsListItem())
+                {
+                    numProperties = ParagraphNumberProperties(p);
+                    if (numProperties != null)
+                        break;
+                    p = p.PreviousParagagraph;
+                }
+            }
+
             return numProperties == null
                 ? null
                 : int.Parse(numProperties.Element(Namespace.Main + "numId").GetVal());
         }
 
         /// <summary>
-        /// Retrieves all the paragraphs for a list based on the numId.
+        /// Retrieve the associated numbering definition (if any) for the specified paragraph.
         /// </summary>
-        /// <param name="numId">NumId</param>
-        /// <returns>Paragraphs associated with this list</returns>
-        public static IEnumerable<Paragraph> GetListById(this IContainer container, int listId)
-            => container.Paragraphs.Where(p => p.GetListNumId() == listId);
+        /// <param name="p">Paragraph</param>
+        /// <returns>Numbering definition, or null if not in a list.</returns>
+        public static NumberingDefinition GetListNumberingDefinition(this Paragraph p)
+        {
+            if (!p.IsListItem()) 
+                return null;
+
+            var id = p.GetListNumberingDefinitionId();
+            if (id == null) return null;
+
+            var styles = p.Document.NumberingStyles;
+            var definition = styles.Definitions.SingleOrDefault(d => d.Id == id.Value);
+            if (definition == null)
+            {
+                throw new Exception(
+                    $"Number reference w:numId('{id.Value}') used in document but not defined in /word/numbering.xml");
+            }
+
+            return definition;
+        }
 
         /// <summary>
-        /// Returns the index # of this paragrah if it's part of a list.
+        /// Retrieves all the paragraphs for a list based on the numId.
+        /// </summary>
+        /// <param name="container">Container to apply to</param>
+        /// <param name="numberingDefinitionId">Numbering definition id to group paragraphs by.</param>
+        /// <returns>Paragraphs associated with this list</returns>
+        public static IEnumerable<Paragraph> GetListById(this IContainer container, int numberingDefinitionId)
+            => container.Paragraphs.Where(p => p.GetListNumberingDefinitionId() == numberingDefinitionId);
+
+        /// <summary>
+        /// Returns the index # of this paragraph if it's part of a list.
         /// </summary>
         /// <param name="p">Paragraph</param>
         /// <returns>Index or null if not in a list.</returns>
         public static int? GetListIndex(this Paragraph p)
         {
-            int? listId = p.GetListNumId();
+            int? listId = p.GetListNumberingDefinitionId();
             if (listId == null)
                 return null;
 
             IContainer container = p.Container ?? p.Document;
             var theList = container?.GetListById(listId.Value).ToList();
-            return theList.FindIndex(p2 => p2.Equals(p));
+            return theList?.FindIndex(p2 => p2.Equals(p));
         }
 
         /// <summary>
         /// Return the list level for this paragraph
         /// </summary>
-        /// <param name="p"></param>
+        /// <param name="p">Paragraph</param>
         /// <returns></returns>
         public static int? GetListLevel(this Paragraph p)
         {
@@ -141,6 +182,7 @@ namespace DXPlus
         /// Get the ListItemType property for the paragraph.
         /// Defaults to numbered if a list is found but the type is not specified
         /// </summary>
+        /// <param name="p">Paragraph</param>
         public static NumberingFormat GetNumberingFormat(this Paragraph p)
         {
             var numProperties = ParagraphNumberProperties(p);

@@ -107,7 +107,7 @@ namespace DXPlus
             
             var pic = drawing.Picture;
             pic.Hyperlink = video; 
-            pic.Extensions.Add(new VideoExtension(video.OriginalString, width, height));
+            pic.ImageExtensions.Add(new VideoExtension(video.OriginalString, width, height));
 
             return drawing;
         }
@@ -131,7 +131,7 @@ namespace DXPlus
             
             var pic = drawing.Picture;
             pic.Hyperlink = video; 
-            pic.Extensions.Add(new VideoExtension(video.OriginalString, width, height));
+            pic.ImageExtensions.Add(new VideoExtension(video.OriginalString, width, height));
 
             return drawing;
         }

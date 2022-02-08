@@ -33,7 +33,7 @@ namespace DXPlus
             var dpre = new Regex("DOCPROPERTY (?<name>.*) \\*");
 
             // Check for a simple field
-            string instr = Xml.AttributeValue(Namespace.Main + "instr", null)?.Trim();
+            string instr = Xml.AttributeValue(DXPlus.Name.Instr, null)?.Trim();
             if (instr != null)
             {
                 Name = instr.Contains("DOCPROPERTY")

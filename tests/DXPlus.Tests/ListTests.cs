@@ -14,7 +14,7 @@ namespace DXPlus.Tests
             var p = doc.AddParagraph("1").ListStyle(nd);
 
             Assert.True(p.IsListItem());
-            Assert.Equal(1, p.GetListNumId());
+            Assert.Equal(1, p.GetListNumberingDefinitionId());
             Assert.Equal(0, p.GetListLevel());
         }
 
@@ -29,6 +29,73 @@ namespace DXPlus.Tests
 
             Assert.Equal("ListParagraph", p.Properties.StyleName);
         }
+
+        [Fact]
+        public void CanGetNumberingDefinitionFromParagraph()
+        {
+            using var doc = Document.Create();
+            var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
+
+            doc.AddParagraph("Separator paragraph.");
+
+            for (int i = 0; i < 3; i++)
+            {
+                doc.AddParagraph($"Item #{i + 1}").ListStyle(nd);
+            }
+
+            var paragraphs = doc.Paragraphs.ToList();
+            Assert.Null(paragraphs[0].GetListNumberingDefinition());
+            Assert.Equal(nd.Id, paragraphs[1].GetListNumberingDefinitionId());
+            Assert.Equal(nd.Id, paragraphs[2].GetListNumberingDefinition().Id);
+            Assert.Equal(nd.Id, paragraphs[3].GetListNumberingDefinition().Id);
+        }
+
+        [Fact]
+        public void CanGetNumberingDefinitionFromParagraphWhenNoIdIsPresent()
+        {
+            using var doc = Document.Create();
+            var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
+
+            doc.AddParagraph("Separator paragraph.");
+
+            doc.AddParagraph($"Item #1").ListStyle(nd);
+            doc.AddParagraph($"Item #2").ListStyle();
+            doc.AddParagraph($"Item #3").ListStyle();
+
+            var paragraphs = doc.Paragraphs.ToList();
+            Assert.Null(paragraphs[0].GetListNumberingDefinition());
+            Assert.Equal(nd.Id, paragraphs[1].GetListNumberingDefinitionId());
+            Assert.Equal(nd.Id, paragraphs[2].GetListNumberingDefinition().Id);
+            Assert.Equal(nd.Id, paragraphs[3].GetListNumberingDefinition().Id);
+        }
+
+        [Fact]
+        public void CanGetNumberingDefinitionFromParagraphWhenMultipleAreUsed()
+        {
+            using var doc = Document.Create();
+            var n1 = doc.NumberingStyles.Create(NumberingFormat.Bullet);
+            var n2 = doc.NumberingStyles.Create(NumberingFormat.Numbered);
+
+            doc.AddParagraph("Separator paragraph.");
+
+            doc.AddParagraph($"Item #1").ListStyle(n1);
+            doc.AddParagraph($"Item #2").ListStyle();
+            doc.AddParagraph($"Item #1").ListStyle(n2);
+            doc.AddParagraph($"Item #2").ListStyle();
+
+            doc.AddParagraph("Separator paragraph.");
+
+            var paragraphs = doc.Paragraphs.ToList();
+
+            Assert.Null(paragraphs[0].GetListNumberingDefinition());
+            Assert.Null(paragraphs[5].GetListNumberingDefinition());
+
+            Assert.Equal(n1.Id, paragraphs[1].GetListNumberingDefinitionId());
+            Assert.Equal(n1.Id, paragraphs[2].GetListNumberingDefinition().Id);
+            Assert.Equal(n2.Id, paragraphs[3].GetListNumberingDefinition().Id);
+            Assert.Equal(n2.Id, paragraphs[4].GetListNumberingDefinitionId());
+        }
+
 
         [Fact]
         public void ExtensionReturnsAllListItems()

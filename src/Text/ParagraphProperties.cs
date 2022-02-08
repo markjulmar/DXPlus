@@ -66,7 +66,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Set the spacing between lines in this paragraph
+        /// Set the spacing between lines in this paragraph, in DXA units.
         /// </summary>
         public double? LineSpacing
         {
@@ -75,7 +75,17 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Set the spacing between lines in this paragraph
+        /// Specifies the logic which shall be used to calculate the line spacing of the associated paragraph or style.
+        /// </summary>
+        public LineRule? LineRule
+        {
+            get => Xml.Element(Name.Spacing).AttributeValue(Namespace.Main + "lineRule")
+                      .TryGetEnumValue<LineRule>(out var result) ? result : null;
+            set => Xml.GetOrAddElement(Name.Spacing).SetAttributeValue(Namespace.Main + "lineRule", value?.GetEnumName());
+        }
+
+        /// <summary>
+        /// Set the spacing between lines in this paragraph, in DXA units
         /// </summary>
         public double? LineSpacingAfter
         {
@@ -84,7 +94,7 @@ namespace DXPlus
         }
 
         /// <summary>
-        /// Set the spacing between lines in this paragraph
+        /// Set the spacing between lines in this paragraph, in DXA units
         /// </summary>
         public double? LineSpacingBefore
         {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Linq;
+using System.Xml.Linq;
 
 namespace DXPlus
 {
@@ -9,6 +10,11 @@ namespace DXPlus
     /// </summary>
     public static class ParagraphExtensions
     {
+        /// <summary>
+        /// The caption sequence
+        /// </summary>
+        const string FigureSequence = @" SEQ Figure \* ARABIC ";
+
         /// <summary>
         /// Append a new line to this FirstParagraph.
         /// </summary>
@@ -197,6 +203,84 @@ namespace DXPlus
             }
 
             return container.InsertParagraphBefore(text, null);
+        }
+
+        /// <summary>
+        /// Returns any caption on this image.
+        /// </summary>
+        /// <param name="drawing">Drawing</param>
+        /// <returns>Related caption</returns>
+        public static string GetCaption(this Drawing drawing)
+        {
+            if (drawing == null) throw new ArgumentNullException(nameof(drawing));
+            if (drawing.Parent?.Parent is not Paragraph previousParagraph) return null;
+
+            // Should be in following paragraph.
+            var p = previousParagraph.NextParagagraph;
+            return p?.Properties.StyleName == "Caption" ? p.Text : null;
+        }
+
+        /// <summary>
+        /// Adds a caption in the form of "Figure n {captionText}".
+        /// </summary>
+        /// <param name="drawing">Drawing to insert the caption for</param>
+        /// <param name="captionText">Text to add</param>
+        /// <returns>Paragraph with caption</returns>
+        public static Paragraph AddCaption(this Drawing drawing, string captionText)
+        {
+            if (drawing == null) throw new ArgumentNullException(nameof(drawing));
+            if (string.IsNullOrEmpty(captionText))
+                throw new ArgumentException("Value cannot be null or empty.", nameof(captionText));
+
+            if (!drawing.InDom || drawing.Parent?.Parent is not Paragraph previousParagraph)
+                throw new ArgumentException("Drawing must be in document.", nameof(drawing));
+
+            if (previousParagraph.NextParagagraph?.Xml.Descendants(Name.SimpleField)
+                    .FirstOrDefault(x => x.Attribute(Name.Instr)?.Value == FigureSequence) != null)
+                throw new ArgumentException("Drawing already has caption.", nameof(drawing));
+
+            var document = drawing.Document;
+            var captionStyle = document.Styles.GetStyle(HeadingType.Caption.ToString(), StyleType.Paragraph);
+            if (captionStyle == null)
+            {
+                captionStyle = document.Styles.AddStyle(HeadingType.Caption.ToString(), StyleType.Paragraph);
+                captionStyle.NextParagraphStyle = "Normal";
+                captionStyle.ParagraphFormatting.LineSpacingAfter = Uom.FromPoints(10).Dxa;
+                captionStyle.ParagraphFormatting.LineSpacing = Uom.FromPoints(12).Dxa;
+                captionStyle.ParagraphFormatting.LineRule = LineRule.Auto;
+                captionStyle.ParagraphFormatting.DefaultFormatting.Italic = true;
+                captionStyle.ParagraphFormatting.DefaultFormatting.Color = Color.FromArgb(0x1F,0x37,0x63);
+                captionStyle.ParagraphFormatting.DefaultFormatting.FontSize = 9;
+            }
+
+            var captionParagraph = new Paragraph().Style(HeadingType.Caption.ToString());
+            captionParagraph.Append("Figure ");
+
+            var figureIds =
+                document.Xml.Descendants(Name.SimpleField)
+                    .Where(x => x.Attribute(Name.Instr)?.Value == FigureSequence)
+                    .Select(x => x.Descendants(Name.Text).SingleOrDefault())
+                    .Select(x => int.TryParse(x?.Value??"0", out var n) == true ? n : -1).ToList();
+
+            int nextNum = figureIds.Count > 0 ? figureIds.Max()+1 : 1;
+            if (nextNum <= 0)
+                nextNum = 1;
+
+            captionParagraph.Xml.Add(new XElement(Name.SimpleField,
+                new XAttribute(Name.Instr, FigureSequence),
+                new XElement(Name.Run,
+                    new XElement(Name.RunProperties,
+                        new XElement(Namespace.Main + "noProof")),
+                    new XElement(Name.Text, nextNum))));
+
+            // Add a space if there's no separator.
+            if (captionText[0] != ':' && captionText[0] != ' ')
+                captionText = " " + captionText;
+            
+            captionParagraph.Append(captionText);
+
+            previousParagraph.Xml.AddAfterSelf(captionParagraph.Xml);
+            return captionParagraph;
         }
     }
 }

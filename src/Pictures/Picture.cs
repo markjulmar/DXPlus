@@ -48,9 +48,14 @@ namespace DXPlus
         private XElement blip => Xml.FirstLocalNameDescendant("blip");
 
         /// <summary>
-        /// Extensions associated with this picture
+        /// Extensions associated with this binary image
         /// </summary>
-        public ExtensionWrapper Extensions => new(document, blip);
+        public ExtensionWrapper ImageExtensions => new(document, blip);
+
+        /// <summary>
+        /// Extensions associated with the non-visual properties.
+        /// </summary>
+        public ExtensionWrapper NonVisualExtensions => new(document, CNvPr);
 
         /// <summary>
         /// Hyperlink to navigate to if the image is clicked.
@@ -368,16 +373,16 @@ namespace DXPlus
         /// </summary>
         public bool IsDecorative
         {
-            get => Extensions.Get<DecorativeImageExtension>()?.Value??false;
+            get => NonVisualExtensions.Get<DecorativeImageExtension>()?.Value??false;
             set
             {
                 if (value)
                 {
-                    Extensions.Add(new DecorativeImageExtension(true));
+                    NonVisualExtensions.Add(new DecorativeImageExtension(true));
                 }
                 else
                 {
-                    Extensions.Remove(DecorativeImageExtension.ExtensionId);
+                    NonVisualExtensions.Remove(DecorativeImageExtension.ExtensionId);
                 }
             }
         }

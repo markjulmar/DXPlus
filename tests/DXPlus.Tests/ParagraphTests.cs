@@ -746,5 +746,33 @@ namespace DXPlus.Tests
             document.AddParagraph(paragraph);
             Assert.NotNull(paragraph.Pictures[0].PackagePart);
         }
+
+        [Fact]
+        public void AddCaptionToImage()
+        {
+            string text = ": This is a picture.";
+
+            var document = Document.Create();
+
+            document.AddParagraph("Starting paragraph.");
+
+            var paragraph = document.AddParagraph();
+            var image = document.AddImage("1022.jpg");
+            var picture = image.CreatePicture(150, 150);
+            
+            paragraph.Append(picture);
+            picture.AddCaption(text);
+
+            document.AddParagraph("Ending paragraph");
+
+            Assert.Equal("Figure 1" + text, picture.GetCaption());
+            Assert.Throws<ArgumentException>(() => picture.AddCaption(text));
+
+            var picture2 = image.CreatePicture(200, 200);
+            document.AddParagraph().Append(picture2);
+            picture2.AddCaption("Another picture");
+
+            Assert.Equal("Figure 2 Another picture", picture2.GetCaption());
+        }
     }
 }

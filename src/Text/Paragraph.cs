@@ -623,8 +623,8 @@ namespace DXPlus
             XElement fldSimple = new XElement(Name.SimpleField);
 
             fldSimple.Add(format == PageNumberFormat.Normal
-                ? new XAttribute(Namespace.Main + "instr", $@" {type.ToUpper()}   \* MERGEFORMAT ")
-                : new XAttribute(Namespace.Main + "instr", $@" {type.ToUpper()}  \* ROMAN  \* MERGEFORMAT "));
+                ? new XAttribute(Name.Instr, $@" {type.ToUpper()}   \* MERGEFORMAT ")
+                : new XAttribute(Name.Instr, $@" {type.ToUpper()}  \* ROMAN  \* MERGEFORMAT "));
 
             XElement content = XElement.Parse(
                 @"<w:r xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
@@ -822,7 +822,7 @@ namespace DXPlus
 
             var p = Document.DocumentProperties.SingleOrDefault(p => p.Name == name);
             XElement xml = new XElement(Name.SimpleField,
-                new XAttribute(Namespace.Main + "instr", $@"DOCPROPERTY {name.GetEnumName()} \* MERGEFORMAT"),
+                new XAttribute(Name.Instr, $@"DOCPROPERTY {name.GetEnumName()} \* MERGEFORMAT"),
                 new XElement(Name.Run, new XElement(Name.Text, formatting?.Xml, p.Value))
             );
 

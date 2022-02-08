@@ -22,6 +22,12 @@ namespace DXPlus
             Xml.Elements(Namespace.Main + "style").Select(e => new Style(e));
 
         /// <summary>
+        /// Get all the latent styles from the document
+        /// </summary>
+        public IEnumerable<string> LatentStyles =>
+            Xml.Elements(Namespace.Main + "lsdException").Select(e => e.Attribute(Namespace.Main + "name")?.Value);
+
+        /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="documentOwner">Owning document</param>
@@ -58,21 +64,25 @@ namespace DXPlus
         /// <summary>
         /// This method adds a new style to the document.
         /// </summary>
-        /// <param name="id">Name of the style</param>
+        /// <param name="name">Name of the style</param>
         /// <param name="type">Style type</param>
         /// <param name="basedOnStyle"></param>
         /// <returns>Created style which can be edited</returns>
-        public Style AddStyle(string id, StyleType type, Style basedOnStyle = null)
+        public Style AddStyle(string name, StyleType type, Style basedOnStyle = null)
         {
-            if (string.IsNullOrWhiteSpace(id))
-                throw new ArgumentException("Value cannot be null or whitespace.", nameof(id));
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(name));
             if (!Enum.IsDefined(typeof(StyleType), type))
                 throw new InvalidEnumArgumentException(nameof(type), (int) type, typeof(StyleType));
 
             basedOnStyle ??= AvailableStyles.Single(s => s.IsDefault && s.Type == type);
+            name = new string(name.Where(char.IsLetterOrDigit).ToArray());
 
-            id = new string(id.Where(char.IsLetterOrDigit).ToArray());
-            return new Style(stylesDoc, id, type) { BasedOn = basedOnStyle.Id };
+            // If the style is a default one, pick off the exception data.
+            XElement lsdException = Xml.Descendants(Namespace.Main + "lsdException")
+                .SingleOrDefault(x => string.Compare(x.Attribute(Namespace.Main + "name")?.Value, name, StringComparison.InvariantCultureIgnoreCase) == 0);
+
+            return new Style(stylesDoc, name, type, lsdException) { BasedOn = basedOnStyle.Id };
         }
 
         /// <summary>
