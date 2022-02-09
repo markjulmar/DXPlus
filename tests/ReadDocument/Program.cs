@@ -47,12 +47,12 @@ namespace ReadDocument
 
         private static void DumpParagraph(Paragraph block, int level)
         {
-            string prefix = new string(' ', level*3);
+            string prefix = new(' ', level*3);
 
             string listInfo = "";
             if (block.IsListItem())
             {
-                listInfo = $"{block.GetNumberingFormat()} {block.GetListLevel()} #{block.GetListIndex()+1} ";
+                listInfo = $"{block.GetNumberingFormat()} {block.GetListLevel()} #{block.GetListIndex() + 1} ";
             }
 
             Console.WriteLine($"{prefix}p: {block.Id} StyleName=\"{block.Properties.StyleName}\" {listInfo}{DumpObject(block.Properties.DefaultFormatting)}");
@@ -69,10 +69,10 @@ namespace ReadDocument
 
         private static void DumpCommentRef(CommentRange comment, int level)
         {
-            string prefix = new string(' ', level * 3);
+            string prefix = new(' ', level * 3);
 
             Console.WriteLine($"{prefix}Comment id={comment.Comment.Id} by {comment.Comment.AuthorName} ({comment.Comment.AuthorInitials})");
-            Console.WriteLine($"{prefix}   > start: {comment.RangeStart.Text}, end: {comment.RangeEnd.Text}");
+            Console.WriteLine($"{prefix}   > start: {comment.RangeStart?.Text}, end: {comment.RangeEnd?.Text}");
             foreach (var p in comment.Comment.Paragraphs)
             {
                 DumpParagraph(p, level + 1);
@@ -81,7 +81,7 @@ namespace ReadDocument
 
         private static void DumpTable(Table table, int level)
         {
-            string prefix = new string(' ', level*3);
+            string prefix = new(' ', level*3);
             Console.WriteLine($"{prefix}tbl Design={table.Design} {table.CustomTableDesignName} {table.ConditionalFormatting}");
             foreach (var row in table.Rows)
             {
@@ -91,7 +91,7 @@ namespace ReadDocument
 
         private static void DumpRow(TableRow row, int level)
         {
-            string prefix = new string(' ', level * 3);
+            string prefix = new(' ', level * 3);
             Console.WriteLine($"{prefix}tr");
             foreach (var cell in row.Cells)
             {
@@ -101,7 +101,7 @@ namespace ReadDocument
 
         private static void DumpCell(TableCell cell, int level)
         {
-            string prefix = new string(' ', level * 3);
+            string prefix = new(' ', level * 3);
             Console.WriteLine($"{prefix}tc");
             foreach (var p in cell.Paragraphs)
             {
@@ -111,7 +111,7 @@ namespace ReadDocument
 
         private static void DumpRun(Run run, int level)
         {
-            string prefix = new string(' ', level*3);
+            string prefix = new(' ', level*3);
 
             var parent = run.Parent;
             if (parent is Hyperlink hl)
@@ -130,7 +130,7 @@ namespace ReadDocument
 
         private static void DumpRunElement(ITextElement item, int level)
         {
-            string prefix = new string(' ', level * 3);
+            string prefix = new(' ', level * 3);
 
             string text = "";
             switch (item)
@@ -251,7 +251,7 @@ namespace ReadDocument
             return sb.ToString();
         }
 
-        public static string FormatXml(string inputXml)
+        private static string FormatXml(string inputXml)
         {
             var document = new XmlDocument();
             document.Load(new StringReader(inputXml));

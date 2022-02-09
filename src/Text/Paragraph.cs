@@ -271,23 +271,16 @@ namespace DXPlus
         ///<summary>
         /// If a Table (tbl) follows this paragraph, then this property will have a reference to it.
         ///</summary>
-        public Table Table
-        {
-            get
-            {
-                // Not in a document yet?
-                return !InDom
-                    ? tableAfterParagraph
-                    : Xml.NextNode is XElement e
-                        && e.Name == Name.Table
-                        ? new Table(Document, PackagePart, e) : null;
-            }
-        }
+        public Table Table =>
+            // Not in a document yet?
+            !InDom ? tableAfterParagraph 
+                : Xml.NextNode is XElement e && e.Name == Name.Table
+                ? new Table(Document, PackagePart, e) : null;
 
         /// <summary>
         /// Retrieve the previous paragraph sibling.
         /// </summary>
-        public Paragraph PreviousParagagraph
+        public Paragraph PreviousParagraph
         {
             get
             {
@@ -302,7 +295,7 @@ namespace DXPlus
         /// <summary>
         /// Retrieve the next paragraph sibling.
         /// </summary>
-        public Paragraph NextParagagraph
+        public Paragraph NextParagraph
         {
             get
             {

@@ -6,7 +6,7 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <dc:title/>
   <dc:subject/>
-  <dc:creator></dc:creator>
+  <dc:creator>{author}</dc:creator>
   <cp:keywords/>
   <dc:description/>
   <cp:lastModifiedBy>{author}</cp:lastModifiedBy>

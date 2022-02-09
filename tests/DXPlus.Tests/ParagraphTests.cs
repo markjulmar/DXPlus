@@ -85,8 +85,8 @@ namespace DXPlus.Tests
             using var doc = Document.Create();
             var p = doc.AddParagraph("1");
 
-            Assert.Null(p.NextParagagraph);
-            Assert.Null(p.PreviousParagagraph);
+            Assert.Null(p.NextParagraph);
+            Assert.Null(p.PreviousParagraph);
         }
 
         [Fact]
@@ -97,8 +97,8 @@ namespace DXPlus.Tests
             doc.AddParagraph("2");
             doc.AddParagraph("3");
 
-            Assert.Null(p.PreviousParagagraph);
-            Assert.NotNull(p.NextParagagraph);
+            Assert.Null(p.PreviousParagraph);
+            Assert.NotNull(p.NextParagraph);
         }
 
         [Fact]
@@ -109,8 +109,8 @@ namespace DXPlus.Tests
             doc.AddParagraph("2");
             var p = doc.AddParagraph("3");
 
-            Assert.NotNull(p.PreviousParagagraph);
-            Assert.Null(p.NextParagagraph);
+            Assert.NotNull(p.PreviousParagraph);
+            Assert.Null(p.NextParagraph);
         }
 
         [Fact]
@@ -124,9 +124,9 @@ namespace DXPlus.Tests
             var p2 = doc.AddParagraph("5");
             var p3 = doc.AddParagraph("6");
 
-            Assert.Equal("2", p1.PreviousParagagraph.Text);
-            Assert.Equal("4", p2.PreviousParagagraph.Text);
-            Assert.Equal("5", p3.PreviousParagagraph.Text);
+            Assert.Equal("2", p1.PreviousParagraph.Text);
+            Assert.Equal("4", p2.PreviousParagraph.Text);
+            Assert.Equal("5", p3.PreviousParagraph.Text);
         }
 
         [Fact]
@@ -140,9 +140,9 @@ namespace DXPlus.Tests
             var p3 = doc.AddParagraph("5");
             doc.AddParagraph("6");
 
-            Assert.Equal("2", p1.NextParagagraph.Text);
-            Assert.Equal("4", p2.NextParagagraph.Text);
-            Assert.Equal("6", p3.NextParagagraph.Text);
+            Assert.Equal("2", p1.NextParagraph.Text);
+            Assert.Equal("4", p2.NextParagraph.Text);
+            Assert.Equal("6", p3.NextParagraph.Text);
         }
 
         [Fact]

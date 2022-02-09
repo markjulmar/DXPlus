@@ -11,12 +11,16 @@ namespace DXPlus
     /// </summary>
     public static class ListExtensions
     {
+        private const string StyleName = "ListParagraph";
+
         /// <summary>
         /// Determine if this paragraph is a list element.
         /// </summary>
         public static bool IsListItem(this Paragraph p)
-            => p.ParagraphNumberProperties() != null
-               || p.Properties?.StyleName == "ListParagraph";
+        {
+            if (p == null) throw new ArgumentNullException(nameof(p));
+            return p.Properties.StyleName == StyleName || p.Xml.FirstLocalNameDescendant("numPr") != null;
+        }
 
         /// <summary>
         /// This ensures a secondary paragraph remains associated to a list.
@@ -32,7 +36,7 @@ namespace DXPlus
             // List items have a ListParagraph style.
             var paraProps = paragraph.Xml.GetOrInsertElement(Name.ParagraphProperties);
             var style = paraProps.GetOrAddElement(Name.ParagraphStyle);
-            style.SetAttributeValue(Name.MainVal, "ListParagraph");
+            style.SetAttributeValue(Name.MainVal, StyleName);
 
             return paragraph;
         }
@@ -59,10 +63,10 @@ namespace DXPlus
             // List items have a ListParagraph style.
             var paraProps = paragraph.Xml.GetOrInsertElement(Name.ParagraphProperties);
             var style = paraProps.GetOrAddElement(Name.ParagraphStyle);
-            style.SetAttributeValue(Name.MainVal, "ListParagraph");
+            style.SetAttributeValue(Name.MainVal, StyleName);
 
             // Add the paragraph numbering properties.
-            var pnpElement = paragraph.ParagraphNumberProperties();
+            var pnpElement = paraProps.Element(Namespace.Main + "numPr");
             if (pnpElement == null)
             {
                 paraProps.Add(new XElement(Namespace.Main + "numPr",
@@ -84,7 +88,35 @@ namespace DXPlus
         /// Fetch the paragraph number properties for a list element.
         /// </summary>
         private static XElement ParagraphNumberProperties(this Paragraph p)
-            => p.Xml.FirstLocalNameDescendant("numPr");
+        {
+            if (!p.IsListItem()) return null;
+
+            var documentOwner = p.Document;
+
+            var numProperties = p.Xml.FirstLocalNameDescendant("numPr");
+            if (numProperties == null)
+            {
+                // Backup and try to find a previous ListItem style with properties.
+                // This paragraph would inherit that.
+                p = p.PreviousParagraph;
+                while (p != null && p.IsListItem())
+                {
+                    numProperties = p.Xml.FirstLocalNameDescendant("numPr");
+                    if (numProperties != null)
+                        break;
+                    p = p.PreviousParagraph;
+                }
+            }
+
+            if (numProperties == null && documentOwner != null)
+            {
+                // See if the ListParagraph style has a default definition assigned.
+                numProperties = documentOwner.Styles.GetStyle(StyleName, StyleType.Paragraph)?
+                    .ParagraphFormatting?.Xml.FirstLocalNameDescendant("numPr");
+            }
+
+            return numProperties;
+        }
 
         /// <summary>
         /// Return the associated numId for the list
@@ -93,24 +125,7 @@ namespace DXPlus
         /// <returns></returns>
         internal static int? GetListNumberingDefinitionId(this Paragraph p)
         {
-            if (!p.IsListItem())
-                return null;
-
-            var numProperties = ParagraphNumberProperties(p);
-            if (numProperties == null)
-            {
-                // Backup and try to find a previous ListItem style with properties.
-                // This paragraph would inherit that.
-                p = p.PreviousParagagraph;
-                while (p != null && p.IsListItem())
-                {
-                    numProperties = ParagraphNumberProperties(p);
-                    if (numProperties != null)
-                        break;
-                    p = p.PreviousParagagraph;
-                }
-            }
-
+            var numProperties = p.ParagraphNumberProperties();
             return numProperties == null
                 ? null
                 : int.Parse(numProperties.Element(Namespace.Main + "numId").GetVal());
@@ -123,11 +138,10 @@ namespace DXPlus
         /// <returns>Numbering definition, or null if not in a list.</returns>
         public static NumberingDefinition GetListNumberingDefinition(this Paragraph p)
         {
-            if (!p.IsListItem()) 
-                return null;
+            if (p == null) throw new ArgumentNullException(nameof(p));
 
             var id = p.GetListNumberingDefinitionId();
-            if (id == null) return null;
+            if (id is null or 0) return null;
 
             var styles = p.Document.NumberingStyles;
             var definition = styles.Definitions.SingleOrDefault(d => d.Id == id.Value);
@@ -172,10 +186,14 @@ namespace DXPlus
         /// <returns></returns>
         public static int? GetListLevel(this Paragraph p)
         {
+            if (p == null) throw new ArgumentNullException(nameof(p));
+
             var numProperties = ParagraphNumberProperties(p);
-            return numProperties == null
+            var levelElement = numProperties?.Element(Namespace.Main + "ilvl");
+
+            return levelElement == null
                 ? null
-                : int.Parse(numProperties.Element(Namespace.Main + "ilvl").GetVal());
+                : int.Parse(levelElement.GetVal());
         }
 
         /// <summary>
@@ -185,11 +203,11 @@ namespace DXPlus
         /// <param name="p">Paragraph</param>
         public static NumberingFormat GetNumberingFormat(this Paragraph p)
         {
-            var numProperties = ParagraphNumberProperties(p);
-            if (numProperties == null)
-                return NumberingFormat.None;
+            if (p == null) throw new ArgumentNullException(nameof(p));
 
-            int numId = int.Parse(numProperties.Element(Namespace.Main + "numId").GetVal());
+            int? numId = p.GetListNumberingDefinitionId();
+            if (numId == null)
+                return NumberingFormat.None;
 
             // A value of 0 for the @val attribute indicates the removal of numbering properties at
             // a particular level in the style hierarchy (typically via direct formatting).
@@ -205,8 +223,10 @@ namespace DXPlus
                     $"Number reference w:numId('{numId}') used in document but not defined in /word/numbering.xml");
             }
 
-            // Get the level
-            int level = int.Parse(numProperties.Element(Namespace.Main + "ilvl").GetVal());
+            // Find the level.
+            int level = p.GetListLevel() ?? 0;
+
+            // Return the specific format for the given level.
             return definition.Style.Levels
                 .Single(l => l.Level == level)
                 .Format;

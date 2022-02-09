@@ -1,3 +1,4 @@
+using System;
 using Xunit;
 
 namespace DXPlus.Tests
@@ -13,6 +14,30 @@ namespace DXPlus.Tests
             
             doc.SetPropertyValue(DocumentPropertyName.Title, text);
             Assert.Equal(text, doc.DocumentProperties[DocumentPropertyName.Title]);
+        }
+
+        [Fact]
+        public void ReplaceDocPropertyChangesValue()
+        {
+            var doc = Document.Create();
+
+            Assert.True(doc.DocumentProperties.TryGetValue(DocumentPropertyName.Creator, out string lsb));
+            Assert.Equal(Environment.UserName, lsb);
+            doc.SetPropertyValue(DocumentPropertyName.Creator, "tom");
+            Assert.True(doc.DocumentProperties.TryGetValue(DocumentPropertyName.Creator, out string lsb2));
+            Assert.Equal("tom", lsb2);
+        }
+
+        [Fact]
+        public void SetLastModifiedByIsValid()
+        {
+            var doc = Document.Create();
+
+            Assert.True(doc.DocumentProperties.TryGetValue(DocumentPropertyName.LastSavedBy, out string lsb));
+
+            doc.SetPropertyValue(DocumentPropertyName.LastSavedBy, "tom");
+            Assert.True(doc.DocumentProperties.TryGetValue(DocumentPropertyName.LastSavedBy, out string lsb2));
+            Assert.Equal("tom", lsb2);
         }
 
         [Fact]

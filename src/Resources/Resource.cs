@@ -142,7 +142,8 @@ namespace DXPlus.Resources
         /// </summary>
         /// <param name="rsid"></param>
         /// <returns></returns>
-        public static XDocument SettingsXml(string rsid, string docid1, string docid2) => GetDocument("DXPlus.Resources.settings.xml", new { rsid, docid1, docid2 });
+        public static XDocument SettingsXml(string rsid, string docid1, string docid2) 
+            => GetDocument("DXPlus.Resources.settings.xml", new { rsid, docid1, docid2 });
 
         /// <summary>
         /// Initial Core Properties document
@@ -150,7 +151,8 @@ namespace DXPlus.Resources
         /// <param name="author">Author (can be null/empty)</param>
         /// <param name="date">Date to set as created date</param>
         /// <returns>XML document</returns>
-        public static XDocument CorePropsXml(string author, DateTime date) => GetDocument("DXPlus.Resources.core.xml", new {author=author??"", date=date.ToString("s") + "Z"});
+        public static XDocument CorePropsXml(string author, DateTime date) 
+            => GetDocument("DXPlus.Resources.core.xml", new {author=author??"", date=date.ToString("s") + "Z"});
 
         /// <summary>
         /// Get a Document from embedded resources

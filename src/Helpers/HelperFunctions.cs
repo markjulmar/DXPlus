@@ -7,6 +7,7 @@ using System.IO;
 using System.IO.Packaging;
 using System.Linq;
 using System.Text;
+using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
 
@@ -239,12 +240,24 @@ namespace DXPlus.Helpers
 
             lock (packagePart.Package)
             {
-                using StreamWriter writer = new StreamWriter(packagePart.GetStream(FileMode.OpenOrCreate, FileAccess.Write), Encoding.UTF8);
-                document.Save(writer, SaveOptions.OmitDuplicateNamespaces);
+                using var writer = new StreamWriter(packagePart.GetStream(FileMode.Create, FileAccess.Write));
+                var xmlWriter = XmlWriter.Create(writer, new XmlWriterSettings
+                {
+                    Indent = false,
+                    CheckCharacters = true,
+                    CloseOutput = true,
+                    ConformanceLevel = ConformanceLevel.Document,
+                    Encoding = Encoding.UTF8,
+                    NamespaceHandling = NamespaceHandling.OmitDuplicates,
+                    NewLineHandling = NewLineHandling.None,
+                    OmitXmlDeclaration = false
+                });
+                document.Save(xmlWriter);
+                xmlWriter.Close();
             }
 
 #if DEBUG
-            _ = Load(packagePart);
+            //_ = Load(packagePart);
 #endif
         }
 
@@ -262,8 +275,8 @@ namespace DXPlus.Helpers
 
             lock (packagePart.Package)
             {
-                using StreamReader reader = new StreamReader(packagePart.GetStream(FileMode.Open, FileAccess.Read), Encoding.UTF8);
-                XDocument document = XDocument.Load(reader, LoadOptions.PreserveWhitespace);
+                using var reader = new StreamReader(packagePart.GetStream(FileMode.Open, FileAccess.Read), Encoding.UTF8);
+                var document = XDocument.Load(reader, LoadOptions.None);
                 if (document.Root == null)
                 {
                     throw new Exception("Loaded document from PackagePart has no contents.");

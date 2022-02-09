@@ -60,19 +60,19 @@ namespace DXPlus.Helpers
             }
 
             if (!HelperFunctions.SplitXmlName(name, out var ns, out var localName))
-                ns = "cp";
+                ns = "cp"; // default
 
-            var corePropElement = corePropDoc.Root!.Elements().SingleOrDefault(e => e.Name.LocalName.Equals(localName));
+            var xns = corePropDoc.Root!.GetNamespaceOfPrefix(ns);
+            if (xns == null)
+                throw new InvalidOperationException($"Unable to identify namespace {ns} used core property {localName}.");
+
+            var corePropElement = corePropDoc.Root!.Elements().SingleOrDefault(e => e.Name == xns + localName);
             if (corePropElement != null)
             {
                 corePropElement.SetValue(value);
             }
             else
             {
-                var xns = corePropDoc.Root.GetNamespaceOfPrefix(ns);
-                if (xns == null)
-                    throw new InvalidOperationException($"Unable to identify namespace {ns} used core property {localName}.");
-
                 corePropDoc.Root.Add(new XElement(xns + localName, value));
             }
 
@@ -82,8 +82,10 @@ namespace DXPlus.Helpers
 
         public static PackagePart CreateCoreProperties(Package package, out XDocument corePropDoc)
         {
+            string userName = Environment.UserInteractive ? Environment.UserName : "Office User";
+
             var corePropPart = package.CreatePart(Relations.CoreProperties.Uri, Relations.CoreProperties.ContentType, CompressionOption.Maximum);
-            corePropDoc = Resource.CorePropsXml(Environment.UserName, DateTime.UtcNow);
+            corePropDoc = Resource.CorePropsXml(userName, DateTime.UtcNow);
             Debug.Assert(corePropDoc.Root != null);
 
             corePropPart.Save(corePropDoc);

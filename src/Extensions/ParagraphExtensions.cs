@@ -216,7 +216,7 @@ namespace DXPlus
             if (drawing.Parent?.Parent is not Paragraph previousParagraph) return null;
 
             // Should be in following paragraph.
-            var p = previousParagraph.NextParagagraph;
+            var p = previousParagraph.NextParagraph;
             return p?.Properties.StyleName == "Caption" ? p.Text : null;
         }
 
@@ -235,7 +235,7 @@ namespace DXPlus
             if (!drawing.InDom || drawing.Parent?.Parent is not Paragraph previousParagraph)
                 throw new ArgumentException("Drawing must be in document.", nameof(drawing));
 
-            if (previousParagraph.NextParagagraph?.Xml.Descendants(Name.SimpleField)
+            if (previousParagraph.NextParagraph?.Xml.Descendants(Name.SimpleField)
                     .FirstOrDefault(x => x.Attribute(Name.Instr)?.Value == FigureSequence) != null)
                 throw new ArgumentException("Drawing already has caption.", nameof(drawing));
 
