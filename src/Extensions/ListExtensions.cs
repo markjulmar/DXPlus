@@ -87,7 +87,9 @@ namespace DXPlus
         /// <summary>
         /// Fetch the paragraph number properties for a list element.
         /// </summary>
-        private static XElement ParagraphNumberProperties(this Paragraph p)
+        /// <param name="p">Paragraph to check</param>
+        /// <param name="search">True to search</param>
+        private static XElement ParagraphNumberProperties(this Paragraph p, bool search)
         {
             if (!p.IsListItem()) return null;
 
@@ -96,6 +98,8 @@ namespace DXPlus
             var numProperties = p.Xml.FirstLocalNameDescendant("numPr");
             if (numProperties == null)
             {
+                if (search == false) return null;
+
                 // Backup and try to find a previous ListItem style with properties.
                 // This paragraph would inherit that.
                 p = p.PreviousParagraph;
@@ -125,7 +129,7 @@ namespace DXPlus
         /// <returns></returns>
         internal static int? GetListNumberingDefinitionId(this Paragraph p)
         {
-            var numProperties = p.ParagraphNumberProperties();
+            var numProperties = p.ParagraphNumberProperties(true);
             return numProperties == null
                 ? null
                 : int.Parse(numProperties.Element(Namespace.Main + "numId").GetVal());
@@ -188,12 +192,26 @@ namespace DXPlus
         {
             if (p == null) throw new ArgumentNullException(nameof(p));
 
-            var numProperties = ParagraphNumberProperties(p);
+            var numProperties = ParagraphNumberProperties(p, true);
             var levelElement = numProperties?.Element(Namespace.Main + "ilvl");
 
             return levelElement == null
                 ? null
                 : int.Parse(levelElement.GetVal());
+        }
+
+        /// <summary>
+        /// Returns whether this specific paragraph has a list numbering definition tied to it.
+        /// All the other APIs will locate the list definition from siblings, parents, or styles.
+        /// This method will return false if the specific node doesn't include this detail.
+        /// </summary>
+        /// <param name="p">Paragraph</param>
+        /// <returns>True if the paragraph has list details tied to it</returns>
+
+        public static bool HasListDetails(this Paragraph p)
+        {
+            if (p == null) throw new ArgumentNullException(nameof(p));
+            return ParagraphNumberProperties(p, false) != null;
         }
 
         /// <summary>
