@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
-    <RootNamespace>DXPlus</RootNamespace>
+    <TargetFramework>net6.0</TargetFramework>
+	<ImplicitUsings>enable</ImplicitUsings>
+	<RootNamespace>DXPlus</RootNamespace>
     <PackOnBuild>true</PackOnBuild>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Julmar.DxPlus</PackageId>
@@ -20,7 +21,17 @@
     <Copyright>(c) 2020-2022 julmar.com</Copyright>
     <RepositoryUrl>https://github.com/markjulmar/dxplus</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>docx;openxml;.net;dotnet</PackageTags>        
+    <PackageTags>docx;openxml;.net;dotnet</PackageTags>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <Nullable>enable</Nullable>        
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

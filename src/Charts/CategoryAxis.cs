@@ -1,16 +1,15 @@
 ﻿using System.Xml.Linq;
 
-namespace DXPlus.Charts
-{
+namespace DXPlus.Charts;
 
-    /// <summary>
-    /// Represents Category Axes
-    /// </summary>
-    public class CategoryAxis : Axis
+/// <summary>
+/// Represents Category Axes
+/// </summary>
+public class CategoryAxis : Axis
+{
+    public CategoryAxis(string id)
     {
-        public CategoryAxis(string id)
-        {
-            Xml = XElement.Parse($@"<c:catAx xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
+        Xml = XElement.Parse($@"<c:catAx xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
                 <c:axId val=""{id}""/>
                 <c:scaling>
                   <c:orientation val=""minMax""/>
@@ -27,6 +26,5 @@ namespace DXPlus.Charts
                 <c:lblOffset val=""100""/>
                 <c:noMultiLvlLbl val=""0""/>
               </c:catAx>");
-        }
     }
 }

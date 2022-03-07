@@ -508,7 +508,7 @@ namespace DXPlus.Helpers
             return settings;
         }
 
-        public static List<XElement> FormatInput(string text, XElement rPr)
+        public static List<XElement> FormatInput(string text, XElement? rPr)
         {
             List<XElement> newRuns = new List<XElement>();
             if (string.IsNullOrEmpty(text))

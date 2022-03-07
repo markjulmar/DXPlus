@@ -1331,7 +1331,7 @@ namespace DXPlus
         /// <param name="text"></param>
         /// <param name="formatting"></param>
         /// <returns>New paragraph</returns>
-        internal static XElement Create(string text, Formatting formatting)
+        internal static XElement Create(string text, Formatting? formatting)
         {
             return new XElement(Name.Paragraph,
                 new XAttribute(Name.ParagraphId, HelperFunctions.GenerateHexId()),

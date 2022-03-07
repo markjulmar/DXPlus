@@ -72,7 +72,7 @@ namespace Tester
             p1.SetText("This is some text - ");
             p1.AddPageNumber(PageNumberFormat.Normal);
 
-            doc.AddParagraph("This is the firt paragraph");
+            doc.AddParagraph("This is the first paragraph");
             doc.AddPageBreak();
             doc.AddParagraph("This is page 2");
         }

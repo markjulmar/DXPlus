@@ -1,25 +1,24 @@
 ﻿using System.Xml.Linq;
 
-namespace DXPlus.Charts
+namespace DXPlus.Charts;
+
+/// <summary>
+/// This element contains the 2-D pie series for this chart.
+/// </summary>
+public class PieChart : Chart
 {
     /// <summary>
-    /// This element contains the 2-D pie series for this chart.
+    /// Chart has an axis?
     /// </summary>
-    public class PieChart : Chart
-    {
-        /// <summary>
-        /// Chart has an axis?
-        /// </summary>
-        public override bool HasAxis => false;
+    public override bool HasAxis => false;
 
-        /// <summary>
-        /// Return maximum count of series
-        /// </summary>
-        public override short MaxSeriesCount => 1;
+    /// <summary>
+    /// Return maximum count of series
+    /// </summary>
+    public override short MaxSeriesCount => 1;
 
-        /// <summary>
-        /// Method which creates the current chart XML
-        /// </summary>
-        protected override XElement CreateChartXml() => new XElement(Namespace.Chart + "pieChart");
-    }
+    /// <summary>
+    /// Method which creates the current chart XML
+    /// </summary>
+    protected override XElement CreateChartXml() => new(Namespace.Chart + "pieChart");
 }

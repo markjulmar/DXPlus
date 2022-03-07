@@ -1,16 +1,15 @@
 ﻿using System.Xml.Linq;
 
-namespace DXPlus.Charts
-{
+namespace DXPlus.Charts;
 
-    /// <summary>
-    /// Represents Values Axes
-    /// </summary>
-    public class ValueAxis : Axis
+/// <summary>
+/// Represents Values Axes
+/// </summary>
+public class ValueAxis : Axis
+{
+    public ValueAxis(string id)
     {
-        public ValueAxis(string id)
-        {
-            Xml = XElement.Parse($@"<c:valAx xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
+        Xml = XElement.Parse($@"<c:valAx xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
                 <c:axId val=""{id}""/>
                 <c:scaling>
                   <c:orientation val=""minMax""/>
@@ -26,6 +25,5 @@ namespace DXPlus.Charts
                 <c:crosses val=""autoZero""/>
                 <c:crossBetween val=""between""/>
               </c:valAx>");
-        }
     }
 }

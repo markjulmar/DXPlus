@@ -1,98 +1,136 @@
-﻿using System;
-using DXPlus.Helpers;
-using System.Linq;
+﻿using DXPlus.Helpers;
 using System.Xml.Linq;
 
-namespace DXPlus
+namespace DXPlus;
+
+/// <summary>
+/// This represents a bookmark in the Word document.
+/// </summary>
+public class Bookmark
 {
     /// <summary>
-    /// This represents a bookmark in the Word document.
+    /// XML behind this bookmark
     /// </summary>
-    public class Bookmark
+    internal readonly XElement Xml;
+
+    /// <summary>
+    /// Name of the bookmark
+    /// </summary>
+    public string Name
     {
-        /// <summary>
-        /// XML behind this bookmark
-        /// </summary>
-        internal readonly XElement Xml;
+        get => Xml.AttributeValue(DXPlus.Name.NameId);
+        set => Xml.SetAttributeValue(DXPlus.Name.NameId, value);
+    }
 
-        /// <summary>
-        /// Name of the bookmark
-        /// </summary>
-        public string Name
+    /// <summary>
+    /// Word inserts hidden bookmarks which are prefaced with an underscore. These should be ignored by most processors.
+    /// </summary>
+    public bool IsHidden => Name.StartsWith('_');
+
+    /// <summary>
+    /// Unique identifier for this bookmark in the document
+    /// </summary>
+    public long Id
+    {
+        get => long.Parse(Xml.AttributeValue(DXPlus.Name.Id));
+        set => Xml.SetAttributeValue(DXPlus.Name.Id, value);
+    }
+
+    /// <summary>
+    /// Specifies the zero-based index of the first column in this row which shall be part of this bookmark.
+    /// This is only used if the bookmark starts and ends within a table.
+    /// </summary>
+    public int? FirstTableColumn
+    {
+        get => int.TryParse(Xml.AttributeValue(Namespace.Main + "colFirst"), out var val) ? val : null;
+        set => Xml.SetAttributeValue(Namespace.Main + "colFirst", value);
+    }
+
+    /// <summary>
+    /// Specifies the zero-based index of the last column in a row row which shall be part of this bookmark.
+    /// This is only used if the bookmark starts and ends within a table.
+    /// </summary>
+    public int? LastTableColumn
+    {
+        get => int.TryParse(Xml.AttributeValue(Namespace.Main + "colLast"), out var val) ? val : null;
+        set => Xml.SetAttributeValue(Namespace.Main + "colLast", value);
+    }
+
+    /// <summary>
+    /// Paragraph this bookmark is part of
+    /// </summary>
+    public Paragraph Paragraph { get; }
+
+    /// <summary>
+    /// Text associated with this bookmark. Note that this could span across different Run elements.
+    /// </summary>
+    public string Text
+    {
+        get
         {
-            get => Xml.AttributeValue(DXPlus.Name.NameId);
-            set => Xml.SetAttributeValue(DXPlus.Name.NameId, value);
-        }
-
-        /// <summary>
-        /// Id for this bookmark in the parent document
-        /// </summary>
-        public long Id
-        {
-            get => long.Parse(Xml.AttributeValue(DXPlus.Name.Id));
-            set => Xml.SetAttributeValue(DXPlus.Name.Id, value);
-        }
-
-        /// <summary>
-        /// FirstParagraph this bookmark is part of
-        /// </summary>
-        public Paragraph Paragraph { get; }
-
-        /// <summary>
-        /// Change the text associated with this bookmark.
-        /// </summary>
-        /// <param name="text">New text value</param>
-        public void SetText(string text)
-        {
-            var nextNode = Xml.NextNode;
-            var nextElement = nextNode as XElement;
-            while (nextElement == null
-                   || (nextElement.Name != DXPlus.Name.Run
-                   && nextElement.Name != DXPlus.Name.BookmarkEnd))
+            var xe = Xml.NextSibling(DXPlus.Name.Run);
+            if (xe != null)
             {
-                nextNode = nextNode.NextNode;
-                nextElement = nextNode as XElement;
-            }
 
-            // Check if next element is a bookmarkEnd
-            if (nextElement.Name == DXPlus.Name.BookmarkEnd)
-            {
-                AddBookmarkRef(Xml, text);
-                return;
             }
+        }
+    }
 
-            var contentElement = nextElement.Elements(DXPlus.Name.Text).FirstOrDefault();
-            if (contentElement == null)
-            {
-                AddBookmarkRef(Xml, text);
-                return;
-            }
-
-            contentElement.Value = text;
+    /// <summary>
+    /// Change the text associated with this bookmark.
+    /// </summary>
+    /// <param name="text">New text value</param>
+    public void SetText(string text)
+    {
+        var nextNode = Xml.NextNode;
+        var nextElement = nextNode as XElement;
+        while (nextElement == null
+               || (nextElement.Name != DXPlus.Name.Run && nextElement.Name != DXPlus.Name.BookmarkEnd))
+        {
+            nextNode = nextNode.NextNode;
+            nextElement = nextNode as XElement;
         }
 
-        /// <summary>
-        /// Bookmark constructor
-        /// </summary>
-        /// <param name="xml">XML for this bookmark</param>
-        /// <param name="owner">Associated paragraph object</param>
-        public Bookmark(XElement xml, Paragraph owner)
+        // Check if next element is a bookmarkEnd
+        if (nextElement.Name == DXPlus.Name.BookmarkEnd)
         {
-            Xml = xml;
-            Paragraph = owner;
+            InsertBookmarkText(Xml, text);
+            return;
         }
 
-        /// <summary>
-        /// Adds a bookmark reference
-        /// </summary>
-        /// <param name="bookmark">Bookmark XML element</param>
-        /// <param name="text">Text to insert</param>
-        private static void AddBookmarkRef(XNode bookmark, string text)
+        var contentElement = nextElement.Elements(DXPlus.Name.Text).FirstOrDefault();
+        if (contentElement == null)
         {
-            if (bookmark == null) 
-                throw new ArgumentNullException(nameof(bookmark));
+            InsertBookmarkText(Xml, text);
+            return;
+        }
+
+        contentElement.Value = text;
+    }
+
+    /// <summary>
+    /// Bookmark constructor
+    /// </summary>
+    /// <param name="xml">XML for this bookmark (bookmarkStart)</param>
+    /// <param name="owner">Associated paragraph object</param>
+    public Bookmark(XElement xml, Paragraph owner)
+    {
+        Xml = xml ?? throw new ArgumentNullException(nameof(xml));
+        Paragraph = owner ?? throw new ArgumentNullException(nameof(owner));
+        if (Xml.Name != DXPlus.Name.BookmarkStart)
+            throw new ArgumentException($"Cannot create bookmark from {Xml.Name.LocalName}");
+    }
+
+    /// <summary>
+    /// Adds a bookmark reference
+    /// </summary>
+    /// <param name="bookmark">Bookmark XML element</param>
+    /// <param name="text">Text to insert</param>
+    private static void InsertBookmarkText(XNode bookmark, string text)
+    {
+        if (bookmark == null) 
+            throw new ArgumentNullException(nameof(bookmark));
             
-            bookmark.AddAfterSelf(HelperFunctions.FormatInput(text, null));
-        }
+        bookmark.AddAfterSelf(HelperFunctions.FormatInput(text, null));
     }
 }
