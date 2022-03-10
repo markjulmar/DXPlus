@@ -433,7 +433,7 @@ namespace DXPlus.Tests
             Assert.NotNull(doc.PackagePart);
 
             Paragraph p = new Paragraph("Test");
-            Assert.Null(p.PackagePart);
+            Assert.Throws<InvalidOperationException>(() => p.PackagePart);
 
             doc.AddParagraph(p);
             Assert.NotNull(p.PackagePart);

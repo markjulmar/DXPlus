@@ -26,9 +26,9 @@ namespace DXPlus
         /// by duplicating the border below and right of the normal location. For the right and top borders, this is done by moving the
         /// border down and to the right of the original location.
         /// </summary>
-        public bool Shadow
+        public bool? Shadow
         {
-            get => bool.Parse(Xml.AttributeValue(Name.Shadow, "false"));
+            get => bool.TryParse(Xml.AttributeValue(Name.Shadow), out var result) ? result : null;
             set => Xml.SetAttributeValue(Name.Shadow, value);
         }
 
@@ -56,9 +56,9 @@ namespace DXPlus
         /// Specifies the width of the border. Paragraph borders are line borders, the width is specified in eighths of a point
         /// with a minimum value of two (1/4 of a point) and a maximum value of 96 (twelve points).
         /// </summary>
-        public double Size
+        public double? Size
         {
-            get => double.Parse(Xml.AttributeValue(Name.Size));
+            get => double.TryParse(Xml.AttributeValue(Name.Size), out var result) ? result : null;
             set
             {
                 if (value is < 2 or > 96)

@@ -1,11 +1,17 @@
-﻿namespace DXPlus
+﻿namespace DXPlus;
+
+/// <summary>
+/// Text types in a Run
+/// </summary>
+public enum RunTextType
 {
     /// <summary>
-    /// Text types in a Run
+    /// Text
     /// </summary>
-    public enum RunTextType
-    {
-        Text,
-        DelText,
-    }
+    Text,
+
+    /// <summary>
+    /// Deleted text
+    /// </summary>
+    DelText,
 }

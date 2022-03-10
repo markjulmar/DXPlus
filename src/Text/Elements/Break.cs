@@ -28,13 +28,13 @@ namespace DXPlus
         {
             get => Type != BreakType.Line
                     ? null
-                    : Enum.TryParse<LineBreakRestartLocation>(Xml.AttributeValue(Namespace.Main + "clear"), ignoreCase: true, out var bt) ? bt : LineBreakRestartLocation.NextLine;
+                    : Enum.TryParse<LineBreakRestartLocation>(Xml.AttributeValue(Namespace.Main + "clear"),
+                        ignoreCase: true, out var bt) ? bt : null;
 
             set
             {
-                if (Type != BreakType.Line)
-                    return;
-                Xml.SetAttributeValue(Namespace.Main + "clear", value.GetEnumName());
+                if (Type != BreakType.Line) return;
+                Xml.SetAttributeValue(Namespace.Main + "clear", value==null ? null : value.Value.GetEnumName());
             }
         }
 

@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Xml.Linq;
 using System.Xml.Serialization;
+using System.Xml.XPath;
 
 namespace DXPlus;
 
@@ -9,6 +10,11 @@ namespace DXPlus;
 /// </summary>
 internal static class XLinqExtensions
 {
+    /// <summary>
+    /// Returns whether this Xml fragment is in a document.
+    /// </summary>
+    public static bool InDom(this XNode? node) => node?.Parent != null;
+
     /// <summary>
     /// Retrieves a specific attribute value by following a path of XNames
     /// </summary>
@@ -28,6 +34,20 @@ internal static class XLinqExtensions
         }
 
         return (xml as XElement)?.Attribute(path[^1])?.Value;
+    }
+
+    /// <summary>
+    /// Look for a parent by name
+    /// </summary>
+    /// <param name="startAt">Node to start at</param>
+    /// <param name="lookFor">Node name to look for</param>
+    /// <returns>Element if found, null if none</returns>
+    public static XElement? FindParent(this XElement? startAt, XName lookFor)
+    {
+        while (startAt != null && startAt.Name != lookFor)
+            startAt = startAt.Parent;
+        
+        return startAt;
     }
 
     /// <summary>
@@ -257,7 +277,7 @@ internal static class XLinqExtensions
     /// <param name="attributeValue">Value to match</param>
     /// <returns></returns>
     public static XElement? FindByAttrVal(this IEnumerable<XElement> nodes, XName name, string attributeValue) 
-        => nodes.FirstOrDefault(node => node.AttributeValue(name).Equals(attributeValue));
+        => nodes.FirstOrDefault(node => node.AttributeValue(name)?.Equals(attributeValue) == true);
 
     /// <summary>
     /// Retrieve the "val" or "w:val" attribute from an element tag.
@@ -277,7 +297,7 @@ internal static class XLinqExtensions
     /// <param name="el">Element to examine</param>
     /// <param name="defaultValue">Value to return if the attribute does not exist.</param>
     /// <returns>Value of the attribute, or the default value if it doesn't exist.</returns>
-    public static string? GetVal(this XElement el, string? defaultValue = "") 
+    public static string? GetVal(this XElement? el, string? defaultValue = "") 
         => GetValAttr(el)?.Value ?? defaultValue;
 
     /// <summary>
@@ -375,31 +395,33 @@ internal static class XLinqExtensions
     /// Get value from XElement and convert it to enum
     /// </summary>
     /// <typeparam name="T">Enum type</typeparam>
-    public static T GetEnumValue<T>(this XElement element)
+    public static T GetEnumValue<T>(this XElement element) where T : Enum
     {
         if (element == null) throw new ArgumentNullException(nameof(element));
-        if (!TryGetEnumValue(element, out T result))
+        if (!TryGetEnumValue(element, out T? result))
             throw new ArgumentException($"{element.GetVal()} could not be matched to enum {typeof(T).Name}.");
-        return result;
+        
+        return result!;
     }
 
     /// <summary>
     /// Get value from XElement and convert it to enum
     /// </summary>
     /// <typeparam name="T">Enum type</typeparam>
-    public static T GetEnumValue<T>(this XAttribute attr)
+    public static T GetEnumValue<T>(this XAttribute attr) where T : Enum
     {
         if (attr == null) throw new ArgumentNullException(nameof(attr));
-        if (!TryGetEnumValue(attr, out T result))
+        if (!TryGetEnumValue(attr, out T? result))
             throw new ArgumentException($"{attr.Value} could not be matched to enum {typeof(T).Name}.");
-        return result;
+        
+        return result!;
     }
 
     /// <summary>
     /// Convert value to xml string and set it into XElement
     /// </summary>
     /// <typeparam name="T">Enum type</typeparam>
-    public static void SetEnumValue<T>(this XElement element, T value)
+    public static void SetEnumValue<T>(this XElement element, T value) where T : Enum
     {
         if (element == null) throw new ArgumentNullException(nameof(element));
         element.SetAttributeValue("val", GetEnumName(value));
@@ -412,7 +434,7 @@ internal static class XLinqExtensions
     /// <param name="attr"></param>
     /// <param name="result"></param>
     /// <returns></returns>
-    public static bool TryGetEnumValue<T>(this XAttribute? attr, out T? result)
+    public static bool TryGetEnumValue<T>(this XAttribute? attr, out T? result) where T : Enum
     {
         if (attr != null && !string.IsNullOrWhiteSpace(attr.Value))
         {
@@ -420,17 +442,14 @@ internal static class XLinqExtensions
             foreach (T e in Enum.GetValues(typeof(T)))
             {
                 var valueName = e.ToString();
-                if (valueName != null)
+                var fi = typeof(T).GetField(valueName);
+                if (fi != null)
                 {
-                    var fi = typeof(T).GetField(valueName);
-                    if (fi != null)
+                    string name = fi.GetCustomAttribute<XmlAttributeAttribute>()?.AttributeName ?? valueName;
+                    if (string.Equals(name, value, StringComparison.OrdinalIgnoreCase))
                     {
-                        string name = fi.GetCustomAttribute<XmlAttributeAttribute>()?.AttributeName ?? valueName;
-                        if (string.Equals(name, value, StringComparison.OrdinalIgnoreCase))
-                        {
-                            result = e;
-                            return true;
-                        }
+                        result = e;
+                        return true;
                     }
                 }
             }
@@ -521,4 +540,23 @@ internal static class XLinqExtensions
             element.Attributes().OrderBy(a => a.Name.ToString()),
             element.Value);
     }
+
+    /// <summary>
+    /// Performs an XPath query against an element with the proper Word document namespaces.
+    /// </summary>
+    /// <param name="element">Element</param>
+    /// <param name="query">Query</param>
+    /// <returns>Results from query</returns>
+    public static IEnumerable<XElement> QueryElements(this XElement element, string query) 
+        => element.XPathSelectElements(query, Namespace.NamespaceManager());
+
+    /// <summary>
+    /// Performs an XPath query against an element with the proper Word document namespaces.
+    /// </summary>
+    /// <param name="element">Element</param>
+    /// <param name="query">Query</param>
+    /// <returns>Results from query</returns>
+    public static XElement? QueryElement(this XElement element, string query) 
+        => element.XPathSelectElement(query, Namespace.NamespaceManager());
 }
+

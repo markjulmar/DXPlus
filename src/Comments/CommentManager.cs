@@ -1,16 +1,18 @@
-﻿using System.IO.Packaging;
+﻿using System.Diagnostics;
+using System.IO.Packaging;
 using System.Xml.Linq;
 using DXPlus.Helpers;
 using DXPlus.Resources;
 
-namespace DXPlus.Comments;
+// ReSharper disable once CheckNamespace
+namespace DXPlus.Internal;
 
 internal class CommentManager : DocXElement
 {
-    private XDocument commentsDoc;
-    private XDocument peopleDoc;
-    private PackagePart peoplePackagePart;
-    private PackagePart commentsPackagePart;
+    private XDocument? commentsDoc;
+    private XDocument? peopleDoc;
+    private PackagePart? peoplePackagePart;
+    private PackagePart? commentsPackagePart;
 
     private static readonly XName CommentStart = Namespace.Main + "commentRangeStart";
     private static readonly XName CommentEnd = Namespace.Main + "commentRangeEnd";
@@ -20,29 +22,29 @@ internal class CommentManager : DocXElement
     /// Constructor
     /// </summary>
     /// <param name="documentOwner">Owning document</param>
-    public CommentManager(IDocument documentOwner) 
-        : base(documentOwner, null, null)
+    public CommentManager(Document documentOwner) : base(new XElement("placeholder"))
     {
+        SetOwner(documentOwner, null, false);
     }
 
     /// <summary>
     /// Retrieve the comments package part
     /// </summary>
-    internal PackagePart CommentsPackagePart
+    internal PackagePart? CommentsPackagePart
     {
         get => commentsPackagePart;
         set
         {
-            commentsPackagePart = value;
-            commentsDoc = PackagePart.Load();
-            Xml = commentsDoc?.Root;
+            commentsPackagePart = value ?? throw new ArgumentNullException(nameof(value));
+            commentsDoc = commentsPackagePart.Load();
+            Xml = commentsDoc.Root ?? throw new ArgumentNullException(nameof(CommentsPackagePart));
         }
     }
 
     /// <summary>
     /// Loads the people.xml from the document
     /// </summary>
-    internal PackagePart PeoplePackagePart
+    internal PackagePart? PeoplePackagePart
     {
         get => peoplePackagePart;
         set
@@ -56,15 +58,8 @@ internal class CommentManager : DocXElement
     /// Returns all comments in the document
     /// </summary>
     public IEnumerable<Comment> Comments 
-        => Xml == null 
-            ? Enumerable.Empty<Comment>() 
-            : Xml.Elements(Namespace.Main + "comment")
-                .Select(e => new Comment(Document, CommentsPackagePart, e));
-
-    /// <summary>
-    /// The comment package part
-    /// </summary>
-    internal override PackagePart PackagePart => commentsPackagePart;
+        => Xml.Elements(Namespace.Main + "comment")
+                .Select(e => new Comment(Document!, CommentsPackagePart!, e));
 
     /// <summary>
     /// Creates a new comment with a blank paragraph
@@ -73,15 +68,18 @@ internal class CommentManager : DocXElement
     /// <param name="dt">Optional data</param>
     /// <param name="authorInitials">Optional initials</param>
     /// <returns>Created comment</returns>
-    public Comment CreateComment(string authorName, DateTime? dt = null, string authorInitials = null)
+    public Comment CreateComment(string authorName, DateTime? dt = null, string? authorInitials = null)
     {
+        if (Document?.Package == null || Document?.PackagePart == null) 
+            throw new InvalidOperationException("Cannot create comments until document is available.");
+
         if (peoplePackagePart == null)
         {
             peoplePackagePart = Document.Package.CreatePart(Relations.People.Uri, Relations.People.ContentType, CompressionOption.Maximum);
             var template = Resource.PeopleDocument();
             peoplePackagePart.Save(template);
             Document.PackagePart.CreateRelationship(peoplePackagePart.Uri, TargetMode.Internal, Relations.People.RelType);
-            peopleDoc = peoplePackagePart.Load();
+            peopleDoc = peoplePackagePart.Load() ?? throw new InvalidOperationException("Comment package not available in document.");
         }
 
         if (commentsPackagePart == null)
@@ -91,10 +89,13 @@ internal class CommentManager : DocXElement
             commentsPackagePart.Save(template);
             Document.PackagePart.CreateRelationship(commentsPackagePart.Uri, TargetMode.Internal, Relations.Comments.RelType);
             commentsDoc = commentsPackagePart.Load();
-            Xml = commentsDoc.Root;
+            Xml = commentsDoc.Root ?? throw new InvalidOperationException("Comment package not available in document.");
         }
 
-        var person = peopleDoc.Root?.Elements(Namespace.W2012 + "person")
+        Debug.Assert(peopleDoc != null);
+        Debug.Assert(commentsDoc != null);
+
+        var person = peopleDoc.Root!.Elements(Namespace.W2012 + "person")
             .FirstOrDefault(p => p.Attribute(Namespace.W2012 + "author")?.Value == authorName);
         if (person == null)
         {
@@ -107,7 +108,7 @@ internal class CommentManager : DocXElement
         };
 
         // Insert into the DOM
-        Xml?.Add(comment.Xml);
+        Xml.Add(comment.Xml);
 
         return comment;
     }
@@ -119,7 +120,9 @@ internal class CommentManager : DocXElement
     /// <param name="authorName">Author name to add</param>
     private void AddPersonEntity(string authorName)
     {
-        peopleDoc.Root?.Add(
+        Debug.Assert(peopleDoc?.Root != null);
+
+        peopleDoc.Root.Add(
             new XElement(Namespace.W2012 + "person",
                 new XAttribute(Namespace.W2012 + "author", authorName),
                 new XElement(Namespace.W2012 + "presenceInfo",
@@ -136,8 +139,9 @@ internal class CommentManager : DocXElement
     {
         // Look for a w:commentReference tag in the paragraph.
         return owner.Xml.Descendants(CommentReference)
-            .Select(commentRef => ParseComment(owner, commentRef))
-            .Where(comment => comment != null);
+                        .Select(commentRef => ParseComment(owner, commentRef))
+                        .Cast<CommentRange>()
+                        .Where(c => c != null);
     }
 
     /// <summary>
@@ -146,8 +150,10 @@ internal class CommentManager : DocXElement
     /// <param name="owner"></param>
     /// <param name="commentReference"></param>
     /// <returns></returns>
-    private CommentRange ParseComment(Paragraph owner, XElement commentReference)
+    private CommentRange? ParseComment(Paragraph owner, XElement commentReference)
     {
+        Debug.Assert(Document != null);
+
         var commentId = HelperFunctions.GetId(commentReference) ?? -1;
         if (commentId == -1) 
             return null;
@@ -182,12 +188,9 @@ internal class CommentManager : DocXElement
     /// <param name="runEnd"></param>
     public static void Attach(Comment comment, Run runStart, Run runEnd)
     {
-        runStart.Xml.AddBeforeSelf(
-            new XElement(CommentStart,
-                new XAttribute(Name.Id, comment.Id)));
+        runStart.Xml.AddBeforeSelf(new XElement(CommentStart, new XAttribute(Name.Id, comment.Id)));
 
-        var endNode = new XElement(CommentEnd,
-            new XAttribute(Name.Id, comment.Id));
+        var endNode = new XElement(CommentEnd, new XAttribute(Name.Id, comment.Id));
 
         runEnd.Xml.AddAfterSelf(endNode);
         endNode.AddAfterSelf(XElement.Parse(
@@ -205,7 +208,9 @@ internal class CommentManager : DocXElement
     /// </summary>
     public void Save()
     {
-        PackagePart?.Save(commentsDoc);
-        peoplePackagePart?.Save(peopleDoc);
+        if (commentsPackagePart != null 
+            && commentsDoc != null) commentsPackagePart.Save(commentsDoc);
+        if (peoplePackagePart != null 
+            && peopleDoc != null) peoplePackagePart!.Save(peopleDoc);
     }
 }

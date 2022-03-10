@@ -6,43 +6,6 @@ using DXPlus.Resources;
 namespace DXPlus;
 
 /// <summary>
-/// This ties a comment to a range set.
-/// </summary>
-public sealed class CommentRange
-{
-    /// <summary>
-    /// The comment
-    /// </summary>
-    public Comment Comment { get; }
-
-    /// <summary>
-    /// The paragraph owner
-    /// </summary>
-    public Paragraph Owner { get; }
-
-    /// <summary>
-    /// Starting run
-    /// </summary>
-    public Run RangeStart { get; }
-
-    /// <summary>
-    /// Ending run - might be the same as start
-    /// </summary>
-    public Run RangeEnd { get; }
-
-    /// <summary>
-    /// Constructor
-    /// </summary>
-    internal CommentRange(Paragraph owner, Run start, Run end, Comment comment)
-    {
-        this.Owner = owner;
-        this.RangeStart = start;
-        this.RangeEnd = end;
-        this.Comment = comment;
-    }
-}
-
-/// <summary>
 /// This is a comment tied to one or more text runs.
 /// </summary>
 public sealed class Comment : DocXElement, IEquatable<Comment>
@@ -55,8 +18,8 @@ public sealed class Comment : DocXElement, IEquatable<Comment>
     /// </summary>
     public int Id
     {
-        get => HelperFunctions.GetId(Xml) ?? 0;
-        set => Xml.SetAttributeValue(Name.Id, value);
+        get => HelperFunctions.GetId(Xml) ?? throw new DocumentFormatException(nameof(Id));
+        init => Xml.SetAttributeValue(Name.Id, value);
     }
 
     /// <summary>
@@ -64,14 +27,14 @@ public sealed class Comment : DocXElement, IEquatable<Comment>
     /// </summary>
     public string AuthorName
     {
-        get => Xml.AttributeValue(Namespace.Main + "author");
+        get => Xml.AttributeValue(Namespace.Main + "author") ?? throw new DocumentFormatException(nameof(AuthorName), "Missing author on comment.");
         set => Xml.SetAttributeValue(Namespace.Main + "author", value);
     }
 
     /// <summary>
     /// Author name
     /// </summary>
-    public string AuthorInitials
+    public string? AuthorInitials
     {
         get => Xml.AttributeValue(Namespace.Main + "initials");
         set => Xml.SetAttributeValue(Namespace.Main + "initials", value);
@@ -92,19 +55,22 @@ public sealed class Comment : DocXElement, IEquatable<Comment>
     /// <param name="document"></param>
     /// <param name="packagePart"></param>
     /// <param name="authorName">Author</param>
-    /// <param name="dt">Date</param>
+    /// <param name="dateTime">Date</param>
     /// <param name="authorInitials">Initials</param>
     /// <exception cref="ArgumentNullException"></exception>
-    internal Comment(Document document, PackagePart packagePart, string authorName, DateTime? dt = null, string authorInitials = null)
+    internal Comment(Document document, PackagePart packagePart, 
+        string authorName, DateTime? dateTime, string? authorInitials)
     {
+        if (document == null) throw new ArgumentNullException(nameof(document));
+        if (packagePart == null) throw new ArgumentNullException(nameof(packagePart));
         if (string.IsNullOrEmpty(authorName)) 
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(authorName));
 
         authorInitials ??= GetInitialsFromName(authorName);
-        dt ??= DateTime.Now;
+        dateTime ??= DateTime.Now;
 
-        SetOwner(document, packagePart);
-        Xml = Resource.CommentElement(authorName, authorInitials, dt.Value);
+        SetOwner(document, packagePart, false);
+        Xml = Resource.CommentElement(authorName, authorInitials, dateTime.Value);
     }
 
     /// <summary>
@@ -123,18 +89,18 @@ public sealed class Comment : DocXElement, IEquatable<Comment>
     /// <param name="document"></param>
     /// <param name="packagePart"></param>
     /// <param name="xml"></param>
-    internal Comment(IDocument document, PackagePart packagePart, XElement xml) : base(document, packagePart, xml)
+    internal Comment(Document document, PackagePart packagePart, XElement xml) : base(xml)
     {
+        if (document == null) throw new ArgumentNullException(nameof(document));
+        if (packagePart == null) throw new ArgumentNullException(nameof(packagePart));
+        SetOwner(document, packagePart, false);
     }
 
     /// <summary>
     /// Override for Object.ToString().
     /// </summary>
     /// <returns></returns>
-    public override string ToString()
-    {
-        return $"{Id}: {Date?.ToString("s")} by {AuthorName}";
-    }
+    public override string ToString() => $"{Id}: {Date?.ToString("s")} by {AuthorName}";
 
     /// <summary>
     /// Returns a list of all Paragraphs inside this container.
@@ -143,13 +109,10 @@ public sealed class Comment : DocXElement, IEquatable<Comment>
     {
         get
         {
-            if (Xml != null)
+            int current = 0;
+            foreach (var e in Xml.Elements(Name.Paragraph))
             {
-                int current = 0;
-                foreach (var e in Xml.Elements(Name.Paragraph))
-                {
-                    yield return HelperFunctions.WrapParagraphElement(e, Document, PackagePart, ref current);
-                }
+                yield return HelperFunctions.WrapParagraphElement(e, Document, PackagePart, ref current);
             }
         }
     }
@@ -184,6 +147,10 @@ public sealed class Comment : DocXElement, IEquatable<Comment>
         return false;
     }
 
+    /// <summary>
+    /// Add a paragraph from some text to the comment.
+    /// </summary>
+    /// <param name="text">Text to add</param>
     public void AddParagraph(string text) => AddParagraph(new Paragraph(text));
 
     /// <summary>
@@ -195,7 +162,7 @@ public sealed class Comment : DocXElement, IEquatable<Comment>
         if (paragraph == null) 
             throw new ArgumentNullException(nameof(paragraph));
 
-        if (paragraph.InDom)
+        if (paragraph.Xml.InDom())
             throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
         // Ensure we have the proper styles
@@ -222,12 +189,6 @@ public sealed class Comment : DocXElement, IEquatable<Comment>
     /// </summary>
     /// <param name="other"></param>
     /// <returns></returns>
-    public bool Equals(Comment other)
-    {
-        if (other == null)
-            return false;
-        if (ReferenceEquals(this, other))
-            return true;
-        return Xml == other.Xml;
-    }
+    public bool Equals(Comment? other) 
+        => other != null && (ReferenceEquals(this, other) || Xml == other.Xml);
 }

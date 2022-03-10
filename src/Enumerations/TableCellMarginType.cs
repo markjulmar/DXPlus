@@ -1,14 +1,27 @@
-﻿namespace DXPlus
+﻿namespace DXPlus;
+
+/// <summary>
+/// Cell margin for all sides of the table cell.
+/// </summary>
+public enum TableCellMarginType
 {
+    /// <summary>
+    /// Left
+    /// </summary>
+    Left,
 
     /// <summary>
-    /// Cell margin for all sides of the table cell.
+    /// Right
     /// </summary>
-    public enum TableCellMarginType
-    {
-        Left,
-        Right,
-        Bottom,
-        Top
-    }
+    Right,
+
+    /// <summary>
+    /// Bottom
+    /// </summary>
+    Bottom,
+
+    /// <summary>
+    /// Top
+    /// </summary>
+    Top
 }

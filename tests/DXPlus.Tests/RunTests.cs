@@ -11,7 +11,7 @@ namespace DXPlus.Tests
             string text = "This is a test.";
             var e = new XElement(Name.Run, new XElement(Name.Text, text));
 
-            Run r = new Run(null, e, 5);
+            Run r = new Run(null, null, e, 5);
             Assert.Equal(text, r.Text);
             var results = r.SplitAtIndex(10);
 
@@ -25,9 +25,9 @@ namespace DXPlus.Tests
             string text = "This is a test.";
             var e = new XElement(Name.Run, new XElement(Name.Text, text));
 
-            Run r = new Run(null, e, 5);
+            Run r = new Run(null, null, e, 5);
             Assert.Equal(text, r.Text);
-            var results = r.SplitAtIndex(10, EditType.Delete);
+            var results = r.SplitAtIndex(10);
 
             Assert.Equal("This ", results[0].Value);
             Assert.Equal("is a test.", results[1].Value);
@@ -39,7 +39,7 @@ namespace DXPlus.Tests
             string text = "This is a test.";
             var e = new XElement(Name.Run, new XElement(Name.Text, text));
 
-            Run r = new Run(null, e, 5);
+            Run r = new Run(null, null, e, 5);
             Assert.Equal(text, r.Text);
             var results = r.SplitAtIndex(5);
 
@@ -53,9 +53,9 @@ namespace DXPlus.Tests
             string text = "This is a test.";
             var e = new XElement(Name.Run, new XElement(Name.Text, text));
 
-            Run r = new Run(null, e, 5);
+            Run r = new Run(null, null, e, 5);
             Assert.Equal(text, r.Text);
-            var results = r.SplitAtIndex(5, EditType.Delete);
+            var results = r.SplitAtIndex(5);
 
             Assert.Null(results[0]);
             Assert.Equal("This is a test.", results[1].Value);
@@ -67,7 +67,7 @@ namespace DXPlus.Tests
             string text = "This is a test.";
             var e = new XElement(Name.Run, new XElement(Name.Text, text));
 
-            Run r = new Run(null, e, 5);
+            Run r = new Run(null, null, e, 5);
             Assert.Equal(text, r.Text);
             var results = r.SplitAtIndex(5 + text.Length);
 
@@ -81,9 +81,9 @@ namespace DXPlus.Tests
             string text = "This is a test.";
             var e = new XElement(Name.Run, new XElement(Name.Text, text));
 
-            Run r = new Run(null, e, 5);
+            Run r = new Run(null, null, e, 5);
             Assert.Equal(text, r.Text);
-            var results = r.SplitAtIndex(5 + text.Length, EditType.Delete);
+            var results = r.SplitAtIndex(5 + text.Length);
 
             Assert.Null(results[1]);
             Assert.Equal("This is a test.", results[0].Value);
@@ -95,7 +95,7 @@ namespace DXPlus.Tests
             string text = "Test";
             var e = new XElement(Name.Run, new XElement(Name.Text, text));
 
-            Run r = new Run(null, e, 0);
+            Run r = new Run(null, null, e, 0);
             Assert.Equal(text, r.Text);
             var results = r.SplitAtIndex(text.Length);
 

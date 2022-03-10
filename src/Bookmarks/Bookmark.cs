@@ -18,7 +18,7 @@ public class Bookmark
     /// </summary>
     public string Name
     {
-        get => Xml.AttributeValue(DXPlus.Name.NameId);
+        get => Xml.AttributeValue(DXPlus.Name.NameId) ?? throw new DocumentFormatException(nameof(Name));
         set => Xml.SetAttributeValue(DXPlus.Name.NameId, value);
     }
 
@@ -32,7 +32,7 @@ public class Bookmark
     /// </summary>
     public long Id
     {
-        get => long.Parse(Xml.AttributeValue(DXPlus.Name.Id));
+        get => long.TryParse(Xml.AttributeValue(DXPlus.Name.Id), out var value) ? value : 0;
         set => Xml.SetAttributeValue(DXPlus.Name.Id, value);
     }
 
@@ -64,15 +64,12 @@ public class Bookmark
     /// <summary>
     /// Text associated with this bookmark. Note that this could span across different Run elements.
     /// </summary>
-    public string Text
+    public string? Text
     {
         get
         {
             var xe = Xml.NextSibling(DXPlus.Name.Run);
-            if (xe != null)
-            {
-
-            }
+            return xe != null ? HelperFunctions.GetText(xe) : null;
         }
     }
 
@@ -80,32 +77,36 @@ public class Bookmark
     /// Change the text associated with this bookmark.
     /// </summary>
     /// <param name="text">New text value</param>
-    public void SetText(string text)
+    public bool SetText(string text)
     {
+        // Look for either a sibling run, or the bookmarkEnd tag.
         var nextNode = Xml.NextNode;
+        if (nextNode == null)
+            return false;
+        
         var nextElement = nextNode as XElement;
         while (nextElement == null
                || (nextElement.Name != DXPlus.Name.Run && nextElement.Name != DXPlus.Name.BookmarkEnd))
         {
             nextNode = nextNode.NextNode;
+            if (nextNode == null)
+                return false;
+
             nextElement = nextNode as XElement;
         }
 
         // Check if next element is a bookmarkEnd
         if (nextElement.Name == DXPlus.Name.BookmarkEnd)
-        {
-            InsertBookmarkText(Xml, text);
-            return;
-        }
+            return InsertBookmarkText(Xml, text);
 
+        // Or a run
         var contentElement = nextElement.Elements(DXPlus.Name.Text).FirstOrDefault();
         if (contentElement == null)
-        {
-            InsertBookmarkText(Xml, text);
-            return;
-        }
+            return InsertBookmarkText(Xml, text);
 
+        // Set it onto the located text element.
         contentElement.Value = text;
+        return true;
     }
 
     /// <summary>
@@ -126,11 +127,13 @@ public class Bookmark
     /// </summary>
     /// <param name="bookmark">Bookmark XML element</param>
     /// <param name="text">Text to insert</param>
-    private static void InsertBookmarkText(XNode bookmark, string text)
+    private static bool InsertBookmarkText(XNode bookmark, string text)
     {
         if (bookmark == null) 
             throw new ArgumentNullException(nameof(bookmark));
             
         bookmark.AddAfterSelf(HelperFunctions.FormatInput(text, null));
+        
+        return true;
     }
 }

@@ -53,10 +53,10 @@ namespace Tester
         {
             var img = doc.AddImage(@"test.svg");
             var p = doc.AddParagraph("This is a picture:");
-            p.Append(img.CreatePicture());
+            p.Append(img.CreatePicture(string.Empty, string.Empty));
 
             var im2 = doc.AddImage(@"test2.png");
-            p.Append(im2.CreatePicture());
+            p.Append(im2.CreatePicture(string.Empty, string.Empty));
 
             // Add with different size.
             p = doc.AddParagraph("And a final pic (dup of svg!):");
@@ -85,7 +85,7 @@ namespace Tester
             var documentTable = doc.AddTable(rows: rows, columns: columns);
             var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
 
-            documentTable.Design = TableDesign.TableNormal;
+            documentTable.Design = TableDesign.Normal;
 
             AddListToCell(
                 documentTable.Rows.ElementAt(1).Cells[0], nd,

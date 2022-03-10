@@ -7,9 +7,21 @@ namespace DXPlus.Charts;
 /// </summary>
 public class ValueAxis : Axis
 {
-    public ValueAxis(string id)
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="id">Unique identifier</param>
+    public ValueAxis(uint id) : base(InitialXml(id))
     {
-        Xml = XElement.Parse($@"<c:valAx xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
+    }
+
+    /// <summary>
+    /// Create the XML for a 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    private static XElement InitialXml(uint id) =>
+        XElement.Parse($@"<c:valAx xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
                 <c:axId val=""{id}""/>
                 <c:scaling>
                   <c:orientation val=""minMax""/>
@@ -25,5 +37,4 @@ public class ValueAxis : Axis
                 <c:crosses val=""autoZero""/>
                 <c:crossBetween val=""between""/>
               </c:valAx>");
-    }
 }

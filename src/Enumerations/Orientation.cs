@@ -1,8 +1,17 @@
-﻿namespace DXPlus
+﻿namespace DXPlus;
+
+/// <summary>
+/// Page orientation
+/// </summary>
+public enum Orientation
 {
-    public enum Orientation
-    {
-        Portrait,
-        Landscape
-    };
-}
+    /// <summary>
+    /// Portrait (default)
+    /// </summary>
+    Portrait,
+
+    /// <summary>
+    /// Landscape
+    /// </summary>
+    Landscape
+};

@@ -15,15 +15,15 @@ namespace DXPlus
         /// </summary>
         /// <param name="value">object to convert - will be converted to a string</param>
         /// <returns></returns>
-        internal static string ToCamelCase(this object value)
+        internal static string ToCamelCase(this object? value)
         {
-            string text = value?.ToString();
+            string? text = value?.ToString();
             if (!string.IsNullOrEmpty(text) && char.IsUpper(text[0]))
             {
                 text = char.ToLower(text[0]) + text[1..];
             }
 
-            return text;
+            return text ?? string.Empty;
         }
 
         /// <summary>

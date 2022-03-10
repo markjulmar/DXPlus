@@ -82,7 +82,8 @@ namespace DXPlus.Helpers
 
         public static PackagePart CreateCoreProperties(Package package, out XDocument corePropDoc)
         {
-            string userName = Environment.UserInteractive ? Environment.UserName : "Office User";
+            string userName = Environment.UserInteractive ? Environment.UserName : string.Empty;
+            if (string.IsNullOrWhiteSpace(userName)) userName = "Office User";
 
             var corePropPart = package.CreatePart(Relations.CoreProperties.Uri, Relations.CoreProperties.ContentType, CompressionOption.Maximum);
             corePropDoc = Resource.CorePropsXml(userName, DateTime.UtcNow);

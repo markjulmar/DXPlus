@@ -141,6 +141,8 @@ namespace DXPlus.Resources
         /// Default settings document used for all new documents.
         /// </summary>
         /// <param name="rsid"></param>
+        /// <param name="docid1"></param>
+        /// <param name="docid2"></param>
         /// <returns></returns>
         public static XDocument SettingsXml(string rsid, string docid1, string docid2) 
             => GetDocument("DXPlus.Resources.settings.xml", new { rsid, docid1, docid2 });
@@ -152,14 +154,14 @@ namespace DXPlus.Resources
         /// <param name="date">Date to set as created date</param>
         /// <returns>XML document</returns>
         public static XDocument CorePropsXml(string author, DateTime date) 
-            => GetDocument("DXPlus.Resources.core.xml", new {author=author??"", date=date.ToString("s") + "Z"});
+            => GetDocument("DXPlus.Resources.core.xml", new {author=author, date=date.ToString("s") + "Z"});
 
         /// <summary>
         /// Get a Document from embedded resources
         /// </summary>
         /// <param name="resourceName">Resource name</param>
         /// <param name="tokens">Replacement tokens</param>
-        private static XDocument GetDocument(string resourceName, object tokens = null) 
+        private static XDocument GetDocument(string resourceName, object? tokens = null) 
             => XDocument.Parse(GetText(resourceName, tokens));
 
         /// <summary>
@@ -167,14 +169,14 @@ namespace DXPlus.Resources
         /// </summary>
         /// <param name="resourceName">Resource name</param>
         /// <param name="tokens">Replacement tokens</param>
-        private static XElement GetElement(string resourceName, object tokens = null) => XElement.Parse(GetText(resourceName, tokens));
+        private static XElement GetElement(string resourceName, object? tokens = null) => XElement.Parse(GetText(resourceName, tokens));
 
         /// <summary>
         /// Retrieve a string from embedded resources
         /// </summary>
         /// <param name="resourceName">Resource name</param>
         /// <param name="tokens">Replacement tokens</param>
-        private static string GetText(string resourceName, object tokens)
+        private static string GetText(string resourceName, object? tokens)
         {
             var assembly = Assembly.GetExecutingAssembly();
             var stream = assembly.GetManifestResourceStream(resourceName);
@@ -204,9 +206,9 @@ namespace DXPlus.Resources
         /// </summary>
         /// <param name="tokens">Object with public properties to replace</param>
         /// <returns></returns>
-        private static IDictionary<string, object> CreatePropertyDictionary(object tokens)
+        private static IDictionary<string, object?> CreatePropertyDictionary(object? tokens)
         {
-            var values = new Dictionary<string, object>();
+            var values = new Dictionary<string, object?>();
             if (tokens != null)
             {
                 var type = tokens.GetType();
@@ -225,7 +227,7 @@ namespace DXPlus.Resources
         /// <param name="text">Source text</param>
         /// <param name="tokens">Tokens to replace</param>
         /// <returns>Modified string</returns>
-        private static string ReplaceTokens(string text, IDictionary<string, object> tokens)
+        private static string ReplaceTokens(string text, IDictionary<string, object?> tokens)
         {
             if (tokens.Count == 0)
                 return text;

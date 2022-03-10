@@ -481,7 +481,7 @@ namespace DXPlus.Tests
         public void PackagePartSetWhenAddedToDoc()
         {
             Table t = new Table(1,1);
-            Assert.Null(t.PackagePart);
+            Assert.Throws<InvalidOperationException>(() => t.PackagePart);
 
             var doc = Document.Create();
             doc.AddTable(t);

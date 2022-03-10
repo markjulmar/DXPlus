@@ -1,33 +1,64 @@
 ﻿using System.Xml.Serialization;
 
-namespace DXPlus
+namespace DXPlus;
+
+/// <summary>
+/// Available document properties stored in core.xml
+/// </summary>
+public enum DocumentPropertyName
 {
     /// <summary>
-    /// Available document properties stored in core.xml
+    /// Title
     /// </summary>
-    public enum DocumentPropertyName
-    {
-        [XmlAttribute("dc:title")]
-        Title,
-        [XmlAttribute("dc:subject")]
-        Subject,
-        [XmlAttribute("dc:creator")]
-        Creator,
-        [XmlAttribute("cp:keywords")]
-        Keywords,
-        [XmlAttribute("dc:description")]
-        Comments,
-        [XmlAttribute("cp:lastModifiedBy")]
-        LastSavedBy,
-        [XmlAttribute("cp:revision")]
-        Revision,
-        [XmlAttribute("cp:category")]
-        Category,
-        [XmlAttribute("dcterms:created")]
-        CreatedDate,
-        [XmlAttribute("dcterms:modified")]
-        SaveDate,
-        [XmlAttribute("cp:contentStatus")]
-        Status
-    }
+    [XmlAttribute("dc:title")] Title,
+        
+    /// <summary>
+    /// Subject
+    /// </summary>
+    [XmlAttribute("dc:subject")] Subject,
+
+    /// <summary>
+    /// The creator
+    /// </summary>
+    [XmlAttribute("dc:creator")] Creator,
+
+    /// <summary>
+    /// Keywords
+    /// </summary>
+    [XmlAttribute("cp:keywords")] Keywords,
+
+    /// <summary>
+    /// Description/Comments
+    /// </summary>
+    [XmlAttribute("dc:description")] Comments,
+
+    /// <summary>
+    /// Last modified by author
+    /// </summary>
+    [XmlAttribute("cp:lastModifiedBy")] LastSavedBy,
+
+    /// <summary>
+    /// Revision/Version
+    /// </summary>
+    [XmlAttribute("cp:revision")] Revision,
+
+    /// <summary>
+    /// Category
+    /// </summary>
+    [XmlAttribute("cp:category")] Category,
+
+    /// <summary>
+    /// Name of author who created document
+    /// </summary>
+    [XmlAttribute("dcterms:created")] CreatedDate,
+
+    /// <summary>
+    /// Last date/time document was saved
+    /// </summary>
+    [XmlAttribute("dcterms:modified")] SaveDate,
+
+    /// <summary>
+    /// Status of the document (draft, final, etc.)
+    /// </summary>
+    [XmlAttribute("cp:contentStatus")] Status
 }

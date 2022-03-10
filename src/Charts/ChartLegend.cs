@@ -39,7 +39,7 @@ public class ChartLegend
     /// </summary>
     public ChartLegendPosition Position
     {
-        get => Xml.Element(Namespace.Chart + "legendPos").GetEnumValue<ChartLegendPosition>();
+        get => Xml.Element(Namespace.Chart + "legendPos")!.GetEnumValue<ChartLegendPosition>();
         set => Xml.GetOrAddElement(Namespace.Chart + "legendPos").SetEnumValue(value);
     }
 }

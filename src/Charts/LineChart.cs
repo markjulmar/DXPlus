@@ -7,8 +7,17 @@ namespace DXPlus.Charts;
 /// </summary>
 public enum Grouping
 {
+    /// <summary>
+    /// Grouped by stacked percentage
+    /// </summary>
     PercentStacked,
+    /// <summary>
+    /// Stacked
+    /// </summary>
     Stacked,
+    /// <summary>
+    /// Standard grouping
+    /// </summary>
     Standard
 }
 
@@ -22,15 +31,18 @@ public class LineChart : Chart
     /// </summary>
     public Grouping Grouping
     {
-        get => ChartXml.Element(Namespace.Chart + "grouping").GetEnumValue<Grouping>();
+        get => ChartXml.Element(Namespace.Chart + "grouping")!.GetEnumValue<Grouping>();
         set => ChartXml.GetOrAddElement(Namespace.Chart + "grouping").SetEnumValue(value);
     }
 
+    /// <summary>
+    /// Create the initial chart XML
+    /// </summary>
     protected override XElement CreateChartXml()
     {
         return XElement.Parse(
             @"<c:lineChart xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
-                    <c:grouping val=""standard""/>                    
-                  </c:lineChart>");
+                 <c:grouping val=""standard""/>                    
+              </c:lineChart>");
     }
 }

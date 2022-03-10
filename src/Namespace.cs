@@ -128,7 +128,12 @@ namespace DXPlus
     /// </summary>
     internal static class Namespace
     {
-        private static XmlNamespaceManager _manager;
+        private static readonly Lazy<XmlNamespaceManager> _manager = new(CreateManager);
+
+        /// <summary>
+        /// Returns an XmlNamespaceManager which can be used with XQuery
+        /// </summary>
+        public static XmlNamespaceManager NamespaceManager() => _manager.Value;
 
         public static readonly XNamespace Main = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
         public static readonly XNamespace RelatedPackage = "http://schemas.openxmlformats.org/package/2006/relationships";
@@ -149,22 +154,17 @@ namespace DXPlus
         public static readonly XNamespace ASvg = "http://schemas.microsoft.com/office/drawing/2016/SVG/main";
         public static readonly XNamespace WP15 = "http://schemas.microsoft.com/office/word/2012/wordprocessingDrawing";
 
-        /// <summary>
-        /// Returns an XmlNamespaceManager which can be used with XQuery
-        /// </summary>
-        public static XmlNamespaceManager NamespaceManager()
+        private static XmlNamespaceManager CreateManager()
         {
-            if (_manager == null) {
-                _manager = new XmlNamespaceManager(new NameTable());
-                _manager.AddNamespace("w", Main.NamespaceName); // default
-                _manager.AddNamespace("r", RelatedDoc.NamespaceName);
-                _manager.AddNamespace("v", VML.NamespaceName);
-                _manager.AddNamespace("a", DrawingMain.NamespaceName);
-                _manager.AddNamespace("c", Chart.NamespaceName);
-                _manager.AddNamespace("w14", W2010.NamespaceName);
-                _manager.AddNamespace("wp", WordProcessingDrawing.NamespaceName);
-            }
-            return _manager;
+            var xnsManager = new XmlNamespaceManager(new NameTable());
+            xnsManager.AddNamespace("w", Main.NamespaceName); // default
+            xnsManager.AddNamespace("r", RelatedDoc.NamespaceName);
+            xnsManager.AddNamespace("v", VML.NamespaceName);
+            xnsManager.AddNamespace("a", DrawingMain.NamespaceName);
+            xnsManager.AddNamespace("c", Chart.NamespaceName);
+            xnsManager.AddNamespace("w14", W2010.NamespaceName);
+            xnsManager.AddNamespace("wp", WordProcessingDrawing.NamespaceName);
+            return xnsManager;
         }
     }
 

@@ -1,8 +1,17 @@
-﻿namespace DXPlus
+﻿namespace DXPlus;
+
+/// <summary>
+/// Document types that can be created
+/// </summary>
+public enum DocumentTypes
 {
-    public enum DocumentTypes
-    {
-        Document,
-        Template
-    }
+    /// <summary>
+    /// Normal document
+    /// </summary>
+    Document,
+
+    /// <summary>
+    /// Template document
+    /// </summary>
+    Template
 }

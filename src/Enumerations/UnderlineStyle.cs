@@ -1,29 +1,99 @@
 ﻿using System.Xml.Serialization;
 
-namespace DXPlus
-{
+namespace DXPlus;
 
-    public enum UnderlineStyle
-    {
-        None = 0,
-        [XmlAttribute("single")]
-        SingleLine = 1,
-        Words = 2,
-        [XmlAttribute("double")]
-        DoubleLine = 3,
-        Dotted = 4,
-        Thick = 6,
-        Dash = 7,
-        DotDash = 9,
-        DotDotDash = 10,
-        Wave = 11,
-        DottedHeavy = 20,
-        DashedHeavy = 23,
-        DashDotHeavy = 25,
-        DashDotDotHeavy = 26,
-        DashLongHeavy = 27,
-        DashLong = 39,
-        WavyDouble = 43,
-        WavyHeavy = 55,
-    };
-}
+/// <summary>
+/// Underline style for text
+/// </summary>
+public enum UnderlineStyle
+{
+    /// <summary>
+    /// No underline
+    /// </summary>
+    None = 0,
+
+    /// <summary>
+    /// Single line
+    /// </summary>
+    [XmlAttribute("single")] SingleLine = 1,
+
+    /// <summary>
+    /// Underline words separately
+    /// </summary>
+    Words = 2,
+
+    /// <summary>
+    /// Double-line
+    /// </summary>
+    [XmlAttribute("double")] DoubleLine = 3,
+
+    /// <summary>
+    /// Dotted line
+    /// </summary>
+    Dotted = 4,
+
+    /// <summary>
+    /// Thick line
+    /// </summary>
+    Thick = 6,
+
+    /// <summary>
+    /// Dashed line
+    /// </summary>
+    Dash = 7,
+
+    /// <summary>
+    /// Dotted-dash line
+    /// </summary>
+    DotDash = 9,
+
+    /// <summary>
+    /// Dot-dot dash line
+    /// </summary>
+    DotDotDash = 10,
+
+    /// <summary>
+    /// Wavy line
+    /// </summary>
+    Wave = 11,
+
+    /// <summary>
+    /// Heavy dotted line
+    /// </summary>
+    DottedHeavy = 20,
+
+    /// <summary>
+    /// Heavy dashed line
+    /// </summary>
+    DashedHeavy = 23,
+
+    /// <summary>
+    /// Heavy dash/dot line
+    /// </summary>
+    DashDotHeavy = 25,
+
+    /// <summary>
+    /// Heavy dash/dot/dot line
+    /// </summary>
+    DashDotDotHeavy = 26,
+
+    /// <summary>
+    /// Heavy long dash
+    /// </summary>
+    DashLongHeavy = 27,
+
+    /// <summary>
+    /// Long dash
+    /// </summary>
+    DashLong = 39,
+
+    /// <summary>
+    /// Double-wavy line
+    /// </summary>
+    WavyDouble = 43,
+
+    /// <summary>
+    /// Heavy wavy line
+    /// </summary>
+    WavyHeavy = 55,
+};

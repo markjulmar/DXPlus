@@ -10,12 +10,19 @@ namespace DXPlus
         /// <summary>
         /// The comment identifier.
         /// </summary>
-        public int Id => int.Parse(Xml.AttributeValue(DXPlus.Name.Id));
+        public int? Id => int.TryParse(Xml.AttributeValue(DXPlus.Name.Id), out var result) ? result : null;
 
         /// <summary>
         /// Retrieve the associated comment.
         /// </summary>
-        public Comment Comment => Parent.Document.GetComment(Id);
+        public Comment? Comment
+        {
+            get
+            {
+                int? id = Id;
+                return id == null ? null : Parent.Document.GetComment(id.Value);
+            }
+        }
 
         /// <summary>
         /// Constructor

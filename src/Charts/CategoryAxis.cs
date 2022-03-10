@@ -7,9 +7,16 @@ namespace DXPlus.Charts;
 /// </summary>
 public class CategoryAxis : Axis
 {
-    public CategoryAxis(string id)
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="id">Identifier for the chart</param>
+    public CategoryAxis(uint id) : base(InitialXml(id))
     {
-        Xml = XElement.Parse($@"<c:catAx xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
+    }
+
+    private static XElement InitialXml(uint id) =>
+        XElement.Parse($@"<c:catAx xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
                 <c:axId val=""{id}""/>
                 <c:scaling>
                   <c:orientation val=""minMax""/>
@@ -26,5 +33,4 @@ public class CategoryAxis : Axis
                 <c:lblOffset val=""100""/>
                 <c:noMultiLvlLbl val=""0""/>
               </c:catAx>");
-    }
 }

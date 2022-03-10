@@ -1,30 +1,29 @@
-﻿namespace DXPlus
+﻿namespace DXPlus;
+
+internal enum CustomPropertyType
 {
-    internal enum CustomPropertyType
-    {
-        /// <summary>
-        /// System.String
-        /// </summary>
-        Text,
+    /// <summary>
+    /// System.String
+    /// </summary>
+    Text,
 
-        /// <summary>
-        /// System.DateTime
-        /// </summary>
-        Date,
+    /// <summary>
+    /// System.DateTime
+    /// </summary>
+    Date,
 
-        /// <summary>
-        /// System.Int32
-        /// </summary>
-        NumberInteger,
+    /// <summary>
+    /// System.Int32
+    /// </summary>
+    NumberInteger,
 
-        /// <summary>
-        /// System.Double
-        /// </summary>
-        NumberDecimal,
+    /// <summary>
+    /// System.Double
+    /// </summary>
+    NumberDecimal,
 
-        /// <summary>
-        /// System.Boolean
-        /// </summary>
-        YesOrNo
-    }
+    /// <summary>
+    /// System.Boolean
+    /// </summary>
+    YesOrNo
 }

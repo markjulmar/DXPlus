@@ -8,8 +8,14 @@ namespace DXPlus.Charts;
 /// </summary>
 public enum BarDirection
 {
-    [XmlAttribute("col")]
-    Column,
+    /// <summary>
+    /// Vertical
+    /// </summary>
+    [XmlAttribute("col")] Column,
+
+    /// <summary>
+    /// Horizontal
+    /// </summary>
     Bar
 }
 
@@ -18,9 +24,21 @@ public enum BarDirection
 /// </summary>
 public enum BarGrouping
 {
+    /// <summary>
+    /// Stacked by percentage
+    /// </summary>
     PercentStacked,
+    /// <summary>
+    /// Clustered grouping
+    /// </summary>
     Clustered,
+    /// <summary>
+    /// Standard grouping
+    /// </summary>
     Standard,
+    /// <summary>
+    /// Stacked grouping
+    /// </summary>
     Stacked
 }
 
@@ -34,7 +52,7 @@ public class BarChart : Chart
     /// </summary>
     public BarDirection BarDirection
     {
-        get => ChartXml.Element(Namespace.Chart + "barDir").GetEnumValue<BarDirection>();
+        get => ChartXml.Element(Namespace.Chart + "barDir")!.GetEnumValue<BarDirection>();
         set => ChartXml.GetOrAddElement(Namespace.Chart + "barDir").SetEnumValue(value);
     }
 
@@ -43,7 +61,7 @@ public class BarChart : Chart
     /// </summary>
     public BarGrouping BarGrouping
     {
-        get => ChartXml.Element(Namespace.Chart + "grouping").GetEnumValue<BarGrouping>();
+        get => ChartXml.Element(Namespace.Chart + "grouping")!.GetEnumValue<BarGrouping>();
         set => ChartXml.GetOrAddElement(Namespace.Chart + "grouping").SetEnumValue(value);
     }
 
@@ -55,13 +73,16 @@ public class BarChart : Chart
         get => Convert.ToInt32(ChartXml.Element(Namespace.Chart + "gapWidth").GetVal());
         set
         {
-            if (value < 1 || value > 500)
-                throw new ArgumentException($"{nameof(GapWidth)} must be between 0% and 500%!", nameof(GapWidth));
+            if (value is < 1 or > 500)
+                throw new ArgumentException($"{nameof(GapWidth)} must be between 0 and 500.", nameof(GapWidth));
 
             ChartXml.GetOrAddElement(Namespace.Chart + "gapWidth").SetAttributeValue("val", value.ToString());
         }
     }
 
+    /// <summary>
+    /// Method to create the XML for this chart style.
+    /// </summary>
     protected override XElement CreateChartXml()
     {
         return XElement.Parse(

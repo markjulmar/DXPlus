@@ -1,5 +1,4 @@
 ﻿using DXPlus.Helpers;
-using System.IO.Packaging;
 using System.Xml.Linq;
 
 namespace DXPlus;
@@ -12,11 +11,8 @@ public abstract class Block : DocXElement
     /// <summary>
     /// Constructor
     /// </summary>
-    /// <param name="document"></param>
-    /// <param name="packagePart"></param>
-    /// <param name="xml"></param>
-    protected Block(IDocument document, PackagePart packagePart, XElement xml)
-        : base(document, packagePart, xml)
+    /// <param name="xml">XML for this block</param>
+    protected Block(XElement xml) : base(xml)
     {
     }
 
@@ -27,9 +23,11 @@ public abstract class Block : DocXElement
     {
         get
         {
-            if (!InDom) return null;
+            if (!Xml.InDom()) return null;
             if (Xml.Parent?.Name == Name.Body) return this.Document;
-            return HelperFunctions.WrapElementBlockContainer(this.Document, this.PackagePart, Xml.Parent);
+            return Xml.Parent != null
+                ? HelperFunctions.WrapElementBlockContainer(this.Document, this.PackagePart, Xml.Parent)
+                : null;
         }
     }
 
@@ -58,11 +56,11 @@ public abstract class Block : DocXElement
     /// <param name="paragraph">FirstParagraph to insert</param>
     public Paragraph AddParagraph(Paragraph paragraph)
     {
-        if (!this.InDom)
+        if (!Xml.InDom())
             throw new InvalidOperationException("Cannot add paragraphs to unowned paragraphs - must be part of a document structure.");
         if (paragraph == null) 
             throw new ArgumentNullException(nameof(paragraph));
-        if (paragraph.InDom)
+        if (paragraph.Xml.InDom())
             throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
         // If this element is a paragraph and it currently
@@ -76,7 +74,8 @@ public abstract class Block : DocXElement
         else Xml.AddAfterSelf(paragraph.Xml);
 
         // Determine the starting index using the container owner.
-        paragraph.SetStartIndex(Container.Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
+        // TODO: remove
+        paragraph.SetStartIndex(Container!.Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
 
         return paragraph;
     }
@@ -102,12 +101,13 @@ public abstract class Block : DocXElement
     {
         if (paragraph == null) 
             throw new ArgumentNullException(nameof(paragraph));
-        if (paragraph.InDom)
+        if (paragraph.Xml.InDom())
             throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
         Xml.AddBeforeSelf(paragraph.Xml);
 
-        paragraph.SetStartIndex(Container.Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
+        // TODO: remove
+        paragraph.SetStartIndex(Container!.Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
     }
 
     /// <summary>
@@ -116,8 +116,9 @@ public abstract class Block : DocXElement
     /// <param name="text">Text to use for new paragraph</param>
     /// <param name="formatting">Formatting to use</param>
     /// <returns></returns>
-    public Paragraph InsertParagraphBefore(string text, Formatting formatting)
+    public Paragraph InsertParagraphBefore(string text, Formatting? formatting)
     {
+        if (text == null) throw new ArgumentNullException(nameof(text));
         var paragraph = new Paragraph(Document, PackagePart, Paragraph.Create(text, formatting), -1);
         InsertParagraphBefore(paragraph);
         return paragraph;
@@ -131,10 +132,10 @@ public abstract class Block : DocXElement
     {
         if (table == null) 
             throw new ArgumentNullException(nameof(table));
-        if (table.InDom)
+        if (table.Xml.InDom())
             throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
-        table.SetOwner(Document, PackagePart);
+        table.SetOwner(Document, PackagePart, true);
         Xml.AddBeforeSelf(table.Xml);
     }
 }

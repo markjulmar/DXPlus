@@ -1,8 +1,17 @@
-﻿namespace DXPlus
+﻿namespace DXPlus;
+
+/// <summary>
+/// Text direction
+/// </summary>
+public enum Direction
 {
-    public enum Direction
-    {
-        LeftToRight,
-        RightToLeft
-    };
-}
+    /// <summary>
+    /// Left to right (default)
+    /// </summary>
+    LeftToRight,
+        
+    /// <summary>
+    /// Right to left
+    /// </summary>
+    RightToLeft
+};

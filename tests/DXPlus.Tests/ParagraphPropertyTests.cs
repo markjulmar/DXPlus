@@ -186,7 +186,7 @@ namespace DXPlus.Tests
         public void IndentLeftAddsRemovesElement()
         {
             var p = new ParagraphProperties();
-            Assert.Equal(0, p.LeftIndent);
+            Assert.Null(p.LeftIndent);
 
             p.LeftIndent = 15.225;
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
@@ -194,15 +194,18 @@ namespace DXPlus.Tests
             Assert.Equal(15.225, p.LeftIndent);
 
             p.LeftIndent = 0;
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
             Assert.Equal(0, p.LeftIndent);
+
+            p.LeftIndent = null;
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
         }
 
         [Fact]
         public void IndentRightAddsRemovesElement()
         {
             var p = new ParagraphProperties();
-            Assert.Equal(0, p.RightIndent);
+            Assert.Null(p.RightIndent);
 
             p.RightIndent = 15.22;
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
@@ -210,15 +213,18 @@ namespace DXPlus.Tests
             Assert.Equal(15.22, p.RightIndent);
 
             p.RightIndent = 0;
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
             Assert.Equal(0, p.RightIndent);
+
+            p.RightIndent = null;
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
         }
 
         [Fact]
         public void IndentFirstLineAddsRemovesElement()
         {
             var p = new ParagraphProperties();
-            Assert.Equal(0, p.FirstLineIndent);
+            Assert.Null(p.FirstLineIndent);
 
             p.FirstLineIndent = 20;
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
@@ -226,15 +232,19 @@ namespace DXPlus.Tests
             Assert.Equal(20, p.FirstLineIndent);
 
             p.FirstLineIndent = 0;
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
             Assert.Equal(0, p.FirstLineIndent);
+
+            p.FirstLineIndent = null;
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
+            Assert.Null(p.FirstLineIndent);
         }
 
         [Fact]
         public void IndentHangingAddsRemovesElement()
         {
             var p = new ParagraphProperties();
-            Assert.Equal(0, p.HangingIndent);
+            Assert.Null(p.HangingIndent);
 
             p.HangingIndent = 15;
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
@@ -242,8 +252,12 @@ namespace DXPlus.Tests
             Assert.Equal(15, p.HangingIndent);
 
             p.HangingIndent = 0;
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
             Assert.Equal(0, p.HangingIndent);
+
+            p.HangingIndent = null;
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
+            Assert.Null(p.HangingIndent);
         }
 
         [Fact]
@@ -256,11 +270,11 @@ namespace DXPlus.Tests
 
             p.FirstLineIndent = 12;
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
-            Assert.Equal(0, p.HangingIndent);
+            Assert.Null( p.HangingIndent);
 
             p.HangingIndent = 15;
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
-            Assert.Equal(0, p.FirstLineIndent);
+            Assert.Null(p.FirstLineIndent);
         }
 
         [Fact]
@@ -282,6 +296,11 @@ namespace DXPlus.Tests
             p.LeftIndent = 0;
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
             p.RightIndent = 0;
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
+
+            p.HangingIndent = null;
+            p.LeftIndent = null;
+            p.RightIndent = null;
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
         }
 
