@@ -68,22 +68,6 @@ internal static class HelperFunctions
     }
      
     /// <summary>
-    /// Create a Shade element
-    /// TODO: move to shade object type
-    /// </summary>
-    /// <param name="parent"></param>
-    /// <returns></returns>
-    internal static XElement CreateDefaultShadeElement(XElement parent)
-    {
-        var e = new XElement(Namespace.Main + "shd",
-            new XAttribute(Name.Color, "auto"),
-            new XAttribute(Namespace.Main + "fill", "auto"),
-            new XAttribute(Name.MainVal, "clear"));
-        parent.Add(e);
-        return e;
-    }
-
-    /// <summary>
     /// Wraps a block container from the document. These are elements
     /// which contain other elements.
     /// </summary>
@@ -304,32 +288,6 @@ internal static class HelperFunctions
             }
             return document;
         }
-    }
-
-    /// <summary>
-    /// Checks whether 'toCheck' has all children that 'desired' has and values of 'val' attributes are the same
-    /// </summary>
-    public static bool ContainsEveryChildOf(XElement desired, XElement toCheck, MatchFormattingOptions formatOptions)
-    {
-        if (desired == null)
-        {
-            throw new ArgumentNullException(nameof(desired));
-        }
-
-        if (toCheck == null)
-        {
-            throw new ArgumentNullException(nameof(toCheck));
-        }
-
-        if (desired.Elements().Any(e => toCheck.Elements(e.Name)
-                .All(bElement => bElement.GetVal() != e.GetVal())))
-        {
-            return false;
-        }
-
-        // If the formatting has to be exact, no additional formatting must exist.
-        return formatOptions != MatchFormattingOptions.ExactMatch
-               || desired.Elements().Count() == toCheck.Elements().Count();
     }
 
     /// <summary>

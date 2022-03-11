@@ -139,9 +139,8 @@ internal class CommentManager : DocXElement
     {
         // Look for a w:commentReference tag in the paragraph.
         return owner.Xml.Descendants(CommentReference)
-                        .Select(commentRef => ParseComment(owner, commentRef))
-                        .Cast<CommentRange>()
-                        .Where(c => c != null);
+            .Select(commentRef => ParseComment(owner, commentRef))
+            .OmitNull();
     }
 
     /// <summary>

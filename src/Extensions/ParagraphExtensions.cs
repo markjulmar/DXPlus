@@ -128,7 +128,7 @@ public static class ParagraphExtensions
     public static Paragraph WithFill(this Paragraph paragraph, Color fillColor)
     {
         if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
-        paragraph.Properties.ShadeFill = fillColor;
+        paragraph.Properties.Shading.Fill = fillColor;
         return paragraph;
     }
 
@@ -142,8 +142,8 @@ public static class ParagraphExtensions
     public static Paragraph WithPattern(this Paragraph paragraph, ShadePattern pattern, Color color)
     {
         if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
-        paragraph.Properties.ShadePattern = pattern;
-        paragraph.Properties.ShadeColor = color;
+        paragraph.Properties.Shading.Pattern = pattern;
+        paragraph.Properties.Shading.Color = color;
         return paragraph;
     }
 

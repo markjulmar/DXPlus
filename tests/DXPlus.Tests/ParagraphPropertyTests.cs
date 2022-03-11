@@ -308,21 +308,26 @@ namespace DXPlus.Tests
         [Fact]
         public void SetFillAddsShdToProperties()
         {
-            var p = new ParagraphProperties {ShadeFill = Color.LightGray};
+            var p = new ParagraphProperties {Shading = {Fill = Color.LightGray}};
 
             var e = p.Xml.RemoveNamespaces().XPathSelectElements("shd").ToList();
             Assert.Single(e);
             Assert.True(e[0].AttributeValue("fill") == "D3D3D3");
-            Assert.NotStrictEqual(Color.LightGray, p.ShadeFill);
+            Assert.NotStrictEqual(Color.LightGray, p.Shading.Fill);
+            Assert.Null(e[0].Attribute("color"));
         }
 
         [Fact]
-        public void SetFillAddsAllShdProperties()
+        public void SetColorAddsShdToProperties()
         {
-            var p = new ParagraphProperties { ShadeFill = Color.LightGray };
+            var p = new ParagraphProperties { Shading = { Color = Color.LightGray } };
 
             var e = p.Xml.RemoveNamespaces().XPathSelectElements("shd").ToList();
-            Assert.True(e[0].AttributeValue("color") == "auto");
+            Assert.NotNull(e[0].Attribute("color"));
+            Assert.Null(e[0].Attribute("fill"));
+
+            p.Shading.Color = null;
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("shd"));
         }
 
     }

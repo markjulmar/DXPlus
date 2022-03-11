@@ -24,8 +24,7 @@ public sealed class StyleManager : DocXElement
     public IEnumerable<string> LatentStyles =>
         Xml.Elements(Namespace.Main + "lsdException")
             .Select(e => e.Attribute(Namespace.Main + "name")?.Value)
-            .Where(s => !string.IsNullOrEmpty(s))
-            .Cast<string>();
+            .OmitNull();
 
     /// <summary>
     /// Constructor

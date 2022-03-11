@@ -27,6 +27,18 @@ namespace DXPlus
         }
 
         /// <summary>
+        /// Remove any null values from an enumeration and cast to a non-null type.
+        /// </summary>
+        /// <typeparam name="T">Type</typeparam>
+        /// <param name="values">Values</param>
+        /// <returns>Values which are not null</returns>
+        internal static IEnumerable<T> OmitNull<T>(this IEnumerable<T?> values)
+        {
+            foreach (var value in values)
+                if (value != null) yield return value;
+        }
+
+        /// <summary>
         /// Convert a Color to it's #RGB hex value.
         /// </summary>
         /// <param name="color">Color to convert</param>
@@ -72,28 +84,17 @@ namespace DXPlus
         /// <returns>Color object</returns>
         public static Color? ToColor(this string? color)
         {
-            if (color != null && string.Compare(color.Trim(), "auto", StringComparison.CurrentCultureIgnoreCase) != 0)
+            if (!string.IsNullOrEmpty(color))
             {
+                if (string.Compare(color.Trim(), "auto", StringComparison.CurrentCultureIgnoreCase) == 0)
+                    return Color.Empty;
+
                 if (color.StartsWith('#'))
                     color = color[1..];
                 if (uint.TryParse(color, NumberStyles.HexNumber, null, out var rgb))
                     return Color.FromArgb((int)(rgb | 0xff000000));
             }
             return null;
-        }
-
-        /// <summary>
-        /// Convert the value of an attribute to a Color using ARGB
-        /// </summary>
-        /// <param name="color"></param>
-        /// <returns></returns>
-        public static Color ToColor(this XAttribute color)
-        {
-            if (color.Value.Trim().ToLower() == "auto")
-                return Color.Transparent;
-
-            var rgb = int.Parse(color.Value.Replace("#", ""), NumberStyles.HexNumber) | 0xff000000;
-            return Color.FromArgb((int) rgb);
         }
     }
 }

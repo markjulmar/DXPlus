@@ -76,7 +76,7 @@ public sealed class Formatting : IEquatable<Formatting>
 
         set
         {
-            if (value == null || value.IsEmpty())
+            if (value == null || value.IsEmpty)
             {
                 Xml.Element(Name.Color)?.Remove();
             }
@@ -369,47 +369,18 @@ public sealed class Formatting : IEquatable<Formatting>
     /// <summary>
     /// Get or set the underline style for this paragraph
     /// </summary>
-    public UnderlineStyle UnderlineStyle
-    {
-        get => Xml.Element(Name.Underline).GetVal().TryGetEnumValue<UnderlineStyle>(out var result)
-            ? result : UnderlineStyle.None;
-        set
-        {
-            Xml.AddElementVal(Name.Underline, value != UnderlineStyle.None ? value.GetEnumName() : null);
-            setProperties.Add(nameof(UnderlineStyle));
-            setProperties.Add(nameof(UnderlineColor));
-        }
-    }
-
-    /// <summary>
-    /// Get or set the underline style for this paragraph
-    /// TODO: underline object
-    /// </summary>
-    public Color? UnderlineColor
+    public Underline? Underline
     {
         get
         {
-            var attr = Xml.Element(Name.Underline)?.Attribute(Name.Color);
-            return attr?.ToColor();
+            var e = Xml.Element(Name.Underline);
+            return e == null ? null : new(Xml, e);
         }
-
         set
         {
-            if (value.HasValue && value != System.Drawing.Color.Empty)
-            {
-                var e = Xml.GetOrAddElement(Name.Underline);
-                if (e.GetValAttr() == null) // no underline?
-                {
-                    e.SetAttributeValue(Name.MainVal, UnderlineStyle.SingleLine.GetEnumName());
-                }
-                e.SetAttributeValue(Name.Color, value.Value.ToHex());
-            }
-            else
-            {
-                Xml.Element(Name.Underline)?.SetAttributeValue(Name.Color, null);
-            }
-            setProperties.Add(nameof(UnderlineColor));
-            setProperties.Add(nameof(UnderlineStyle));
+            Xml.Element(Name.Underline)?.Remove();
+            if (value == null) return;
+            Xml.Add(value.Xml);
         }
     }
 

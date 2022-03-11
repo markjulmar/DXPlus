@@ -35,21 +35,9 @@ public sealed class TableCell : BlockContainer, IEquatable<TableCell>
     private XElement tcPr => Xml.GetOrAddElement(Namespace.Main + "tcPr");
 
     /// <summary>
-    /// Gets or Sets the fill color of this Cell.
-    /// TODO: use ColorValue
+    /// Gets or Sets the shading fill for this Cell.
     /// </summary>
-    public Color? FillColor
-    {
-        get => tcPr.Element(Namespace.Main + "shd")?.Attribute(Namespace.Main + "fill")?.ToColor();
-
-        set
-        {
-            var shd = tcPr.GetOrAddElement(Namespace.Main + "shd");
-            shd.SetAttributeValue(Name.MainVal, "clear");
-            shd.SetAttributeValue(Name.Color, "auto");
-            shd.SetAttributeValue(Namespace.Main + "fill", value?.ToHex());
-        }
-    }
+    public Shading Shading => new(tcPr);
 
     /// <summary>
     /// Get the applied gridSpan based on cell merges.
@@ -94,33 +82,6 @@ public sealed class TableCell : BlockContainer, IEquatable<TableCell>
     {
         get => GetMargin(TableCellMarginType.Top.GetEnumName());
         set => SetMargin(TableCellMarginType.Top.GetEnumName(), value);
-    }
-
-    /// <summary>
-    /// Shading applied to the cell.
-    /// TODO: use shading object
-    /// </summary>
-    public Color? Shading
-    {
-        get
-        {
-            var fill = tcPr.Element(Namespace.Main + "shd")?
-                .Attribute(Namespace.Main + "fill");
-            return fill == null ? null
-                : ColorTranslator.FromHtml($"#{fill.Value}");
-        }
-
-        set
-        {
-            var shd = tcPr.GetOrAddElement(Namespace.Main + "shd");
-
-            // The val attribute needs to be set to clear
-            shd.SetAttributeValue(Name.MainVal, "clear");
-            // The color attribute needs to be set to auto
-            shd.SetAttributeValue(Name.Color, "auto");
-            // The fill attribute needs to be set to the hex for this Color.
-            shd.SetAttributeValue(Namespace.Main + "fill", value?.ToHex());
-        }
     }
 
     /// <summary>
@@ -273,7 +234,7 @@ public sealed class TableCell : BlockContainer, IEquatable<TableCell>
     /// <summary>
     /// Set outside borders to the given style
     /// </summary>
-    public void SetOutsideBorders(BorderStyle style, Color color, double? spacing = 1, double size = 2)
+    public void SetOutsideBorders(BorderStyle style, ColorValue? color = null, double? spacing = 1, double size = 2)
     {
         SetBorder(TableCellBorderType.Top, style, color, spacing, size);
         SetBorder(TableCellBorderType.Left, style, color, spacing, size);
@@ -284,7 +245,7 @@ public sealed class TableCell : BlockContainer, IEquatable<TableCell>
     /// <summary>
     /// Set the table cell border
     /// </summary>
-    public void SetBorder(TableCellBorderType borderType, BorderStyle style, Color color, double? spacing = 1, double size = 2)
+    public void SetBorder(TableCellBorderType borderType, BorderStyle style, ColorValue? color, double? spacing = 1, double size = 2)
     {
         if (size is < 2 or > 96)
             throw new ArgumentOutOfRangeException(nameof(Size));
@@ -302,8 +263,9 @@ public sealed class TableCell : BlockContainer, IEquatable<TableCell>
         var borderXml = new XElement(Namespace.Main + borderType.GetEnumName(),
             new XAttribute(Name.MainVal, style.GetEnumName()),
             new XAttribute(Name.Size, size));
-        if (color != Color.Empty)
-            borderXml.Add(new XAttribute(Name.Color, color.ToHex()));
+
+        (color??ColorValue.Auto).SetElementValues(borderXml, Name.Color);
+
         if (spacing != null)
             borderXml.Add(new XAttribute(Namespace.Main + "space", spacing));
 

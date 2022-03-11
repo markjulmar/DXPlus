@@ -6,8 +6,13 @@ namespace DXPlus;
 /// <summary>
 /// This wraps a color, tint, and shade property exposed by various objects.
 /// </summary>
-public sealed class ColorValue
+public sealed class ColorValue : IEquatable<ColorValue>
 {
+    /// <summary>
+    /// Auto color
+    /// </summary>
+    public static readonly ColorValue Auto = new(System.Drawing.Color.Empty);
+
     /// <summary>
     /// Specifies the color for this run.
     /// Value can be a specific color value (RGB), or Color.Empty to specify an automatic color.
@@ -88,10 +93,18 @@ public sealed class ColorValue
     }
 
     /// <summary>
+    /// True if the color will be set to "auto".
+    /// </summary>
+    public bool IsAuto => 
+        ThemeColor == null 
+        && (Color == null || Color == System.Drawing.Color.Empty ||
+            Color == System.Drawing.Color.Transparent);
+
+    /// <summary>
     /// This returns whether the color value has any properties set.
     /// </summary>
     /// <returns>True if any values are set, false if the entire set of values is empty.</returns>
-    internal bool IsEmpty() => Color == null && ThemeColor == null && ThemeTint == null && ThemeShade == null;
+    internal bool IsEmpty => (Color == null || IsAuto) && ThemeColor == null && ThemeTint == null && ThemeShade == null;
 
     /// <summary>
     /// Set the color values onto a specified XML element.
@@ -105,4 +118,31 @@ public sealed class ColorValue
         element.SetAttributeValue(Name.ThemeTint, ThemeTint?.ToHex());
         element.SetAttributeValue(Name.ThemeShade, ThemeShade?.ToHex());
     }
+
+    /// <summary>
+    /// Compare two color values
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns>True/false comparison</returns>
+    public bool Equals(ColorValue? other) =>
+        other is not null && (ReferenceEquals(this, other) || 
+            (Nullable.Equals(Color, other.Color) || IsAuto && other.IsAuto) &&
+            ThemeColor == other.ThemeColor &&
+            ThemeTint == other.ThemeTint && 
+            ThemeShade == other.ThemeShade);
+
+    /// <summary>
+    /// Compare two color values
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <returns>True/false comparison</returns>
+    public override bool Equals(object? obj) 
+        => ReferenceEquals(this, obj) || obj is ColorValue other && Equals(other);
+
+    /// <summary>
+    /// Unique hashcode
+    /// </summary>
+    /// <returns></returns>
+    public override int GetHashCode()
+        => HashCode.Combine(Color, ThemeColor, ThemeTint, ThemeShade);
 }

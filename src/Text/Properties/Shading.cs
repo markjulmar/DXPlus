@@ -69,7 +69,7 @@ public class Shading
         }
         set
         {
-            if (value == null || value.IsEmpty())
+            if (value == null || value.IsEmpty)
             {
                 var shd = Shd(false);
                 if (shd != null)
@@ -104,7 +104,7 @@ public class Shading
         set
         {
             var shd = Shd(false);
-            if (value == null || value.IsEmpty())
+            if (value == null || value.IsEmpty)
             {
                 if (shd != null)
                 {

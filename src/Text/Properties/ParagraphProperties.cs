@@ -179,80 +179,8 @@ public sealed class ParagraphProperties
 
     /// <summary>
     /// The shade pattern applied to this paragraph
-    /// TODO: move to Shade type.
     /// </summary>
-    public ShadePattern? ShadePattern
-    {
-        get => Enum.TryParse<ShadePattern>(Xml.Element(Namespace.Main + "shd")?.GetVal(), ignoreCase: true, out var sp) ? sp : null;
-
-        set
-        {
-            var e = Xml.Element(Namespace.Main + "shd");
-            if (value == null)
-            {
-                if (e == null) return;
-                value = DXPlus.ShadePattern.Clear;
-            }
-            e ??= HelperFunctions.CreateDefaultShadeElement(Xml);
-            e.SetAttributeValue(Name.MainVal, value.Value.GetEnumName());
-        }
-    }
-
-    /// <summary>
-    /// Shade color used with pattern - use Color.Empty for "auto"
-    /// TODO: move to Shade type.
-    /// TODO: change to ColorValue
-    /// </summary>
-    public Color? ShadeColor
-    {
-        get
-        {
-            var color = Xml.Element(Namespace.Main + "shd")?.AttributeValue(Name.Color);
-            return string.IsNullOrEmpty(color) ? null :
-                color.ToLower() == "auto" ? Color.Empty : ColorTranslator.FromHtml($"#{color}");
-        }
-
-        set
-        {
-            var e = Xml.Element(Namespace.Main + "shd");
-            if (value == null)
-            {
-                if (e == null) return;
-                value = Color.Empty;
-            }
-
-            e ??= HelperFunctions.CreateDefaultShadeElement(Xml);
-            e.SetAttributeValue(Name.Color, value == Color.Empty ? "auto" : value.Value.ToHex());
-        }
-    }
-
-    /// <summary>
-    /// Shade fill - use Color.Empty for "auto"
-    /// TODO: move to Shade type.
-    /// TODO: change to ColorValue
-    /// </summary>
-    public Color? ShadeFill
-    {
-        get
-        {
-            var color = Xml.Element(Namespace.Main + "shd")?.AttributeValue(Namespace.Main + "fill");
-            return string.IsNullOrEmpty(color) ? null :
-                color.ToLower() == "auto" ? Color.Empty : ColorTranslator.FromHtml($"#{color}");
-        }
-
-        set
-        {
-            var e = Xml.Element(Namespace.Main + "shd");
-            if (value == null)
-            {
-                if (e == null) return;
-                value = Color.Empty;
-            }
-
-            e ??= HelperFunctions.CreateDefaultShadeElement(Xml);
-            e.SetAttributeValue(Namespace.Main + "fill", value == Color.Empty ? "auto" : value.Value.ToHex());
-        }
-    }
+    public Shading Shading => new(Xml);
 
     /// <summary>
     /// Paragraph border
@@ -322,7 +250,7 @@ public sealed class ParagraphProperties
     /// <summary>
     /// Set all outside edges for the border
     /// </summary>
-    public void SetBorders(BorderStyle style, Color color, double? spacing = 1, double size = 2, bool shadow = false)
+    public void SetBorders(BorderStyle style, ColorValue? color, double? spacing = 1, double size = 2, bool shadow = false)
     {
         if (size is < 2 or > 96)
             throw new ArgumentOutOfRangeException(nameof(size));
@@ -337,7 +265,7 @@ public sealed class ParagraphProperties
     /// Set a specific border edge.
     /// </summary>
     /// <exception cref="InvalidEnumArgumentException"></exception>
-    public void SetBorder(ParagraphBorderType borderType, BorderStyle style, Color color, double? spacing = 1, double size = 2, bool shadow = false)
+    public void SetBorder(ParagraphBorderType borderType, BorderStyle style, ColorValue? color, double? spacing = 1, double size = 2, bool shadow = false)
     {
         if (size is < 2 or > 96)
             throw new ArgumentOutOfRangeException(nameof(Size));
@@ -355,8 +283,9 @@ public sealed class ParagraphProperties
         var borderXml = new XElement(Namespace.Main + borderType.GetEnumName(),
             new XAttribute(Name.MainVal, style.GetEnumName()),
             new XAttribute(Name.Size, size));
-        if (color != Color.Empty)
-            borderXml.Add(new XAttribute(Name.Color, color.ToHex()));
+
+        (color??ColorValue.Auto).SetElementValues(borderXml);
+
         if (shadow)
             borderXml.Add(new XAttribute(Name.Shadow, true));
         if (spacing != null)

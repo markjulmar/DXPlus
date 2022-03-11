@@ -1,5 +1,4 @@
 using System;
-using System.Drawing;
 using System.Linq;
 using System.Xml.Linq;
 using System.Xml.XPath;
@@ -773,6 +772,39 @@ namespace DXPlus.Tests
             picture2.AddCaption("Another picture");
 
             Assert.Equal("Figure 2 Another picture", picture2.GetCaption());
+        }
+
+        [Fact]
+        public void FindReplaceReturnsFalseWhenNotFound()
+        {
+            var p = new Paragraph("This is a test paragraph");
+            Assert.False(p.FindReplace("tst", "Test"));
+
+            p = new Paragraph();
+            Assert.False(p.FindReplace("test", null));
+        }
+
+        [Fact]
+        public void FindReplaceReplaceCharacter()
+        {
+            var p = new Paragraph("This is a test paragraph");
+            Assert.True(p.FindReplace("test", "Test"));
+            Assert.Equal("This is a Test paragraph", p.Text);
+            Assert.Throws<ArgumentNullException>(() => p.FindReplace(null, null));
+        }
+
+        [Fact]
+        public void FindReplaceCanRemoveWords()
+        {
+            var p = new Paragraph("This is a test paragraph");
+            Assert.True(p.FindReplace("test ", null));
+            Assert.Equal("This is a paragraph", p.Text);
+
+            Assert.True(p.FindReplace("paragraph", null));
+            Assert.Equal("This is a ", p.Text);
+
+            Assert.True(p.FindReplace("This is a ", null));
+            Assert.Equal("", p.Text);
         }
     }
 }

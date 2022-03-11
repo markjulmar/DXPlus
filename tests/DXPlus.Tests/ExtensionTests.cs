@@ -14,6 +14,10 @@ namespace DXPlus.Tests
             Assert.Null("X".ToColor());
             Assert.Equal(Color.Blue.ToArgb(), "ff".ToColor()?.ToArgb());
             Assert.Equal(Color.Red.ToArgb(), "#FF0000".ToColor()?.ToArgb());
+
+            Assert.Equal(Color.Empty, "auto".ToColor());
+            Assert.Equal(Color.Empty, "AUTO".ToColor());
+            Assert.Equal(Color.Empty, "Auto ".ToColor());
         }
 
         [Fact]

@@ -98,8 +98,7 @@ public sealed class ExtensionWrapper : ICollection<DrawingExtension>
         var result = GetExtLst(false)?
             .Elements(Namespace.DrawingMain + "ext")
             .Select(WrapExtension)
-            .Where(ext => ext != null)
-            .Cast<DrawingExtension>();
+            .OmitNull();
 
         return (result?.AsEnumerable()?? Enumerable.Empty<DrawingExtension>()).GetEnumerator();
     }

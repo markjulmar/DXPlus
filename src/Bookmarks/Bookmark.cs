@@ -1,4 +1,5 @@
-﻿using DXPlus.Helpers;
+﻿using System.Text;
+using DXPlus.Helpers;
 using System.Xml.Linq;
 
 namespace DXPlus;
@@ -6,7 +7,7 @@ namespace DXPlus;
 /// <summary>
 /// This represents a bookmark in the Word document.
 /// </summary>
-public class Bookmark
+public sealed class Bookmark : IEquatable<Bookmark>
 {
     /// <summary>
     /// XML behind this bookmark
@@ -57,19 +58,30 @@ public class Bookmark
     }
 
     /// <summary>
-    /// Paragraph this bookmark is part of
+    /// Starting paragraph this bookmark is part of
     /// </summary>
     public Paragraph Paragraph { get; }
 
     /// <summary>
     /// Text associated with this bookmark. Note that this could span across different Run elements.
     /// </summary>
-    public string? Text
+    public string Text
     {
         get
         {
-            var xe = Xml.NextSibling(DXPlus.Name.Run);
-            return xe != null ? HelperFunctions.GetText(xe) : null;
+            var sb = new StringBuilder();
+            foreach (var item in Xml.ElementsAfterSelf())
+            {
+                if (item.Name.LocalName == DXPlus.Name.Run.LocalName)
+                {
+                    sb.Append(HelperFunctions.GetText(item));
+                }
+                else if (item.Name == DXPlus.Name.BookmarkEnd
+                         && item.AttributeValue(DXPlus.Name.Id) == Id.ToString())
+                    break;
+            }
+
+            return sb.ToString();
         }
     }
 
@@ -136,4 +148,25 @@ public class Bookmark
         
         return true;
     }
+
+    /// <summary>
+    /// Equality check
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public bool Equals(Bookmark? other) 
+        => other is not null && (ReferenceEquals(this, other) || Xml.Equals(other.Xml));
+
+    /// <summary>
+    /// Equality check
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <returns></returns>
+    public override bool Equals(object? obj) => ReferenceEquals(this, obj) || obj is Bookmark other && Equals(other);
+
+    /// <summary>
+    /// Hashcode generator
+    /// </summary>
+    /// <returns></returns>
+    public override int GetHashCode() => Xml.GetHashCode();
 }

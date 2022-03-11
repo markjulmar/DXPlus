@@ -73,29 +73,6 @@ internal static class XLinqExtensions
     }
 
     /// <summary>
-    /// Returns the next sibling to a given node by name.
-    /// </summary>
-    /// <param name="startAt">Node to start at</param>
-    /// <param name="lookFor">Name to look for</param>
-    /// <returns>Element if found, null if none</returns>
-    public static XElement? NextSibling(this XElement? startAt, XName lookFor)
-    {
-        if (startAt == null) return null;
-
-        var nextNode = startAt.NextNode;
-        while (nextNode != null)
-        {
-            if (nextNode is XElement xe && xe.Name == lookFor)
-                return xe;
-
-            nextNode = nextNode.NextNode;
-        }
-
-        return null;
-    }
-
-
-    /// <summary>
     /// Retrieves a specific element by walking a path.
     /// </summary>
     /// <param name="xml">Root XML element to start with</param>

@@ -18,6 +18,15 @@ public class Paragraph : Block, IEquatable<Paragraph>
     private readonly List<Hyperlink> unownedHyperlinks = new();
 
     /// <summary>
+    /// Unique id for this paragraph
+    /// </summary>
+    public string? Id
+    {
+        get => Xml.AttributeValue(Name.ParagraphId, null);
+        private init => Xml.SetAttributeValue(Name.ParagraphId, string.IsNullOrEmpty(value) ? null : value);
+    }
+
+    /// <summary>
     /// Text runs (r) that make up this paragraph
     /// </summary>
     public IEnumerable<Run> Runs
@@ -171,7 +180,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
-    /// Apply the specified formatting to the paragraph or last text run
+    /// Apply the specified formatting to the paragraph or last findText run
     /// </summary>
     /// <param name="formatting">Formatting to apply</param>
     /// <returns>paragraph</returns>
@@ -254,7 +263,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
                 if (nameNode == null)
                     continue;
 
-                // Look for the next [w:t] text element.
+                // Look for the next [w:t] findText element.
                 XElement? valueNode = null;
                 node = nameNode.NextNode as XElement;
                 while (node?.Parent == nameNode.Parent)
@@ -441,16 +450,16 @@ public class Paragraph : Block, IEquatable<Paragraph>
     ).ToList().AsReadOnly();
 
     /// <summary>
-    /// Gets the text value of this paragraph.
+    /// Gets the findText value of this paragraph.
     /// </summary>
     public string Text => HelperFunctions.GetText(Xml);
 
     /// <summary>
-    /// Append text to this paragraph.
+    /// Append findText to this paragraph.
     /// </summary>
-    /// <param name="text">The text to append.</param>
-    /// <param name="formatting">Formatting for the text run</param>
-    /// <returns>This paragraph with the new text appended.</returns>
+    /// <param name="text">The findText to append.</param>
+    /// <param name="formatting">Formatting for the findText run</param>
+    /// <returns>This paragraph with the new findText appended.</returns>
     public Paragraph Append(string text, Formatting? formatting = null)
     {
         if (Text.Length == 0)
@@ -469,8 +478,10 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// Appends a new bookmark to the paragraph
     /// </summary>
     /// <param name="bookmarkName">Bookmark name</param>
+    /// <param name="firstRun">Start run to set bookmark on</param>
+    /// <param name="lastRun">End run to set bookmark on</param>
     /// <returns>This paragraph</returns>
-    public Paragraph AppendBookmark(string bookmarkName)
+    public Paragraph SetBookmark(string bookmarkName, Run? firstRun = null, Run? lastRun = null)
     {
         if (this.BookmarkExists(bookmarkName))
             throw new ArgumentException($"Bookmark '{bookmarkName}' already exists.", nameof(bookmarkName));
@@ -478,14 +489,35 @@ public class Paragraph : Block, IEquatable<Paragraph>
         long id = InDocument
             ? Document.GetNextDocumentId()
             : 0;
-            
-        Xml.Add(new XElement(Name.BookmarkStart,
-            new XAttribute(Name.Id, id),
-            new XAttribute(Name.NameId, bookmarkName)));
 
-        Xml.Add(new XElement(Name.BookmarkEnd,
-            new XAttribute(Name.Id, id),
-            new XAttribute(Name.NameId, bookmarkName)));
+        firstRun ??= Runs.FirstOrDefault();
+        lastRun ??= Runs.LastOrDefault();
+
+        var bookmarkStart = new XElement(Name.BookmarkStart, 
+            new XAttribute(Name.Id, id), new XAttribute(Name.NameId, bookmarkName));
+
+        var bookmarkEnd = new XElement(Name.BookmarkEnd,
+            new XAttribute(Name.Id, id), new XAttribute(Name.NameId, bookmarkName));
+
+        // Add the bookmarkStart before all runs.
+        if (firstRun != null)
+        {
+            firstRun.Xml.AddBeforeSelf(bookmarkStart);
+        }
+        else
+        {
+            Xml.Add(bookmarkStart);
+        }
+
+        // .. and the bookmarkEnd after all runs.
+        if (lastRun != null)
+        {
+            lastRun.Xml.AddAfterSelf(bookmarkEnd);            
+        }
+        else
+        {
+            Xml.Add(bookmarkEnd);
+        }
 
         return this;
     }
@@ -601,7 +633,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// Word will not automatically update this field if it is inserted into a document level paragraph.
     /// </summary>
     /// <param name="pnf">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
-    /// <param name="index">The text index to insert this PageCount place holder at.</param>
+    /// <param name="index">The findText index to insert this PageCount place holder at.</param>
     public void InsertPageCount(PageNumberFormat pnf, int index = 0) => AddPageNumberInfo(pnf, "numPages", index);
 
     /// <summary>
@@ -610,7 +642,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// Word will not automatically update this field if it is inserted into a document level paragraph.
     /// </summary>
     /// <param name="pnf">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
-    /// <param name="index">The text index to insert this PageNumber place holder at.</param>
+    /// <param name="index">The findText index to insert this PageNumber place holder at.</param>
     public void InsertPageNumber(PageNumberFormat pnf, int index = 0) => AddPageNumberInfo(pnf, "page", index);
 
     /// <summary>
@@ -683,20 +715,33 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// <summary>
     /// Find all instances of a string in this paragraph and return their indexes in a List.
     /// </summary>
-    /// <param name="text">The string to find</param>
-    /// <param name="ignoreCase">True to ignore case in the search</param>
+    /// <param name="findText">The string to find</param>
+    /// <param name="comparisonType">True to ignore case in the search</param>
     /// <returns>A list of indexes.</returns>
-    public IEnumerable<int> FindAll(string text, bool ignoreCase)
+    public IEnumerable<int> FindAll(string findText, StringComparison comparisonType)
     {
-        var mc = Regex.Matches(Text, Regex.Escape(text), ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
-        return mc.Select(m => m.Index);
+        if (findText == null) throw new ArgumentNullException(nameof(findText));
+
+        List<int> foundIndexes = new List<int>();
+        var text = Text;
+        if (!string.IsNullOrEmpty(text))
+        {
+            int start = text.IndexOf(findText, comparisonType);
+            while (start >= 0)
+            {
+                foundIndexes.Add(start);
+                start = text.IndexOf(findText, start + findText.Length, comparisonType);
+            }
+        }
+
+        return foundIndexes;
     }
 
     /// <summary>
     ///  Find all unique instances of the given Regex Pattern
     /// </summary>
     /// <param name="regex">Regex to match</param>
-    /// <returns>Index and matched text</returns>
+    /// <returns>Index and matched findText</returns>
     public IEnumerable<(int index, string text)> FindPattern(Regex regex)
     {
         MatchCollection mc = regex.Matches(Text);
@@ -714,7 +759,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
-    /// Insert a text block at a bookmark
+    /// Insert a findText block at a bookmark
     /// </summary>
     /// <param name="bookmarkName">Bookmark name</param>
     /// <param name="toInsert">Text to insert</param>
@@ -733,7 +778,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// Insert a field of type document property, this field will display the property in the paragraph.
     /// </summary>
     /// <param name="name">Property name</param>
-    /// <param name="formatting">The formatting to use for this text.</param>
+    /// <param name="formatting">The formatting to use for this findText.</param>
     public Paragraph AddDocumentPropertyField(DocumentPropertyName name, Formatting? formatting = null)
     {
         if (Document == null)
@@ -752,7 +797,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// Insert a field of type document property, this field will display the property in the paragraph.
     /// </summary>
     /// <param name="name">Property name</param>
-    /// <param name="formatting">The formatting to use for this text.</param>
+    /// <param name="formatting">The formatting to use for this findText.</param>
     public Paragraph AddCustomPropertyField(string name, Formatting? formatting = null)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -824,7 +869,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// Insert a field of type document property, this field will display the custom property cp, at the end of this paragraph.
     /// </summary>
     /// <param name="name"></param>
-    /// <param name="formatting">The formatting to use for this text.</param>
+    /// <param name="formatting">The formatting to use for this findText.</param>
     public DocProperty AddDocumentProperty2(DocumentPropertyName name, Formatting formatting = null)
     {
         if (Document == null)
@@ -843,11 +888,11 @@ public class Paragraph : Block, IEquatable<Paragraph>
     */
 
     /// <summary>
-    /// Insert a Picture into a paragraph at the given text index.
+    /// Insert a Picture into a paragraph at the given findText index.
     /// If not index is provided defaults to 0.
     /// </summary>
     /// <param name="picture">The Picture to insert.</param>
-    /// <param name="index">The text index to insert at.</param>
+    /// <param name="index">The findText index to insert at.</param>
     /// <returns>The modified paragraph.</returns>
     public Paragraph Insert(Picture picture, int index = 0)
     {
@@ -899,7 +944,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
-    /// Replaces any existing text runs in this paragraph with the specified text.
+    /// Replaces any existing findText runs in this paragraph with the specified findText.
     /// </summary>
     /// <param name="value">Text value</param>
     /// <param name="formatting">Formatting to apply (null for default)</param>
@@ -920,7 +965,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// </summary>
     /// <param name="index">The index position of the insertion.</param>
     /// <param name="value">The System.String to insert.</param>
-    /// <param name="formatting">The text formatting.</param>
+    /// <param name="formatting">The findText formatting.</param>
     public void InsertText(int index, string value, Formatting? formatting = null)
     {
         // Get the first run effected by this Insert
@@ -1037,175 +1082,34 @@ public class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
-    /// Replaces all occurrences of a specified text in this instance.
-    /// TODO: create replace parameter object to simplify method
+    /// Replaces all occurrences of a specified findText in this instance.
     /// </summary>
-    /// <param name="oldValue">Text to be replaced.</param>
-    /// <param name="newValue">Text to replace all occurrences of oldValue.</param>
-    /// <param name="options">RegexOption enumeration options.</param>
-    /// <param name="newFormatting">The formatting to apply to the text being inserted.</param>
-    /// <param name="matchFormatting">The formatting that the text must match in order to be replaced.</param>
-    /// <param name="fo">How should formatting be matched?</param>
-    /// <param name="escapeRegEx">True if the oldValue needs to be escaped, otherwise false. If it represents a valid RegEx pattern this should be false.</param>
-    /// <param name="useRegExSubstitutions">True if RegEx-like replace should be performed, i.e. if newValue contains RegEx substitutions. Does not perform named-group substitutions (only numbered groups).</param>
-    public void ReplaceText(string oldValue, string newValue, RegexOptions options = RegexOptions.None, 
-        Formatting? newFormatting = null, Formatting? matchFormatting = null, 
-        MatchFormattingOptions fo = MatchFormattingOptions.SubsetMatch, 
-        bool escapeRegEx = true, bool useRegExSubstitutions = false)
+    /// <param name="findText">Regular expression to search for</param>
+    /// <param name="replaceText">Text to replace all occurrences of oldValue.</param>
+    /// <param name="comparisonType">Comparison type - defaults to current culture</param>
+    public bool FindReplace(string findText, string? replaceText, StringComparison comparisonType = StringComparison.CurrentCulture)
     {
-        string tText = Text;
-        MatchCollection mc = Regex.Matches(tText, escapeRegEx ? Regex.Escape(oldValue) : oldValue, options);
+        if (findText == null) throw new ArgumentNullException(nameof(findText));
 
-        // Loop through the matches in reverse order
-        foreach (Match m in mc.Reverse())
+        if (string.IsNullOrEmpty(Text)) 
+            return false;
+
+        int start = Text.IndexOf(findText, comparisonType);
+        bool found = start >= 0;
+        while (start >= 0)
         {
-            // Assume the formatting matches until proven otherwise.
-            bool formattingMatch = true;
+            RemoveText(start, findText.Length);
+            if (!string.IsNullOrEmpty(replaceText))
+                InsertText(start, replaceText);
 
-            // Does the user want to match formatting?
-            if (matchFormatting != null)
-            {
-                // The number of characters processed so far
-                int processed = 0;
-
-                do
-                {
-                    // Get the next run effected
-                    var run = FindRunAffectedByEdit(EditType.Insert, m.Index + processed);
-                    if (run == null)
-                        break;
-
-                    // Get this runs properties
-                    XElement rPr = run.Xml.GetRunProperties() ?? new Formatting().Xml;
-
-                    // Make sure that every formatting element in f.xml is also in this run,
-                    // if this is not true, then their formatting does not match.
-                    if (!HelperFunctions.ContainsEveryChildOf(matchFormatting.Xml, rPr, fo))
-                    {
-                        formattingMatch = false;
-                        break;
-                    }
-
-                    // We have processed some characters, so update the counter.
-                    processed += run.Text.Length;
-                } while (processed < m.Length);
-            }
-
-            // If the formatting matches, do the replace.
-            if (formattingMatch)
-            {
-                string repl = newValue;
-                if (useRegExSubstitutions && !string.IsNullOrEmpty(repl))
-                {
-                    repl = repl.Replace("$&", m.Value);
-                    if (m.Groups.Count > 0)
-                    {
-                        int lastCaptureIndex = 0;
-                        for (int k = 0; k < m.Groups.Count; k++)
-                        {
-                            Group g = m.Groups[k];
-                            if (g.Value.Length == 0)
-                            {
-                                continue;
-                            }
-
-                            repl = repl.Replace("$" + k, g.Value);
-                            lastCaptureIndex = k;
-                        }
-                        repl = repl.Replace("$+", m.Groups[lastCaptureIndex].Value);
-                    }
-                    if (m.Index > 0)
-                    {
-                        repl = repl.Replace("$`", tText.Substring(0, m.Index));
-                    }
-                    if (m.Index + m.Length < tText.Length)
-                    {
-                        repl = repl.Replace("$'", tText.Substring(m.Index + m.Length));
-                    }
-                    repl = repl.Replace("$_", tText);
-                    repl = repl.Replace("$$", "$");
-                }
-                if (!string.IsNullOrEmpty(repl))
-                {
-                    InsertText(m.Index + m.Length, repl, newFormatting);
-                }
-
-                if (m.Length > 0)
-                {
-                    RemoveText(m.Index, m.Length);
-                }
-            }
+            start = Text.IndexOf(findText, start+replaceText?.Length??0, comparisonType);
         }
+
+        return found;
     }
 
     /// <summary>
-    /// Find pattern regex must return a group match.
-    /// </summary>
-    /// <param name="findPattern">Regex pattern that must include one group match. ie (.*)</param>
-    /// <param name="regexMatchHandler">A func that accepts the matching find grouping text and returns a replacement value</param>
-    /// <param name="options"></param>
-    /// <param name="newFormatting"></param>
-    /// <param name="matchFormatting"></param>
-    /// <param name="fo"></param>
-    public void ReplaceText(string findPattern, Func<string, string> regexMatchHandler,
-        RegexOptions options = RegexOptions.None, Formatting? newFormatting = null,
-        Formatting? matchFormatting = null, MatchFormattingOptions fo = MatchFormattingOptions.SubsetMatch)
-    {
-        MatchCollection matchCollection = Regex.Matches(Text, findPattern, options);
-
-        // Loop through the matches in reverse order
-        foreach (Match match in matchCollection.Reverse())
-        {
-            // Assume the formatting matches until proven otherwise.
-            bool formattingMatch = true;
-
-            // Does the user want to match formatting?
-            if (matchFormatting != null)
-            {
-                // The number of characters processed so far
-                int processed = 0;
-
-                do
-                {
-                    // Get the next run effected
-                    var run = FindRunAffectedByEdit(EditType.Insert, match.Index + processed);
-                    if (run == null) break;
-
-                    // Get this runs properties
-                    XElement rPr = run.Xml.GetRunProperties() ?? new Formatting().Xml;
-                    if (!HelperFunctions.ContainsEveryChildOf(matchFormatting.Xml, rPr, fo))
-                    {
-                        formattingMatch = false;
-                        break;
-                    }
-
-                    // We have processed some characters, so update the counter.
-                    processed += run.Text.Length;
-                } while (processed < match.Length);
-            }
-
-            // If the formatting matches, do the replace.
-            if (formattingMatch)
-            {
-                string newValue = regexMatchHandler.Invoke(match.Groups[1].Value);
-                InsertText(match.Index + match.Value.Length, newValue, newFormatting);
-                RemoveText(match.Index, match.Value.Length);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Unique id for this paragraph
-    /// </summary>
-    public string? Id
-    {
-        get => Xml.AttributeValue(Name.ParagraphId, null);
-        private init => Xml.SetAttributeValue(Name.ParagraphId, string.IsNullOrEmpty(value) ? null : value);
-    }
-
-
-    /// <summary>
-    /// Walk all the text runs in the paragraph and find the one containing a specific index.
+    /// Walk all the findText runs in the paragraph and find the one containing a specific index.
     /// </summary>
     /// <param name="editType">Type of edit being performed (insert or delete)</param>
     /// <param name="index">Index to look for</param>
@@ -1227,13 +1131,13 @@ public class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
-    /// Recursive method to identify a text run from a starting element and index.
+    /// Recursive method to identify a findText run from a starting element and index.
     /// </summary>
     /// <param name="el">Element to search</param>
     /// <param name="editType">Type of edit being performed (insert or delete)</param>
     /// <param name="index">Index to look for</param>
     /// <param name="count">Total searched</param>
-    /// <param name="run">The located text run</param>
+    /// <param name="run">The located findText run</param>
     private void RecursiveSearchForRunByIndex(XElement el, EditType editType, int index, ref int count, ref Run? run)
     {
         count += HelperFunctions.GetSize(el);
@@ -1351,7 +1255,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
-    /// Create a new paragraph from some text
+    /// Create a new paragraph from some findText
     /// </summary>
     /// <param name="text"></param>
     /// <param name="formatting"></param>

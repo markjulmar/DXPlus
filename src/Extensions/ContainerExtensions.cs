@@ -37,14 +37,6 @@ public static class ContainerExtensions
     public static Paragraph AddEquation(this IContainer container, string equation) => container.AddParagraph().AppendEquation(equation);
 
     /// <summary>
-    /// Add a bookmark to the end of this container.
-    /// </summary>
-    /// <param name="container">Container</param>
-    /// <param name="bookmarkName">Name of the new bookmark</param>
-    /// <returns>Newly added paragraph</returns>
-    public static Paragraph AddBookmark(this IContainer container, string bookmarkName) => container.AddParagraph().AppendBookmark(bookmarkName);
-
-    /// <summary>
     /// Add a new table to the end of this container
     /// </summary>
     /// <param name="container">Container owner</param>
@@ -58,12 +50,12 @@ public static class ContainerExtensions
     /// </summary>
     /// <param name="container"></param>
     /// <param name="text"></param>
-    /// <param name="ignoreCase"></param>
+    /// <param name="comparisonType"></param>
     /// <returns></returns>
-    public static IEnumerable<int> FindText(this IContainer container, string text, bool ignoreCase = false)
+    public static IEnumerable<int> FindText(this IContainer container, string text, StringComparison comparisonType)
     {
         return from p in container.Paragraphs
-            from index in p.FindAll(text, ignoreCase)
+            from index in p.FindAll(text, comparisonType)
             select index + p.StartIndex;
     }
 

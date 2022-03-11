@@ -1,6 +1,5 @@
 ﻿using DXPlus.Helpers;
 using System.IO.Packaging;
-using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace DXPlus;
@@ -99,8 +98,7 @@ public abstract class BlockContainer : DocXElement, IContainer
             foreach (var sp in Xml.Descendants(Name.ParagraphProperties)
                                           .Descendants(Name.SectionProperties)
                                           .Select(xe => xe.FindParent(Name.Paragraph))
-                                          .Where(xe => xe != null)
-                                          .Cast<XElement>())
+                                          .OmitNull())
                 yield return new Section(Document, PackagePart, sp);
 
             // Return the final section if this is the mainDoc.
@@ -127,56 +125,21 @@ public abstract class BlockContainer : DocXElement, IContainer
 
     /// <summary>
     /// Replace matched text with a new value.
-    /// TODO: add complex search object to simplify signature
     /// </summary>
-    /// <param name="searchValue">Text value to search for</param>
-    /// <param name="newValue">Replacement value</param>
-    /// <param name="options">Regex options</param>
-    /// <param name="newFormatting">New formatting to apply</param>
-    /// <param name="matchFormatting">Formatting to match</param>
-    /// <param name="formattingOptions">Match formatting options</param>
-    /// <param name="escapeRegEx">True to escape Regex expression</param>
-    /// <param name="useRegExSubstitutions">True to use RegEx in substitution</param>
-    public void ReplaceText(string searchValue, string newValue,
-        RegexOptions options = RegexOptions.None, Formatting? newFormatting = null, Formatting? matchFormatting = null,
-        MatchFormattingOptions formattingOptions = MatchFormattingOptions.SubsetMatch,
-        bool escapeRegEx = true, bool useRegExSubstitutions = false)
+    /// <param name="findText">Text value to search for</param>
+    /// <param name="replaceText">Replacement value</param>
+    /// <param name="comparisonType">How to compare text</param>
+    public bool FindReplace(string findText, string? replaceText, StringComparison comparisonType)
     {
-        if (string.IsNullOrEmpty(searchValue))
-        {
-            throw new ArgumentNullException(nameof(searchValue));
-        }
+        if (string.IsNullOrEmpty(findText)) throw new ArgumentNullException(nameof(findText));
 
-        if (newValue == null)
-        {
-            throw new ArgumentNullException(nameof(newValue));
-        }
-
-        // ReplaceText in Headers of all sections.
-        foreach (Paragraph paragraph in Sections.SelectMany(s => s.Headers)
-                     .SelectMany(header => header.Paragraphs))
-        {
-            paragraph.ReplaceText(searchValue, newValue, options,
-                newFormatting, matchFormatting, formattingOptions,
-                escapeRegEx, useRegExSubstitutions);
-        }
-
-        // ReplaceText int main body of document.
-        foreach (Paragraph paragraph in Paragraphs)
-        {
-            paragraph.ReplaceText(searchValue, newValue, options,
-                newFormatting, matchFormatting, formattingOptions,
-                escapeRegEx, useRegExSubstitutions);
-        }
-
-        // ReplaceText in Footers of the document.
-        foreach (Paragraph paragraph in Sections.SelectMany(s => s.Footers)
-                     .SelectMany(footer => footer.Paragraphs))
-        {
-            paragraph.ReplaceText(searchValue, newValue, options,
-                newFormatting, matchFormatting, formattingOptions,
-                escapeRegEx, useRegExSubstitutions);
-        }
+        bool found = false;
+        Sections.SelectMany(s => s.Headers).SelectMany(header => header.Paragraphs)
+            .Union(Paragraphs)
+            .Union(Sections.SelectMany(s => s.Footers).SelectMany(footer => footer.Paragraphs))
+            .ToList()
+            .ForEach(p => found|=p.FindReplace(findText, replaceText, comparisonType));
+        return found;
     }
 
     /// <summary>
@@ -308,8 +271,7 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// <param name="paragraph"></param>
     private void InsertMissingStyles(Paragraph paragraph)
     {
-        if (Document?.Package == null)
-            return;
+        if (!InDocument) return;
 
         // Make sure the document has all the styles associated to the
         // paragraph we are inserting.
@@ -331,11 +293,10 @@ public abstract class BlockContainer : DocXElement, IContainer
             }
 
             // Get all the styleId values from the current style
-            XElement styles = styleDoc.GetOrAddElement(Namespace.Main + "styles");
-            List<string> ids = styles.Descendants(Namespace.Main + "style")
+            var styles = styleDoc.GetOrAddElement(Namespace.Main + "styles");
+            var ids = styles.Descendants(Namespace.Main + "style")
                 .Select(e => e.AttributeValue(Namespace.Main + "styleId", null))
-                .Where(v => v != null)
-                .Cast<string>()
+                .OmitNull()
                 .ToList();
 
             // Go through the new paragraph and make sure all the styles are present

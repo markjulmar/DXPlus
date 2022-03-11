@@ -1026,8 +1026,7 @@ public sealed class Document : BlockContainer, IDocument
         var trackerIds = mainDoc!.Descendants()
             .Where(d => d.Name.LocalName is "ins" or "del")
             .Select(d => d.Attribute(Name.Id))
-            .Where(attr => attr != null)
-            .Cast<XAttribute>()
+            .OmitNull()
             .ToList();
 
         for (int i = 0; i < trackerIds.Count; i++)
@@ -1054,8 +1053,7 @@ public sealed class Document : BlockContainer, IDocument
         var documents = new[] {mainDoc!.Root}
             .Union(Sections.SelectMany(s => s.Headers).Select(h => h.Xml))
             .Union(Sections.SelectMany(s => s.Footers).Select(f => f.Xml))
-            .Where(element => element != null)
-            .Cast<XElement>();
+            .OmitNull();
 
         foreach (var doc in documents)
         {

@@ -54,18 +54,10 @@ public interface IContainer
     /// <summary>
     /// Replace matched text with a new value
     /// </summary>
-    /// <param name="searchValue">Text value to search for</param>
-    /// <param name="newValue">Replacement value</param>
-    /// <param name="options">Regex options</param>
-    /// <param name="newFormatting">New formatting to apply</param>
-    /// <param name="matchFormatting">Formatting to match</param>
-    /// <param name="formattingOptions">Match formatting options</param>
-    /// <param name="escapeRegEx">True to escape Regex expression</param>
-    /// <param name="useRegExSubstitutions">True to use RegEx in substitution</param>
-    void ReplaceText(string searchValue, string newValue,
-        RegexOptions options = RegexOptions.None, Formatting? newFormatting = null, Formatting? matchFormatting = null,
-        MatchFormattingOptions formattingOptions = MatchFormattingOptions.SubsetMatch,
-        bool escapeRegEx = true, bool useRegExSubstitutions = false);
+    /// <param name="findText">Text value to search for</param>
+    /// <param name="replaceText">Replacement value</param>
+    /// <param name="comparisonType">Comparison type - defaults to CurrentCulture</param>
+    bool FindReplace(string findText, string? replaceText, StringComparison comparisonType = StringComparison.CurrentCulture);
 
     /// <summary>
     /// Insert a text block at a specific bookmark
