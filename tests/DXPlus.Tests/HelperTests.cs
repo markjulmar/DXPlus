@@ -34,13 +34,13 @@ namespace DXPlus.Tests
         public void BasicHexNumberTestsReturnTrueFalse()
         {
             string value = 512.ToString("X2");
-            Assert.True(HelperFunctions.IsValidHexNumber(value));
-            Assert.True(HelperFunctions.IsValidHexNumber("FFFFFFFF"));
-            Assert.True(HelperFunctions.IsValidHexNumber("0"));
-            Assert.False(HelperFunctions.IsValidHexNumber(null));
-            Assert.False(HelperFunctions.IsValidHexNumber(""));
-            Assert.False(HelperFunctions.IsValidHexNumber(" "));
-            Assert.False(HelperFunctions.IsValidHexNumber("test"));
+            Assert.True(DocumentHelpers.IsValidHexNumber(value));
+            Assert.True(DocumentHelpers.IsValidHexNumber("FFFFFFFF"));
+            Assert.True(DocumentHelpers.IsValidHexNumber("0"));
+            Assert.False(DocumentHelpers.IsValidHexNumber(null));
+            Assert.False(DocumentHelpers.IsValidHexNumber(""));
+            Assert.False(DocumentHelpers.IsValidHexNumber(" "));
+            Assert.False(DocumentHelpers.IsValidHexNumber("test"));
         }
 
         [Fact]
@@ -234,7 +234,7 @@ namespace DXPlus.Tests
                 <root xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"" xmlns:wp=""http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"">
                 </root>");
 
-            long id = HelperFunctions.FindLastUsedDocId(doc);
+            long id = DocumentHelpers.FindLastUsedDocId(doc);
             Assert.Equal(0, id);
         }
 
@@ -257,9 +257,9 @@ namespace DXPlus.Tests
                     </w:item>
                 </w:root>");
 
-            Assert.Equal(20, HelperFunctions.FindLastUsedDocId(doc));
+            Assert.Equal(20, DocumentHelpers.FindLastUsedDocId(doc));
             doc.XPathSelectElement("//w:bookmarkStart[@w:id='20']", Namespace.NamespaceManager()).Remove();
-            Assert.Equal(16, HelperFunctions.FindLastUsedDocId(doc));
+            Assert.Equal(16, DocumentHelpers.FindLastUsedDocId(doc));
         }
     }
 }

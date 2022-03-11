@@ -65,8 +65,8 @@ public sealed class Picture : DocXElement, IEquatable<Picture>
     /// </summary>
     public Uri? Hyperlink
     {
-        get => HelperFunctions.GetHlinkClick(CNvPr, this.PackagePart);
-        set => HelperFunctions.SetHlinkClick(CNvPr, this.PackagePart, value);
+        get => DocumentHelpers.GetHlinkClick(CNvPr, this.PackagePart);
+        set => DocumentHelpers.SetHlinkClick(CNvPr, this.PackagePart, value);
     }
         
     /// <summary>

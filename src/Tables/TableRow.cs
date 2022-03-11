@@ -142,7 +142,7 @@ public class TableRow : DocXElement, IEquatable<TableRow>
                 {
                     startCell.Xml.Add(new XElement(Name.Paragraph,
                         new XAttribute(Name.ParagraphId,
-                            HelperFunctions.GenerateHexId())));
+                            DocumentHelpers.GenerateHexId())));
                 }
             }
         }

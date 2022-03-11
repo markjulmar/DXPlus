@@ -1,14 +1,18 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics;
+using System.Globalization;
 using DXPlus.Charts;
 using DXPlus.Helpers;
 using DXPlus.Resources;
 using System.IO.Packaging;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 using DXPlus.Internal;
+using SkiaSharp;
+using SKSvg = SkiaSharp.Extended.Svg.SKSvg;
 
 [assembly:InternalsVisibleTo("DXPlus.Tests")]
 
@@ -108,7 +112,7 @@ public sealed class Document : BlockContainer, IDocument
     /// <returns>New document</returns>
     private static Document Create(string? filename, DocumentTypes documentType)
     {
-        var doc = (Document)Load(HelperFunctions.CreateDocumentType(documentType));
+        var doc = (Document)Load(CreateDocumentType(documentType));
         doc.stream!.Dispose();
         doc.stream = null;
         doc.filename = filename;
@@ -187,13 +191,13 @@ public sealed class Document : BlockContainer, IDocument
     /// Get the text of each endnote from this document
     /// </summary>
     public IEnumerable<string> EndnotesText
-        => endnotesDoc?.Root?.Elements(Namespace.Main + "endnote").Select(HelperFunctions.GetText) ?? Enumerable.Empty<string>();
+        => endnotesDoc?.Root?.Elements(Namespace.Main + "endnote").Select(DocumentHelpers.GetText) ?? Enumerable.Empty<string>();
 
     /// <summary>
     /// Get the text of each footnote from this document
     /// </summary>
     public IEnumerable<string> FootnotesText
-        => footnotesDoc?.Root?.Elements(Namespace.Main + "footnote").Select(HelperFunctions.GetText) ?? Enumerable.Empty<string>();
+        => footnotesDoc?.Root?.Elements(Namespace.Main + "footnote").Select(DocumentHelpers.GetText) ?? Enumerable.Empty<string>();
 
     /// <summary>
     /// Returns a list of Images in this document.
@@ -357,7 +361,7 @@ public sealed class Document : BlockContainer, IDocument
     /// <param name="contentType"></param>
     private static void ValidateContentType(string contentType)
     {
-        if (typeof(ImageContentType).GetProperties(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public)
+        if (typeof(ImageContentType).GetProperties(BindingFlags.Static | BindingFlags.Public)
                 .FirstOrDefault(pi => pi.GetValue(null)?.ToString() == contentType) != null)
             return;
 
@@ -491,7 +495,7 @@ public sealed class Document : BlockContainer, IDocument
 
             // Compare this image to the new image being added. If it's the same file,
             // then reuse the existing Image resource rather than adding it again.
-            if (HelperFunctions.IsSameFile(existingImageStream, imageStream))
+            if (IsSameSource(existingImageStream, imageStream))
             {
                 // Get the image object for this image part
                 string id = PackagePart.GetRelationshipsByType($"{Namespace.RelatedDoc.NamespaceName}/image")
@@ -794,7 +798,7 @@ public sealed class Document : BlockContainer, IDocument
         // Bump the revision and add it to the settings document.
         settingsDoc.Root!.Element(Namespace.Main + "rsids")
             ?.Add(new XElement(Namespace.Main + "rsid",
-                new XAttribute(Name.MainVal, HelperFunctions.GenerateRevisionStamp(RevisionId, out revision))));
+                new XAttribute(Name.MainVal, GenerateRevisionStamp(RevisionId, out revision))));
 
         // Save all the sections
         Sections.ToList().ForEach(s =>
@@ -874,7 +878,7 @@ public sealed class Document : BlockContainer, IDocument
             // If the document contains no /word/styles.xml create one and associate it
             if (!Package.PartExists(Relations.Styles.Uri))
             {
-                var stylesDoc = HelperFunctions.AddDefaultStylesXml(Package, out var stylesPart);
+                var stylesDoc = AddDefaultStylesXml(Package, out var stylesPart);
                 if (stylesDoc.Element(Namespace.Main + "styles") == null)
                     throw new Exception("Missing root styles collection.");
 
@@ -939,6 +943,36 @@ public sealed class Document : BlockContainer, IDocument
     }
 
     /// <summary>
+    /// Helper to determine if two streams represent the same physical file.
+    /// </summary>
+    /// <param name="streamOne">First stream</param>
+    /// <param name="streamTwo">Second stream</param>
+    /// <returns>True/False</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    private static bool IsSameSource(Stream streamOne, Stream streamTwo)
+    {
+        if (streamOne == null) throw new ArgumentNullException(nameof(streamOne));
+        if (streamTwo == null) throw new ArgumentNullException(nameof(streamTwo));
+
+        if (streamOne.Length != streamTwo.Length)
+            return false;
+
+        int b1, b2;
+        do
+        {
+            // Read one byte from each file.
+            b1 = streamOne.ReadByte();
+            b2 = streamTwo.ReadByte();
+        }
+        while (b1 == b2 && b1 != -1);
+
+        streamOne.Position = 0;
+        streamTwo.Position = 0;
+
+        return b1 == b2;
+    }
+
+    /// <summary>
     /// Loads the document contents from the assigned package
     /// </summary>
     private void LoadDocumentParts()
@@ -955,7 +989,7 @@ public sealed class Document : BlockContainer, IDocument
         Xml = bodyElement ?? throw new DocumentFormatException(nameof(Package), "Main document in package is not properly formed (Body missing).");
 
         // Get the last revision id
-        string? revValue = Xml.GetSectionProperties().RevisionId;
+        string? revValue = GetSectionProperties(Xml).RevisionId;
         if (uint.TryParse(revValue, NumberStyles.HexNumber, null, out revision))
             revision++; // bump revision
         else 
@@ -1113,7 +1147,7 @@ public sealed class Document : BlockContainer, IDocument
         if (mainDoc == null) throw DocumentNotLoadedException;
 
         if (nextDocumentId == 0)
-            nextDocumentId = HelperFunctions.FindLastUsedDocId(mainDoc);
+            nextDocumentId = DocumentHelpers.FindLastUsedDocId(mainDoc);
         return ++nextDocumentId;
     }
 
@@ -1202,9 +1236,9 @@ public sealed class Document : BlockContainer, IDocument
     private Image CreatePngFromSvg(Image image)
     {
         // Load the svg
-        var svg = new SkiaSharp.Extended.Svg.SKSvg();
+        var svg = new SKSvg();
         var relationship = PackagePart.GetRelationship(image.Id);
-        SkiaSharp.SKPicture? pict;
+        SKPicture? pict;
 
         using (var svgStream = Package.GetPart(relationship.TargetUri).GetStream())
         {
@@ -1212,14 +1246,14 @@ public sealed class Document : BlockContainer, IDocument
         }
 
         // Get the dimensions.
-        var dimen = new SkiaSharp.SKSizeI(
+        var dimen = new SKSizeI(
             (int)Math.Ceiling(pict.CullRect.Width),
             (int)Math.Ceiling(pict.CullRect.Height));
-        var matrix = SkiaSharp.SKMatrix.MakeScale(1, 1);
-        var img = SkiaSharp.SKImage.FromPicture(pict, dimen, matrix);
+        var matrix = SKMatrix.MakeScale(1, 1);
+        var img = SKImage.FromPicture(pict, dimen, matrix);
 
         // convert to PNG
-        var skdata = img.Encode(SkiaSharp.SKEncodedImageFormat.Png, quality:100);
+        var skdata = img.Encode(SKEncodedImageFormat.Png, quality:100);
         using var pngStream = new MemoryStream();
         skdata.SaveTo(pngStream);
 
@@ -1402,6 +1436,160 @@ public sealed class Document : BlockContainer, IDocument
         Paragraphs.Union(Tables.SelectMany(t => t.Paragraphs))
             .SelectMany(p => p.Runs)
             .FirstOrDefault(r => r.Xml == xml);
+
+    /// <summary>
+    /// This creates a Word docx in a memory stream.
+    /// </summary>
+    /// <param name="documentType">Type (doc or template)</param>
+    /// <returns>Memory stream with loaded doc</returns>
+    private static Stream CreateDocumentType(DocumentTypes documentType)
+    {
+        // Create the docx package
+        var ms = new MemoryStream();
+        using var package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
+
+        // Force app/xml to be registered as the default document type
+        var appPath = new Uri($"/app.xml", UriKind.Relative);
+        _ = package.CreatePart(appPath, "application/xml");
+
+        // Create the main document part for this package
+        var mainDocumentPart = package.CreatePart(new Uri("/word/document.xml", UriKind.Relative),
+            documentType == DocumentTypes.Document ? DocxContentType.Document : DocxContentType.Template,
+            CompressionOption.Normal);
+        package.CreateRelationship(mainDocumentPart.Uri, TargetMode.Internal, $"{Namespace.RelatedDoc.NamespaceName}/officeDocument");
+
+        // We don't actually need a real file -- just the <Default/> tag.
+        package.DeletePart(appPath);
+
+        // Generate an id for this editing session.
+        string startingRevisionId = GenerateRevisionStamp(null, out _);
+
+        // Load the document part into a XDocument object
+        XDocument mainDoc = Resource.BodyDocument(startingRevisionId);
+
+        // Add the settings.xml + relationship
+        _ = AddDefaultSettingsPart(package, startingRevisionId);
+
+        // Add the default styles + relationship
+        _ = AddDefaultStylesXml(package, out _);
+
+        // Create the document properties.
+        _ = CorePropertyHelpers.CreateCoreProperties(package, out _);
+
+        // Save the main new document back to the package.
+        mainDocumentPart.Save(mainDoc);
+        package.Close();
+
+        // Return the stream representing the created document.
+        return ms;
+    }
+
+    /// <summary>
+    /// Generate a 4-byte revision stamp from the current time.
+    /// </summary>
+    /// <returns>New revision stamp</returns>
+    private static string GenerateRevisionStamp(string? lastRevision, out uint newValue)
+    {
+        lastRevision ??= DocumentHelpers.GenerateHexId(2);
+
+        DateTime dt = DateTime.Now;
+        uint val = uint.Parse(lastRevision, NumberStyles.AllowHexSpecifier);
+        newValue = val + (uint)(dt.Second + dt.Millisecond);
+
+        return val.ToString("X8");
+    }
+
+    /// <summary>
+    /// If this document does not contain a /word/styles.xml add the default one generated by Microsoft Word.
+    /// </summary>
+    /// <param name="package"></param>
+    /// <param name="stylesPart"></param>
+    private static XDocument AddDefaultStylesXml(Package package, out PackagePart stylesPart)
+    {
+        if (package == null) throw new ArgumentNullException(nameof(package));
+
+        if (package.PartExists(Relations.Styles.Uri))
+            throw new InvalidOperationException("Root style collection already exists.");
+
+        stylesPart = package.CreatePart(Relations.Styles.Uri, Relations.Styles.ContentType, CompressionOption.Maximum);
+        var stylesDoc = Resource.DefaultStylesXml();
+
+        Debug.Assert(stylesDoc.Root != null);
+        Debug.Assert(stylesDoc.Root.Element(Namespace.Main + "docDefaults") != null);
+
+        // Set the run default language to be the current culture.
+        stylesDoc.Root.Element(Namespace.Main + "docDefaults",
+                Namespace.Main + "rPrDefault",
+                Name.RunProperties, Name.Language)!
+            .SetAttributeValue(Name.MainVal, CultureInfo.CurrentCulture);
+
+        // Save /word/styles.xml
+        stylesPart.Save(stylesDoc);
+
+        // Add the relationship to the main doc
+        var mainDocumentPart = package.GetParts().Single(p =>
+            p.ContentType.Equals(DocxContentType.Document, StringComparison.CurrentCultureIgnoreCase)
+            || p.ContentType.Equals(DocxContentType.Template, StringComparison.CurrentCultureIgnoreCase));
+
+        mainDocumentPart.CreateRelationship(stylesPart.Uri, TargetMode.Internal, $"{Namespace.RelatedDoc.NamespaceName}/styles");
+
+        return stylesDoc;
+    }
+
+    /// <summary>
+    /// Create the /word/settings.xml document
+    /// </summary>
+    /// <param name="package">Package owner</param>
+    /// <param name="rsid">Initial document revision id</param>
+    private static XDocument AddDefaultSettingsPart(Package package, string rsid)
+    {
+        if (package is null) throw new ArgumentNullException(nameof(package));
+        if (string.IsNullOrEmpty(rsid))
+            throw new ArgumentException($"'{nameof(rsid)}' cannot be null or empty", nameof(rsid));
+        if (package.PartExists(Relations.Settings.Uri))
+            throw new InvalidOperationException("Settings.xml section already exists.");
+
+        // Add the settings package part and document
+        PackagePart settingsPart = package.CreatePart(Relations.Settings.Uri, Relations.Settings.ContentType, CompressionOption.Maximum);
+        var docId = Guid.NewGuid().ToString();
+        XDocument settings = Resource.SettingsXml(rsid, docId[..8], "{" + docId + "}");
+
+        Debug.Assert(settings.Root != null);
+
+        // Set the correct language
+        settings.Root.Element(Namespace.Main + "themeFontLang")!
+            .SetAttributeValue(Name.MainVal, CultureInfo.CurrentCulture);
+
+        // Save the settings document.
+        settingsPart.Save(settings);
+
+        // Add the relationship to the main doc
+        var mainDocumentPart = package.GetParts().Single(p =>
+            p.ContentType.Equals(DocxContentType.Document, StringComparison.CurrentCultureIgnoreCase)
+            || p.ContentType.Equals(DocxContentType.Template, StringComparison.CurrentCultureIgnoreCase));
+
+        mainDocumentPart.CreateRelationship(Relations.Settings.Uri, TargetMode.Internal, Relations.Settings.RelType);
+
+        return settings;
+    }
+
+    /// <summary>
+    /// Gets/Creates the section properties for an owner
+    /// </summary>
+    /// <param name="element">Element owner</param>
+    /// <param name="create">True to create</param>
+    /// <returns>Section properties object</returns>
+    private static SectionProperties GetSectionProperties(XElement element, bool create = false)
+    {
+        if (element == null) throw new ArgumentNullException(nameof(element));
+        var sectPr = element.Element(Name.SectionProperties);
+        if (create && sectPr == null)
+        {
+            sectPr = new XElement(Name.SectionProperties);
+            element.Add(sectPr);
+        }
+        return new SectionProperties(sectPr);
+    }
 
     private string? filename;               // The filename that this document was loaded from; can be null;
     private Stream? stream;                 // The stream that this document was loaded from; can be null.

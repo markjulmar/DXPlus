@@ -46,7 +46,7 @@ public class Hyperlink : DocXElement, IEquatable<Hyperlink>
                     new XAttribute(Name.MainVal, "Hyperlink")));
 
             // Format and add the new text.
-            var newRuns = HelperFunctions.FormatInput(value, rPr);
+            var newRuns = DocumentHelpers.FormatInput(value, rPr);
             if (type == 0)
             {
                 Xml.Elements(Name.Run).Remove();
@@ -122,7 +122,7 @@ public class Hyperlink : DocXElement, IEquatable<Hyperlink>
         this.text = text;
         Id = string.Empty;
 
-        base.Xml = new XElement(Namespace.Main + "hyperlink",
+        base.Xml = new XElement(Name.Hyperlink,
             new XAttribute(Namespace.RelatedDoc + "id", string.Empty),
             new XAttribute(Namespace.Main + "history", "1"),
             new XElement(Name.Run,
@@ -143,7 +143,7 @@ public class Hyperlink : DocXElement, IEquatable<Hyperlink>
     {
         type = 0;
         Id = xml.AttributeValue(Namespace.RelatedDoc + "id");
-        text = HelperFunctions.GetTextRecursive(xml).ToString();
+        text = DocumentHelpers.GetTextRecursive(xml).ToString();
 
         SetOwner(document, packagePart, false);
     }
@@ -168,7 +168,7 @@ public class Hyperlink : DocXElement, IEquatable<Hyperlink>
         if (start != -1 && end != -1)
         {
             Uri = new Uri(instrText.Value[start..end], UriKind.Absolute);
-            text = HelperFunctions.GetTextRecursive(new XElement(Namespace.Main + "temp", runs)).ToString();
+            text = DocumentHelpers.GetTextRecursive(new XElement(Namespace.Main + "temp", runs)).ToString();
         }
         else
         {
@@ -215,12 +215,12 @@ public class Hyperlink : DocXElement, IEquatable<Hyperlink>
     internal static IEnumerable<Hyperlink> Enumerate(DocXElement owner, IList<Hyperlink> unownedHyperlinks)
     {
         var allHyperlinks = owner.Xml.Descendants()
-            .Where(h => h.Name.LocalName is "hyperlink" or "instrText")
+            .Where(h => h.Name == Name.Hyperlink || h.Name.LocalName == "instrText")
             .ToList();
 
         foreach (var he in allHyperlinks)
         {
-            if (he.Name.LocalName == "hyperlink")
+            if (he.Name == Name.Hyperlink)
             {
                 var hyperlink = unownedHyperlinks?.SingleOrDefault(hl => ReferenceEquals(hl.Xml, he));
                 if (hyperlink != null)

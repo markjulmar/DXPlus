@@ -1,18 +1,17 @@
-namespace DXPlus
+namespace DXPlus;
+
+/// <summary>
+/// Abstraction around child elements of a Document Run.
+/// </summary>
+public interface ITextElement
 {
     /// <summary>
-    /// Abstraction around child elements of a Document Run.
+    /// Parent run object
     /// </summary>
-    public interface ITextElement
-    {
-        /// <summary>
-        /// Parent run object
-        /// </summary>
-        Run? Parent { get; }
+    Run? Parent { get; }
 
-        /// <summary>
-        /// Name for this element.
-        /// </summary>
-        string ElementType { get; }
-    }
+    /// <summary>
+    /// Name for this element.
+    /// </summary>
+    string ElementType { get; }
 }

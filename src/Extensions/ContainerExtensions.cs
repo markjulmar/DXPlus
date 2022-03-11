@@ -11,13 +11,15 @@ public static class ContainerExtensions
     /// Add an empty paragraph at the end of this container.
     /// </summary>
     /// <returns>Newly added paragraph</returns>
-    public static Paragraph AddParagraph(this IContainer container) => container.AddParagraph(string.Empty);
+    public static Paragraph AddParagraph(this IContainer container) 
+        => container.AddParagraph(string.Empty);
 
     /// <summary>
     /// Add a new paragraph with the given text at the end of this container.
     /// </summary>
     /// <returns>Newly added paragraph</returns>
-    public static Paragraph AddParagraph(this IContainer container, string text) => container.AddParagraph(text, null);
+    public static Paragraph AddParagraph(this IContainer container, string text) 
+        => container.AddParagraph(text, null);
 
     /// <summary>
     /// Insert a paragraph with the given text at the specified paragraph index.
@@ -26,7 +28,8 @@ public static class ContainerExtensions
     /// <param name="index">Index to insert new paragraph at</param>
     /// <param name="text">Text for new paragraph</param>
     /// <returns>Newly added paragraph</returns>
-    public static Paragraph InsertParagraph(this IContainer container, int index, string text) => container.InsertParagraph(index, text, null);
+    public static Paragraph InsertParagraph(this IContainer container, int index, string text) 
+        => container.InsertParagraph(index, text, null);
 
     /// <summary>
     /// Add a new equation using the specified text at the end of this container.
@@ -34,7 +37,8 @@ public static class ContainerExtensions
     /// <param name="container">Container to add equation to</param>
     /// <param name="equation">Equation</param>
     /// <returns>Newly added paragraph</returns>
-    public static Paragraph AddEquation(this IContainer container, string equation) => container.AddParagraph().AppendEquation(equation);
+    public static Paragraph AddEquation(this IContainer container, string equation) 
+        => container.AddParagraph().AppendEquation(equation);
 
     /// <summary>
     /// Add a new table to the end of this container
@@ -43,20 +47,24 @@ public static class ContainerExtensions
     /// <param name="rows">Rows to add</param>
     /// <param name="columns">Columns to add</param>
     /// <returns></returns>
-    public static Table AddTable(this IContainer container, int rows, int columns) => container.AddTable(new Table(rows, columns));
+    public static Table AddTable(this IContainer container, int rows, int columns) 
+        => container.AddTable(new Table(rows, columns));
 
     /// <summary>
-    /// Find all occurrences of a string in the paragraph
+    /// Find all occurrences of a string in the container. This searches headers, all paragraphs, and footers.
     /// </summary>
     /// <param name="container"></param>
-    /// <param name="text"></param>
+    /// <param name="findText"></param>
     /// <param name="comparisonType"></param>
     /// <returns></returns>
-    public static IEnumerable<int> FindText(this IContainer container, string text, StringComparison comparisonType)
+    public static IEnumerable<int> FindText(this IContainer container, string findText, StringComparison comparisonType)
     {
-        return from p in container.Paragraphs
-            from index in p.FindAll(text, comparisonType)
-            select index + p.StartIndex;
+        if (string.IsNullOrEmpty(findText)) throw new ArgumentNullException(nameof(findText));
+        return container.Sections.SelectMany(s => s.Headers).SelectMany(header => header.Paragraphs)
+            .Union(container.Paragraphs)
+            .Union(container.Sections.SelectMany(s => s.Footers).SelectMany(footer => footer.Paragraphs))
+            .ToList()
+            .SelectMany(p => p.FindAll(findText, comparisonType).Select(n => n + p.StartIndex));
     }
 
     /// <summary>
@@ -86,11 +94,10 @@ public static class ContainerExtensions
     /// <param name="width">Width</param>
     /// <param name="height">Height</param>
     /// <returns>Drawing object to insert</returns>
-    public static Drawing? CreateVideo(this IDocument document, string imageFile, Uri video, double width, double height)
+    public static Drawing CreateVideo(this IDocument document, string imageFile, Uri video, double width, double height)
     {
         var img = document.AddImage(imageFile);
         var drawing = img.CreatePicture(width,height);
-        if (drawing == null) return null;
             
         drawing.Hyperlink = video;
             
@@ -114,12 +121,11 @@ public static class ContainerExtensions
     /// <param name="width">Width</param>
     /// <param name="height">Height</param>
     /// <returns>Drawing object to insert</returns>
-    public static Drawing? CreateVideo(this IDocument document, Stream image, string imageContentType, Uri video,
+    public static Drawing CreateVideo(this IDocument document, Stream image, string imageContentType, Uri video,
         int width, int height)
     {
         var img = document.AddImage(image, imageContentType);
         var drawing = img.CreatePicture(width,height);
-        if (drawing == null) return null;
 
         drawing.Hyperlink = video;
             

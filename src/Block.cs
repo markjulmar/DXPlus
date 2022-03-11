@@ -1,4 +1,5 @@
-﻿using DXPlus.Helpers;
+﻿using System.IO.Packaging;
+using DXPlus.Helpers;
 using System.Xml.Linq;
 
 namespace DXPlus;
@@ -26,7 +27,7 @@ public abstract class Block : DocXElement
             if (!Xml.InDom()) return null;
             if (Xml.Parent?.Name == Name.Body) return this.Document;
             return Xml.Parent != null
-                ? HelperFunctions.WrapElementBlockContainer(this.Document, this.PackagePart, Xml.Parent)
+                ? WrapElementBlockContainer(this.Document, this.PackagePart, Xml.Parent)
                 : null;
         }
     }
@@ -36,13 +37,13 @@ public abstract class Block : DocXElement
     /// Add a page break after the current element.
     /// </summary>
     public void AddPageBreak() =>
-        Xml.AddAfterSelf(HelperFunctions.PageBreak());
+        Xml.AddAfterSelf(DocumentHelpers.PageBreak());
 
     /// <summary>
     /// Insert a page break before the current element.
     /// </summary>
     public void InsertPageBreakBefore() =>
-        Xml.AddBeforeSelf(HelperFunctions.PageBreak());
+        Xml.AddBeforeSelf(DocumentHelpers.PageBreak());
 
     /// <summary>
     /// Add an empty paragraph after the current element.
@@ -137,5 +138,47 @@ public abstract class Block : DocXElement
 
         table.SetOwner(Document, PackagePart, true);
         Xml.AddBeforeSelf(table.Xml);
+    }
+
+    /// <summary>
+    /// Wraps a block container from the document. These are elements
+    /// which contain other elements.
+    /// </summary>
+    /// <param name="document">Document owner</param>
+    /// <param name="packagePart">Package part</param>
+    /// <param name="e">Element</param>
+    /// <returns></returns>
+    private static BlockContainer? WrapElementBlockContainer(Document? document, PackagePart? packagePart, XElement e)
+    {
+        if (e.Name == Name.TableCell)
+        {
+            if (e.Parent?.Parent != null)
+            {
+                var rowXml = e.Parent;
+                var tableXml = rowXml.Parent;
+                var table = new Table(document, packagePart, tableXml);
+                var row = new TableRow(table, rowXml);
+                return new TableCell(row, e);
+            }
+        }
+
+        if (e.Name == Name.Body)
+        {
+            return document;
+        }
+
+        if (e.Name.LocalName == "hdr" && document != null)
+        {
+            return document.Sections.SelectMany(s => s.Headers)
+                .SingleOrDefault(h => h.Xml == e);
+        }
+
+        if (e.Name.LocalName == "ftr" && document != null)
+        {
+            return document.Sections.SelectMany(s => s.Footers)
+                .SingleOrDefault(h => h.Xml == e);
+        }
+
+        throw new Exception($"Unrecognized container type {e.Name}");
     }
 }

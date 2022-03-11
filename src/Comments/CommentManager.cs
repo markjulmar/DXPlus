@@ -153,15 +153,15 @@ internal class CommentManager : DocXElement
     {
         Debug.Assert(Document != null);
 
-        var commentId = HelperFunctions.GetId(commentReference) ?? -1;
+        var commentId = DocumentHelpers.GetId(commentReference) ?? -1;
         if (commentId == -1) 
             return null;
 
         // Find the commentRangeStart for this id.
         var commentStart = Document.Xml.Descendants(CommentStart)
-            .Single(cs => HelperFunctions.GetId(cs) == commentId);
+            .Single(cs => DocumentHelpers.GetId(cs) == commentId);
         var commentEnd = Document.Xml.Descendants(CommentEnd)
-            .Single(cs => HelperFunctions.GetId(cs) == commentId);
+            .Single(cs => DocumentHelpers.GetId(cs) == commentId);
 
         // Now find all the runs between these two tags.
         var nodes = Document.Xml.Descendants()

@@ -18,7 +18,7 @@ public sealed class Comment : DocXElement, IEquatable<Comment>
     /// </summary>
     public int Id
     {
-        get => HelperFunctions.GetId(Xml) ?? throw new DocumentFormatException(nameof(Id));
+        get => DocumentHelpers.GetId(Xml) ?? throw new DocumentFormatException(nameof(Id));
         init => Xml.SetAttributeValue(Name.Id, value);
     }
 
@@ -112,7 +112,7 @@ public sealed class Comment : DocXElement, IEquatable<Comment>
             int current = 0;
             foreach (var e in Xml.Elements(Name.Paragraph))
             {
-                yield return HelperFunctions.WrapParagraphElement(e, Document, PackagePart, ref current);
+                yield return DocumentHelpers.WrapParagraphElement(e, Document, PackagePart, ref current);
             }
         }
     }
@@ -177,7 +177,7 @@ public sealed class Comment : DocXElement, IEquatable<Comment>
         // Add an ID if it's missing.
         if (paragraph.Xml.Attribute(Name.ParagraphId) == null)
         {
-            paragraph.Xml.SetAttributeValue(Name.ParagraphId, HelperFunctions.GenerateHexId());
+            paragraph.Xml.SetAttributeValue(Name.ParagraphId, DocumentHelpers.GenerateHexId());
         }
 
         // Add it to this document

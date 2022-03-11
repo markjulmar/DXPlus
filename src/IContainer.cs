@@ -1,6 +1,4 @@
-﻿using System.Text.RegularExpressions;
-
-namespace DXPlus;
+﻿namespace DXPlus;
 
 /// <summary>
 /// This interface provides basic methods to insert/add/remove items from a FirstParagraph, TableCell, Header or Footer.

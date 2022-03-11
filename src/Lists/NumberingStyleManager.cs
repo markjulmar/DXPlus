@@ -73,8 +73,8 @@ public sealed class NumberingStyleManager : DocXElement
         {
             var template = listType switch
             {
-                NumberingFormat.Bullet => Resource.DefaultBulletNumberingXml(HelperFunctions.GenerateHexId()),
-                NumberingFormat.Numbered => Resource.DefaultDecimalNumberingXml(HelperFunctions.GenerateHexId()),
+                NumberingFormat.Bullet => Resource.DefaultBulletNumberingXml(DocumentHelpers.GenerateHexId()),
+                NumberingFormat.Numbered => Resource.DefaultDecimalNumberingXml(DocumentHelpers.GenerateHexId()),
                 _ => throw new InvalidOperationException($"Unable to create {nameof(NumberingFormat)}: {listType}."),
             };
             int abstractNumId = styles.Count > 0 ? styles.Max(s => s.Id) + 1 : 0;

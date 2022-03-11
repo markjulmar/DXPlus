@@ -104,7 +104,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
         }
 
         StartIndex = startIndex;
-        EndIndex = startIndex + HelperFunctions.GetTextLength(xml);
+        EndIndex = startIndex + DocumentHelpers.GetTextLength(xml);
     }
 
     /// <summary>
@@ -452,7 +452,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// <summary>
     /// Gets the findText value of this paragraph.
     /// </summary>
-    public string Text => HelperFunctions.GetText(Xml);
+    public string Text => DocumentHelpers.GetText(Xml);
 
     /// <summary>
     /// Append findText to this paragraph.
@@ -468,7 +468,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
         }
         else
         {
-            Xml.Add(HelperFunctions.FormatInput(text, formatting?.Xml));
+            Xml.Add(DocumentHelpers.FormatInput(text, formatting?.Xml));
         }
 
         return this;
@@ -769,7 +769,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
         if (bookmark == null) 
             return false;
             
-        var run = HelperFunctions.FormatInput(toInsert, null);
+        var run = DocumentHelpers.FormatInput(toInsert, null);
         bookmark.Xml.AddBeforeSelf(run);
         return true;
     }
@@ -940,7 +940,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// </summary>
     public void InsertText(string value, Formatting? formatting = null)
     {
-        Xml.Add(HelperFunctions.FormatInput(value, formatting?.Xml));
+        Xml.Add(DocumentHelpers.FormatInput(value, formatting?.Xml));
     }
 
     /// <summary>
@@ -956,7 +956,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
         // Add the new run.
         if (!string.IsNullOrEmpty(value))
         {
-            Xml.Add(HelperFunctions.FormatInput(value, formatting?.Xml));
+            Xml.Add(DocumentHelpers.FormatInput(value, formatting?.Xml));
         }
     }
 
@@ -972,11 +972,11 @@ public class Paragraph : Block, IEquatable<Paragraph>
         var run = FindRunAffectedByEdit(EditType.Insert, index);
         if (run == null)
         {
-            Xml.Add(HelperFunctions.FormatInput(value, formatting?.Xml));
+            Xml.Add(DocumentHelpers.FormatInput(value, formatting?.Xml));
         }
         else
         {
-            object insert = HelperFunctions.FormatInput(value, formatting?.Xml);
+            object insert = DocumentHelpers.FormatInput(value, formatting?.Xml);
             var parentElement = run.Xml.Parent;
             if (parentElement == null)
             {
@@ -1044,19 +1044,19 @@ public class Paragraph : Block, IEquatable<Paragraph>
                     var before = splitEditBefore[1];
                     Debug.Assert(before != null);
                     var middle = SplitEdit(before, index + take, EditType.Delete)[1];
-                    processed += HelperFunctions.GetTextLength(middle);
+                    processed += DocumentHelpers.GetTextLength(middle);
                     parentElement.ReplaceWith(splitEditBefore[0], null, splitEditAfter[1]);
                 }
                     break;
 
                 default:
-                    if (run != null && HelperFunctions.GetTextLength(run.Xml) > 0)
+                    if (run != null && DocumentHelpers.GetTextLength(run.Xml) > 0)
                     {
                         var splitRunBefore = run.SplitAtIndex(index);
                         int min = Math.Min(index + (count - processed), run.EndIndex);
                         var splitRunAfter = run.SplitAtIndex(min);
-                        var middle = new Run(SafeDocument, SafePackagePart, splitRunBefore[1]!, run.StartIndex + HelperFunctions.GetTextLength(splitRunBefore[0])).SplitAtIndex(min)[0];
-                        processed += HelperFunctions.GetTextLength(middle);
+                        var middle = new Run(SafeDocument, SafePackagePart, splitRunBefore[1]!, run.StartIndex + DocumentHelpers.GetTextLength(splitRunBefore[0])).SplitAtIndex(min)[0];
+                        processed += DocumentHelpers.GetTextLength(middle);
                         run.Xml.ReplaceWith(splitRunBefore[0], null, splitRunAfter[1]);
                     }
                     else
@@ -1069,7 +1069,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
 
             // See if the paragraph is empty -- if so we can remove it.
             if (parentElement != null
-                && HelperFunctions.GetTextLength(parentElement) == 0
+                && DocumentHelpers.GetTextLength(parentElement) == 0
                 && parentElement.Parent != null
                 && parentElement.Parent.Name.LocalName != "tc"
                 && parentElement.Parent.Elements(Name.Paragraph).Any()
@@ -1116,7 +1116,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// <returns>Run containing index</returns>
     internal Run? FindRunAffectedByEdit(EditType editType, int index)
     {
-        int len = HelperFunctions.GetText(Xml).Length;
+        int len = DocumentHelpers.GetText(Xml).Length;
         if (index < 0 || (editType == EditType.Insert && index > len) || (editType == EditType.Delete && index >= len))
         {
             throw new ArgumentOutOfRangeException(nameof(index));
@@ -1140,12 +1140,12 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// <param name="run">The located findText run</param>
     private void RecursiveSearchForRunByIndex(XElement el, EditType editType, int index, ref int count, ref Run? run)
     {
-        count += HelperFunctions.GetSize(el);
+        count += DocumentHelpers.GetSize(el);
         if (count > 0 && (editType == EditType.Delete && count > index || editType == EditType.Insert && count >= index))
         {
             // Correct the index
-            count -= el.ElementsBeforeSelf().Sum(HelperFunctions.GetSize);
-            count -= HelperFunctions.GetSize(el);
+            count -= el.ElementsBeforeSelf().Sum(DocumentHelpers.GetSize);
+            count -= DocumentHelpers.GetSize(el);
             count = Math.Max(0, count);
 
             // We have found the element, now find the run it belongs to.
@@ -1183,13 +1183,13 @@ public class Paragraph : Block, IEquatable<Paragraph>
         var splitRun = run.SplitAtIndex(index);
 
         XElement? splitLeft = new(element.Name, element.Attributes(), run.Xml.ElementsBeforeSelf(), splitRun[0]);
-        if (HelperFunctions.GetTextLength(splitLeft) == 0)
+        if (DocumentHelpers.GetTextLength(splitLeft) == 0)
         {
             splitLeft = null;
         }
 
         XElement? splitRight = new(element.Name, element.Attributes(), splitRun[1], run.Xml.ElementsAfterSelf());
-        if (HelperFunctions.GetTextLength(splitRight) == 0)
+        if (DocumentHelpers.GetTextLength(splitRight) == 0)
         {
             splitRight = null;
         }
@@ -1251,7 +1251,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     internal void SetStartIndex(int index)
     {
         StartIndex = index;
-        EndIndex = index + HelperFunctions.GetTextLength(Xml);
+        EndIndex = index + DocumentHelpers.GetTextLength(Xml);
     }
 
     /// <summary>
@@ -1263,8 +1263,8 @@ public class Paragraph : Block, IEquatable<Paragraph>
     internal static XElement Create(string text, Formatting? formatting)
     {
         return new XElement(Name.Paragraph,
-            new XAttribute(Name.ParagraphId, HelperFunctions.GenerateHexId()),
-            HelperFunctions.FormatInput(text, formatting?.Xml));
+            new XAttribute(Name.ParagraphId, DocumentHelpers.GenerateHexId()),
+            DocumentHelpers.FormatInput(text, formatting?.Xml));
     }
 
     /// <summary>
@@ -1279,7 +1279,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
 
         return new Paragraph {
             Xml = otherParagraph.Xml.Clone(),
-            Id = HelperFunctions.GenerateHexId()
+            Id = DocumentHelpers.GenerateHexId()
         };
     }
 

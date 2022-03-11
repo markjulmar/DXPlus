@@ -38,7 +38,7 @@ public sealed class NumberingStyle
             }
             else
             {
-                if (!HelperFunctions.IsValidHexNumber(value))
+                if (!DocumentHelpers.IsValidHexNumber(value))
                     throw new ArgumentException("Invalid hex value.", nameof(CreatorId));
                 Xml.AddElementVal(Namespace.Main + "nsid", value);
             }

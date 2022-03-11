@@ -23,7 +23,7 @@ public class Run : DocXElement, IEquatable<Run>
             var parentXml = Xml.Parent;
             while (parentXml != null)
             {
-                var wrapper = HelperFunctions.WrapDocumentElement(Document, Document.PackagePart, parentXml);
+                var wrapper = WrapDocumentElement(Document, Document.PackagePart, parentXml);
                 if (wrapper != null) return wrapper;
                 parentXml = parentXml.Parent;
             }
@@ -145,7 +145,7 @@ public class Run : DocXElement, IEquatable<Run>
         int currentPos = startIndex;
         foreach (var te in xml.Descendants())
         {
-            var text = HelperFunctions.ToText(te);
+            var text = DocumentHelpers.ToText(te);
             if (!string.IsNullOrEmpty(text))
             {
                 Text += text;
@@ -176,7 +176,7 @@ public class Run : DocXElement, IEquatable<Run>
             splitText[0]!.ElementsBeforeSelf().Where(n => n.Name != Name.RunProperties),
             splitText[1]);
 
-        if (HelperFunctions.GetTextLength(splitLeft) == 0)
+        if (DocumentHelpers.GetTextLength(splitLeft) == 0)
         {
             splitLeft = null;
         }
@@ -187,7 +187,7 @@ public class Run : DocXElement, IEquatable<Run>
             splitText[2],
             splitText[0]!.ElementsAfterSelf().Where(n => n.Name != Name.RunProperties));
 
-        if (HelperFunctions.GetTextLength(splitRight) == 0)
+        if (DocumentHelpers.GetTextLength(splitRight) == 0)
         {
             splitRight = null;
         }
@@ -207,7 +207,7 @@ public class Run : DocXElement, IEquatable<Run>
         if (xml == null)
             throw new ArgumentNullException(nameof(xml));
 
-        int endIndex = startIndex + HelperFunctions.GetSize(xml);
+        int endIndex = startIndex + DocumentHelpers.GetSize(xml);
         if (index < startIndex || index > endIndex)
             throw new ArgumentOutOfRangeException(nameof(index));
 
@@ -263,7 +263,7 @@ public class Run : DocXElement, IEquatable<Run>
         int count = 0;
         foreach (var child in element.Descendants())
         {
-            int size = HelperFunctions.GetSize(child);
+            int size = DocumentHelpers.GetSize(child);
             count += size;
             if (count >= index)
             {
@@ -272,6 +272,32 @@ public class Run : DocXElement, IEquatable<Run>
         }
         return default;
     }
+
+    /// <summary>
+    /// Wrap an element
+    /// </summary>
+    /// <param name="document">Document owner</param>
+    /// <param name="packagePart">Package part owner</param>
+    /// <param name="xml">XML fragment</param>
+    /// <returns>Element wrapper</returns>
+    private static DocXElement? WrapDocumentElement(Document document, PackagePart packagePart, XElement xml)
+    {
+        if (xml.Name.LocalName == Name.Hyperlink.LocalName)
+            return new Hyperlink(document, packagePart, xml);
+
+        if (xml.Name == Name.Paragraph)
+        {
+            // See if we can find it first. That way we get the proper index.
+            var p = document.Paragraphs.FirstOrDefault(p => p.Xml == xml);
+            if (p != null) return p;
+
+            // Hmm. Unowned perhaps?
+            int pos = 0;
+            return DocumentHelpers.WrapParagraphElement(xml, document, packagePart, ref pos);
+        }
+        return null;
+    }
+
 
     /// <summary>
     /// Determines equality for a run

@@ -93,8 +93,8 @@ public sealed class Drawing: DocXElement, IEquatable<Drawing>, ITextElement
     /// </summary>
     public Uri? Hyperlink
     {
-        get => HelperFunctions.GetHlinkClick(DocPr, this.PackagePart);
-        set => HelperFunctions.SetHlinkClick(DocPr, this.PackagePart, value);
+        get => DocumentHelpers.GetHlinkClick(DocPr, this.PackagePart);
+        set => DocumentHelpers.SetHlinkClick(DocPr, this.PackagePart, value);
     }
 
     /// <summary>

@@ -34,7 +34,7 @@ public abstract class BlockContainer : DocXElement, IContainer
             int current = 0;
             foreach (var e in Xml.Elements())
             {
-                var block = HelperFunctions.WrapElementBlock(this, e, ref current);
+                var block = WrapElementBlock(this, e, ref current);
                 if (block != null) yield return block;
             }
         }
@@ -50,7 +50,7 @@ public abstract class BlockContainer : DocXElement, IContainer
             int current = 0;
             foreach (var e in Xml.Elements(Name.Paragraph))
             {
-                yield return HelperFunctions.WrapParagraphElement(e, SafeDocument, SafePackagePart, ref current);
+                yield return DocumentHelpers.WrapParagraphElement(e, SafeDocument, SafePackagePart, ref current);
             }
         }
     }
@@ -225,7 +225,7 @@ public abstract class BlockContainer : DocXElement, IContainer
     {
         if (string.IsNullOrEmpty(paragraph.Id))
         {
-            paragraph.Xml.SetAttributeValue(Name.ParagraphId, HelperFunctions.GenerateHexId());
+            paragraph.Xml.SetAttributeValue(Name.ParagraphId, DocumentHelpers.GenerateHexId());
         }
 
         InsertMissingStyles(paragraph);
@@ -246,7 +246,7 @@ public abstract class BlockContainer : DocXElement, IContainer
         if (xml.Name == Name.Paragraph
             && xml.Attribute(Name.ParagraphId) == null)
         {
-            xml.SetAttributeValue(Name.ParagraphId, HelperFunctions.GenerateHexId());
+            xml.SetAttributeValue(Name.ParagraphId, DocumentHelpers.GenerateHexId());
         }
 
         // If this is the body document, then add the paragraph just before the
@@ -357,7 +357,7 @@ public abstract class BlockContainer : DocXElement, IContainer
 
         var xml = AddElementToContainer(
             new XElement(Name.Paragraph,
-                new XAttribute(Name.ParagraphId, HelperFunctions.GenerateHexId()),
+                new XAttribute(Name.ParagraphId, DocumentHelpers.GenerateHexId()),
                 new XElement(Name.ParagraphProperties,
                     new XElement(Name.SectionProperties,
                         new XElement(Namespace.Main + "type", new XAttribute(Name.MainVal, breakType.GetEnumName())),
@@ -373,7 +373,7 @@ public abstract class BlockContainer : DocXElement, IContainer
     public virtual void AddPageBreak()
     {
         AddElementToContainer(new XElement(Name.Paragraph,
-            new XAttribute(Name.ParagraphId, HelperFunctions.GenerateHexId()),
+            new XAttribute(Name.ParagraphId, DocumentHelpers.GenerateHexId()),
             new XElement(Name.Run,
                 new XElement(Name.Break,
                     new XAttribute(Name.Type, "page")))));
@@ -456,7 +456,34 @@ public abstract class BlockContainer : DocXElement, IContainer
         // Make sure we have all the styles in our document owner.
         Paragraphs.ToList().ForEach(InsertMissingStyles);
     }
-        
+
+    /// <summary>
+    /// Helper to create a block from an element in the document.
+    /// </summary>
+    /// <param name="blockContainer">Owning container</param>
+    /// <param name="e">XML element</param>
+    /// <param name="current">Current text position for paragraph tracking</param>
+    /// <returns>Block wrapper</returns>
+    private static Block? WrapElementBlock(BlockContainer blockContainer, XElement e, ref int current)
+    {
+        if (blockContainer == null) throw new ArgumentNullException(nameof(blockContainer));
+        if (e == null) throw new ArgumentNullException(nameof(e));
+
+        if (e.Name == Name.Paragraph)
+        {
+            return DocumentHelpers.WrapParagraphElement(e, blockContainer.Document, blockContainer.PackagePart, ref current);
+        }
+        if (e.Name == Name.Table)
+        {
+            return new Table(blockContainer.Document, blockContainer.PackagePart, e);
+        }
+        if (e.Name != Name.SectionProperties)
+        {
+            return new UnknownBlock(blockContainer.Document, blockContainer.PackagePart, e);
+        }
+        return null;
+    }
+
     /// <summary>
     /// Split a paragraph at a specific index
     /// </summary>

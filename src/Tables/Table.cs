@@ -805,7 +805,7 @@ public class Table : Block, IEquatable<Table>
             // always has an empty paragraph
             new XElement(Name.Paragraph,
                 new XAttribute(Name.ParagraphId,
-                    HelperFunctions.GenerateHexId()))
+                    DocumentHelpers.GenerateHexId()))
         );
     }
 

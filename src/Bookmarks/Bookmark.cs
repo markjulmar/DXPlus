@@ -74,7 +74,7 @@ public sealed class Bookmark : IEquatable<Bookmark>
             {
                 if (item.Name.LocalName == DXPlus.Name.Run.LocalName)
                 {
-                    sb.Append(HelperFunctions.GetText(item));
+                    sb.Append(DocumentHelpers.GetText(item));
                 }
                 else if (item.Name == DXPlus.Name.BookmarkEnd
                          && item.AttributeValue(DXPlus.Name.Id) == Id.ToString())
@@ -144,7 +144,7 @@ public sealed class Bookmark : IEquatable<Bookmark>
         if (bookmark == null) 
             throw new ArgumentNullException(nameof(bookmark));
             
-        bookmark.AddAfterSelf(HelperFunctions.FormatInput(text, null));
+        bookmark.AddAfterSelf(DocumentHelpers.FormatInput(text, null));
         
         return true;
     }
