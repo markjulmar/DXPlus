@@ -741,7 +741,7 @@ namespace DXPlus.Tests
             paragraph.Append(picture);
 
             Assert.Single(paragraph.Pictures);
-            Assert.Null(paragraph.Pictures[0].PackagePart);
+            Assert.Null(paragraph.Pictures[0].SafePackagePart);
 
             document.AddParagraph(paragraph);
             Assert.NotNull(paragraph.Pictures[0].PackagePart);

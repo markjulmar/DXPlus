@@ -93,7 +93,7 @@ public abstract class HeaderOrFooterCollection<T> : IEnumerable<T>
             ExistsFunc = Exists
         };
 
-        hf.SetOwner(documentOwner, part, true);
+        hf.SetOwner(documentOwner, part, false);
         return hf;
     }
 
@@ -134,11 +134,11 @@ public abstract class HeaderOrFooterCollection<T> : IEnumerable<T>
             filename = string.Format(relationTemplate.Path, ++index);
         }
 
-        PackagePart packagePart = documentOwner.Package.CreatePart(new Uri(filename, UriKind.Relative),
+        var packagePart = documentOwner.Package.CreatePart(new Uri(filename, UriKind.Relative),
             relationTemplate.ContentType, CompressionOption.Normal);
 
         // Create the hdr/ftr definition
-        XDocument xmlFragment = XDocument.Parse(
+        var xmlFragment = XDocument.Parse(
             $@"<?xml version=""1.0"" encoding=""utf-16"" standalone=""yes""?>
                 <w:{rootElementName} xmlns:ve=""http://schemas.openxmlformats.org/markup-compatibility/2006"" xmlns:o=""urn:schemas-microsoft-com:office:office"" xmlns:r=""{Namespace.RelatedDoc.NamespaceName}"" xmlns:m=""{Namespace.Math.NamespaceName}"" xmlns:v=""{Namespace.VML.NamespaceName}"" xmlns:wp=""{Namespace.WordProcessingDrawing.NamespaceName}"" xmlns:w10=""urn:schemas-microsoft-com:office:word"" xmlns:w=""{Namespace.Main.NamespaceName}"" xmlns:wne=""http://schemas.microsoft.com/office/word/2006/wordml"">
                     <w:p w:rsidR=""{documentOwner.RevisionId}"" w:rsidRDefault=""{documentOwner.RevisionId}"">
@@ -153,7 +153,7 @@ public abstract class HeaderOrFooterCollection<T> : IEnumerable<T>
         packagePart.Save(xmlFragment);
 
         // Add the relationship to the newly created header/footer
-        PackageRelationship relationship = documentOwner.PackagePart.CreateRelationship(packagePart.Uri, TargetMode.Internal, relationTemplate.RelType);
+        var relationship = documentOwner.PackagePart.CreateRelationship(packagePart.Uri, TargetMode.Internal, relationTemplate.RelType);
 
         // Add the relationship to the owning section.
         sectionOwner.Properties.Xml.Add(new XElement(Namespace.Main + $"{typeName}Reference",

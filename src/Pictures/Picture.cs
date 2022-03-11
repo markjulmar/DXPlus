@@ -389,12 +389,13 @@ public sealed class Picture : DocXElement, IEquatable<Picture>
     /// <returns>Relationship id</returns>
     internal string GetOrCreateImageRelationship()
     {
-        string uri = image.PackageRelationship.TargetUri.OriginalString;
+        string? uri = image.Uri?.OriginalString;
+        if (uri == null) return string.Empty;
         return PackagePart.GetRelationshipsByType(Namespace.RelatedDoc.NamespaceName + "/image")
                    .Where(r => r.TargetUri.OriginalString == uri)
                    .Select(r => r.Id)
                    .SingleOrDefault() ??
-               PackagePart.CreateRelationship(image.PackageRelationship.TargetUri,
+               PackagePart.CreateRelationship(image.Uri!,
                    TargetMode.Internal, Namespace.RelatedDoc.NamespaceName + "/image").Id;
     }
 

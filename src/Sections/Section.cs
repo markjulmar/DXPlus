@@ -37,7 +37,7 @@ public class Section : DocXElement, IEquatable<Section>
             // If this is the final section
             if (Xml.Name == Namespace.Main + "body")
             {
-                startingParagraph = paragraphs.Last();
+                startingParagraph = paragraphs.LastOrDefault();
             }
             else
             {

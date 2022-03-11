@@ -1,4 +1,5 @@
-﻿using DXPlus.Charts;
+﻿using System.Globalization;
+using DXPlus.Charts;
 using DXPlus.Helpers;
 using DXPlus.Resources;
 using System.IO.Packaging;
@@ -64,7 +65,10 @@ public sealed class Document : BlockContainer, IDocument
             throw new FileNotFoundException("Docx file doesn't exist", filename);
 
         // Load the file from disk into memory.
-        using var ms = new MemoryStream();
+        // Note: keep memory stream OPEN as it represents our document and the
+        // underlying PackageManager will use this stream to load various parts
+        // as we access the document.
+        var ms = new MemoryStream();
         using (var fs = new FileStream(filename, FileMode.Open))
         {
             fs.CopyTo(ms);
@@ -952,7 +956,7 @@ public sealed class Document : BlockContainer, IDocument
 
         // Get the last revision id
         string? revValue = Xml.GetSectionProperties().RevisionId;
-        if (uint.TryParse(revValue, out revision))
+        if (uint.TryParse(revValue, NumberStyles.HexNumber, null, out revision))
             revision++; // bump revision
         else 
             revision = 1;
@@ -1308,7 +1312,7 @@ public sealed class Document : BlockContainer, IDocument
         // Check to see if the rels file exists and create it if not.
         if (!Document.Package.PartExists(relationshipPath))
         {
-            PackagePart pp = Document.Package.CreatePart(relationshipPath, DocxContentType.Relationships, CompressionOption.Maximum);
+            var pp = Document.Package.CreatePart(relationshipPath, DocxContentType.Relationships, CompressionOption.Maximum);
             pp.Save(new XDocument(
                 new XDeclaration("1.0", "UTF-8", "yes"),
                 new XElement(Namespace.RelatedPackage + "Relationships")
@@ -1328,7 +1332,7 @@ public sealed class Document : BlockContainer, IDocument
     {
         // Get the Xml file for this Header or Footer. Each one is saved into a different
         // document and kept as a relationship in the document.
-        Uri partUri = PackagePart.GetRelationship(id).TargetUri;
+        var partUri = PackagePart.GetRelationship(id).TargetUri;
         if (!partUri.OriginalString.StartsWith("/word/"))
         {
             partUri = new Uri("/word/" + partUri.OriginalString, UriKind.Relative);
@@ -1408,6 +1412,7 @@ public sealed class Document : BlockContainer, IDocument
 
     /// <summary>
     /// The ZIP package holding this Document structure
+    /// The ZIP package holding this Document structure
     /// </summary>
     internal Package Package
     {
@@ -1475,5 +1480,5 @@ public sealed class Document : BlockContainer, IDocument
     /// <summary>
     /// Exception thrown if we end up in a bad state
     /// </summary>
-    private Exception DocumentNotLoadedException = new InvalidOperationException("Document not loaded.");
+    private static readonly Exception DocumentNotLoadedException = new InvalidOperationException("Document not loaded.");
 }

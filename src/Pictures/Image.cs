@@ -8,32 +8,44 @@ namespace DXPlus;
 public class Image
 {
     private readonly Document? document;
-
-    /// <summary>
-    /// Associated package relationship
-    /// </summary>
-    internal PackageRelationship? PackageRelationship { get; }
+    private readonly PackageRelationship? packageRelationship;
 
     /// <summary>
     /// Get the stream for the picture
     /// </summary>
     /// <returns>Open stream</returns>
-    public Stream? OpenStream()
+    public Stream OpenStream()
     {
-        if (document == null || PackageRelationship == null) 
-            return null;
-
-        string targetUrl = PackageRelationship.TargetUri.OriginalString;
-        if (targetUrl[0] != '/')
-        {
-            string temp = PackageRelationship.SourceUri.OriginalString;
-            string start = temp.Remove(temp.LastIndexOf('/'));
-            targetUrl = start + "/" + targetUrl;
-        }
+        string? targetUrl = Url;
+        if (targetUrl == null)
+            throw new InvalidOperationException("Image stream not available.");
 
         // Return a readonly stream to the image
-        return document.Package.GetPart(new Uri(targetUrl, UriKind.Relative))
+        return document!.Package.GetPart(new Uri(targetUrl, UriKind.Relative))
             .GetStream(FileMode.Open, FileAccess.Read);
+    }
+
+    /// <summary>
+    /// Uri for this image
+    /// </summary>
+    public Uri? Uri => packageRelationship?.TargetUri;
+
+    /// <summary>
+    /// URL for the image contained within the package.
+    /// </summary>
+    private string? Url
+    {
+        get
+        {
+            string? targetUrl = packageRelationship?.TargetUri.OriginalString;
+            if (targetUrl != null && targetUrl[0] != '/')
+            {
+                string temp = packageRelationship!.SourceUri.OriginalString;
+                string start = temp.Remove(temp.LastIndexOf('/'));
+                targetUrl = start + "/" + targetUrl;
+            }
+            return targetUrl;
+        }
     }
 
     /// <summary>
@@ -44,7 +56,7 @@ public class Image
     ///<summary>
     /// Returns the name of the image file.
     ///</summary>
-    public string FileName => Path.GetFileName(PackageRelationship.TargetUri.ToString());
+    public string FileName => Uri != null ? Path.GetFileName(Uri!.ToString()) : string.Empty;
 
     /// <summary>
     /// Returns the image type (extension) such as .png, .jpg, .svg, etc.
@@ -56,20 +68,12 @@ public class Image
     /// </summary>
     /// <param name="document"></param>
     /// <param name="packageRelationship"></param>
-    internal Image(Document document, PackageRelationship packageRelationship)
+    /// <param name="id">Optional package identifier</param>
+    internal Image(Document? document, PackageRelationship? packageRelationship, string? id = null)
     {
-        this.document = document ?? throw new ArgumentNullException(nameof(document));
-        this.PackageRelationship = packageRelationship ?? throw new ArgumentNullException(nameof(packageRelationship));
-        Id = packageRelationship.Id;
-    }
-
-    /// <summary>
-    /// Internal constructor to create an image from an unowned document
-    /// </summary>
-    /// <param name="id"></param>
-    internal Image(string id)
-    {
-        this.Id = id;
+        this.document = document;
+        this.packageRelationship = packageRelationship;
+        Id = id ?? packageRelationship?.Id ?? string.Empty;
     }
 
     /// <summary>
@@ -78,8 +82,12 @@ public class Image
     /// <param name="name">Name of the image</param>
     /// <param name="description">Description of the image</param>
     /// <returns>New picture</returns>
-    public Drawing CreatePicture(string name, string description) =>
-        document.CreateDrawingWithEmbeddedPicture(Id, name, description);
+    public Drawing CreatePicture(string name, string description)
+    {
+        if (document == null)
+            throw new InvalidOperationException("Cannot create picture from image obtained by unowned element.");
+        return document.CreateDrawingWithEmbeddedPicture(Id, name, description);
+    }
 
     /// <summary>
     /// Create a new picture which can be added to a paragraph from this image.

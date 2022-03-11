@@ -12,13 +12,23 @@ namespace Tester
             string fn = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "test.docx");
             using var doc = Document.Create(fn);
 
-            AddImageToDoc(doc);
+            //AddImageToDoc(doc);
             //CreateDocWithHeaderAndFooter(doc);
             //WriteTitle(doc);
-            //AddVideoToDoc(doc);
+            AddVideoToDoc(doc);
             
             doc.Save();
             Console.WriteLine("Wrote document");
+
+            CheckDocument(fn);
+        }
+
+        private static void CheckDocument(string fn)
+        {
+            using var doc = Document.Load(fn);
+
+            var section = doc.Sections.First();
+            Console.WriteLine(section.Headers.Default.MainParagraph);
         }
 
         private static void AddVideoToDoc(IDocument doc)
@@ -28,10 +38,13 @@ namespace Tester
             var p = doc.AddParagraph();
             p.Properties.Alignment = Alignment.Center;
 
-            p.Append(doc.CreateVideo(
+            var image = doc.CreateVideo(
                 "video-placeholder.png",
                 new Uri("https://www.microsoft.com/en-us/videoplayer/embed/RWwMdr", UriKind.Absolute),
-                400, 225));
+                400, 225);
+
+            if (image != null)
+                p.Append(image);
             
             doc.AddParagraph("And a closing paragraph.");
         }
@@ -66,6 +79,7 @@ namespace Tester
         private static void CreateDocWithHeaderAndFooter(IDocument doc)
         {
             var mainSection = doc.Sections.First();
+            var paragraphs = mainSection.Paragraphs.ToList();
             var header = mainSection.Headers.Default;
 
             var p1 = header.MainParagraph;

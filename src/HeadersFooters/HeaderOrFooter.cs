@@ -1,4 +1,5 @@
-﻿using System.Xml.Linq;
+﻿using System.Diagnostics;
+using System.Xml.Linq;
 using DXPlus.Helpers;
 
 namespace DXPlus;
@@ -70,9 +71,8 @@ public abstract class HeaderOrFooter : BlockContainer
     {
         if (CreateFunc == null) throw new InvalidOperationException($"{GetType().Name} not created properly.");
 
-        if (!Exists)
-            CreateFunc.Invoke(this);
-
+        if (!Exists) CreateFunc.Invoke(this);
+        Debug.Assert(element != null);
         return base.AddElementToContainer(xml);
     }
 

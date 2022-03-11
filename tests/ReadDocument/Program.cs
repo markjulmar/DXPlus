@@ -232,6 +232,9 @@ namespace ReadDocument
 
         private static string DumpObject(object obj)
         {
+            if (obj == null)
+                return "";
+
             var sb = new StringBuilder();
             Type t = obj.GetType();
 

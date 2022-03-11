@@ -426,25 +426,19 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// <summary>
     /// Returns a list of all Pictures in a paragraph.
     /// </summary>
-    public IReadOnlyList<Picture> Pictures
-    {
-        get
-        {
-            return (
-                from p in Xml.LocalNameDescendants("pic")
-                let id = p.FirstLocalNameDescendant("blip").AttributeValue(Namespace.RelatedDoc + "embed")
-                where id != null
-                select new Picture(SafeDocument, SafePackagePart, p,
-                    InDocument ? new Image(Document, PackagePart.GetRelationship(id)) : new Image(id))
-            ).Union(
-                from p in Xml.LocalNameDescendants("pict")
-                let id = p.FirstLocalNameDescendant("imagedata").AttributeValue(Namespace.RelatedDoc + "id")
-                where id != null
-                select new Picture(SafeDocument, SafePackagePart, p,
-                    new Image(Document, Document.PackagePart.GetRelationship(id), id))
-            ).ToList().AsReadOnly();
-        }
-    }
+    public IReadOnlyList<Picture> Pictures => (
+        from p in Xml.LocalNameDescendants("pic")
+        let id = p.FirstLocalNameDescendant("blip").AttributeValue(Namespace.RelatedDoc + "embed")
+        where id != null
+        select new Picture(SafeDocument, SafePackagePart, p,
+            new Image(SafeDocument, SafeDocument?.SafePackagePart?.GetRelationship(id)))
+    ).Union(
+        from p in Xml.LocalNameDescendants("pict")
+        let id = p.FirstLocalNameDescendant("imagedata").AttributeValue(Namespace.RelatedDoc + "id")
+        where id != null
+        select new Picture(SafeDocument, SafePackagePart, p,
+            new Image(SafeDocument, SafeDocument?.SafePackagePart?.GetRelationship(id)))
+    ).ToList().AsReadOnly();
 
     /// <summary>
     /// Gets the text value of this paragraph.

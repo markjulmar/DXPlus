@@ -96,8 +96,12 @@ public abstract class BlockContainer : DocXElement, IContainer
             if (!InDocument) yield break;
 
             // Return all the section dividers.
-            foreach (var p in Paragraphs.Where(p => p.IsSectionParagraph))
-                yield return new Section(Document, PackagePart, p.Xml);
+            foreach (var sp in Xml.Descendants(Name.ParagraphProperties)
+                                          .Descendants(Name.SectionProperties)
+                                          .Select(xe => xe.FindParent(Name.Paragraph))
+                                          .Where(xe => xe != null)
+                                          .Cast<XElement>())
+                yield return new Section(Document, PackagePart, sp);
 
             // Return the final section if this is the mainDoc.
             if (Xml.Element(Name.SectionProperties) != null)
