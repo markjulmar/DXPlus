@@ -458,7 +458,20 @@ public sealed class Formatting : IEquatable<Formatting>
         return ReferenceEquals(this, other) 
                || (other != null && XNode.DeepEquals(Xml.Normalize(), other.Xml.Normalize()));
     }
-        
+
+    /// <summary>
+    /// Determines equality for run properties
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public override bool Equals(object? other) => Equals(other as Formatting);
+
+    /// <summary>
+    /// Returns hashcode for this formatting object
+    /// </summary>
+    /// <returns></returns>
+    public override int GetHashCode() => Xml.GetHashCode();
+
     /// <summary>
     /// Merge in the given formatting into this formatting object. This will add/remove settings
     /// from the given formatting into this one.

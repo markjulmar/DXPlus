@@ -550,7 +550,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// <param name="hyperlink">The hyperlink to insert.</param>
     /// <param name="charIndex">The character index in the owning paragraph to insert at.</param>
     /// <returns>The paragraph with the Hyperlink inserted at the specified index.</returns>
-    public Paragraph InsertHyperlink(Hyperlink hyperlink, int charIndex = 0)
+    public Paragraph Insert(Hyperlink hyperlink, int charIndex = 0)
     {
         if (InDocument)
         {
@@ -936,11 +936,12 @@ public class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
-    /// Inserts a string into a paragraph with the specified formatting.
+    /// Adds a string into a paragraph with the specified formatting.
     /// </summary>
-    public void InsertText(string value, Formatting? formatting = null)
+    public Paragraph AppendText(string value, Formatting? formatting = null)
     {
         Xml.Add(DocumentHelpers.FormatInput(value, formatting?.Xml));
+        return this;
     }
 
     /// <summary>
@@ -966,7 +967,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// <param name="index">The index position of the insertion.</param>
     /// <param name="value">The System.String to insert.</param>
     /// <param name="formatting">The findText formatting.</param>
-    public void InsertText(int index, string value, Formatting? formatting = null)
+    public Paragraph InsertText(int index, string value, Formatting? formatting = null)
     {
         // Get the first run effected by this Insert
         var run = FindRunAffectedByEdit(EditType.Insert, index);
@@ -997,6 +998,8 @@ public class Paragraph : Block, IEquatable<Paragraph>
                     break;
             }
         }
+
+        return this;
     }
 
     /// <summary>
@@ -1021,7 +1024,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// </summary>
     /// <param name="index">The position to begin deleting characters.</param>
     /// <param name="count">The number of characters to delete</param>
-    public void RemoveText(int index, int count)
+    public Paragraph RemoveText(int index, int count)
     {
         // The number of characters processed so far
         int processed = 0;
@@ -1079,6 +1082,8 @@ public class Paragraph : Block, IEquatable<Paragraph>
             }
         }
         while (processed < count);
+
+        return this;
     }
 
     /// <summary>
@@ -1290,4 +1295,17 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// <returns></returns>
     public bool Equals(Paragraph? other) 
         => other != null && (ReferenceEquals(this, other) || Xml == other.Xml);
+
+    /// <summary>
+    /// Determines equality for paragraphs
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public override bool Equals(object? other) => Equals(other as Paragraph);
+
+    /// <summary>
+    /// Returns hashcode for this paragraph
+    /// </summary>
+    /// <returns></returns>
+    public override int GetHashCode() => Xml.GetHashCode();
 }

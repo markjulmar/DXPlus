@@ -12,14 +12,14 @@ public static class ContainerExtensions
     /// </summary>
     /// <returns>Newly added paragraph</returns>
     public static Paragraph AddParagraph(this IContainer container) 
-        => container.AddParagraph(string.Empty);
+        => container.Add(string.Empty);
 
     /// <summary>
     /// Add a new paragraph with the given text at the end of this container.
     /// </summary>
     /// <returns>Newly added paragraph</returns>
     public static Paragraph AddParagraph(this IContainer container, string text) 
-        => container.AddParagraph(text, null);
+        => container.Add(text, null);
 
     /// <summary>
     /// Insert a paragraph with the given text at the specified paragraph index.
@@ -29,7 +29,7 @@ public static class ContainerExtensions
     /// <param name="text">Text for new paragraph</param>
     /// <returns>Newly added paragraph</returns>
     public static Paragraph InsertParagraph(this IContainer container, int index, string text) 
-        => container.InsertParagraph(index, text, null);
+        => container.Insert(index, text, null);
 
     /// <summary>
     /// Add a new equation using the specified text at the end of this container.
@@ -48,7 +48,7 @@ public static class ContainerExtensions
     /// <param name="columns">Columns to add</param>
     /// <returns></returns>
     public static Table AddTable(this IContainer container, int rows, int columns) 
-        => container.AddTable(new Table(rows, columns));
+        => container.Add(new Table(rows, columns));
 
     /// <summary>
     /// Find all occurrences of a string in the container. This searches headers, all paragraphs, and footers.
@@ -96,7 +96,7 @@ public static class ContainerExtensions
     /// <returns>Drawing object to insert</returns>
     public static Drawing CreateVideo(this IDocument document, string imageFile, Uri video, double width, double height)
     {
-        var img = document.AddImage(imageFile);
+        var img = document.CreateImage(imageFile);
         var drawing = img.CreatePicture(width,height);
             
         drawing.Hyperlink = video;
@@ -124,7 +124,7 @@ public static class ContainerExtensions
     public static Drawing CreateVideo(this IDocument document, Stream image, string imageContentType, Uri video,
         int width, int height)
     {
-        var img = document.AddImage(image, imageContentType);
+        var img = document.CreateImage(image, imageContentType);
         var drawing = img.CreatePicture(width,height);
 
         drawing.Hyperlink = video;

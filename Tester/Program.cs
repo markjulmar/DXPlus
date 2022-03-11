@@ -33,7 +33,7 @@ namespace Tester
 
         private static void AddVideoToDoc(IDocument doc)
         {
-            doc.AddParagraph("This is an introduction.");
+            doc.Add("This is an introduction.");
             
             var p = doc.AddParagraph();
             p.Properties.Alignment = Alignment.Center;
@@ -46,13 +46,13 @@ namespace Tester
             if (image != null)
                 p.Append(image);
             
-            doc.AddParagraph("And a closing paragraph.");
+            doc.Add("And a closing paragraph.");
         }
 
         private static void WriteTitle(IDocument doc)
         {
-            doc.AddParagraph("Introduction").Style(HeadingType.Heading1);
-            doc.AddParagraph("This is some text");
+            doc.Add("Introduction").Style(HeadingType.Heading1);
+            doc.Add("This is some text");
 
             var p = doc.Paragraphs.First();
             p.InsertBefore(new Paragraph("This is a title").Style(HeadingType.Title))
@@ -64,15 +64,15 @@ namespace Tester
 
         private static void AddImageToDoc(IDocument doc)
         {
-            var img = doc.AddImage(@"test.svg");
-            var p = doc.AddParagraph("This is a picture:");
+            var img = doc.CreateImage(@"test.svg");
+            var p = doc.Add("This is a picture:");
             p.Append(img.CreatePicture(string.Empty, string.Empty));
 
-            var im2 = doc.AddImage(@"test2.png");
+            var im2 = doc.CreateImage(@"test2.png");
             p.Append(im2.CreatePicture(string.Empty, string.Empty));
 
             // Add with different size.
-            p = doc.AddParagraph("And a final pic (dup of svg!):");
+            p = doc.Add("And a final pic (dup of svg!):");
             p.Append(img.CreatePicture(50, 50));
         }
 
@@ -86,9 +86,9 @@ namespace Tester
             p1.SetText("This is some text - ");
             p1.AddPageNumber(PageNumberFormat.Normal);
 
-            doc.AddParagraph("This is the first paragraph");
+            doc.Add("This is the first paragraph");
             doc.AddPageBreak();
-            doc.AddParagraph("This is page 2");
+            doc.Add("This is page 2");
         }
 
         static void CreateTableWithList(IDocument doc)

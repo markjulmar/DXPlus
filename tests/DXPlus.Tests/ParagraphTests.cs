@@ -22,7 +22,7 @@ namespace DXPlus.Tests
         {
             using var doc = Document.Create();
             var p = new Paragraph();
-            doc.AddParagraph(p);
+            doc.Add(p);
             p.AddParagraph();
             Assert.Equal(2, doc.Paragraphs.Count());
         }
@@ -82,7 +82,7 @@ namespace DXPlus.Tests
         public void SingleParaDocReturnsNoNextPrevParagraph()
         {
             using var doc = Document.Create();
-            var p = doc.AddParagraph("1");
+            var p = doc.Add("1");
 
             Assert.Null(p.NextParagraph);
             Assert.Null(p.PreviousParagraph);
@@ -92,9 +92,9 @@ namespace DXPlus.Tests
         public void FirstParagraphReturnsNullPrevParagraph()
         {
             using var doc = Document.Create();
-            var p = doc.AddParagraph("1");
-            doc.AddParagraph("2");
-            doc.AddParagraph("3");
+            var p = doc.Add("1");
+            doc.Add("2");
+            doc.Add("3");
 
             Assert.Null(p.PreviousParagraph);
             Assert.NotNull(p.NextParagraph);
@@ -104,9 +104,9 @@ namespace DXPlus.Tests
         public void LastParagraphReturnsNullNextParagraph()
         {
             using var doc = Document.Create();
-            doc.AddParagraph("1");
-            doc.AddParagraph("2");
-            var p = doc.AddParagraph("3");
+            doc.Add("1");
+            doc.Add("2");
+            var p = doc.Add("3");
 
             Assert.NotNull(p.PreviousParagraph);
             Assert.Null(p.NextParagraph);
@@ -116,12 +116,12 @@ namespace DXPlus.Tests
         public void PreviousParagraphReturnsProperObject()
         {
             using var doc = Document.Create();
-            doc.AddParagraph("1");
-            doc.AddParagraph("2");
-            var p1 = doc.AddParagraph("3");
-            doc.AddParagraph("4");
-            var p2 = doc.AddParagraph("5");
-            var p3 = doc.AddParagraph("6");
+            doc.Add("1");
+            doc.Add("2");
+            var p1 = doc.Add("3");
+            doc.Add("4");
+            var p2 = doc.Add("5");
+            var p3 = doc.Add("6");
 
             Assert.Equal("2", p1.PreviousParagraph.Text);
             Assert.Equal("4", p2.PreviousParagraph.Text);
@@ -132,12 +132,12 @@ namespace DXPlus.Tests
         public void NextParagraphReturnsProperObject()
         {
             using var doc = Document.Create();
-            var p1 = doc.AddParagraph("1");
-            doc.AddParagraph("2");
-            var p2 = doc.AddParagraph("3");
-            doc.AddParagraph("4");
-            var p3 = doc.AddParagraph("5");
-            doc.AddParagraph("6");
+            var p1 = doc.Add("1");
+            doc.Add("2");
+            var p2 = doc.Add("3");
+            doc.Add("4");
+            var p3 = doc.Add("5");
+            doc.Add("6");
 
             Assert.Equal("2", p1.NextParagraph.Text);
             Assert.Equal("4", p2.NextParagraph.Text);
@@ -148,7 +148,7 @@ namespace DXPlus.Tests
         public void CheckHeading1()
         {
             using var doc = Document.Create(Filename);
-            doc.AddParagraph("This is a test.").Style(HeadingType.Heading1);
+            doc.Add("This is a test.").Style(HeadingType.Heading1);
             Assert.Equal("Heading1", doc.Paragraphs.First().Properties.StyleName);
         }
 
@@ -158,7 +158,7 @@ namespace DXPlus.Tests
             var doc = Document.Create();
             for (int i = 0; i < 10; i++)
             {
-                doc.AddParagraph($"Paragraph #{i + 1}");
+                doc.Add($"Paragraph #{i + 1}");
             }
 
             Assert.Equal(10, doc.Paragraphs.Count());
@@ -178,14 +178,14 @@ namespace DXPlus.Tests
             int i;
             for (i = 0; i < 5; i++)
             {
-                doc.AddParagraph($"Paragraph #{i + 1}");
+                doc.Add($"Paragraph #{i + 1}");
             }
 
             doc.AddSection(); // All paragraphs above.
 
             for (; i < 10; i++)
             {
-                doc.AddParagraph($"Paragraph #{i + 1}");
+                doc.Add($"Paragraph #{i + 1}");
             }
 
             Assert.Equal(11, doc.Paragraphs.Count()); // add one for section
@@ -208,7 +208,7 @@ namespace DXPlus.Tests
         {
             var microsoftUrl = new Uri("http://www.microsoft.com");
             using var doc = Document.Create(Filename);
-            doc.AddParagraph("Test");
+            doc.Add("Test");
             doc.AddParagraph()
                 .AppendLine("This line contains a ")
                 .Append(new Hyperlink("link", microsoftUrl))
@@ -249,7 +249,7 @@ namespace DXPlus.Tests
             Assert.Empty(paragraph.Hyperlinks.First().Id);
 
             var doc = Document.Create();
-            doc.AddParagraph(paragraph);
+            doc.Add(paragraph);
             Assert.NotEmpty(paragraph.Hyperlinks.First().Id);
         }
 
@@ -416,7 +416,7 @@ namespace DXPlus.Tests
         public void SetTextReplacesContents()
         {
             var p = new Paragraph();
-            p.InsertText("This is a test. ");
+            p.AppendText("This is a test. ");
             p.AppendLine("Will it work?");
             Assert.Equal("This is a test. Will it work?\n", p.Text);
 
@@ -434,7 +434,7 @@ namespace DXPlus.Tests
             Paragraph p = new Paragraph("Test");
             Assert.Throws<InvalidOperationException>(() => p.PackagePart);
 
-            doc.AddParagraph(p);
+            doc.Add(p);
             Assert.NotNull(p.PackagePart);
             Assert.Equal(doc.PackagePart, p.PackagePart);
         }
@@ -452,8 +452,8 @@ namespace DXPlus.Tests
         public void AppendAddsParagraph()
         {
             using var doc = Document.Create();
-            var firstParagraph = doc.AddParagraph("First paragraph");
-            var secondParagraph = doc.AddParagraph("Another paragraph");
+            var firstParagraph = doc.Add("First paragraph");
+            var secondParagraph = doc.Add("Another paragraph");
 
             var p = firstParagraph.Append(new Paragraph("Injected paragraph"));
             Assert.Equal(3, doc.Paragraphs.Count());
@@ -466,8 +466,8 @@ namespace DXPlus.Tests
         public void InsertBeforeAddsParagraph()
         {
             using var doc = Document.Create();
-            var firstParagraph = doc.AddParagraph("First paragraph");
-            var secondParagraph = doc.AddParagraph("Another paragraph");
+            var firstParagraph = doc.Add("First paragraph");
+            var secondParagraph = doc.Add("Another paragraph");
 
             var p = secondParagraph.InsertBefore(new Paragraph("Injected paragraph"));
             Assert.Equal(3, doc.Paragraphs.Count());
@@ -480,9 +480,9 @@ namespace DXPlus.Tests
         public void InsertBeforeFirstParagraphAddsNewIntro()
         {
             using var doc = Document.Create();
-            doc.AddParagraph("Introduction").Style(HeadingType.Heading1);
+            doc.Add("Introduction").Style(HeadingType.Heading1);
             
-            doc.AddParagraph("Some text goes here.")
+            doc.Add("Some text goes here.")
                 .Append("With more text");
 
             Assert.Equal(2, doc.Paragraphs.Count());
@@ -500,8 +500,8 @@ namespace DXPlus.Tests
         public void AppendToLastParagraphAddsSummary()
         {
             using var doc = Document.Create();
-            var firstParagraph = doc.AddParagraph("First paragraph");
-            var secondParagraph = doc.AddParagraph("Another paragraph");
+            var firstParagraph = doc.Add("First paragraph");
+            var secondParagraph = doc.Add("Another paragraph");
 
             var p = secondParagraph.Append(new Paragraph("Injected paragraph"));
             Assert.Equal(3, doc.Paragraphs.Count());
@@ -514,15 +514,15 @@ namespace DXPlus.Tests
         public void InsertParagraphAtZeroAddsToBeginning()
         {
             using var doc = Document.Create(Filename);
-            var firstParagraph = doc.AddParagraph("First paragraph");
+            var firstParagraph = doc.Add("First paragraph");
             Assert.Single(doc.Paragraphs);
             Assert.Equal("First paragraph", firstParagraph.Text);
 
-            var secondParagraph = doc.AddParagraph("Another paragraph");
+            var secondParagraph = doc.Add("Another paragraph");
             Assert.Equal(2, doc.Paragraphs.Count());
             Assert.Equal("Another paragraph", secondParagraph.Text);
 
-            var p = doc.InsertParagraph(0, " Inserted Text ");
+            var p = doc.Insert(0, " Inserted Text ");
             Assert.Equal(3, doc.Paragraphs.Count());
 
             Assert.Equal(" Inserted Text ", doc.Paragraphs.First().Text);
@@ -532,11 +532,11 @@ namespace DXPlus.Tests
         public void InsertParagraphInMiddleSplitsParagraph()
         {
             using var doc = Document.Create(Filename);
-            var firstParagraph = doc.AddParagraph("First paragraph");
+            var firstParagraph = doc.Add("First paragraph");
             Assert.Single(doc.Paragraphs);
             Assert.Equal("First paragraph", firstParagraph.Text);
 
-            var p = doc.InsertParagraph(5, " Inserted Text ");
+            var p = doc.Insert(5, " Inserted Text ");
             Assert.Equal(3, doc.Paragraphs.Count());
 
             Assert.Equal("First", doc.Paragraphs.First().Text);
@@ -549,7 +549,7 @@ namespace DXPlus.Tests
         {
             const string text = "This is a paragraph in a document where we are looking to remove some text.";
             using var doc = Document.Create(Filename);
-            var p = doc.AddParagraph(text);
+            var p = doc.Add(text);
             Assert.Single(doc.Paragraphs);
             Assert.Equal(text, p.Text);
 
@@ -562,7 +562,7 @@ namespace DXPlus.Tests
         {
             const string text = "Test";
             using var doc = Document.Create();
-            var p = doc.AddParagraph(text);
+            var p = doc.Add(text);
             Assert.Single(doc.Paragraphs);
             Assert.Equal(text, p.Text);
 
@@ -574,7 +574,7 @@ namespace DXPlus.Tests
         public void RemoveTextWithMultipleRunsSpansRun()
         {
             using var doc = Document.Create(Filename);
-            var p = doc.AddParagraph("This")
+            var p = doc.Add("This")
                 .Append(" is ").WithFormatting(new Formatting() { Bold = true })
                 .Append("a ").WithFormatting(new Formatting() { Bold = true })
                 .Append("test.");
@@ -697,7 +697,7 @@ namespace DXPlus.Tests
         {
             var doc = Document.Create();
 
-            var p1 = doc.AddParagraph("This is a test");
+            var p1 = doc.Add("This is a test");
             var p2 = doc.Paragraphs.First();
 
             Assert.Equal(p1,p2);  // value equality
@@ -718,7 +718,7 @@ namespace DXPlus.Tests
         public void UnownedParagraphInsertsImage()
         {
             var document = Document.Create();
-            var image = document.AddImage("1022.jpg");
+            var image = document.CreateImage("1022.jpg");
             var drawing = image.CreatePicture(150, 150);
             var pic = drawing.Picture;
 
@@ -733,7 +733,7 @@ namespace DXPlus.Tests
         public void AssigningDocOwnerUpdatesImage()
         {
             var document = Document.Create();
-            var image = document.AddImage("1022.jpg");
+            var image = document.CreateImage("1022.jpg");
             var picture = image.CreatePicture(150, 150);
 
             var paragraph = new Paragraph();
@@ -742,7 +742,7 @@ namespace DXPlus.Tests
             Assert.Single(paragraph.Pictures);
             Assert.Null(paragraph.Pictures[0].SafePackagePart);
 
-            document.AddParagraph(paragraph);
+            document.Add(paragraph);
             Assert.NotNull(paragraph.Pictures[0].PackagePart);
         }
 
@@ -753,16 +753,16 @@ namespace DXPlus.Tests
 
             var document = Document.Create();
 
-            document.AddParagraph("Starting paragraph.");
+            document.Add("Starting paragraph.");
 
             var paragraph = document.AddParagraph();
-            var image = document.AddImage("1022.jpg");
+            var image = document.CreateImage("1022.jpg");
             var picture = image.CreatePicture(150, 150);
             
             paragraph.Append(picture);
             picture.AddCaption(text);
 
-            document.AddParagraph("Ending paragraph");
+            document.Add("Ending paragraph");
 
             Assert.Equal("Figure 1" + text, picture.GetCaption());
             Assert.Throws<ArgumentException>(() => picture.AddCaption(text));

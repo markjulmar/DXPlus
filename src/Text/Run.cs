@@ -306,4 +306,18 @@ public class Run : DocXElement, IEquatable<Run>
     /// <returns></returns>
     public bool Equals(Run? other) 
         => other != null && (ReferenceEquals(this, other) || Xml == other.Xml);
+
+    /// <summary>
+    /// Determines equality for a run of text
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public override bool Equals(object? other) => Equals(other as Run);
+
+    /// <summary>
+    /// Returns hashcode for this run of text
+    /// </summary>
+    /// <returns></returns>
+    public override int GetHashCode() => Xml.GetHashCode();
+
 }

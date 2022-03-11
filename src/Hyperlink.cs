@@ -273,4 +273,17 @@ public class Hyperlink : DocXElement, IEquatable<Hyperlink>
     /// <returns></returns>
     public bool Equals(Hyperlink? other) 
         => other != null && (ReferenceEquals(this, other) || Xml == other.Xml);
+
+    /// <summary>
+    /// Determines equality for a hyperlink
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public override bool Equals(object? other) => Equals(other as Hyperlink);
+
+    /// <summary>
+    /// Returns hashcode for this hyperlink
+    /// </summary>
+    /// <returns></returns>
+    public override int GetHashCode() => Xml.GetHashCode();
 }

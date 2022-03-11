@@ -103,4 +103,17 @@ public class Section : DocXElement, IEquatable<Section>
     /// <returns></returns>
     public bool Equals(Section? other) 
         => other != null && (ReferenceEquals(this, other) || Xml == other.Xml);
+
+    /// <summary>
+    /// Determines equality for a section
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public override bool Equals(object? other) => Equals(other as Section);
+
+    /// <summary>
+    /// Returns hashcode for this section
+    /// </summary>
+    /// <returns></returns>
+    public override int GetHashCode() => Xml.GetHashCode();
 }

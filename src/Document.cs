@@ -312,7 +312,7 @@ public sealed class Document : BlockContainer, IDocument
     /// <param name="imageFileName">The fully qualified or relative filename.</param>
     /// <param name="contentType">Content type</param>
     /// <returns>An Image file.</returns>
-    public Image AddImage(string imageFileName, string? contentType)
+    public Image CreateImage(string imageFileName, string? contentType)
     {
         ThrowIfNoPackage();
 
@@ -343,7 +343,7 @@ public sealed class Document : BlockContainer, IDocument
         ValidateContentType(contentType);
 
         using var fs = new FileStream(imageFileName, FileMode.Open, FileAccess.Read);
-        return AddImage(fs, contentType, Path.GetFileName(imageFileName));
+        return CreateImage(fs, contentType, Path.GetFileName(imageFileName));
     }
 
     /// <summary>
@@ -352,8 +352,8 @@ public sealed class Document : BlockContainer, IDocument
     /// <param name="imageStream">A stream with the image.</param>
     /// <param name="contentType">Content type to add</param>
     /// <returns>An Image file.</returns>
-    public Image AddImage(Stream imageStream, string contentType)
-        => AddImage(imageStream, contentType, "image");
+    public Image CreateImage(Stream imageStream, string contentType)
+        => CreateImage(imageStream, contentType, "image");
 
     /// <summary>
     /// Validates the passed image content type
@@ -375,7 +375,7 @@ public sealed class Document : BlockContainer, IDocument
     /// <param name="contentType">Content type to add</param>
     /// <param name="imageFileName">Filename (if any)</param>
     /// <returns>An Image file.</returns>
-    private Image AddImage(Stream imageStream, string contentType, string imageFileName)
+    private Image CreateImage(Stream imageStream, string contentType, string imageFileName)
     {
         ThrowIfNoPackage();
 
@@ -649,9 +649,9 @@ public sealed class Document : BlockContainer, IDocument
     void IDisposable.Dispose() => Close();
 
     /// <summary>
-    /// Insert a chart in document
+    /// Create a new paragraph, append it to the document and add the specified chart to it
     /// </summary>
-    public void InsertChart(Chart chart)
+    public Paragraph Add(Chart chart)
     {
         ThrowIfNoPackage();
 
@@ -702,6 +702,8 @@ public sealed class Document : BlockContainer, IDocument
                 )
             ));
         p.Xml.Add(chartElement);
+        
+        return p;
     }
 
     /// <summary>
@@ -1259,7 +1261,7 @@ public sealed class Document : BlockContainer, IDocument
 
         // Create an image + relationship from the stream.
         pngStream.Seek(0, SeekOrigin.Begin);
-        return AddImage(pngStream, ImageContentType.Png);
+        return CreateImage(pngStream, ImageContentType.Png);
     }
 
     /// <summary>

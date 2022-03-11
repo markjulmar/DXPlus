@@ -60,7 +60,7 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// </summary>
     /// <param name="index">Index of paragraph to remove</param>
     /// <returns>True if removed</returns>
-    public bool RemoveParagraph(int index)
+    public bool RemoveAt(int index)
     {
         if (index < 0)
             throw new ArgumentOutOfRangeException(nameof(index));
@@ -75,7 +75,7 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// </summary>
     /// <param name="paragraph">FirstParagraph to remove</param>
     /// <returns>True if removed</returns>
-    public bool RemoveParagraph(Paragraph paragraph)
+    public bool Remove(Paragraph paragraph)
     {
         if (paragraph.Container == this)
         {
@@ -180,7 +180,7 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// <param name="index">Character index to insert into</param>
     /// <param name="paragraph">FirstParagraph to insert</param>
     /// <returns>Inserted paragraph</returns>
-    public Paragraph InsertParagraph(int index, Paragraph paragraph)
+    public Paragraph Insert(int index, Paragraph paragraph)
     {
         if (paragraph.Xml.InDom())
             throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
@@ -204,7 +204,7 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// <summary>
     /// Add a paragraph at the end of the container
     /// </summary>
-    public Paragraph AddParagraph(Paragraph paragraph)
+    public Paragraph Add(Paragraph paragraph)
     {
         if (paragraph == null)
             throw new ArgumentNullException(nameof(paragraph));
@@ -318,7 +318,7 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// <param name="text">Text for new paragraph</param>
     /// <param name="formatting">Formatting for new paragraph</param>
     /// <returns></returns>
-    public Paragraph InsertParagraph(int index, string text, Formatting? formatting)
+    public Paragraph Insert(int index, string text, Formatting? formatting)
     {
         if (Document == null)
             throw new InvalidOperationException("Must be part of document structure.");
@@ -385,7 +385,7 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// <param name="text">Text to add</param>
     /// <param name="formatting">Formatting to use</param>
     /// <returns></returns>
-    public Paragraph AddParagraph(string text, Formatting? formatting)
+    public Paragraph Add(string text, Formatting? formatting)
     {
         if (text == null) throw new ArgumentNullException(nameof(text));
 
@@ -399,7 +399,7 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// </summary>
     /// <param name="table">Table to add</param>
     /// <returns>The table now associated with the document.</returns>
-    public Table AddTable(Table table)
+    public Table Add(Table table)
     {
         if (table.Xml.InDom())
             throw new ArgumentException("Cannot add table multiple times.", nameof(table));
@@ -429,7 +429,7 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// <param name="index">The index to insert this Table at.</param>
     /// <param name="table">The Table to insert.</param>
     /// <returns>The Table now associated with this document.</returns>
-    public Table InsertTable(int index, Table table)
+    public Table Insert(int index, Table table)
     {
         if (table.Xml.InDom())
             throw new ArgumentException("Cannot add table multiple times.", nameof(table));

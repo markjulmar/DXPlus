@@ -65,4 +65,17 @@ public class DocProperty : DocXElement, IEquatable<DocProperty>
     /// <returns></returns>
     public bool Equals(DocProperty? other) 
         => other != null && (ReferenceEquals(this, other) || Xml == other.Xml);
+
+    /// <summary>
+    /// Determines equality for this property
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public override bool Equals(object? other) => Equals(other as DocProperty);
+
+    /// <summary>
+    /// Returns hashcode for this property
+    /// </summary>
+    /// <returns></returns>
+    public override int GetHashCode() => Xml.GetHashCode();
 }

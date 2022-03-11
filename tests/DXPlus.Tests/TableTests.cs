@@ -13,7 +13,7 @@ namespace DXPlus.Tests
         {
             using var doc = Document.Create();
 
-            var p = doc.AddParagraph("This is a test paragraph");
+            var p = doc.Add("This is a test paragraph");
             Assert.Null(p.Table);
             doc.AddTable(1, 1);
             Assert.NotNull(p.Table);
@@ -47,7 +47,7 @@ namespace DXPlus.Tests
             Assert.True(double.IsNaN(t.DefaultColumnWidths.First()));
 
             var doc = Document.Create();
-            doc.AddTable(t);
+            doc.Add(t);
 
             Assert.False(double.IsNaN(t.DefaultColumnWidths.First()));
             Assert.Equal(expectedSize / 4, t.DefaultColumnWidths.First());
@@ -76,7 +76,7 @@ namespace DXPlus.Tests
             var doc = Document.Create();
 
             var table = new Table();
-            Assert.Throws<Exception>(() => doc.AddTable(table));
+            Assert.Throws<Exception>(() => doc.Add(table));
         }
 
         [Fact]
@@ -85,7 +85,7 @@ namespace DXPlus.Tests
             var doc = Document.Create();
 
             var table = new Table(1,1);
-            _ = doc.AddTable(table);
+            _ = doc.Add(table);
         }
 
         [Fact]
@@ -169,7 +169,7 @@ namespace DXPlus.Tests
             Table t = new Table(1, 4);
             var doc = Document.Create();
 
-            doc.AddTable(t);
+            doc.Add(t);
             Assert.Equal(4, t.DefaultColumnWidths.Count());
             double width = t.DefaultColumnWidths.First();
             Assert.False(double.IsNaN(width));
@@ -181,7 +181,7 @@ namespace DXPlus.Tests
             Table t = new Table(1, 4);
             var doc = Document.Create();
 
-            doc.AddTable(t);
+            doc.Add(t);
             Assert.Equal(4, t.DefaultColumnWidths.Count());
             double width = t.DefaultColumnWidths.First();
             var rows = t.Rows.ToList();
@@ -484,10 +484,10 @@ namespace DXPlus.Tests
             Assert.Throws<InvalidOperationException>(() => t.PackagePart);
 
             var doc = Document.Create();
-            doc.AddTable(t);
+            doc.Add(t);
             Assert.NotNull(t.PackagePart);
 
-            var t2 = doc.AddTable(new Table(1, 1));
+            var t2 = doc.Add(new Table(1, 1));
             Assert.NotNull(t2.PackagePart);
             Assert.Equal(t2.PackagePart, t.PackagePart);
             Assert.Equal(2, doc.Tables.Count());

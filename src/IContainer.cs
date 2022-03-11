@@ -40,14 +40,14 @@ public interface IContainer
     /// </summary>
     /// <param name="index">Index of paragraph to remove</param>
     /// <returns>True if removed</returns>
-    bool RemoveParagraph(int index);
+    bool RemoveAt(int index);
 
     /// <summary>
     /// Removes paragraph
     /// </summary>
     /// <param name="paragraph">FirstParagraph to remove</param>
     /// <returns>True if removed</returns>
-    bool RemoveParagraph(Paragraph paragraph);
+    bool Remove(Paragraph paragraph);
 
     /// <summary>
     /// Replace matched text with a new value
@@ -70,12 +70,12 @@ public interface IContainer
     /// <param name="index">Index to insert into</param>
     /// <param name="paragraph">FirstParagraph to insert</param>
     /// <returns>Inserted paragraph</returns>
-    Paragraph InsertParagraph(int index, Paragraph paragraph);
+    Paragraph Insert(int index, Paragraph paragraph);
 
     /// <summary>
     /// Add a paragraph at the end of the container
     /// </summary>
-    Paragraph AddParagraph(Paragraph paragraph);
+    Paragraph Add(Paragraph paragraph);
 
     /// <summary>
     /// Insert a new paragraph using the passed text.
@@ -84,7 +84,7 @@ public interface IContainer
     /// <param name="text">Text for new paragraph</param>
     /// <param name="formatting">Formatting for new paragraph</param>
     /// <returns></returns>
-    Paragraph InsertParagraph(int index, string text, Formatting? formatting = null);
+    Paragraph Insert(int index, string text, Formatting? formatting = null);
 
     /// <summary>
     /// Add a new section to the container
@@ -102,14 +102,14 @@ public interface IContainer
     /// <param name="text">Text to add</param>
     /// <param name="formatting">Formatting to use</param>
     /// <returns></returns>
-    Paragraph AddParagraph(string text, Formatting? formatting = null);
+    Paragraph Add(string text, Formatting? formatting = null);
 
     /// <summary>
     /// Add a new table to the end of the container
     /// </summary>
     /// <param name="table">Table to add</param>
     /// <returns>Table reference - may be copied if original table was already in document.</returns>
-    Table AddTable(Table table);
+    Table Add(Table table);
 
     /// <summary>
     /// Insert a Table into this document.
@@ -117,5 +117,5 @@ public interface IContainer
     /// <param name="index">The index to insert this Table at.</param>
     /// <param name="table">The Table to insert.</param>
     /// <returns>The Table now associated with this document.</returns>
-    Table InsertTable(int index, Table table);
+    Table Insert(int index, Table table);
 }

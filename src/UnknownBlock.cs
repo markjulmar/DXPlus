@@ -34,4 +34,17 @@ public class UnknownBlock : Block, IEquatable<UnknownBlock>
     /// <returns></returns>
     public bool Equals(UnknownBlock? other) 
         => other != null && (ReferenceEquals(this, other) || Xml == other.Xml);
+
+    /// <summary>
+    /// Determines equality for an unknown block
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public override bool Equals(object? other) => Equals(other as UnknownBlock);
+
+    /// <summary>
+    /// Returns hashcode for this header
+    /// </summary>
+    /// <returns></returns>
+    public override int GetHashCode() => Xml.GetHashCode();
 }

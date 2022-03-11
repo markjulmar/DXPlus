@@ -191,4 +191,18 @@ public sealed class Comment : DocXElement, IEquatable<Comment>
     /// <returns></returns>
     public bool Equals(Comment? other) 
         => other != null && (ReferenceEquals(this, other) || Xml == other.Xml);
+
+    /// <summary>
+    /// Determines equality for a comment
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public override bool Equals(object? other) => Equals(other as Comment);
+
+    /// <summary>
+    /// Returns hashcode for this comment
+    /// </summary>
+    /// <returns></returns>
+    public override int GetHashCode() => Xml.GetHashCode();
+
 }

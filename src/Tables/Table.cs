@@ -816,4 +816,17 @@ public class Table : Block, IEquatable<Table>
     /// <returns></returns>
     public bool Equals(Table? other) 
         => other != null && (ReferenceEquals(this, other) || Xml == other.Xml);
+
+    /// <summary>
+    /// Determines equality for a table
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public override bool Equals(object? other) => Equals(other as Table);
+
+    /// <summary>
+    /// Returns hashcode for this table
+    /// </summary>
+    /// <returns></returns>
+    public override int GetHashCode() => Xml.GetHashCode();
 }

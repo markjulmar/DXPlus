@@ -8,7 +8,7 @@ namespace DXPlus;
 public interface IDocument : IContainer, IDisposable
 {
     /// <summary>
-    /// Editing session id for this session.
+    /// Editing session id for this session. Automatically incremented when a document is opened.
     /// </summary>
     string RevisionId { get; }
 
@@ -112,20 +112,20 @@ public interface IDocument : IContainer, IDisposable
     void AddCustomProperty(string name, int value);
 
     /// <summary>
-    /// Add an Image into this document from a fully qualified or relative filename.
+    /// Create an Image and add it into the properties of this document from a fully qualified or relative filename.
     /// </summary>
     /// <param name="imageFileName">The fully qualified or relative filename.</param>
     /// <param name="contentType">The content type to add - use ImageContentType constants. If not supplied, the filename will be used to determine the content type.</param>
     /// <returns>An Image file.</returns>
-    Image AddImage(string imageFileName, string? contentType = null);
+    Image CreateImage(string imageFileName, string? contentType = null);
 
     /// <summary>
-    /// Add an Image into this document from a Stream.
+    /// Create an Image and add it into the properties of this document from a stream.
     /// </summary>
     /// <param name="imageStream">A Stream stream.</param>
     /// <param name="contentType">Content type to add - use ImageContentType constants.</param>
     /// <returns>An Image file.</returns>
-    Image AddImage(Stream imageStream, string contentType);
+    Image CreateImage(Stream imageStream, string contentType);
 
     ///<summary>
     /// Applies document template to the document. Document template may include styles, headers, footers, properties, etc. as well as text content.
@@ -156,9 +156,9 @@ public interface IDocument : IContainer, IDisposable
     void ApplyTemplate(Stream templateStream, bool includeContent);
 
     /// <summary>
-    /// Insert a chart in document
+    /// Create a new paragraph, append it to the document and add the specified chart to it
     /// </summary>
-    void InsertChart(Chart chart);
+    Paragraph Add(Chart chart);
 
     /// <summary>
     /// Creates a new document comment which can be associated to a DocxElement
