@@ -66,13 +66,25 @@ public sealed class Formatting : IEquatable<Formatting>
     /// <summary>
     /// Returns the applied text color, or None for default.
     /// </summary>
-    public Color? Color
+    public ColorValue? Color
     {
-        get => Xml.Element(Name.Color)?.GetValAttr()?.ToColor();
+        get
+        {
+            var color = Xml.Element(Name.Color);
+            return color == null ? null : new ColorValue(color);
+        }
+
         set
         {
-            Xml.AddElementVal(Name.Color, !value.HasValue || value == System.Drawing.Color.Empty ? null : value.Value.ToHex());
-            setProperties.Add(nameof(Color));
+            if (value == null || value.IsEmpty())
+            {
+                Xml.Element(Name.Color)?.Remove();
+            }
+            else
+            {
+                var element = Xml.GetOrAddElement(Name.Color);
+                value.SetElementValues(element);
+            }
         }
     }
 
@@ -371,6 +383,7 @@ public sealed class Formatting : IEquatable<Formatting>
 
     /// <summary>
     /// Get or set the underline style for this paragraph
+    /// TODO: underline object
     /// </summary>
     public Color? UnderlineColor
     {
@@ -443,67 +456,7 @@ public sealed class Formatting : IEquatable<Formatting>
     /// <summary>
     /// The shade pattern applied to this paragraph
     /// </summary>
-    public ShadePattern? ShadePattern
-    {
-        get => Enum.TryParse<ShadePattern>(Xml.Element(Namespace.Main + "shd")?.GetVal(), ignoreCase: true, out var sp) ? sp : null;
-
-        set
-        {
-            var e = Xml.Element(Namespace.Main + "shd");
-            if (value == null)
-            {
-                if (e == null) return;
-                value = DXPlus.ShadePattern.Clear;
-            }
-            e ??= HelperFunctions.CreateDefaultShadeElement(Xml);
-            e.SetAttributeValue(Name.MainVal, value.Value.GetEnumName());
-            setProperties.Add(nameof(ShadePattern));
-        }
-    }
-
-    /// <summary>
-    /// Shade color used with pattern - use Color.Empty for "auto"
-    /// </summary>
-    public Color? ShadeColor
-    {
-        get => Xml.Element(Namespace.Main + "shd")?.Attribute(Name.Color)?.ToColor();
-
-        set
-        {
-            var e = Xml.Element(Namespace.Main + "shd");
-            if (value == null)
-            {
-                if (e == null) return;
-                value = System.Drawing.Color.Empty;
-            }
-
-            e ??= HelperFunctions.CreateDefaultShadeElement(Xml);
-            e.SetAttributeValue(Name.Color, value.Value.ToHex());
-            setProperties.Add(nameof(ShadeColor));
-        }
-    }
-
-    /// <summary>
-    /// Shade fill - use Color.Empty for "auto"
-    /// </summary>
-    public Color? ShadeFill
-    {
-        get => Xml.Element(Namespace.Main + "shd")?.Attribute(Namespace.Main + "fill")?.ToColor();
-
-        set
-        {
-            var e = Xml.Element(Namespace.Main + "shd");
-            if (value == null)
-            {
-                if (e == null) return;
-                value = System.Drawing.Color.Empty;
-            }
-
-            e ??= HelperFunctions.CreateDefaultShadeElement(Xml);
-            e.SetAttributeValue(Name.Color, value.Value.ToHex());
-            setProperties.Add(nameof(ShadeFill));
-        }
-    }
+    public Shading Shading => new(Xml);
 
     // TODO: add TextBorder (bdr)
 

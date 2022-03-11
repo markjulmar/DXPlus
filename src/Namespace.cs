@@ -19,6 +19,7 @@ namespace DXPlus
         public static readonly XName ComplexField = Namespace.Main + "fldChar";
         public static readonly XName DrawingProperties = Namespace.WordProcessingDrawing + "docPr";
         public static readonly XName Emphasis = Namespace.Main + "em";
+        public static readonly XName Fill = Namespace.Main + "fill";
         public static readonly XName FirstLine = Namespace.Main + "firstLine";
         public static readonly XName Hanging = Namespace.Main + "hanging";
         public static readonly XName Highlight = Namespace.Main + "highlight";
@@ -56,6 +57,12 @@ namespace DXPlus
         public static readonly XName TableCell = Namespace.Main + "tc";
         public static readonly XName TableIndent = Namespace.Main + "tblInd";
         public static readonly XName Text = Namespace.Main + "t";
+        public static readonly XName ThemeColor = Namespace.Main + "themeColor";
+        public static readonly XName ThemeShade = Namespace.Main + "themeShade";
+        public static readonly XName ThemeTint = Namespace.Main + "themeTint";
+        public static readonly XName ThemeFill = Namespace.Main + "themeFill";
+        public static readonly XName ThemeFillShade = Namespace.Main + "themeFillShade";
+        public static readonly XName ThemeFillTint = Namespace.Main + "themeFillTint";
         public static readonly XName Top = Namespace.Main + "top";
         public static readonly XName Type = Namespace.Main + "type";
         public static readonly XName Underline = Namespace.Main + "u";

@@ -51,22 +51,49 @@ namespace DXPlus
         }
 
         /// <summary>
+        /// Convert a byte value to a hex string value
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string ToHex(this byte value) => value.ToString("2X");
+
+        /// <summary>
+        /// Convert a string value to a byte.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static byte? ToByte(this string value) 
+            => byte.TryParse(value, NumberStyles.HexNumber, null, out var b) ? b : null;
+
+        /// <summary>
+        /// Convert the value of a string to a System.Drawing.Color
+        /// </summary>
+        /// <param name="color">Hex color value RRGGBB</param>
+        /// <returns>Color object</returns>
+        public static Color? ToColor(this string? color)
+        {
+            if (color != null && string.Compare(color.Trim(), "auto", StringComparison.CurrentCultureIgnoreCase) != 0)
+            {
+                if (color.StartsWith('#'))
+                    color = color[1..];
+                if (uint.TryParse(color, NumberStyles.HexNumber, null, out var rgb))
+                    return Color.FromArgb((int)(rgb | 0xff000000));
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Convert the value of an attribute to a Color using ARGB
         /// </summary>
         /// <param name="color"></param>
         /// <returns></returns>
         public static Color ToColor(this XAttribute color)
         {
-            if (color != null)
-            {
-                if (color.Value.Trim().ToLower() == "auto")
-                    return Color.Transparent;
+            if (color.Value.Trim().ToLower() == "auto")
+                return Color.Transparent;
 
-                var rgb = int.Parse(color.Value.Replace("#", ""), NumberStyles.HexNumber) | 0xff000000;
-                return Color.FromArgb((int) rgb);
-            }
-
-            return Color.Empty;
+            var rgb = int.Parse(color.Value.Replace("#", ""), NumberStyles.HexNumber) | 0xff000000;
+            return Color.FromArgb((int) rgb);
         }
     }
 }
