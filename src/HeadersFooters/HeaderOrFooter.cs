@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Xml.Linq;
-using DXPlus.Helpers;
+using DXPlus.Internal;
 
 namespace DXPlus;
 
@@ -14,7 +14,7 @@ public abstract class HeaderOrFooter : BlockContainer
     /// <summary>
     /// This is the actual Xml that gives this element substance.
     /// </summary>
-    public override XElement Xml
+    protected internal override XElement Xml
     {
         get
         {
@@ -22,7 +22,7 @@ public abstract class HeaderOrFooter : BlockContainer
             if (!Exists) CreateFunc!.Invoke(this);
             return element!;
         }
-        protected internal set => element = value;
+        set => element = value;
     }
 
     /// <summary>

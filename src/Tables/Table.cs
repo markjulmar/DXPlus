@@ -1,14 +1,14 @@
-﻿using DXPlus.Helpers;
-using DXPlus.Resources;
+﻿using DXPlus.Resources;
 using System.IO.Packaging;
 using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus;
 
 /// <summary>
 /// Represents a Table in a document {tbl}
 /// </summary>
-public class Table : Block, IEquatable<Table>
+public sealed class Table : Block, IEquatable<Table>
 {
     private string? customTableDesignName;
     private TableDesign tableDesign;

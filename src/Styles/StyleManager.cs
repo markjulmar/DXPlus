@@ -1,7 +1,7 @@
-﻿using DXPlus.Helpers;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.IO.Packaging;
 using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus;
 

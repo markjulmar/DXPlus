@@ -1,5 +1,5 @@
-﻿using DXPlus.Helpers;
-using System.Xml.Linq;
+﻿using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus;
 
@@ -183,7 +183,7 @@ public abstract class BlockContainer : DocXElement, IContainer
     {
         if (paragraph.Xml.InDom())
             throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
-        if (Document == null)
+        if (!InDocument)
             throw new InvalidOperationException("Must be part of document structure.");
 
         var insertPos = Document.FindParagraphByIndex(index);
@@ -193,7 +193,7 @@ public abstract class BlockContainer : DocXElement, IContainer
         }
         else
         {
-            var split = SplitParagraph(insertPos, index - insertPos.StartIndex);
+            var split = SplitParagraph(insertPos, index - insertPos.StartIndex!.Value);
             insertPos.Xml.ReplaceWith(split[0], paragraph.Xml, split[1]);
         }
 
@@ -259,7 +259,7 @@ public abstract class BlockContainer : DocXElement, IContainer
         }
 
         paragraph.SetOwner(Document, PackagePart, true);
-        paragraph.SetStartIndex(Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
+        paragraph.SetStartIndex(Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex!.Value);
 
         return paragraph;
     }
@@ -389,7 +389,7 @@ public abstract class BlockContainer : DocXElement, IContainer
         var firstParagraph = Document.FindParagraphByIndex(index);
         if (firstParagraph != null)
         {
-            var split = SplitParagraph(firstParagraph, index - firstParagraph.StartIndex);
+            var split = SplitParagraph(firstParagraph, index - firstParagraph.StartIndex!.Value);
             firstParagraph.Xml.ReplaceWith(split[0], table.Xml, split[1]);
         }
 

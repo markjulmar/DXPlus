@@ -1,6 +1,6 @@
 ﻿using System.Text;
-using DXPlus.Helpers;
 using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus;
 
@@ -19,8 +19,8 @@ public sealed class Bookmark : IEquatable<Bookmark>
     /// </summary>
     public string Name
     {
-        get => Xml.AttributeValue(DXPlus.Name.NameId) ?? throw new DocumentFormatException(nameof(Name));
-        set => Xml.SetAttributeValue(DXPlus.Name.NameId, value);
+        get => Xml.AttributeValue(Internal.Name.NameId) ?? throw new DocumentFormatException(nameof(Name));
+        set => Xml.SetAttributeValue(Internal.Name.NameId, value);
     }
 
     /// <summary>
@@ -33,8 +33,8 @@ public sealed class Bookmark : IEquatable<Bookmark>
     /// </summary>
     public long Id
     {
-        get => long.TryParse(Xml.AttributeValue(DXPlus.Name.Id), out var value) ? value : 0;
-        set => Xml.SetAttributeValue(DXPlus.Name.Id, value);
+        get => long.TryParse(Xml.AttributeValue(Internal.Name.Id), out var value) ? value : 0;
+        set => Xml.SetAttributeValue(Internal.Name.Id, value);
     }
 
     /// <summary>
@@ -72,12 +72,12 @@ public sealed class Bookmark : IEquatable<Bookmark>
             var sb = new StringBuilder();
             foreach (var item in Xml.ElementsAfterSelf())
             {
-                if (item.Name.LocalName == DXPlus.Name.Run.LocalName)
+                if (item.Name.LocalName == Internal.Name.Run.LocalName)
                 {
                     sb.Append(DocumentHelpers.GetText(item));
                 }
-                else if (item.Name == DXPlus.Name.BookmarkEnd
-                         && item.AttributeValue(DXPlus.Name.Id) == Id.ToString())
+                else if (item.Name == Internal.Name.BookmarkEnd
+                         && item.AttributeValue(Internal.Name.Id) == Id.ToString())
                     break;
             }
 
@@ -98,7 +98,7 @@ public sealed class Bookmark : IEquatable<Bookmark>
         
         var nextElement = nextNode as XElement;
         while (nextElement == null
-               || (nextElement.Name != DXPlus.Name.Run && nextElement.Name != DXPlus.Name.BookmarkEnd))
+               || (nextElement.Name != Internal.Name.Run && nextElement.Name != Internal.Name.BookmarkEnd))
         {
             nextNode = nextNode.NextNode;
             if (nextNode == null)
@@ -108,11 +108,11 @@ public sealed class Bookmark : IEquatable<Bookmark>
         }
 
         // Check if next element is a bookmarkEnd
-        if (nextElement.Name == DXPlus.Name.BookmarkEnd)
+        if (nextElement.Name == Internal.Name.BookmarkEnd)
             return InsertBookmarkText(Xml, text);
 
         // Or a run
-        var contentElement = nextElement.Elements(DXPlus.Name.Text).FirstOrDefault();
+        var contentElement = nextElement.Elements(Internal.Name.Text).FirstOrDefault();
         if (contentElement == null)
             return InsertBookmarkText(Xml, text);
 
@@ -130,7 +130,7 @@ public sealed class Bookmark : IEquatable<Bookmark>
     {
         Xml = xml ?? throw new ArgumentNullException(nameof(xml));
         Paragraph = owner ?? throw new ArgumentNullException(nameof(owner));
-        if (Xml.Name != DXPlus.Name.BookmarkStart)
+        if (Xml.Name != Internal.Name.BookmarkStart)
             throw new ArgumentException($"Cannot create bookmark from {Xml.Name.LocalName}");
     }
 

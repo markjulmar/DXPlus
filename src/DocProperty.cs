@@ -1,6 +1,7 @@
 ﻿using System.IO.Packaging;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus;
 
@@ -8,7 +9,7 @@ namespace DXPlus;
 /// Represents a field in the document.
 /// This field displays the value stored in a document or custom property.
 /// </summary>
-public class DocProperty : DocXElement, IEquatable<DocProperty>
+public sealed class DocProperty : DocXElement, IEquatable<DocProperty>
 {
     private const string DocPropertyText = "DOCPROPERTY";
 
@@ -36,13 +37,13 @@ public class DocProperty : DocXElement, IEquatable<DocProperty>
         var dpre = new Regex($"{DocPropertyText} (?<name>.*) \\*");
 
         // Check for a simple field
-        string? instr = Xml.AttributeValue(DXPlus.Name.Instr, null)?.Trim();
+        string? instr = Xml.AttributeValue(Internal.Name.Instr, null)?.Trim();
         if (instr != null)
         {
             Name = instr.Contains(DocPropertyText)
                 ? dpre.Match(instr).Groups["name"].Value.Trim('"')
                 : instr[..instr.IndexOf(' ')];
-            Value = Xml.Descendants().First(e => e.Name == DXPlus.Name.Text)?.Value;
+            Value = Xml.Descendants().First(e => e.Name == Internal.Name.Text)?.Value;
         }
         // Complex field
         else

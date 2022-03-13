@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Xml.Linq;
 using System.Xml.XPath;
+using DXPlus.Internal;
 using Xunit;
 
 namespace DXPlus.Tests
@@ -25,6 +26,25 @@ namespace DXPlus.Tests
             doc.Add(p);
             p.AddParagraph();
             Assert.Equal(2, doc.Paragraphs.Count());
+        }
+
+        [Fact]
+        public void AddToDocSetsStartAndEndIndex()
+        {
+            using var doc = Document.Create();
+
+            var p = new Paragraph("Test");
+            Assert.Null(p.StartIndex);
+
+            doc.Add(p);
+            Assert.Equal(0, p.StartIndex);
+
+            p = new Paragraph("Second paragraph");
+            Assert.Null(p.StartIndex);
+
+            doc.Add(p);
+            Assert.Equal("Test".Length, p.StartIndex);
+            Assert.Equal("Test\nSecond paragraph", doc.Text);
         }
 
         [Fact]
@@ -600,9 +620,9 @@ namespace DXPlus.Tests
                 new XElement(Name.Run,
                     new XElement(Name.Text, "here.")));
 
-            var p = new Paragraph(null, null, e, 0);
+            var p = new Paragraph(null, null, e, null);
             Assert.Equal("Some text goes here.", p.Text);
-            Assert.Equal(0, p.StartIndex);
+            Assert.Null(p.StartIndex);
 
             p.RemoveText(5, 5);
             Assert.Equal("Some goes here.", p.Text);

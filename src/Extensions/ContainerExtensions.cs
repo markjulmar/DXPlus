@@ -37,7 +37,7 @@ public static class ContainerExtensions
             .Union(container.Paragraphs)
             .Union(container.Sections.SelectMany(s => s.Footers).SelectMany(footer => footer.Paragraphs))
             .ToList()
-            .SelectMany(p => p.FindAll(findText, comparisonType).Select(n => n + p.StartIndex));
+            .SelectMany(p => p.FindAll(findText, comparisonType).Select(n => n + p.StartIndex!.Value));
     }
 
     /// <summary>
@@ -53,7 +53,7 @@ public static class ContainerExtensions
         {
             foreach (var (index, text) in p.FindPattern(regex))
             {
-                yield return (index: index + p.StartIndex, text);
+                yield return (index: index + p.StartIndex!.Value, text);
             }
         }
     }

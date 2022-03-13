@@ -3,7 +3,7 @@ using System.Xml.Linq;
 using System.Xml.Serialization;
 using System.Xml.XPath;
 
-namespace DXPlus;
+namespace DXPlus.Internal;
 
 /// <summary>
 /// Internal helpers to work with XElement/XDocument types.

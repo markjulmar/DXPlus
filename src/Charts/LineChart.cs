@@ -1,30 +1,12 @@
 ﻿using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus.Charts;
 
 /// <summary>
-/// Specifies the kind of grouping for a column, line, or area chart.
-/// </summary>
-public enum Grouping
-{
-    /// <summary>
-    /// Grouped by stacked percentage
-    /// </summary>
-    PercentStacked,
-    /// <summary>
-    /// Stacked
-    /// </summary>
-    Stacked,
-    /// <summary>
-    /// Standard grouping
-    /// </summary>
-    Standard
-}
-
-/// <summary>
 /// This element contains the 2-D line chart series.
 /// </summary>
-public class LineChart : Chart
+public sealed class LineChart : Chart
 {
     /// <summary>
     /// Specifies the kind of grouping for a column, line, or area chart.

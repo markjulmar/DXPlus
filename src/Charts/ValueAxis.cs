@@ -5,7 +5,7 @@ namespace DXPlus.Charts;
 /// <summary>
 /// Represents Values Axes
 /// </summary>
-public class ValueAxis : Axis
+public sealed class ValueAxis : Axis
 {
     /// <summary>
     /// Constructor

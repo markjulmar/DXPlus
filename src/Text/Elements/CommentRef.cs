@@ -1,16 +1,17 @@
 ﻿using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus;
 
 /// <summary>
 /// This identifies a comment reference tied to a Run.
 /// </summary>
-public class CommentRef : TextElement
+public sealed class CommentRef : TextElement
 {
     /// <summary>
     /// The comment identifier.
     /// </summary>
-    public int? Id => int.TryParse(Xml.AttributeValue(DXPlus.Name.Id), out var result) ? result : null;
+    public int? Id => int.TryParse(Xml.AttributeValue(Name.Id), out var result) ? result : null;
 
     /// <summary>
     /// Retrieve the associated comment.

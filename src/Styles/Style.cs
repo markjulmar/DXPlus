@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus;
 
@@ -25,8 +26,8 @@ public sealed class Style
     /// </summary>
     public string? Name
     {
-        get => Xml.Element(DXPlus.Name.NameId).GetVal();
-        set => Xml.AddElementVal(DXPlus.Name.NameId, value);
+        get => Xml.Element(Internal.Name.NameId).GetVal();
+        set => Xml.AddElementVal(Internal.Name.NameId, value);
     }
 
     /// <summary>
@@ -62,12 +63,12 @@ public sealed class Style
     /// <summary>
     /// Retrieve the formatting options
     /// </summary>
-    public Formatting Formatting => new(Xml.GetOrAddElement(DXPlus.Name.RunProperties));
+    public Formatting Formatting => new(Xml.GetOrAddElement(Internal.Name.RunProperties));
 
     /// <summary>
     /// FirstParagraph properties
     /// </summary>
-    public ParagraphProperties ParagraphFormatting => new(Xml.GetOrAddElement(DXPlus.Name.ParagraphProperties));
+    public ParagraphProperties ParagraphFormatting => new(Xml.GetOrAddElement(Internal.Name.ParagraphProperties));
 
     /// <summary>
     /// The style this one is based on.

@@ -1,14 +1,14 @@
-﻿using DXPlus.Helpers;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO.Packaging;
 using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus;
 
 /// <summary>
 /// Represents a Hyperlink in a document.
 /// </summary>
-public class Hyperlink : DocXElement, IEquatable<Hyperlink>
+public sealed class Hyperlink : DocXElement, IEquatable<Hyperlink>
 {
     private Uri? uri;
     private string text;

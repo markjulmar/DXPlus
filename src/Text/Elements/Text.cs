@@ -1,11 +1,12 @@
 ﻿using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus;
 
 /// <summary>
 /// Raw text from a Run. Wraps a {w:t} element.
 /// </summary>
-public class Text : TextElement
+public sealed class Text : TextElement
 {
     static readonly XName xspace = XNamespace.Xml + "space";
 

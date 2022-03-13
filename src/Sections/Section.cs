@@ -1,12 +1,13 @@
 ﻿using System.IO.Packaging;
 using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus;
 
 /// <summary>
 /// Identified sections in a document
 /// </summary>
-public class Section : DocXElement, IEquatable<Section>
+public sealed class Section : DocXElement, IEquatable<Section>
 {
     /// <summary>
     /// Returns a collection of Headers in this section of the document.

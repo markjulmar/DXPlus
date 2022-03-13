@@ -1,12 +1,14 @@
 ﻿using System.Diagnostics;
 using System.IO.Packaging;
 using System.Xml.Linq;
-using DXPlus.Helpers;
 using DXPlus.Resources;
 
 // ReSharper disable once CheckNamespace
 namespace DXPlus.Internal;
 
+/// <summary>
+/// Comment manager
+/// </summary>
 internal class CommentManager : DocXElement
 {
     private XDocument? commentsDoc;

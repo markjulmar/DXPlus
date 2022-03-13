@@ -1,12 +1,12 @@
 ﻿using System.IO.Packaging;
 using System.Xml.Linq;
 
-namespace DXPlus.Helpers;
+namespace DXPlus.Internal;
 
 /// <summary>
 /// Helper methods to work with custom document properties.
 /// </summary>
-public static class CustomPropertyHelpers
+internal static class CustomPropertyHelpers
 {
     /// <summary>
     /// Returns all the properties defined in a specific document package.
@@ -37,10 +37,10 @@ public static class CustomPropertyHelpers
     {
         return type switch
         {
-            CustomProperty.BOOL => value.ToLower() == "true" || value.ToLower() == "1",
-            CustomProperty.I4 => int.TryParse(value, out var iv) ? iv : 0,
-            CustomProperty.R8 => double.TryParse(value, out var rv) ? rv : 0,
-            CustomProperty.FILETIME => DateTime.TryParse(value, out var dt) ? dt : DateTime.MinValue,
+            CustomPropertyType.BOOL => value.ToLower() == "true" || value.ToLower() == "1",
+            CustomPropertyType.I4 => int.TryParse(value, out var iv) ? iv : 0,
+            CustomPropertyType.R8 => double.TryParse(value, out var rv) ? rv : 0,
+            CustomPropertyType.FILETIME => DateTime.TryParse(value, out var dt) ? dt : DateTime.MinValue,
             _ => value
         };
     }

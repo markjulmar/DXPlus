@@ -1,8 +1,8 @@
-﻿using DXPlus.Helpers;
-using DXPlus.Resources;
+﻿using DXPlus.Resources;
 using System.Diagnostics;
 using System.IO.Packaging;
 using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus;
 

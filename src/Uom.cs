@@ -7,7 +7,7 @@
     /// Half-points are the main unit for font sizes, calculate the value by multiplying the ptSize by 2.
     /// Emu is English Metric Units. EMUs are equivalent to 1/360,000 of a centimeter, 1/914,400 inches or 1/12,700 points.
     /// </summary>
-    public class Uom
+    public sealed class Uom
     {
         /// <summary>
         /// Conversion ratio for Dxa to points

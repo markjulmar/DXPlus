@@ -1,5 +1,5 @@
-﻿using DXPlus.Helpers;
-using System.Xml.Linq;
+﻿using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus;
 
@@ -61,8 +61,8 @@ public sealed class NumberingStyle
     /// </summary>
     public string? Name
     {
-        get => Xml.Element(DXPlus.Name.NameId).GetVal(null);
-        set => Xml.AddElementVal(DXPlus.Name.NameId, string.IsNullOrWhiteSpace(value) ? null : value);
+        get => Xml.Element(Internal.Name.NameId).GetVal(null);
+        set => Xml.AddElementVal(Internal.Name.NameId, string.IsNullOrWhiteSpace(value) ? null : value);
     }
 
     /// <summary>

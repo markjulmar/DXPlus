@@ -1,7 +1,7 @@
-﻿using DXPlus.Helpers;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO.Packaging;
 using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus;
 
@@ -9,7 +9,7 @@ namespace DXPlus;
 /// Represents a single run of text with optional formatting in a paragraph
 /// </summary>
 [DebuggerDisplay("{" + nameof(Text) + "}")]
-public class Run : DocXElement, IEquatable<Run>
+public sealed class Run : DocXElement, IEquatable<Run>
 {
     /// <summary>
     /// Retrieves the parent (if any) of this run. This will be a paragraph, hyperlink, etc.

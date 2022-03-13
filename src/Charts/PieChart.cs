@@ -1,11 +1,12 @@
 ﻿using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus.Charts;
 
 /// <summary>
 /// This element contains the 2-D pie series for this chart.
 /// </summary>
-public class PieChart : Chart
+public sealed class PieChart : Chart
 {
     /// <summary>
     /// Chart has an axis?

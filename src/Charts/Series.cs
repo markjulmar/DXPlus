@@ -1,13 +1,14 @@
 ﻿using System.Collections;
 using System.Drawing;
 using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus.Charts;
 
 /// <summary>
 /// Represents a chart series
 /// </summary>
-public class Series
+public sealed class Series
 {
     private readonly XElement numCache;
     private readonly XElement strCache;

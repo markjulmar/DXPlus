@@ -7,7 +7,7 @@ namespace DXPlus;
 /// Represents a single element contained within the document structure.
 /// Wraps the underlying XML element, document owner, and package part.
 /// </summary>
-public class DocXElement
+public abstract class DocXElement
 {
     private XElement? element;
     private Document? document;
@@ -42,10 +42,10 @@ public class DocXElement
     /// <summary>
     /// This is the actual Xml that gives this element substance.
     /// </summary>
-    public virtual XElement Xml
+    protected internal virtual XElement Xml
     {
         get => element ?? throw new InvalidOperationException("Missing XML node.");
-        protected internal set => element = value ?? throw new ArgumentNullException(nameof(value));
+        set => element = value ?? throw new ArgumentNullException(nameof(value));
     }
 
     /// <summary>

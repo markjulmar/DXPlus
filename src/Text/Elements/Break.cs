@@ -1,19 +1,20 @@
 ﻿using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus;
 
 /// <summary>
 /// This class represents a page, column, or line break in a Run.
 /// </summary>
-public class Break : TextElement
+public sealed class Break : TextElement
 {
     /// <summary>
     /// The type of break
     /// </summary>
     public BreakType Type
     {
-        get => Enum.TryParse<BreakType>(Xml.AttributeValue(DXPlus.Name.Type), ignoreCase:true, out var bt) ? bt : BreakType.Line;
-        set => Xml.SetAttributeValue(DXPlus.Name.Type, value.GetEnumName());
+        get => Enum.TryParse<BreakType>(Xml.AttributeValue(Name.Type), ignoreCase:true, out var bt) ? bt : BreakType.Line;
+        set => Xml.SetAttributeValue(Name.Type, value.GetEnumName());
     }
 
     /// <summary>

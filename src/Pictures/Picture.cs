@@ -1,8 +1,7 @@
 ﻿using System.Drawing;
 using System.IO.Packaging;
 using System.Xml.Linq;
-using DXPlus.Helpers;
-using DXPlus.Shapes;
+using DXPlus.Internal;
 
 namespace DXPlus;
 

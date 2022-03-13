@@ -5,7 +5,7 @@ namespace DXPlus.Charts;
 /// <summary>
 /// Represents Category Axes
 /// </summary>
-public class CategoryAxis : Axis
+public sealed class CategoryAxis : Axis
 {
     /// <summary>
     /// Constructor

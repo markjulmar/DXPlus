@@ -1,7 +1,7 @@
 ﻿using System.Drawing;
 using System.Globalization;
 
-namespace DXPlus;
+namespace DXPlus.Internal;
 
 /// <summary>
 /// Misc. .NET extensions to common types.

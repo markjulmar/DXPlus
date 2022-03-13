@@ -4,7 +4,7 @@ using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace DXPlus.Helpers;
+namespace DXPlus.Internal;
 
 /// <summary>
 /// Internal helper classes.

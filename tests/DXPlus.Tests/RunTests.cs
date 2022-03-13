@@ -1,5 +1,6 @@
 ﻿using System.Xml;
 using System.Xml.Linq;
+using DXPlus.Internal;
 using Xunit;
 
 namespace DXPlus.Tests

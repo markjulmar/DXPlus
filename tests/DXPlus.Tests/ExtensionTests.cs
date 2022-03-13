@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using DXPlus.Internal;
 using Xunit;
 
 namespace DXPlus.Tests

@@ -1,7 +1,7 @@
 ﻿using System.Drawing;
 using System.Xml.Linq;
 
-namespace DXPlus.Shapes;
+namespace DXPlus.Internal;
 
 internal static class ShapeHelpers
 {

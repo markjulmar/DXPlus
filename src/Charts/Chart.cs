@@ -1,54 +1,8 @@
 ﻿using System.Xml.Linq;
-using System.Xml.Serialization;
+using DXPlus.Internal;
 
 namespace DXPlus.Charts
 {
-    /// <summary>
-    /// Specifies the possible positions for a legend.
-    /// </summary>
-    public enum ChartLegendPosition
-    {
-        /// <summary>
-        /// Legend is on the top
-        /// </summary>
-        [XmlAttribute("t")] Top,
-        /// <summary>
-        /// Legend is on the bottom
-        /// </summary>
-        [XmlAttribute("b")] Bottom,
-        /// <summary>
-        /// Legend is on the left
-        /// </summary>
-        [XmlAttribute("l")] Left,
-        /// <summary>
-        /// Legend is on the right
-        /// </summary>
-        [XmlAttribute("r")] Right,
-        /// <summary>
-        /// Legend is on the top/right
-        /// </summary>
-        [XmlAttribute("tr")] TopRight
-    }
-
-    /// <summary>
-    /// Specifies the possible ways to display blanks.
-    /// </summary>
-    public enum DisplayBlanksAs
-    {
-        /// <summary>
-        /// Gap
-        /// </summary>
-        Gap,
-        /// <summary>
-        /// Span
-        /// </summary>
-        Span,
-        /// <summary>
-        /// None
-        /// </summary>
-        Zero
-    }
-
     /// <summary>
     /// Represents every Chart in this document.
     /// </summary>

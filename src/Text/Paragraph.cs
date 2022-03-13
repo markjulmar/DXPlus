@@ -1,5 +1,4 @@
-﻿using DXPlus.Helpers;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Drawing;
 using System.IO.Packaging;
 using System.Text.RegularExpressions;
@@ -12,7 +11,7 @@ namespace DXPlus;
 /// Represents a document paragraph.
 /// </summary>
 [DebuggerDisplay("{Text}")]
-public class Paragraph : Block, IEquatable<Paragraph>
+public sealed class Paragraph : Block, IEquatable<Paragraph>
 {
     private Table? tableAfterParagraph;
     private readonly List<Hyperlink> unownedHyperlinks = new();
@@ -46,15 +45,13 @@ public class Paragraph : Block, IEquatable<Paragraph>
 
     /// <summary>
     /// Starting index for this paragraph
-    /// TODO: remove
     /// </summary>
-    internal int StartIndex { get; private set; }
+    internal int? StartIndex { get; private set; }
 
     /// <summary>
     /// End index for this paragraph
-    /// TODO: remove
     /// </summary>
-    internal int EndIndex { get; private set; }
+    internal int? EndIndex { get; private set; }
 
     /// <summary>
     /// Create a paragraph from a string.
@@ -72,7 +69,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// Public constructor for the paragraph
     /// </summary>
     public Paragraph() 
-        : this(null, null, new XElement(Name.Paragraph), 0)
+        : this(null, null, new XElement(Name.Paragraph), null)
     {
     }
 
@@ -111,13 +108,16 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// <param name="packagePart">Package owner</param>
     /// <param name="xml">XML for the paragraph</param>
     /// <param name="startIndex">Starting position in the doc</param>
-    internal Paragraph(Document? document, PackagePart? packagePart, XElement xml, int startIndex) : base(xml)
+    internal Paragraph(Document? document, PackagePart? packagePart, XElement xml, int? startIndex) : base(xml)
     {
         if (document != null)
             SetOwner(document, packagePart, false);
 
         StartIndex = startIndex;
-        EndIndex = startIndex + DocumentHelpers.GetTextLength(xml);
+        if (startIndex != null)
+        {
+            EndIndex = startIndex + DocumentHelpers.GetTextLength(xml);
+        }
     }
 
     /// <summary>

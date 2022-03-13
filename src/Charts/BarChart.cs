@@ -1,51 +1,12 @@
 ﻿using System.Xml.Linq;
-using System.Xml.Serialization;
+using DXPlus.Internal;
 
 namespace DXPlus.Charts;
 
 /// <summary>
-/// Specifies the possible directions for a bar chart.
-/// </summary>
-public enum BarDirection
-{
-    /// <summary>
-    /// Vertical
-    /// </summary>
-    [XmlAttribute("col")] Column,
-
-    /// <summary>
-    /// Horizontal
-    /// </summary>
-    Bar
-}
-
-/// <summary>
-/// Specifies the possible groupings for a bar chart.
-/// </summary>
-public enum BarGrouping
-{
-    /// <summary>
-    /// Stacked by percentage
-    /// </summary>
-    PercentStacked,
-    /// <summary>
-    /// Clustered grouping
-    /// </summary>
-    Clustered,
-    /// <summary>
-    /// Standard grouping
-    /// </summary>
-    Standard,
-    /// <summary>
-    /// Stacked grouping
-    /// </summary>
-    Stacked
-}
-
-/// <summary>
 /// This element contains the 2-D bar or column series on this chart.
 /// </summary>
-public class BarChart : Chart
+public sealed class BarChart : Chart
 {
     /// <summary>
     /// Specifies the possible directions for a bar chart.

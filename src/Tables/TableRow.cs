@@ -1,13 +1,13 @@
 ﻿using System.Diagnostics;
 using System.Xml.Linq;
-using DXPlus.Helpers;
+using DXPlus.Internal;
 
 namespace DXPlus;
 
 /// <summary>
 /// Represents a single row in a Table.
 /// </summary>
-public class TableRow : DocXElement, IEquatable<TableRow>
+public sealed class TableRow : DocXElement, IEquatable<TableRow>
 {
     /// <summary>
     /// Table owner

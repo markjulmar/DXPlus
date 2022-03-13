@@ -1,6 +1,6 @@
 using System.IO.Packaging;
 using System.Xml.Linq;
-using DXPlus.Helpers;
+using DXPlus.Internal;
 
 namespace DXPlus;
 
@@ -24,7 +24,7 @@ public sealed class Drawing: DocXElement, IEquatable<Drawing>, ITextElement
     /// <summary>
     /// Parent run object (if any)
     /// </summary>
-    public Run? Parent => Xml.Parent?.Name == DXPlus.Name.Run 
+    public Run? Parent => Xml.Parent?.Name == Internal.Name.Run 
         ? new Run(Document, PackagePart, Xml.Parent, -1) : null;
 
     /// <summary>

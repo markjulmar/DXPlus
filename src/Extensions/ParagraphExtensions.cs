@@ -1,5 +1,6 @@
 ﻿using System.Drawing;
 using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus;
 
@@ -92,19 +93,6 @@ public static class ParagraphExtensions
         if (container == null) throw new ArgumentNullException(nameof(container));
         if (text == null) throw new ArgumentNullException(nameof(text));
         return container.InsertAfter(new Paragraph(text));
-    }
-
-    /// <summary>
-    /// Insert a paragraph before this container.
-    /// </summary>
-    /// <param name="container">Container owner</param>
-    /// <param name="text">Text for new paragraph</param>
-    /// <returns>Newly created paragraph</returns>
-    public static Paragraph InsertParagraphBefore(this Block container, string text)
-    {
-        if (container == null) throw new ArgumentNullException(nameof(container));
-        if (text == null) throw new ArgumentNullException(nameof(text));
-        return container.InsertBefore(new Paragraph(text));
     }
 
     /// <summary>

@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using System.Xml.XPath;
 using System.Linq;
+using DXPlus.Internal;
 using Xunit;
 
 namespace DXPlus.Tests

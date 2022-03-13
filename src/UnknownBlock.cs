@@ -6,7 +6,7 @@ namespace DXPlus;
 /// <summary>
 /// This wraps unknown blocks found when enumerating the document.
 /// </summary>
-public class UnknownBlock : Block, IEquatable<UnknownBlock>
+public sealed class UnknownBlock : Block, IEquatable<UnknownBlock>
 {
     /// <summary>
     /// Constructor

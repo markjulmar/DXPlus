@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
 using DXPlus.Charts;
-using DXPlus.Helpers;
 using DXPlus.Resources;
 using System.IO.Packaging;
 using System.Reflection;
@@ -255,35 +254,35 @@ public sealed class Document : BlockContainer, IDocument
     /// If a custom property already exists with the same name it will be replace.
     /// CustomProperty names are case insensitive.
     /// </summary>
-    public void AddCustomProperty(string name, string value) => AddCustomProperty(name, CustomProperty.LPWSTR, value);
+    public void AddCustomProperty(string name, string value) => AddCustomProperty(name, Internal.CustomPropertyType.LPWSTR, value);
 
     /// <summary>
     /// Add a custom property to this document.
     /// If a custom property already exists with the same name it will be replace.
     /// CustomProperty names are case insensitive.
     /// </summary>
-    public void AddCustomProperty(string name, double value) => AddCustomProperty(name, CustomProperty.R8, value);
+    public void AddCustomProperty(string name, double value) => AddCustomProperty(name, Internal.CustomPropertyType.R8, value);
 
     /// <summary>
     /// Add a custom property to this document.
     /// If a custom property already exists with the same name it will be replace.
     /// CustomProperty names are case insensitive.
     /// </summary>
-    public void AddCustomProperty(string name, bool value) => AddCustomProperty(name, CustomProperty.BOOL, value);
+    public void AddCustomProperty(string name, bool value) => AddCustomProperty(name, Internal.CustomPropertyType.BOOL, value);
 
     /// <summary>
     /// Add a custom property to this document.
     /// If a custom property already exists with the same name it will be replace.
     /// CustomProperty names are case insensitive.
     /// </summary>
-    public void AddCustomProperty(string name, DateTime value) => AddCustomProperty(name, CustomProperty.FILETIME, value.ToUniversalTime());
+    public void AddCustomProperty(string name, DateTime value) => AddCustomProperty(name, Internal.CustomPropertyType.FILETIME, value.ToUniversalTime());
 
     /// <summary>
     /// Add a custom property to this document.
     /// If a custom property already exists with the same name it will be replace.
     /// CustomProperty names are case insensitive.
     /// </summary>
-    public void AddCustomProperty(string name, int value) => AddCustomProperty(name, CustomProperty.I4, value);
+    public void AddCustomProperty(string name, int value) => AddCustomProperty(name, Internal.CustomPropertyType.I4, value);
 
     /// <summary>
     /// Add a custom property to this document.
@@ -1411,8 +1410,9 @@ public sealed class Document : BlockContainer, IDocument
 
         // Collect all the paragraphs based on what character they end on.
         var lookup = Paragraphs
-            .Where(p => p.StartIndex < p.EndIndex)
-            .ToDictionary(paragraph => paragraph.EndIndex);
+            .Where(p => p.StartIndex != null && p.EndIndex != null
+                        && p.StartIndex! < p.EndIndex!)
+            .ToDictionary(paragraph => paragraph.EndIndex!.Value);
 
         // If the insertion position is first (0) and there are no paragraphs, then return null.
         if (lookup.Keys.Count == 0 && index == 0)

@@ -3,7 +3,7 @@ using System.IO.Packaging;
 using System.Xml.Linq;
 using DXPlus.Resources;
 
-namespace DXPlus.Helpers;
+namespace DXPlus.Internal;
 
 /// <summary>
 /// Helper class to deal with DOCX core properties

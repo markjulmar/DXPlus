@@ -80,6 +80,11 @@ public interface IDocument : IContainer, IDisposable
     IReadOnlyDictionary<string, object> CustomProperties { get; }
 
     /// <summary>
+    /// Basic text of this document
+    /// </summary>
+    string Text => string.Join('\n', Paragraphs.Select(p => p.Text));
+
+    /// <summary>
     /// Set a known core property value
     /// </summary>
     /// <param name="name">Property to set</param>

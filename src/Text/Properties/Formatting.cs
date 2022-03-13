@@ -2,7 +2,7 @@ using System.Drawing;
 using System.Globalization;
 using System.Reflection;
 using System.Xml.Linq;
-using DXPlus.Helpers;
+using DXPlus.Internal;
 
 namespace DXPlus;
 

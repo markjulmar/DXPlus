@@ -5,7 +5,7 @@ namespace DXPlus;
 /// <summary>
 /// This represents a collection of bookmarks
 /// </summary>
-public class BookmarkCollection : IReadOnlyList<Bookmark>
+public sealed class BookmarkCollection : IReadOnlyList<Bookmark>
 {
     private readonly List<Bookmark> bookmarks = new();
 

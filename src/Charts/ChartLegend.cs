@@ -1,4 +1,5 @@
 ﻿using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus.Charts;
 
@@ -6,7 +7,7 @@ namespace DXPlus.Charts;
 /// Represents a chart legend
 /// https://docs.microsoft.com/dotnet/api/documentformat.openxml.drawing.charts.legend
 /// </summary>
-public class ChartLegend
+public sealed class ChartLegend
 {
     /// <summary>
     /// Legend xml element

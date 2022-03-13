@@ -1,6 +1,6 @@
 ﻿using System.IO.Packaging;
-using DXPlus.Helpers;
 using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus;
 

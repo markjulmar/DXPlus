@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Xml.XPath;
+using DXPlus.Internal;
 using Xunit;
 
 namespace DXPlus.Tests

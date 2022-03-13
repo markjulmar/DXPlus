@@ -1,5 +1,5 @@
 ﻿using System.Xml.Linq;
-using DXPlus.Helpers;
+using DXPlus.Internal;
 
 namespace DXPlus;
 
