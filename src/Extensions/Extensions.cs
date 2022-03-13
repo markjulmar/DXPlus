@@ -25,6 +25,13 @@ internal static class Extensions
     }
 
     /// <summary>
+    /// Converts a boolean to a string
+    /// </summary>
+    /// <param name="value">Boolean value</param>
+    /// <returns></returns>
+    internal static string ToBoolean(this bool value) => value.ToString().ToLower();
+
+    /// <summary>
     /// Remove any null values from an enumeration and cast to a non-null type.
     /// </summary>
     /// <typeparam name="T">Type</typeparam>

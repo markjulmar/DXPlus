@@ -3,10 +3,9 @@
 namespace DXPlus;
 
 /// <summary>
-/// Table Cell Border Types
-/// source: http://msdn.microsoft.com/en-us/library/documentformat.openxml.wordprocessing.tablecellborders.aspx
+/// Border Types for tables, cells, and paragraphs
 /// </summary>
-public enum TableCellBorderType
+internal enum BorderType
 {
     /// <summary>
     /// No border
@@ -52,4 +51,17 @@ public enum TableCellBorderType
     /// Top/Right to Bottom/Left
     /// </summary>
     [XmlAttribute("tr2bl")] TopRightToBottomLeft,
+
+    /// <summary>
+    /// Specifies the border between each paragraph in a set of paragraphs which have the same set of paragraph border settings.
+    /// So if adjoining paragraphs have identical border settings, then there will be one border between them as specified
+    /// by the between element. Otherwise the first paragraph will use its bottom border and the following paragraph will use its top border.
+    /// </summary>
+    Between,
+
+    /// <summary>
+    /// Specifies the border which may be displayed on the inside edge of the paragraph when the parent's
+    /// section settings specify that the section shall be printed using mirrored margins.
+    /// </summary>
+    Bar,
 }

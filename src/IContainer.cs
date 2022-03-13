@@ -105,6 +105,22 @@ public interface IContainer
     Paragraph Add(string text, Formatting? formatting = null);
 
     /// <summary>
+    /// Create a set of paragraphs from a series of strings. Each string will add a new paragraph
+    /// to the document.
+    /// </summary>
+    /// <param name="paragraphs">Text to add</param>
+    /// <returns>Last paragraph added, or null if no paragraphs were added</returns>
+    Paragraph? AddRange(IEnumerable<string> paragraphs);
+
+    /// <summary>
+    /// Create a set of paragraphs from a series of strings. Each string will add a new paragraph
+    /// to the document.
+    /// </summary>
+    /// <param name="paragraphs">Paragraphs to add</param>
+    /// <returns>Last paragraph added, or null if no paragraphs were added</returns>
+    Paragraph? AddRange(IEnumerable<Paragraph> paragraphs);
+
+    /// <summary>
     /// Add a new table to the end of the container
     /// </summary>
     /// <param name="table">Table to add</param>

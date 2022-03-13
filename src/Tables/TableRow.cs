@@ -225,7 +225,7 @@ public class TableRow : DocXElement, IEquatable<TableRow>
         // Assign the widths
         for (int index = 0; index < cells.Count; index++)
         {
-            cells[index].SetWidth(TableWidthUnit.Dxa, columnWidths[index]);
+            cells[index].CellWidth = new TableWidth(TableWidthUnit.Dxa, columnWidths[index]);
         }
     }
 

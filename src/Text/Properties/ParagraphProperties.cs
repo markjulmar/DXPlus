@@ -185,18 +185,15 @@ public sealed class ParagraphProperties
     /// <summary>
     /// Paragraph border
     /// </summary>
-    private XElement? pBdr => Xml.Element(Namespace.Main + "pBdr");
+    private static readonly XName pBdr = Namespace.Main + "pBdr";
 
     /// <summary>
     /// Top border for this paragraph
     /// </summary>
     public Border? TopBorder
     {
-        get
-        {
-            var e = pBdr?.Element(Namespace.Main + ParagraphBorderType.Top.GetEnumName());
-            return e == null ? null : new Border(e);
-        }
+        get => new(BorderType.Top, Xml, pBdr);
+        set => Border.SetElementValue(BorderType.Top, Xml, pBdr, value);
     }
 
     /// <summary>
@@ -204,11 +201,8 @@ public sealed class ParagraphProperties
     /// </summary>
     public Border? BottomBorder
     {
-        get
-        {
-            var e = pBdr?.Element(Namespace.Main + ParagraphBorderType.Bottom.GetEnumName());
-            return e == null ? null : new Border(e);
-        }
+        get => new(BorderType.Bottom, Xml, pBdr);
+        set => Border.SetElementValue(BorderType.Bottom, Xml, pBdr, value);
     }
 
     /// <summary>
@@ -216,11 +210,8 @@ public sealed class ParagraphProperties
     /// </summary>
     public Border? LeftBorder
     {
-        get
-        {
-            var e = pBdr?.Element(Namespace.Main + ParagraphBorderType.Left.GetEnumName());
-            return e == null ? null : new Border(e);
-        }
+        get => new(BorderType.Left, Xml, pBdr);
+        set => Border.SetElementValue(BorderType.Left, Xml, pBdr, value);
     }
 
     /// <summary>
@@ -228,11 +219,8 @@ public sealed class ParagraphProperties
     /// </summary>
     public Border? RightBorder
     {
-        get
-        {
-            var e = pBdr?.Element(Namespace.Main + ParagraphBorderType.Right.GetEnumName());
-            return e == null ? null : new Border(e);
-        }
+        get => new(BorderType.Right, Xml, pBdr);
+        set => Border.SetElementValue(BorderType.Right, Xml, pBdr, value);
     }
 
     /// <summary>
@@ -240,58 +228,17 @@ public sealed class ParagraphProperties
     /// </summary>
     public Border? BetweenBorder
     {
-        get
-        {
-            var e = pBdr?.Element(Namespace.Main + ParagraphBorderType.Between.GetEnumName());
-            return e == null ? null : new Border(e);
-        }
+        get => new(BorderType.Between, Xml, pBdr);
+        set => Border.SetElementValue(BorderType.Between, Xml, pBdr, value);
     }
 
     /// <summary>
-    /// Set all outside edges for the border
+    /// Border between facing Pages
     /// </summary>
-    public void SetBorders(BorderStyle style, ColorValue? color, double? spacing = 1, double size = 2, bool shadow = false)
+    public Border? BarBorder
     {
-        if (size is < 2 or > 96)
-            throw new ArgumentOutOfRangeException(nameof(size));
-
-        SetBorder(ParagraphBorderType.Left, style, color, spacing, size, shadow);
-        SetBorder(ParagraphBorderType.Top, style, color, spacing, size, shadow);
-        SetBorder(ParagraphBorderType.Right, style, color, spacing, size, shadow);
-        SetBorder(ParagraphBorderType.Bottom, style, color, spacing, size, shadow);
-    }
-
-    /// <summary>
-    /// Set a specific border edge.
-    /// </summary>
-    /// <exception cref="InvalidEnumArgumentException"></exception>
-    public void SetBorder(ParagraphBorderType borderType, BorderStyle style, ColorValue? color, double? spacing = 1, double size = 2, bool shadow = false)
-    {
-        if (size is < 2 or > 96)
-            throw new ArgumentOutOfRangeException(nameof(Size));
-
-        if (!Enum.IsDefined(typeof(ParagraphBorderType), borderType))
-            throw new InvalidEnumArgumentException(nameof(borderType), (int)borderType, typeof(ParagraphBorderType));
-
-        Xml.Element(Namespace.Main + "pBdr")?
-            .Element(Namespace.Main + borderType.GetEnumName())?.Remove();
-
-        if (style == BorderStyle.None)
-            return;
-
-        var pBdr = Xml.GetOrAddElement(Namespace.Main + "pBdr");
-        var borderXml = new XElement(Namespace.Main + borderType.GetEnumName(),
-            new XAttribute(Name.MainVal, style.GetEnumName()),
-            new XAttribute(Name.Size, size));
-
-        (color??ColorValue.Auto).SetElementValues(borderXml);
-
-        if (shadow)
-            borderXml.Add(new XAttribute(Name.Shadow, true));
-        if (spacing != null)
-            borderXml.Add(new XAttribute(Namespace.Main + "space", spacing));
-
-        pBdr.Add(borderXml);
+        get => new(BorderType.Bar, Xml, pBdr);
+        set => Border.SetElementValue(BorderType.Bar, Xml, pBdr, value);
     }
 
     /// <summary>

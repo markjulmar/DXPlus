@@ -41,16 +41,6 @@ public static class ContainerExtensions
         => container.AddParagraph().AppendEquation(equation);
 
     /// <summary>
-    /// Add a new table to the end of this container
-    /// </summary>
-    /// <param name="container">Container owner</param>
-    /// <param name="rows">Rows to add</param>
-    /// <param name="columns">Columns to add</param>
-    /// <returns></returns>
-    public static Table AddTable(this IContainer container, int rows, int columns) 
-        => container.Add(new Table(rows, columns));
-
-    /// <summary>
     /// Find all occurrences of a string in the container. This searches headers, all paragraphs, and footers.
     /// </summary>
     /// <param name="container"></param>

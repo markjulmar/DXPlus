@@ -747,6 +747,14 @@ namespace DXPlus.Tests
         }
 
         [Fact]
+        public void AddMultipleParagraphsWithAddRange()
+        {
+            var document = Document.Create();
+            document.AddRange(new [] { "Starting text", "More text", "Another paragraph", "Last paragraph" });
+            Assert.Equal(4, document.Paragraphs.Count());
+        }
+
+        [Fact]
         public void AddCaptionToImage()
         {
             string text = ": This is a picture.";

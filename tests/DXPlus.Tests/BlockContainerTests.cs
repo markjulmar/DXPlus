@@ -21,7 +21,7 @@ namespace DXPlus.Tests
             var doc = Document.Create();
 
             doc.Add("This is paragraph #1.");
-            doc.AddTable(3, 2);
+            doc.Add(new Table(3, 2));
             doc.Add("This is paragraph #2.");
 
             var blocks = doc.Paragraphs.ToList();

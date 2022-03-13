@@ -217,6 +217,37 @@ public abstract class BlockContainer : DocXElement, IContainer
     }
 
     /// <summary>
+    /// Create a set of paragraphs from a series of strings. Each string will add a new paragraph
+    /// to the document.
+    /// </summary>
+    /// <param name="paragraphs">Other paragraphs</param>
+    /// <returns>Last paragraph added, or null if no paragraphs were added</returns>
+    public Paragraph? AddRange(IEnumerable<string> paragraphs)
+    {
+        if (paragraphs == null) throw new ArgumentNullException(nameof(paragraphs));
+        return AddRange(paragraphs.Select(t => new Paragraph(t)));
+    }
+
+    /// <summary>
+    /// Create a set of paragraphs from a series of strings. Each string will add a new paragraph
+    /// to the document.
+    /// </summary>
+    /// <param name="paragraphs">Paragraphs to add</param>
+    /// <returns>Last paragraph added, or null if no paragraphs were added</returns>
+    public Paragraph? AddRange(IEnumerable<Paragraph> paragraphs)
+    {
+        if (paragraphs == null) throw new ArgumentNullException(nameof(paragraphs));
+
+        Paragraph? lastParagraph = null;
+        foreach (var p in paragraphs)
+        {
+            lastParagraph = Add(p);
+        }
+
+        return lastParagraph;
+    }
+
+    /// <summary>
     /// This method is called when a new paragraph is added to this container.
     /// </summary>
     /// <param name="paragraph">New paragraph</param>
@@ -404,8 +435,6 @@ public abstract class BlockContainer : DocXElement, IContainer
         if (table.Xml.InDom())
             throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
-        table.SetOwner(Document, PackagePart, true);
-
         // The table will be added to the end of the document. If the
         // prior element is _also_ a table, then we need to insert a blank
         // paragraph first - otherwise Word will merge the tables. It's
@@ -419,6 +448,9 @@ public abstract class BlockContainer : DocXElement, IContainer
         }
 
         AddElementToContainer(table.Xml);
+
+        // Set the document and package
+        table.SetOwner(Document, PackagePart, true);
 
         return table;
     }

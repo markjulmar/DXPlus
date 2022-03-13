@@ -1,7 +1,5 @@
 ﻿using DXPlus.Helpers;
 using DXPlus.Resources;
-using System.ComponentModel;
-using System.Drawing;
 using System.IO.Packaging;
 using System.Xml.Linq;
 
@@ -97,47 +95,31 @@ public class Table : Block, IEquatable<Table>
     }
 
     /// <summary>
-    /// How the preferred table width is expressed.
+    /// Preferred width for the table
     /// </summary>
-    public TableWidthUnit PreferredTableWidthUnit => Enum.TryParse<TableWidthUnit>(TblPr.Element(Namespace.Main + "tblW")?
-        .AttributeValue(Namespace.Main + "type"), ignoreCase: true, out var tbw) ? tbw : TableWidthUnit.Auto;
-
-    /// <summary>
-    /// Preferred table width.
-    /// </summary>
-    public double PreferredTableWidth => double.TryParse(TblPr.Element(Namespace.Main + "tblW")?.AttributeValue(Namespace.Main + "w"), out var d) ? d : 0;
-
-    /// <summary>
-    /// Sets the table width
-    /// </summary>
-    /// <param name="unitType">Units</param>
-    /// <param name="value">Expressed width in specified units</param>
-    public void SetTableWidth(TableWidthUnit unitType, double? value)
+    public TableWidth? TableWidth
     {
-        XElement tblW = TblPr.GetOrAddElement(Namespace.Main + "tblW");
-        if (unitType == TableWidthUnit.None || value == null || value < 0)
+        get => new(TblPr.Element(Namespace.Main + "tblW"));
+        set
         {
-            tblW.Remove();
-            return;
+            TblPr.Element(Namespace.Main + "tblW")?.Remove();
+            if (value == null
+                || value.Type == null && value.Width == null) return;
+            TblPr.Add(value.Xml);
         }
-
-        tblW.SetAttributeValue(Namespace.Main + "type", unitType.GetEnumName());
-        if (unitType == TableWidthUnit.Auto)
-            value = 0;
-
-        if (unitType == TableWidthUnit.Percentage)
-            tblW.SetAttributeValue(Namespace.Main + "w", value.Value + "%");
-        else
-            tblW.SetAttributeValue(Namespace.Main + "w", value.Value);
     }
 
     /// <summary>
-    /// True if the table will auto-fit the contents. This corresponds to the {tblLayout} value of the table properties.
+    /// True if the table will auto-fit the contents. This corresponds to the {tblLayout.type} value of the table properties.
     /// </summary>
-    public bool AutoFit
+    public TableLayout? TableLayout
     {
-        get => string.Compare(TblPr.Element(Namespace.Main + "tblLayout")?.AttributeValue(Namespace.Main + "type"), "autofit", StringComparison.CurrentCultureIgnoreCase) == 0;
-        set => TblPr.GetOrAddElement(Namespace.Main + "tblLayout").SetAttributeValue(Namespace.Main + "type", value ? "autofit" : "fixed");
+        get => TblPr.Element(Namespace.Main + "tblLayout")?
+                    .AttributeValue(Namespace.Main + "type")?
+                    .TryGetEnumValue<TableLayout>(out var result) == true ? result : null;
+
+        set => TblPr.GetOrAddElement(Namespace.Main + "tblLayout")
+                    .SetAttributeValue(Namespace.Main + "type", value?.GetEnumName());
     }
 
     /// <summary>
@@ -151,8 +133,7 @@ public class Table : Block, IEquatable<Table>
             : Alignment.Left;
 
         set => TblPr.GetOrAddElement(Name.ParagraphAlignment)
-            .SetAttributeValue(Name.MainVal,
-                value.GetEnumName());
+            .SetAttributeValue(Name.MainVal, value.GetEnumName());
     }
 
     /// <summary>
@@ -199,7 +180,9 @@ public class Table : Block, IEquatable<Table>
         {
             var columns = Xml.Element(Namespace.Main + "tblGrid")?
                 .Elements(Namespace.Main + "gridCol")
-                .Select(c => double.TryParse(c.AttributeValue(Namespace.Main + "w"), out var dbl) ? dbl : double.NaN); 
+                .Select(c => 
+                    double.TryParse(c.AttributeValue(Namespace.Main + "w"), out var dbl) 
+                        ? dbl : double.NaN); 
             return columns ?? Enumerable.Empty<double>();
         }
     }
@@ -535,54 +518,62 @@ public class Table : Block, IEquatable<Table>
     }
 
     /// <summary>
-    /// Set outside borders to the given style
+    /// Table border
     /// </summary>
-    public void SetOutsideBorders(BorderStyle style, Color color, double? spacing = 1, double size = 2)
+    private static readonly XName tblBorders = Namespace.Main + "tblBorders";
+
+    /// <summary>
+    /// Top border for this table
+    /// </summary>
+    public Border? TopBorder
     {
-        SetBorder(TableBorderType.Top, style, color, spacing, size);
-        SetBorder(TableBorderType.Left, style, color, spacing, size);
-        SetBorder(TableBorderType.Right, style, color, spacing, size);
-        SetBorder(TableBorderType.Bottom, style, color, spacing, size);
+        get => new(BorderType.Top, TblPr, tblBorders);
+        set => Border.SetElementValue(BorderType.Top, TblPr, tblBorders, value);
     }
 
     /// <summary>
-    /// Set all inside borders to the given style
+    /// Bottom border for this table
     /// </summary>
-    public void SetInsideBorders(BorderStyle style, Color color, double? spacing = 1, double size = 2)
+    public Border? BottomBorder
     {
-        SetBorder(TableBorderType.InsideV, style, color, spacing, size);
-        SetBorder(TableBorderType.InsideH, style, color, spacing, size);
+        get => new(BorderType.Bottom, TblPr, tblBorders);
+        set => Border.SetElementValue(BorderType.Bottom, TblPr, tblBorders, value);
     }
 
     /// <summary>
-    /// Set a table border
+    /// Left border for this table
     /// </summary>
-    /// <exception cref="InvalidEnumArgumentException"></exception>
-    /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public void SetBorder(TableBorderType borderType, BorderStyle style, Color color, double? spacing = 1, double size = 2)
+    public Border? LeftBorder
     {
-        if (size is < 2 or > 96)
-            throw new ArgumentOutOfRangeException(nameof(Size));
-        if (!Enum.IsDefined(typeof(ParagraphBorderType), borderType))
-            throw new InvalidEnumArgumentException(nameof(borderType), (int)borderType, typeof(ParagraphBorderType));
+        get => new(BorderType.Left, TblPr, tblBorders);
+        set => Border.SetElementValue(BorderType.Left, TblPr, tblBorders, value);
+    }
 
-        // Set the border style
-        TblPr.Element(Namespace.Main + "tblBorders")?
-            .Element(Namespace.Main + borderType.GetEnumName())?.Remove();
+    /// <summary>
+    /// Right border for this table
+    /// </summary>
+    public Border? RightBorder
+    {
+        get => new(BorderType.Right, TblPr, tblBorders);
+        set => Border.SetElementValue(BorderType.Right, TblPr, tblBorders, value);
+    }
 
-        if (style == BorderStyle.None)
-            return;
+    /// <summary>
+    /// Inside horizontal border for this table
+    /// </summary>
+    public Border? InsideHorizontalBorder
+    {
+        get => new(BorderType.InsideH, TblPr, tblBorders);
+        set => Border.SetElementValue(BorderType.InsideH, TblPr, tblBorders, value);
+    }
 
-        var tblBorders = TblPr.GetOrAddElement(Namespace.Main + "tblBorders");
-        var borderXml = new XElement(Namespace.Main + borderType.GetEnumName(),
-            new XAttribute(Name.MainVal, style.GetEnumName()),
-            new XAttribute(Name.Size, size));
-        if (color != Color.Empty)
-            borderXml.Add(new XAttribute(Name.Color, color.ToHex()));
-        if (spacing != null)
-            borderXml.Add(new XAttribute(Namespace.Main + "space", spacing));
-
-        tblBorders.Add(borderXml);
+    /// <summary>
+    /// Inside horizontal border for this table
+    /// </summary>
+    public Border? InsideVerticalBorder
+    {
+        get => new(BorderType.InsideV, TblPr, tblBorders);
+        set => Border.SetElementValue(BorderType.InsideV, TblPr, tblBorders, value);
     }
 
     /// <summary>
@@ -616,7 +607,7 @@ public class Table : Block, IEquatable<Table>
                 throw new InvalidOperationException("Must have at least one row to determine column widths.");
             }
 
-            columnWidths = Rows.ToList()[^1].Cells.Select(c => c.Width ?? 0).ToArray();
+            columnWidths = Rows.ToList()[^1].Cells.Select(c => c.CellWidth?.Width ?? 0).ToArray();
         }
 
         if (width >= 0)
@@ -634,17 +625,17 @@ public class Table : Block, IEquatable<Table>
     private void OnSetColumnWidths(double[] columnWidths)
     {
         // Fill in any missing values.
-        if (columnWidths.Contains(double.NaN))
+        if (columnWidths.Any(double.IsNaN))
         {
             double totalSpace;
-            if (PreferredTableWidthUnit == TableWidthUnit.Dxa || !InDocument)
-                totalSpace = PreferredTableWidth;
+            if (TableWidth?.Type == TableWidthUnit.Dxa || !InDocument)
+                totalSpace = TableWidth?.Width ?? PageSize.LetterWidth;
             else
             {
                 totalSpace = Document.Sections.First().Properties.AdjustedPageWidth;
-                if (PreferredTableWidthUnit == TableWidthUnit.Percentage)
+                if (TableWidth?.Type == TableWidthUnit.Percentage)
                 {
-                    totalSpace *= PreferredTableWidth;
+                    totalSpace *= (TableWidth?.Width ?? 100*TableWidth.PctMultiplier)/ TableWidth.PctMultiplier;
                 }
             }
 
@@ -682,9 +673,6 @@ public class Table : Block, IEquatable<Table>
         {
             row.SetColumnWidths(columnWidths);
         }
-
-        // Set to fixed sizing
-        AutoFit = false;
     }
 
     /// <summary>

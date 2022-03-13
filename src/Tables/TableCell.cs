@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-using System.Drawing;
-using System.Xml.Linq;
+﻿using System.Xml.Linq;
 
 namespace DXPlus;
 
@@ -133,41 +131,18 @@ public sealed class TableCell : BlockContainer, IEquatable<TableCell>
     }
 
     /// <summary>
-    /// The units column widths for this cell are expressed in.
+    /// Specified width for the cell
     /// </summary>
-    public TableWidthUnit WidthUnit => Enum.TryParse<TableWidthUnit>(tcPr.Element(Namespace.Main + "tcW")?
-        .AttributeValue(Namespace.Main + "type"), ignoreCase: true, out var tbw) ? tbw : TableWidthUnit.Auto;
-
-    /// <summary>
-    /// Width in WidthUnits
-    /// </summary>
-    public double? Width =>
-        double.TryParse(
-            tcPr.Element(Namespace.Main + "tcW")?.AttributeValue(Namespace.Main + "w"), out var value) 
-            ? value : null;
-
-    /// <summary>
-    /// Sets the column width
-    /// </summary>
-    /// <param name="unitType">Unit type</param>
-    /// <param name="value">Width in dxa or % units</param>
-    public void SetWidth(TableWidthUnit unitType, double? value)
+    public TableWidth? CellWidth
     {
-        var tcW = tcPr.GetOrAddElement(Namespace.Main + "tcW");
-        if (unitType == TableWidthUnit.None || value is null or < 0)
+        get => new(tcPr.Element(Namespace.Main + "tcW"));
+        set
         {
-            tcW.Remove();
-            return;
+            tcPr.Element(Namespace.Main + "tcW")?.Remove();
+            if (value == null
+                || value.Type == null && value.Width == null) return;
+            tcPr.Add(new XElement(Namespace.Main + "tcW", value.Xml.Attributes()));
         }
-
-        tcW.SetAttributeValue(Namespace.Main + "type", unitType.GetEnumName());
-        if (unitType == TableWidthUnit.Auto)
-            value = 0;
-
-        if (unitType == TableWidthUnit.Percentage)
-            tcW.SetAttributeValue(Namespace.Main + "w", value.Value + "%");
-        else
-            tcW.SetAttributeValue(Namespace.Main + "w", value.Value);
     }
 
     /// <summary>
@@ -220,56 +195,80 @@ public sealed class TableCell : BlockContainer, IEquatable<TableCell>
     }
 
     /// <summary>
-    /// Get a table cell border
+    /// Table border
     /// </summary>
-    /// <param name="borderType">The table cell border to get</param>
-    public Border? GetBorder(TableCellBorderType borderType)
+    private static readonly XName tcBorders = Namespace.Main + "tcBorders";
+
+    /// <summary>
+    /// Top border for this table cell
+    /// </summary>
+    public Border? TopBorder
     {
-        var tcBorder = tcPr.Element(Namespace.Main + "tcBorders")?
-                                   .Element(Namespace.Main + borderType.GetEnumName());
-            
-        return tcBorder != null ? new Border(tcBorder) : null;
+        get => new(BorderType.Top, tcPr, tcBorders);
+        set => Border.SetElementValue(BorderType.Top, tcPr, tcBorders, value);
     }
 
     /// <summary>
-    /// Set outside borders to the given style
+    /// Bottom border for this table cell
     /// </summary>
-    public void SetOutsideBorders(BorderStyle style, ColorValue? color = null, double? spacing = 1, double size = 2)
+    public Border? BottomBorder
     {
-        SetBorder(TableCellBorderType.Top, style, color, spacing, size);
-        SetBorder(TableCellBorderType.Left, style, color, spacing, size);
-        SetBorder(TableCellBorderType.Right, style, color, spacing, size);
-        SetBorder(TableCellBorderType.Bottom, style, color, spacing, size);
+        get => new(BorderType.Bottom, tcPr, tcBorders);
+        set => Border.SetElementValue(BorderType.Bottom, tcPr, tcBorders, value);
     }
 
     /// <summary>
-    /// Set the table cell border
+    /// Left border for this table cell
     /// </summary>
-    public void SetBorder(TableCellBorderType borderType, BorderStyle style, ColorValue? color, double? spacing = 1, double size = 2)
+    public Border? LeftBorder
     {
-        if (size is < 2 or > 96)
-            throw new ArgumentOutOfRangeException(nameof(Size));
-        if (!Enum.IsDefined(typeof(ParagraphBorderType), borderType))
-            throw new InvalidEnumArgumentException(nameof(borderType), (int)borderType, typeof(ParagraphBorderType));
+        get => new(BorderType.Left, tcPr, tcBorders);
+        set => Border.SetElementValue(BorderType.Left, tcPr, tcBorders, value);
+    }
 
-        tcPr.Element(Namespace.Main + "tcBorders")?
-            .Element(Namespace.Main.NamespaceName + borderType.GetEnumName())?.Remove();
+    /// <summary>
+    /// Right border for this table cell
+    /// </summary>
+    public Border? RightBorder
+    {
+        get => new(BorderType.Right, tcPr, tcBorders);
+        set => Border.SetElementValue(BorderType.Right, tcPr, tcBorders, value);
+    }
 
-        if (borderType == TableCellBorderType.None)
-            return;
+    /// <summary>
+    /// Inside horizontal border for this table cell
+    /// </summary>
+    public Border? InsideHorizontalBorder
+    {
+        get => new(BorderType.InsideH, tcPr, tcBorders);
+        set => Border.SetElementValue(BorderType.InsideH, tcPr, tcBorders, value);
+    }
 
-        // Set the border style
-        var tcBorders = tcPr.GetOrAddElement(Namespace.Main + "tcBorders");
-        var borderXml = new XElement(Namespace.Main + borderType.GetEnumName(),
-            new XAttribute(Name.MainVal, style.GetEnumName()),
-            new XAttribute(Name.Size, size));
+    /// <summary>
+    /// Inside horizontal border for this table cell
+    /// </summary>
+    public Border? InsideVerticalBorder
+    {
+        get => new(BorderType.InsideV, tcPr, tcBorders);
+        set => Border.SetElementValue(BorderType.InsideV, tcPr, tcBorders, value);
+    }
 
-        (color??ColorValue.Auto).SetElementValues(borderXml, Name.Color);
+    /// <summary>
+    /// Diagonal border for this table cell
+    /// </summary>
+    public Border? TopLeftToBottomRightDiagonalBorder
+    {
+        get => new(BorderType.TopLeftToBottomRight, tcPr, tcBorders);
+        set => Border.SetElementValue(BorderType.TopLeftToBottomRight, tcPr, tcBorders, value);
+    }
 
-        if (spacing != null)
-            borderXml.Add(new XAttribute(Namespace.Main + "space", spacing));
-
-        tcBorders.Add(borderXml);
+    /// <summary>
+    /// Diagonal border for this table cell
+    /// </summary>
+    public Border? TopRightToBottomLeftDiagonalBorder
+    {
+        get => new(BorderType.TopRightToBottomLeft, tcPr, tcBorders);
+        set => Border.SetElementValue(BorderType.TopRightToBottomLeft, tcPr, tcBorders, value);
     }
 
     /// <summary>
@@ -279,4 +278,18 @@ public sealed class TableCell : BlockContainer, IEquatable<TableCell>
     /// <returns></returns>
     public bool Equals(TableCell? other) 
         => other != null && (ReferenceEquals(this, other) || Xml == other.Xml);
+
+    /// <summary>
+    /// Determines equality for a table cell
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public override bool Equals(object? other) => Equals(other as TableCell);
+
+    /// <summary>
+    /// Returns hashcode for this table
+    /// </summary>
+    /// <returns></returns>
+    public override int GetHashCode() => Xml.GetHashCode();
+
 }

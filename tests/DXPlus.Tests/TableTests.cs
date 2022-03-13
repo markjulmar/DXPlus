@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Xml.Linq;
 using System.Xml.XPath;
 using Xunit;
 
@@ -15,7 +14,7 @@ namespace DXPlus.Tests
 
             var p = doc.Add("This is a test paragraph");
             Assert.Null(p.Table);
-            doc.AddTable(1, 1);
+            doc.Add(new Table(1, 1));
             Assert.NotNull(p.Table);
         }
         
@@ -25,10 +24,10 @@ namespace DXPlus.Tests
             using var doc = Document.Create();
 
             Assert.Empty(doc.Paragraphs);
-            doc.AddTable(1, 1);
+            doc.Add(new Table(1, 1));
             Assert.Empty(doc.Paragraphs);
 
-            doc.AddTable(2, 2);
+            doc.Add(new Table(2, 2));
             Assert.Single(doc.Paragraphs);
 
             Assert.IsType<Table>(doc.Blocks.First());
@@ -39,11 +38,10 @@ namespace DXPlus.Tests
         [Fact]
         public void TableRespectsExplicitWidthRequest()
         {
-            Table t = new Table(1, 4);
-            t.SetTableWidth(TableWidthUnit.Dxa, Uom.FromInches(4));
+            Table t = new Table(1, 4) {TableWidth = TableWidth.FromUom(Uom.FromInches(4))};
 
             double expectedSize = 4 * 1440.0;
-            Assert.Equal(expectedSize, t.PreferredTableWidth);
+            Assert.Equal(expectedSize, t.TableWidth.Width);
             Assert.True(double.IsNaN(t.DefaultColumnWidths.First()));
 
             var doc = Document.Create();
@@ -51,8 +49,8 @@ namespace DXPlus.Tests
 
             Assert.False(double.IsNaN(t.DefaultColumnWidths.First()));
             Assert.Equal(expectedSize / 4, t.DefaultColumnWidths.First());
-            Assert.Equal(expectedSize / 4, t.Rows.First().Cells[0].Width);
-            Assert.Equal(TableWidthUnit.Dxa, t.Rows.First().Cells[0].WidthUnit);
+            Assert.Equal(expectedSize / 4, t.Rows.First().Cells[0].CellWidth?.Width);
+            Assert.Equal(TableWidthUnit.Dxa, t.Rows.First().Cells[0].CellWidth?.Type);
         }
 
         [Fact]
@@ -67,7 +65,7 @@ namespace DXPlus.Tests
         public void AutoFitDefaultsToFalse()
         {
             var table = new Table();
-            Assert.False(table.AutoFit);
+            Assert.Null(table.TableLayout);
         }
 
         [Fact]
@@ -111,10 +109,10 @@ namespace DXPlus.Tests
         {
             Table t = new Table(1, 1);
 
-            Assert.False(t.AutoFit);
+            Assert.Null(t.TableLayout);
 
-            t.AutoFit = true;
-            Assert.True(t.AutoFit);
+            t.AutoFit();
+            Assert.Equal(TableLayout.AutoFit, t.TableLayout);
 
             var e = t.Xml.RemoveNamespaces().XPathSelectElements("//tblPr/tblLayout[@type='autofit']");
             Assert.Single(e);
@@ -126,9 +124,9 @@ namespace DXPlus.Tests
             Table t = new Table(1, 1);
 
             t.SetColumnWidths(new[] { 120.0 });
-            Assert.False(t.AutoFit);
+            Assert.Null(t.TableLayout);
 
-            Assert.Equal(120.0, t.Rows.First().Cells[0].Width);
+            Assert.Equal(120.0, t.Rows.First().Cells[0].CellWidth?.Width);
             Assert.Equal(120.0, t.DefaultColumnWidths.First());
         }
 
@@ -176,6 +174,23 @@ namespace DXPlus.Tests
         }
 
         [Fact]
+        public void SetTableCellWidthSetsCorrectElement()
+        {
+            var t = new Table(1, 1);
+
+            var width = TableWidth.FromPercent(100);
+            Assert.Equal(5000, width.Width);
+            Assert.Equal("tblW", width.Xml.Name.LocalName);
+
+            var cell = t.Rows.First().Cells[0];
+            cell.CellWidth = width;
+            Assert.NotEqual(width, cell.CellWidth);
+            Assert.Equal(5000, cell.CellWidth.Width);
+            Assert.Single(cell.Xml.RemoveNamespaces().XPathSelectElements("//tcW"));
+            Assert.Empty(cell.Xml.RemoveNamespaces().XPathSelectElements("//tblW"));
+        }
+
+        [Fact]
         public void AddToDocumentSetsUniformColumnWidths()
         {
             Table t = new Table(1, 4);
@@ -186,14 +201,14 @@ namespace DXPlus.Tests
             double width = t.DefaultColumnWidths.First();
             var rows = t.Rows.ToList();
 
-            Assert.Equal(width, rows[0].Cells[0].Width);
-            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[0].WidthUnit);
-            Assert.Equal(width, rows[0].Cells[1].Width);
-            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[1].WidthUnit);
-            Assert.Equal(width, rows[0].Cells[2].Width);
-            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[2].WidthUnit);
-            Assert.Equal(width, rows[0].Cells[3].Width);
-            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[3].WidthUnit);
+            Assert.Equal(width, rows[0].Cells[0].CellWidth?.Width);
+            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[0].CellWidth?.Type);
+            Assert.Equal(width, rows[0].Cells[1].CellWidth?.Width);
+            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[1].CellWidth?.Type);
+            Assert.Equal(width, rows[0].Cells[2].CellWidth?.Width);
+            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[2].CellWidth?.Type);
+            Assert.Equal(width, rows[0].Cells[3].CellWidth?.Width);
+            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[3].CellWidth?.Type);
 
             Assert.Equal(width, t.DefaultColumnWidths.First());
             Assert.Equal(width, t.DefaultColumnWidths.ElementAt(1));
@@ -202,9 +217,20 @@ namespace DXPlus.Tests
         }
 
         [Fact]
+        public void AddToDocFillsInColumnWidth()
+        {
+            var doc = Document.Create();
+            var t = new Table(2, 2);
+            Assert.True(t.DefaultColumnWidths.All(double.IsNaN));
+            doc.Add(t);
+            Assert.DoesNotContain(t.DefaultColumnWidths, double.IsNaN);
+            Assert.True(t.DefaultColumnWidths.All(c => c > 0));
+        }
+
+        [Fact]
         public void NewTableCreatesUniformColumns()
         {
-            Table t = new Table(1, 4);
+            var t = new Table(1, 4);
 
             Assert.Equal(4, t.DefaultColumnWidths.Count());
 
@@ -214,8 +240,8 @@ namespace DXPlus.Tests
             Assert.Equal(width, t.DefaultColumnWidths.ElementAt(2));
             Assert.Equal(width, t.DefaultColumnWidths.ElementAt(3));
 
-            Assert.Equal(TableWidthUnit.Auto, t.PreferredTableWidthUnit);
-            Assert.Equal(0, t.PreferredTableWidth);
+            Assert.Equal(TableWidthUnit.Auto, t.TableWidth?.Type);
+            Assert.Equal(0, t.TableWidth?.Width);
         }
 
         [Fact]
