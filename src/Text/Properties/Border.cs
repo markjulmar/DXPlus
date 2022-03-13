@@ -10,12 +10,20 @@ public sealed class Border : IEquatable<Border>
 {
     private readonly BorderType type;
     private readonly XElement parent;
-    private readonly XName borderGroup;
+    private readonly XName? borderGroup;
 
-    private XElement? Get(bool create) =>
-        !create 
-            ? parent.Element(borderGroup)?.Element(Namespace.Main + type.GetEnumName()) 
-            : parent.GetOrAddElement(borderGroup, Namespace.Main + type.GetEnumName());
+    private XElement? Get(bool create)
+    {
+        if (!create)
+        {
+            return borderGroup != null 
+                ? parent.Element(borderGroup)?.Element(Namespace.Main + type.GetEnumName()) 
+                : parent.Element(Namespace.Main + type.GetEnumName());
+        }
+        return borderGroup != null 
+            ? parent.GetOrAddElement(borderGroup, Namespace.Main + type.GetEnumName()) 
+            : parent.GetOrAddElement(Namespace.Main + type.GetEnumName());
+    }
 
     /// <summary>
     /// Set a border element onto the parent
@@ -24,7 +32,7 @@ public sealed class Border : IEquatable<Border>
     /// <param name="parent">Parent</param>
     /// <param name="borderGroup">Name of border group</param>
     /// <param name="value">Value to set, null to remove</param>
-    internal static void SetElementValue(BorderType type, XElement parent, XName borderGroup, Border? value)
+    internal static bool SetElementValue(BorderType type, XElement parent, XName? borderGroup, Border? value)
     {
         // Passed value is one of three things.
         // 1. New (unconnected) object: new Border(...)
@@ -32,20 +40,50 @@ public sealed class Border : IEquatable<Border>
         // 3. Same object: x.Border = x.Border
 
         XName tag = Namespace.Main + type.GetEnumName(); // top,left,bottom,right,etc.
-        var existingTag = parent.Element(borderGroup)?.Element(tag);
+        var existingTag = borderGroup != null ? parent.Element(borderGroup)?.Element(tag) : parent.Element(tag);
         var element = value?.Get(false);
 
         // Same object?
-        if (existingTag == element) return;
+        if (existingTag == element) return false;
 
         // Remove the existing object and replace it.
         existingTag?.Remove();
-        if (element == null)
-            return;
+        if (element == null || value?.IsEmpty()==true)
+            return false;
 
         // Copy the border over.
-        var owner = parent.GetOrAddElement(borderGroup);
+        var owner = borderGroup != null ? parent.GetOrAddElement(borderGroup) : parent;
         owner.Add(new XElement(tag, element.Attributes()));
+        return true;
+    }
+
+    /// <summary>
+    /// Remove this element from the parent if the values do not impact the rendering.
+    /// </summary>
+    /// <returns></returns>
+    private bool RemoveIfEmpty()
+    {
+        if (IsEmpty())
+        {
+            Get(false)?.Remove();
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// True if this border has no values which will impact the rendering of the element.
+    /// </summary>
+    /// <returns></returns>
+    private bool IsEmpty()
+    {
+        return Color.IsEmpty
+            && Shadow == false
+            && Frame == false
+            && Style == BorderStyle.None
+            && Spacing == null
+            && Size == null;
     }
 
     /// <summary>
@@ -60,7 +98,11 @@ public sealed class Border : IEquatable<Border>
                 element.AttributeValue(Name.ThemeColor), element.AttributeValue(Name.ThemeTint),
                 element.AttributeValue(Name.ThemeShade));
         }
-        set => value.SetElementValues(Get(true)!, Name.Color);
+        set
+        {
+            value.SetElementValues(Get(true)!, Name.Color);
+            RemoveIfEmpty();
+        }
     }
 
     /// <summary>
@@ -81,6 +123,7 @@ public sealed class Border : IEquatable<Border>
             {
                 Get(true)!.SetAttributeValue(Name.Shadow, value.ToBoolean());
             }
+            RemoveIfEmpty();
         }
     }
 
@@ -101,6 +144,7 @@ public sealed class Border : IEquatable<Border>
             {
                 Get(true)!.AddElementVal(Namespace.Main + "space", value?.ToString(CultureInfo.InvariantCulture));
             }
+            RemoveIfEmpty();
         }
     }
 
@@ -123,6 +167,7 @@ public sealed class Border : IEquatable<Border>
             {
                 Get(true)!.SetAttributeValue(Name.Size, value);
             }
+            RemoveIfEmpty();
         }
     }
 
@@ -144,6 +189,7 @@ public sealed class Border : IEquatable<Border>
             {
                 Get(true)!.SetAttributeValue(Namespace.Main + "frame", value.ToBoolean());
             }
+            RemoveIfEmpty();
         }
     }
 
@@ -153,8 +199,25 @@ public sealed class Border : IEquatable<Border>
     public BorderStyle Style
     {
         get => Enum.TryParse<BorderStyle>(Get(false).AttributeValue(Name.MainVal, "None"), ignoreCase:true, out var bd) ? bd : BorderStyle.None;
-        
-        set => Get(true)!.SetAttributeValue(Name.MainVal, value.GetEnumName());
+
+        set
+        {
+            Get(true)!.SetAttributeValue(Name.MainVal, value.GetEnumName());
+            RemoveIfEmpty();
+        }
+    }
+
+    /// <summary>
+    /// Returns a border object if the element exists on the given parent.
+    /// </summary>
+    /// <param name="type">Type</param>
+    /// <param name="element">Parent element</param>
+    /// <param name="borderGroup">Name of parent element</param>
+    /// <returns>Border or null</returns>
+    internal static Border? FromElement(BorderType type, XElement element, XName? borderGroup)
+    {
+        var border = new Border(type, element, borderGroup);
+        return border.Get(false) != null ? border : null;
     }
 
     /// <summary>
@@ -163,7 +226,7 @@ public sealed class Border : IEquatable<Border>
     /// <param name="type">Border type</param>
     /// <param name="element">Parent element (properties)</param>
     /// <param name="borderGroup">Name of the border group (pBdr, tBdr, tcBdr, etc.)</param>
-    internal Border(BorderType type, XElement element, XName borderGroup)
+    private Border(BorderType type, XElement element, XName? borderGroup)
     {
         this.type = type;
         this.parent = element;
@@ -199,7 +262,7 @@ public sealed class Border : IEquatable<Border>
     public bool Equals(Border? other) =>
         other is not null && (ReferenceEquals(this, other) ||
                               type == other.type && parent.Equals(other.parent) &&
-                              borderGroup.Equals(other.borderGroup));
+                              borderGroup?.Equals(other.borderGroup) == true);
 
     /// <summary>
     /// Equality override

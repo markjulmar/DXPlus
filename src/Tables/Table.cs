@@ -527,7 +527,7 @@ public class Table : Block, IEquatable<Table>
     /// </summary>
     public Border? TopBorder
     {
-        get => new(BorderType.Top, TblPr, tblBorders);
+        get => Border.FromElement(BorderType.Top, TblPr, tblBorders);
         set => Border.SetElementValue(BorderType.Top, TblPr, tblBorders, value);
     }
 
@@ -536,7 +536,7 @@ public class Table : Block, IEquatable<Table>
     /// </summary>
     public Border? BottomBorder
     {
-        get => new(BorderType.Bottom, TblPr, tblBorders);
+        get => Border.FromElement(BorderType.Bottom, TblPr, tblBorders);
         set => Border.SetElementValue(BorderType.Bottom, TblPr, tblBorders, value);
     }
 
@@ -545,7 +545,7 @@ public class Table : Block, IEquatable<Table>
     /// </summary>
     public Border? LeftBorder
     {
-        get => new(BorderType.Left, TblPr, tblBorders);
+        get => Border.FromElement(BorderType.Left, TblPr, tblBorders);
         set => Border.SetElementValue(BorderType.Left, TblPr, tblBorders, value);
     }
 
@@ -554,7 +554,7 @@ public class Table : Block, IEquatable<Table>
     /// </summary>
     public Border? RightBorder
     {
-        get => new(BorderType.Right, TblPr, tblBorders);
+        get => Border.FromElement(BorderType.Right, TblPr, tblBorders);
         set => Border.SetElementValue(BorderType.Right, TblPr, tblBorders, value);
     }
 
@@ -563,7 +563,7 @@ public class Table : Block, IEquatable<Table>
     /// </summary>
     public Border? InsideHorizontalBorder
     {
-        get => new(BorderType.InsideH, TblPr, tblBorders);
+        get => Border.FromElement(BorderType.InsideH, TblPr, tblBorders);
         set => Border.SetElementValue(BorderType.InsideH, TblPr, tblBorders, value);
     }
 
@@ -572,7 +572,7 @@ public class Table : Block, IEquatable<Table>
     /// </summary>
     public Border? InsideVerticalBorder
     {
-        get => new(BorderType.InsideV, TblPr, tblBorders);
+        get => Border.FromElement(BorderType.InsideV, TblPr, tblBorders);
         set => Border.SetElementValue(BorderType.InsideV, TblPr, tblBorders, value);
     }
 

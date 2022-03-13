@@ -90,9 +90,12 @@
         /// Implicit conversion to double
         /// </summary>
         /// <param name="dxa"></param>
-        public static implicit operator double(Uom dxa)
-        {
-            return dxa.value;
-        }
+        public static implicit operator double(Uom dxa) => dxa.value;
+
+        /// <summary>
+        /// Implicit conversion from double
+        /// </summary>
+        /// <param name="value"></param>
+        public static implicit operator Uom(double value) => new(value);
     }
 }

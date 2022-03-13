@@ -4,7 +4,7 @@ using System.Xml.Linq;
 namespace DXPlus;
 
 /// <summary>
-/// Extension methods to work with the FirstParagraph type.
+/// Extension methods to work with the Paragraph type.
 /// </summary>
 public static class ParagraphExtensions
 {
@@ -14,32 +14,13 @@ public static class ParagraphExtensions
     const string FigureSequence = @" SEQ Figure \* ARABIC ";
 
     /// <summary>
-    /// Append a new line to this FirstParagraph.
+    /// Append a new line to this Paragraph.
     /// </summary>
-    /// <returns>This FirstParagraph with a new line appended.</returns>
-    public static Paragraph AppendLine(this Paragraph paragraph)
-    {
-        if (paragraph == null)
-        {
-            throw new ArgumentNullException(nameof(paragraph));
-        }
-
-        return paragraph.Append("\n");
-    }
-
-    /// <summary>
-    /// Append text on a new line to this FirstParagraph.
-    /// </summary>
-    /// <param name="paragraph"></param>
-    /// <param name="text">The text to append.</param>
-    /// <param name="formatting">Optional formatting for text</param>
-    /// <returns>This FirstParagraph with the new text appended.</returns>
-    public static Paragraph AppendLine(this Paragraph paragraph, string text, Formatting? formatting = null)
+    /// <returns>This Paragraph with a new line appended.</returns>
+    public static Paragraph Newline(this Paragraph paragraph)
     {
         if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
-        if (text == null) throw new ArgumentNullException(nameof(text));
-
-        return paragraph.Append(text + "\n", formatting);
+        return paragraph.Add("\n");
     }
 
     /// <summary>
@@ -95,6 +76,12 @@ public static class ParagraphExtensions
     }
 
     /// <summary>
+    /// Add an empty paragraph after the current element.
+    /// </summary>
+    /// <returns>Created empty paragraph</returns>
+    public static Paragraph AddParagraph(this Block container) => container.AddParagraph(string.Empty);
+
+    /// <summary>
     /// Add a paragraph after the current element using the passed text
     /// </summary>
     /// <param name="container">Container owner</param>
@@ -103,7 +90,8 @@ public static class ParagraphExtensions
     public static Paragraph AddParagraph(this Block container, string text)
     {
         if (container == null) throw new ArgumentNullException(nameof(container));
-        return container.AddParagraph(text, null);
+        if (text == null) throw new ArgumentNullException(nameof(text));
+        return container.InsertAfter(new Paragraph(text));
     }
 
     /// <summary>
@@ -115,7 +103,8 @@ public static class ParagraphExtensions
     public static Paragraph InsertParagraphBefore(this Block container, string text)
     {
         if (container == null) throw new ArgumentNullException(nameof(container));
-        return container.InsertParagraphBefore(text, null);
+        if (text == null) throw new ArgumentNullException(nameof(text));
+        return container.InsertBefore(new Paragraph(text));
     }
 
     /// <summary>
@@ -167,7 +156,7 @@ public static class ParagraphExtensions
         }
 
         var captionParagraph = new Paragraph().Style(HeadingType.Caption.ToString());
-        captionParagraph.Append("Figure ");
+        captionParagraph.Add("Figure ");
 
         var figureIds =
             document.Xml.Descendants(Name.SimpleField)
@@ -190,9 +179,24 @@ public static class ParagraphExtensions
         if (captionText[0] != ':' && captionText[0] != ' ')
             captionText = " " + captionText;
             
-        captionParagraph.Append(captionText);
+        captionParagraph.Add(captionText);
 
         previousParagraph.Xml.AddAfterSelf(captionParagraph.Xml);
         return captionParagraph;
+    }
+
+    /// <summary>
+    /// Set all the outside borders of the table
+    /// </summary>
+    /// <param name="paragraph"></param>
+    /// <param name="border"></param>
+    /// <returns></returns>
+    public static Paragraph SetOutsideBorders(this Paragraph paragraph, Border border)
+    {
+        paragraph.Properties.LeftBorder = border;
+        paragraph.Properties.RightBorder = border;
+        paragraph.Properties.TopBorder = border;
+        paragraph.Properties.BottomBorder = border;
+        return paragraph;
     }
 }

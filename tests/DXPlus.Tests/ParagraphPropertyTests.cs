@@ -280,11 +280,13 @@ namespace DXPlus.Tests
         [Fact]
         public void IndentsShareElement()
         {
-            var p = new ParagraphProperties();
+            var p = new ParagraphProperties
+            {
+                HangingIndent = 10,
+                LeftIndent = 15,
+                RightIndent = 20
+            };
 
-            p.HangingIndent = 10;
-            p.LeftIndent = 15;
-            p.RightIndent = 20;
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("ind"));
             Assert.Equal(10, p.HangingIndent);
             Assert.Equal(15, p.LeftIndent);
@@ -308,25 +310,28 @@ namespace DXPlus.Tests
         [Fact]
         public void SetFillAddsShdToProperties()
         {
-            var p = new ParagraphProperties {Shading = {Fill = Color.LightGray}};
+            var p = new ParagraphProperties {Shading = new() {Fill = Color.LightGray}};
 
             var e = p.Xml.RemoveNamespaces().XPathSelectElements("shd").ToList();
             Assert.Single(e);
             Assert.True(e[0].AttributeValue("fill") == "D3D3D3");
             Assert.NotStrictEqual(Color.LightGray, p.Shading.Fill);
             Assert.Null(e[0].Attribute("color"));
+
+            p.Shading.Fill = Color.Empty;
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("shd"));
         }
 
         [Fact]
-        public void SetColorAddsShdToProperties()
+        public void SetColorAddsAndRemovesShdToProperties()
         {
-            var p = new ParagraphProperties { Shading = { Color = Color.LightGray } };
+            var p = new ParagraphProperties { Shading = new() { Color = Color.LightGray } };
 
             var e = p.Xml.RemoveNamespaces().XPathSelectElements("shd").ToList();
             Assert.NotNull(e[0].Attribute("color"));
             Assert.Null(e[0].Attribute("fill"));
 
-            p.Shading.Color = null;
+            p.Shading.Color = Color.Empty;
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("shd"));
         }
 

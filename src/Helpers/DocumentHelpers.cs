@@ -278,7 +278,7 @@ internal static class DocumentHelpers
     /// <param name="text">Text to parse</param>
     /// <param name="rPr">Optional run properties</param>
     /// <returns>List of run objects</returns>
-    internal static List<XElement> FormatInput(string text, XElement? rPr)
+    internal static IEnumerable<XElement> FormatInput(string text, XElement? rPr)
     {
         var newRuns = new List<XElement>();
         if (string.IsNullOrEmpty(text))

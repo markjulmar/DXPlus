@@ -78,15 +78,6 @@ public interface IContainer
     Paragraph Add(Paragraph paragraph);
 
     /// <summary>
-    /// Insert a new paragraph using the passed text.
-    /// </summary>
-    /// <param name="index">Index to insert into</param>
-    /// <param name="text">Text for new paragraph</param>
-    /// <param name="formatting">Formatting for new paragraph</param>
-    /// <returns></returns>
-    Paragraph Insert(int index, string text, Formatting? formatting = null);
-
-    /// <summary>
     /// Add a new section to the container
     /// </summary>
     Section AddSection(SectionBreakType breakType = SectionBreakType.NextPage);
@@ -95,14 +86,6 @@ public interface IContainer
     /// Add a new page break to the container
     /// </summary>
     void AddPageBreak();
-
-    /// <summary>
-    /// Add a paragraph with the given text to the end of the container
-    /// </summary>
-    /// <param name="text">Text to add</param>
-    /// <param name="formatting">Formatting to use</param>
-    /// <returns></returns>
-    Paragraph Add(string text, Formatting? formatting = null);
 
     /// <summary>
     /// Create a set of paragraphs from a series of strings. Each string will add a new paragraph

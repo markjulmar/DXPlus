@@ -1,10 +1,23 @@
-﻿using System.Xml.Linq;
+﻿using System.Xml;
+using System.Xml.Linq;
 using Xunit;
 
 namespace DXPlus.Tests
 {
     public class RunTests
     {
+        [Fact]
+        public void PublicCtorCreatesTextRun()
+        {
+            string text = "This is a test";
+            var run = new Run(text, new Formatting());
+            Assert.Equal(text, run.Text);
+
+            Assert.Equal(Name.Run, run.Xml.Name);
+            Assert.Single(run.Xml.Elements(Name.Text));
+            Assert.Single(run.Xml.Elements(Name.RunProperties));
+        }
+
         [Fact]
         public void SplitInsertRunReturnsBothSides()
         {

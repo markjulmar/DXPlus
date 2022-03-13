@@ -20,7 +20,7 @@ namespace DXPlus.Tests
             var header = mainSection.Headers.Default;
 
             var p1 = header.Paragraphs.Single();
-            p1.SetText("This is some text - ");
+            p1.Text = "This is some text - ";
             p1.AddPageNumber(PageNumberFormat.Normal);
 
             doc.Add("P1");
@@ -39,11 +39,9 @@ namespace DXPlus.Tests
         {
             using var doc = Document.Create();
             var mainSection = doc.Sections.First();
-            var header = mainSection.Headers.Default;
 
             var footer = mainSection.Footers.Default;
-            var p = footer.Paragraphs.Single()
-                .AddParagraph("New paragraph");
+            var p = footer.Paragraphs.Single().AddParagraph("New paragraph");
 
             Assert.NotNull(p.Container);
             Assert.Equal(footer, p.Container);

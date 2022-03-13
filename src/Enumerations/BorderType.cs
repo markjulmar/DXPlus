@@ -64,4 +64,9 @@ internal enum BorderType
     /// section settings specify that the section shall be printed using mirrored margins.
     /// </summary>
     Bar,
+
+    /// <summary>
+    /// Border applied to text runs
+    /// </summary>
+    [XmlAttribute("bdr")] Text,
 }

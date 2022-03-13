@@ -22,7 +22,7 @@ public class Shading
     /// <summary>
     /// True if the parent has a shade element.
     /// </summary>
-    public bool HasShading => Shd(false) != null;
+    private bool HasShading => Shd(false) != null;
 
     /// <summary>
     /// Specifies the pattern which shall be used to lay the pattern color over the background color for this paragraph shading.
@@ -59,7 +59,7 @@ public class Shading
     /// Also, if the shading specifies the use of a theme color, then this value is superseded by the theme color value.
     /// If this attribute is omitted, then its value shall be assumed to be auto.
     /// </summary>
-    public ColorValue? Color
+    public ColorValue Color
     {
         get
         {
@@ -69,7 +69,7 @@ public class Shading
         }
         set
         {
-            if (value == null || value.IsEmpty)
+            if (value.IsEmpty)
             {
                 var shd = Shd(false);
                 if (shd != null)
@@ -93,7 +93,7 @@ public class Shading
     /// the background shading color as appropriate.
     /// If this attribute is omitted, then its value shall be assumed to be auto.
     /// </summary>
-    public ColorValue? Fill
+    public ColorValue Fill
     {
         get
         {
@@ -104,7 +104,7 @@ public class Shading
         set
         {
             var shd = Shd(false);
-            if (value == null || value.IsEmpty)
+            if (value.IsEmpty)
             {
                 if (shd != null)
                 {
@@ -127,11 +127,58 @@ public class Shading
     }
 
     /// <summary>
+    /// Public constructor
+    /// </summary>
+    public Shading()
+    {
+        properties = new XElement("props");
+    }
+
+    /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="rp">Run properties</param>
-    internal Shading(XElement rp)
+    private Shading(XElement rp)
     {
         properties = rp;
+    }
+
+    /// <summary>
+    /// Constructs a shading element based on whether it's defined on the parent object.
+    /// </summary>
+    /// <param name="rp"></param>
+    /// <returns></returns>
+    internal static Shading? FromElement(XElement rp)
+    {
+        var shading = new Shading(rp);
+        return shading.HasShading ? shading : null;
+    }
+
+    /// <summary>
+    /// Sets the element value on the parent run object based on the passed shading values.
+    /// </summary>
+    /// <param name="rp">Parent run object</param>
+    /// <param name="value">Shading values</param>
+    public static bool SetElementValue(XElement rp, Shading? value)
+    {
+        // Passed value is one of three things.
+        // 1. New (unconnected) object: new Shading(...)
+        // 2. Object connected to a different element: x.Shading = y.Shading
+        // 3. Same object: x.Shading = x.Shading
+
+        var existing = new Shading(rp).Shd(false);
+
+        // Same object?
+        if (existing == value?.Shd(false)) return false;
+
+        // Remove the existing object and replace it.
+        existing?.Remove();
+        if (value == null || value.HasShading == false)
+            return false;
+
+        // Copy the shading over.
+        var xml = value.Shd(false);
+        rp.Add(new XElement(Namespace.Main + "shd", xml!.Attributes()));
+        return true;
     }
 }

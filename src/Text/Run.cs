@@ -115,17 +115,46 @@ public class Run : DocXElement, IEquatable<Run>
     /// Add/Remove the specific formatting specified from this run.
     /// </summary>
     /// <param name="other">Formatting to apply</param>
-    public void AddFormatting(Formatting other)
+    public Run MergeFormatting(Formatting other)
     {
-        if (Properties == null)
-        {
-            Properties = other;
-        }
+        if (Properties == null) Properties = other;
         else Properties.Merge(other);
+        
+        return this;
     }
 
     /// <summary>
-    /// Constructor for a run of text
+    /// Create a run from a string.
+    /// </summary>
+    /// <param name="text"></param>
+    public static implicit operator Run(string text) => new(text);
+
+    /// <summary>
+    /// Public constructor for a run of text
+    /// </summary>
+    /// <param name="text">Text for this run</param>
+    public Run(string text)
+    {
+        Text = text ?? throw new ArgumentNullException(nameof(text));
+        Xml = new XElement(Name.Run, new XElement(Name.Text, text).PreserveSpace());
+        EndIndex = Text.Length;
+    }
+
+    /// <summary>
+    /// Public constructor for a run of text
+    /// </summary>
+    /// <param name="text">Text for this run</param>
+    /// <param name="formatting">Formatting to apply</param>
+    public Run(string text, Formatting formatting)
+    {
+        Text = text ?? throw new ArgumentNullException(nameof(text));
+        Xml = new XElement(Name.Run, new XElement(Name.Text, text).PreserveSpace());
+        Properties = formatting ?? throw new ArgumentNullException(nameof(formatting));
+        EndIndex = Text.Length;
+    }
+
+    /// <summary>
+    /// Constructor for a run of text when contained in a document.
     /// </summary>
     /// <param name="document">Document owner</param>
     /// <param name="packagePart">Package part this run is in</param>

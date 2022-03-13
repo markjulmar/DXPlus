@@ -1,10 +1,12 @@
-﻿using System.Xml.Linq;
+﻿using System.Diagnostics;
+using System.Xml.Linq;
 
 namespace DXPlus;
 
 /// <summary>
 /// Style definition which groups all the style properties.
 /// </summary>
+[DebuggerDisplay("{Id} - {Name} Type={Type} Default={IsDefault}")]
 public sealed class Style
 {
     private XElement Xml { get; }

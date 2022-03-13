@@ -38,7 +38,7 @@ namespace DXPlus.Tests
         [Fact]
         public void TableRespectsExplicitWidthRequest()
         {
-            Table t = new Table(1, 4) {TableWidth = TableWidth.FromUom(Uom.FromInches(4))};
+            Table t = new Table(1, 4) {TableWidth = Uom.FromInches(4)};
 
             double expectedSize = 4 * 1440.0;
             Assert.Equal(expectedSize, t.TableWidth.Width);
@@ -54,6 +54,32 @@ namespace DXPlus.Tests
         }
 
         [Fact]
+        public void TableWidthConvertersUseDxa()
+        {
+            var t = new Table
+            {
+                TableWidth = 100
+            };
+
+            Assert.Equal(TableWidthUnit.Dxa, t.TableWidth!.Type);
+            Assert.Equal(100, t.TableWidth.Width);
+        }
+
+        [Fact]
+        public void CanSetPercentageWidthOnTable()
+        {
+            var t = new Table(1, 1)
+            {
+                TableWidth = TableWidth.FromPercent(50)
+            };
+
+            Assert.Equal(2500, t.TableWidth.Width);
+
+            t.TableWidth = TableWidth.FromPercent(100);
+            Assert.Equal(5000, t.TableWidth.Width);
+        }
+
+        [Fact]
         public void CreateTableWithInvalidRowsOrColumnsThrowsException()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new Table(0, 1));
@@ -62,7 +88,7 @@ namespace DXPlus.Tests
         }
 
         [Fact]
-        public void AutoFitDefaultsToFalse()
+        public void TableLayoutDefaultsToNull()
         {
             var table = new Table();
             Assert.Null(table.TableLayout);

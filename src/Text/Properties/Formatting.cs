@@ -427,9 +427,20 @@ public sealed class Formatting : IEquatable<Formatting>
     /// <summary>
     /// The shade pattern applied to this paragraph
     /// </summary>
-    public Shading Shading => new(Xml);
+    public Shading? Shading
+    {
+        get => Shading.FromElement(Xml);
+        set => Shading.SetElementValue(Xml, value);
+    }
 
-    // TODO: add TextBorder (bdr)
+    /// <summary>
+    /// Specifies information about the border applied to the text in the current run.
+    /// </summary>
+    public Border? Border
+    {
+        get => Border.FromElement(BorderType.Text, Xml, null);
+        set => Border.SetElementValue(BorderType.Text, Xml, null, value);
+    }
 
     /// <summary>
     /// Constructor

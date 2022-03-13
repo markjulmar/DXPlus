@@ -11,7 +11,7 @@ namespace DXPlus;
 /// <summary>
 /// Represents a document paragraph.
 /// </summary>
-[DebuggerDisplay("({StartIndex}-{EndIndex}) - {Text}")]
+[DebuggerDisplay("{Text}")]
 public class Paragraph : Block, IEquatable<Paragraph>
 {
     private Table? tableAfterParagraph;
@@ -45,12 +45,6 @@ public class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
-    /// Styles in this paragraph
-    /// TODO: implement
-    /// </summary>
-    internal List<XElement> Styles { get; } = new();
-
-    /// <summary>
     /// Starting index for this paragraph
     /// TODO: remove
     /// </summary>
@@ -63,10 +57,22 @@ public class Paragraph : Block, IEquatable<Paragraph>
     internal int EndIndex { get; private set; }
 
     /// <summary>
+    /// Create a paragraph from a string.
+    /// </summary>
+    /// <param name="text"></param>
+    public static implicit operator Paragraph(string text) => new(text);
+
+    /// <summary>
+    /// Create a paragraph from a Run.
+    /// </summary>
+    /// <param name="text"></param>
+    public static implicit operator Paragraph(Run text) => new(text);
+
+    /// <summary>
     /// Public constructor for the paragraph
     /// </summary>
     public Paragraph() 
-        : this(null, null, Create(string.Empty, null), 0)
+        : this(null, null, new XElement(Name.Paragraph), 0)
     {
     }
 
@@ -74,18 +80,27 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// Public constructor for the paragraph
     /// </summary>
     /// <param name="text"></param>
-    public Paragraph(string text) 
-        : this (null, null, Create(text, null), 0)
+    public Paragraph(Run text) : this()
     {
+        if (text == null) throw new ArgumentNullException(nameof(text));
+        Xml.Add(text.Xml.Normalize());
     }
 
     /// <summary>
     /// Public constructor for the paragraph
     /// </summary>
-    /// <param name="text"></param>
-    /// <param name="formatting"></param>
-    public Paragraph(string text, Formatting formatting) 
-        : this(null, null, Create(text, formatting), 0)
+    /// <param name="runs"></param>
+    public Paragraph(IEnumerable<Run> runs) : this()
+    {
+        if (runs == null) throw new ArgumentNullException(nameof(runs));
+        AddRange(runs);
+    }
+
+    /// <summary>
+    /// Public constructor for the paragraph
+    /// </summary>
+    /// <param name="text">Text to add</param>
+    public Paragraph(string text) : this(new Run(text))
     {
     }
 
@@ -99,9 +114,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     internal Paragraph(Document? document, PackagePart? packagePart, XElement xml, int startIndex) : base(xml)
     {
         if (document != null)
-        {
             SetOwner(document, packagePart, false);
-        }
 
         StartIndex = startIndex;
         EndIndex = startIndex + DocumentHelpers.GetTextLength(xml);
@@ -180,22 +193,14 @@ public class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
-    /// Apply the specified formatting to the paragraph or last findText run
+    /// Clears all formatting tied to this paragraph.
     /// </summary>
-    /// <param name="formatting">Formatting to apply</param>
-    /// <returns>paragraph</returns>
-    public Paragraph WithFormatting(Formatting formatting)
+    /// <returns>This paragraph</returns>
+    public Paragraph ClearFormatting()
     {
-        if (Runs.Any())
-        {
-            var runs = Runs.Reverse().ToList();
-            var run = runs.Find(r => r.HasText) ?? runs[0];
-            run.Properties = formatting;
-        }
-        else
-        {
-            DefaultFormatting = formatting;
-        }
+        foreach (var run in this.Runs)
+            run.Properties = null;
+        DefaultFormatting = null;
 
         return this;
     }
@@ -205,16 +210,17 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// </summary>
     /// <param name="formatting">Formatting to add</param>
     /// <returns>paragraph</returns>
-    public Paragraph AddFormatting(Formatting formatting)
+    public Paragraph MergeFormatting(Formatting formatting)
     {
-        if (Runs.Any())
+        if (formatting == null) throw new ArgumentNullException(nameof(formatting));
+
+        var firstRun = Runs.Reverse().FirstOrDefault(r => r.HasText);
+        if (firstRun != null)
         {
-            var runs = Runs.Reverse().ToList();
-            var run = runs.Find(r => r.HasText) ?? runs[0];
-            if (run.Properties == null) 
-                run.Properties = formatting;
-            else 
-                run.Properties.Merge(formatting);
+            if (firstRun.Properties == null)
+                firstRun.Properties = formatting;
+            else
+                firstRun.Properties.Merge(formatting);
         }
         else
         {
@@ -263,7 +269,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
                 if (nameNode == null)
                     continue;
 
-                // Look for the next [w:t] findText element.
+                // Look for the next [w:t] text element.
                 XElement? valueNode = null;
                 node = nameNode.NextNode as XElement;
                 while (node?.Parent == nameNode.Parent)
@@ -336,49 +342,32 @@ public class Paragraph : Block, IEquatable<Paragraph>
         : Document.Sections.SingleOrDefault(s => s.Paragraphs.Contains(this));
 
     /// <summary>
-    /// Append a paragraph after this one in the document.
+    /// Insert a table before this paragraph
     /// </summary>
-    /// <param name="paragraph">Paragraph to add.</param>
-    /// <returns>Added paragraph</returns>
-    public Paragraph Append(Paragraph paragraph)
+    /// <param name="table"></param>
+    public Paragraph InsertBefore(Table table)
     {
-        if (!InDocument)
-            throw new InvalidOperationException("Can only append to paragraphs in an existing document structure.");
-        if (paragraph.Xml.InDom())
-            throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
-
-        Xml.AddAfterSelf(paragraph.Xml);
-        Document.OnAddParagraph(paragraph);
-        
-        return paragraph;
-    }
-
-    /// <summary>
-    /// Insert a paragraph before this one in the document.
-    /// </summary>
-    /// <param name="paragraph">Paragraph to add.</param>
-    /// <returns>Added paragraph</returns>
-    public Paragraph InsertBefore(Paragraph paragraph)
-    {
-        if (!InDocument)
-            throw new InvalidOperationException("Can only append to paragraphs in an existing document structure.");
-        if (paragraph.Xml.InDom())
-            throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
-
-        Xml.AddBeforeSelf(paragraph.Xml);
-        Document.OnAddParagraph(paragraph);
-        return paragraph;
-    }
-
-    /// <summary>
-    /// Add a new table after this paragraph
-    /// </summary>
-    /// <param name="table">Table to add</param>
-    public Paragraph Append(Table table)
-    {
+        if (table == null) throw new ArgumentNullException(nameof(table));
         if (table.Xml.InDom())
             throw new ArgumentException("Cannot add table multiple times.", nameof(table));
+        if (!InDocument)
+            throw new InvalidOperationException("Cannot insert table without owning document.");
 
+        table.SetOwner(Document, PackagePart, true);
+        Xml.AddBeforeSelf(table.Xml);
+
+        return this;
+    }
+
+    /// <summary>
+    /// Add a table after this paragraph.
+    /// </summary>
+    /// <param name="table">Table to add</param>
+    public Paragraph InsertAfter(Table table)
+    {
+        if (table == null) throw new ArgumentNullException(nameof(table));
+        if (table.Xml.InDom())
+            throw new ArgumentException("Cannot add table multiple times.", nameof(table));
         if (Table != null)
             throw new Exception("Can only add one table after a paragraph. Must add paragraph separators between tables or they merge.");
 
@@ -450,27 +439,40 @@ public class Paragraph : Block, IEquatable<Paragraph>
     ).ToList().AsReadOnly();
 
     /// <summary>
-    /// Gets the findText value of this paragraph.
+    /// Gets or replaces the text value of this paragraph.
     /// </summary>
-    public string Text => DocumentHelpers.GetText(Xml);
+    public string Text
+    {
+        get => DocumentHelpers.GetText(Xml);
+        set
+        {
+            Xml.Descendants(Name.Run).Remove();
+            if (!string.IsNullOrEmpty(value))
+                Xml.Add(DocumentHelpers.FormatInput(value, null));
+        }
+    }
 
     /// <summary>
-    /// Append findText to this paragraph.
+    /// Add a run of text to this paragraph
     /// </summary>
-    /// <param name="text">The findText to append.</param>
-    /// <param name="formatting">Formatting for the findText run</param>
-    /// <returns>This paragraph with the new findText appended.</returns>
-    public Paragraph Append(string text, Formatting? formatting = null)
+    /// <param name="run">Run of text to add</param>
+    /// <returns>Paragraph with the text added</returns>
+    public Paragraph Add(Run run)
     {
-        if (Text.Length == 0)
-        {
-            SetText(text, formatting);
-        }
-        else
-        {
-            Xml.Add(DocumentHelpers.FormatInput(text, formatting?.Xml));
-        }
+        Xml.Add(run.Xml);
+        return this;
+    }
 
+    /// <summary>
+    /// Add a range of runs to the paragraph
+    /// </summary>
+    /// <param name="runs">Runs to add</param>
+    /// <returns>Paragraph</returns>
+    public Paragraph AddRange(IEnumerable<Run> runs)
+    {
+        if (runs == null) throw new ArgumentNullException(nameof(runs));
+        foreach (var run in runs)
+            Add(run);
         return this;
     }
 
@@ -599,7 +601,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// </summary>
     /// <param name="hyperlink">The hyperlink to append.</param>
     /// <returns>The paragraph with the hyperlink appended.</returns>
-    public Paragraph Append(Hyperlink hyperlink)
+    public Paragraph Add(Hyperlink hyperlink)
     {
         if (InDocument)
         {
@@ -633,7 +635,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// Word will not automatically update this field if it is inserted into a document level paragraph.
     /// </summary>
     /// <param name="pnf">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
-    /// <param name="index">The findText index to insert this PageCount place holder at.</param>
+    /// <param name="index">The text index to insert this PageCount place holder at.</param>
     public void InsertPageCount(PageNumberFormat pnf, int index = 0) => AddPageNumberInfo(pnf, "numPages", index);
 
     /// <summary>
@@ -642,7 +644,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// Word will not automatically update this field if it is inserted into a document level paragraph.
     /// </summary>
     /// <param name="pnf">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
-    /// <param name="index">The findText index to insert this PageNumber place holder at.</param>
+    /// <param name="index">The text index to insert this PageNumber place holder at.</param>
     public void InsertPageNumber(PageNumberFormat pnf, int index = 0) => AddPageNumberInfo(pnf, "page", index);
 
     /// <summary>
@@ -693,7 +695,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// </summary>
     /// <param name="drawing">The Picture to append.</param>
     /// <returns>The paragraph with the Picture now appended.</returns>
-    public Paragraph Append(Drawing drawing)
+    public Paragraph Add(Drawing drawing)
     {
         if (InDocument)
         {
@@ -741,7 +743,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     ///  Find all unique instances of the given Regex Pattern
     /// </summary>
     /// <param name="regex">Regex to match</param>
-    /// <returns>Index and matched findText</returns>
+    /// <returns>Index and matched text</returns>
     public IEnumerable<(int index, string text)> FindPattern(Regex regex)
     {
         MatchCollection mc = regex.Matches(Text);
@@ -759,7 +761,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
-    /// Insert a findText block at a bookmark
+    /// Insert a text block at a bookmark
     /// </summary>
     /// <param name="bookmarkName">Bookmark name</param>
     /// <param name="toInsert">Text to insert</param>
@@ -778,7 +780,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// Insert a field of type document property, this field will display the property in the paragraph.
     /// </summary>
     /// <param name="name">Property name</param>
-    /// <param name="formatting">The formatting to use for this findText.</param>
+    /// <param name="formatting">The formatting to use for this text.</param>
     public Paragraph AddDocumentPropertyField(DocumentPropertyName name, Formatting? formatting = null)
     {
         if (Document == null)
@@ -797,7 +799,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// Insert a field of type document property, this field will display the property in the paragraph.
     /// </summary>
     /// <param name="name">Property name</param>
-    /// <param name="formatting">The formatting to use for this findText.</param>
+    /// <param name="formatting">The formatting to use for this text.</param>
     public Paragraph AddCustomPropertyField(string name, Formatting? formatting = null)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -869,7 +871,7 @@ public class Paragraph : Block, IEquatable<Paragraph>
     /// Insert a field of type document property, this field will display the custom property cp, at the end of this paragraph.
     /// </summary>
     /// <param name="name"></param>
-    /// <param name="formatting">The formatting to use for this findText.</param>
+    /// <param name="formatting">The formatting to use for this text.</param>
     public DocProperty AddDocumentProperty2(DocumentPropertyName name, Formatting formatting = null)
     {
         if (Document == null)
@@ -888,11 +890,11 @@ public class Paragraph : Block, IEquatable<Paragraph>
     */
 
     /// <summary>
-    /// Insert a Picture into a paragraph at the given findText index.
+    /// Insert a Picture into a paragraph at the given text index.
     /// If not index is provided defaults to 0.
     /// </summary>
     /// <param name="picture">The Picture to insert.</param>
-    /// <param name="index">The findText index to insert at.</param>
+    /// <param name="index">The text index to insert at.</param>
     /// <returns>The modified paragraph.</returns>
     public Paragraph Insert(Picture picture, int index = 0)
     {
@@ -936,37 +938,11 @@ public class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
-    /// Adds a string into a paragraph with the specified formatting.
-    /// </summary>
-    public Paragraph AppendText(string value, Formatting? formatting = null)
-    {
-        Xml.Add(DocumentHelpers.FormatInput(value, formatting?.Xml));
-        return this;
-    }
-
-    /// <summary>
-    /// Replaces any existing findText runs in this paragraph with the specified findText.
-    /// </summary>
-    /// <param name="value">Text value</param>
-    /// <param name="formatting">Formatting to apply (null for default)</param>
-    public void SetText(string value, Formatting? formatting = null)
-    {
-        // Remove all runs from this paragraph.
-        Xml.Descendants(Name.Run).Remove();
-
-        // Add the new run.
-        if (!string.IsNullOrEmpty(value))
-        {
-            Xml.Add(DocumentHelpers.FormatInput(value, formatting?.Xml));
-        }
-    }
-
-    /// <summary>
     /// Inserts a string into the paragraph with the specified formatting at the given index.
     /// </summary>
     /// <param name="index">The index position of the insertion.</param>
     /// <param name="value">The System.String to insert.</param>
-    /// <param name="formatting">The findText formatting.</param>
+    /// <param name="formatting">The text formatting.</param>
     public Paragraph InsertText(int index, string value, Formatting? formatting = null)
     {
         // Get the first run effected by this Insert
@@ -1087,34 +1063,34 @@ public class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
-    /// Replaces all occurrences of a specified findText in this instance.
+    /// Replaces all occurrences of a specified text in this instance.
     /// </summary>
-    /// <param name="findText">Regular expression to search for</param>
+    /// <param name="text">Regular expression to search for</param>
     /// <param name="replaceText">Text to replace all occurrences of oldValue.</param>
     /// <param name="comparisonType">Comparison type - defaults to current culture</param>
-    public bool FindReplace(string findText, string? replaceText, StringComparison comparisonType = StringComparison.CurrentCulture)
+    public bool FindReplace(string text, string? replaceText, StringComparison comparisonType = StringComparison.CurrentCulture)
     {
-        if (findText == null) throw new ArgumentNullException(nameof(findText));
+        if (text == null) throw new ArgumentNullException(nameof(text));
 
         if (string.IsNullOrEmpty(Text)) 
             return false;
 
-        int start = Text.IndexOf(findText, comparisonType);
+        int start = Text.IndexOf(text, comparisonType);
         bool found = start >= 0;
         while (start >= 0)
         {
-            RemoveText(start, findText.Length);
+            RemoveText(start, text.Length);
             if (!string.IsNullOrEmpty(replaceText))
                 InsertText(start, replaceText);
 
-            start = Text.IndexOf(findText, start+replaceText?.Length??0, comparisonType);
+            start = Text.IndexOf(text, start+replaceText?.Length??0, comparisonType);
         }
 
         return found;
     }
 
     /// <summary>
-    /// Walk all the findText runs in the paragraph and find the one containing a specific index.
+    /// Walk all the text runs in the paragraph and find the one containing a specific index.
     /// </summary>
     /// <param name="editType">Type of edit being performed (insert or delete)</param>
     /// <param name="index">Index to look for</param>
@@ -1136,13 +1112,13 @@ public class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
-    /// Recursive method to identify a findText run from a starting element and index.
+    /// Recursive method to identify a text run from a starting element and index.
     /// </summary>
     /// <param name="el">Element to search</param>
     /// <param name="editType">Type of edit being performed (insert or delete)</param>
     /// <param name="index">Index to look for</param>
     /// <param name="count">Total searched</param>
-    /// <param name="run">The located findText run</param>
+    /// <param name="run">The located text run</param>
     private void RecursiveSearchForRunByIndex(XElement el, EditType editType, int index, ref int count, ref Run? run)
     {
         count += DocumentHelpers.GetSize(el);
@@ -1257,35 +1233,6 @@ public class Paragraph : Block, IEquatable<Paragraph>
     {
         StartIndex = index;
         EndIndex = index + DocumentHelpers.GetTextLength(Xml);
-    }
-
-    /// <summary>
-    /// Create a new paragraph from some findText
-    /// </summary>
-    /// <param name="text"></param>
-    /// <param name="formatting"></param>
-    /// <returns>New paragraph</returns>
-    internal static XElement Create(string text, Formatting? formatting)
-    {
-        return new XElement(Name.Paragraph,
-            new XAttribute(Name.ParagraphId, DocumentHelpers.GenerateHexId()),
-            DocumentHelpers.FormatInput(text, formatting?.Xml));
-    }
-
-    /// <summary>
-    /// Method to clone a paragraph into a new unowned paragraph.
-    /// </summary>
-    /// <param name="otherParagraph">Existing paragraph</param>
-    /// <returns></returns>
-    public static Paragraph Clone(Paragraph otherParagraph)
-    {
-        if (otherParagraph is null)
-            throw new ArgumentNullException(nameof(otherParagraph));
-
-        return new Paragraph {
-            Xml = otherParagraph.Xml.Clone(),
-            Id = DocumentHelpers.GenerateHexId()
-        };
     }
 
     /// <summary>

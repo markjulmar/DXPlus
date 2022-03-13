@@ -1,5 +1,4 @@
 ﻿using DXPlus.Helpers;
-using System.IO.Packaging;
 using System.Xml.Linq;
 
 namespace DXPlus;
@@ -204,7 +203,7 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// <summary>
     /// Add a paragraph at the end of the container
     /// </summary>
-    public Paragraph Add(Paragraph paragraph)
+    public Paragraph AddParagraph(Paragraph paragraph)
     {
         if (paragraph == null)
             throw new ArgumentNullException(nameof(paragraph));
@@ -259,8 +258,6 @@ public abstract class BlockContainer : DocXElement, IContainer
             paragraph.Xml.SetAttributeValue(Name.ParagraphId, DocumentHelpers.GenerateHexId());
         }
 
-        InsertMissingStyles(paragraph);
-
         paragraph.SetOwner(Document, PackagePart, true);
         paragraph.SetStartIndex(Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
 
@@ -294,87 +291,6 @@ public abstract class BlockContainer : DocXElement, IContainer
         }
 
         return xml;
-    }
-
-    /// <summary>
-    /// Insert any missing styles associated with the passed paragraph
-    /// </summary>
-    /// <param name="paragraph"></param>
-    private void InsertMissingStyles(Paragraph paragraph)
-    {
-        if (!InDocument) return;
-
-        // Make sure the document has all the styles associated to the
-        // paragraph we are inserting.
-        if (paragraph.Styles.Count > 0)
-        {
-            Uri stylePackage = Relations.Styles.Uri;
-            XDocument styleDoc;
-            PackagePart stylePackagePart;
-            if (!Document.Package.PartExists(stylePackage))
-            {
-                stylePackagePart = Document.Package.CreatePart(stylePackage, Relations.Styles.ContentType, CompressionOption.Maximum);
-                styleDoc = new XDocument(new XDeclaration("1.0", "UTF-8", "yes"), new XElement(Namespace.Main + "styles"));
-                stylePackagePart.Save(styleDoc);
-            }
-            else
-            {
-                stylePackagePart = Document.Package.GetPart(stylePackage);
-                styleDoc = stylePackagePart.Load();
-            }
-
-            // Get all the styleId values from the current style
-            var styles = styleDoc.GetOrAddElement(Namespace.Main + "styles");
-            var ids = styles.Descendants(Namespace.Main + "style")
-                .Select(e => e.AttributeValue(Namespace.Main + "styleId", null))
-                .OmitNull()
-                .ToList();
-
-            // Go through the new paragraph and make sure all the styles are present
-            foreach (var style in paragraph.Styles.Where(s => 
-                    !ids.Contains(s.AttributeValue(Namespace.Main + "styleId")??"")))
-            {
-                styles.Add(style);
-            }
-
-            // Save back to the package
-            stylePackagePart.Save(styleDoc);
-        }
-    }
-
-    /// <summary>
-    /// Insert a new paragraph using the passed text.
-    /// </summary>
-    /// <param name="index">Index to insert into</param>
-    /// <param name="text">Text for new paragraph</param>
-    /// <param name="formatting">Formatting for new paragraph</param>
-    /// <returns></returns>
-    public Paragraph Insert(int index, string text, Formatting? formatting)
-    {
-        if (Document == null)
-            throw new InvalidOperationException("Must be part of document structure.");
-
-        var newParagraph = new Paragraph(Document, PackagePart, Paragraph.Create(text, formatting), index);
-        var firstPar = Document.FindParagraphByIndex(index);
-        if (firstPar != null)
-        {
-            int splitIndex = index - firstPar.StartIndex;
-            if (splitIndex <= 0)
-            {
-                firstPar.Xml.ReplaceWith(newParagraph.Xml, firstPar.Xml);
-            }
-            else
-            {
-                var splitParagraph = SplitParagraph(firstPar, splitIndex);
-                firstPar.Xml.ReplaceWith(splitParagraph[0], newParagraph.Xml, splitParagraph[1]);
-            }
-        }
-        else
-        {
-            AddElementToContainer(newParagraph.Xml);
-        }
-
-        return OnAddParagraph(newParagraph);
     }
 
     /// <summary>
@@ -413,16 +329,16 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// <summary>
     /// Add a paragraph with the given text to the end of the container
     /// </summary>
-    /// <param name="text">Text to add</param>
-    /// <param name="formatting">Formatting to use</param>
+    /// <param name="paragraph">Text to add</param>
     /// <returns></returns>
-    public Paragraph Add(string text, Formatting? formatting)
+    public Paragraph Add(Paragraph paragraph)
     {
-        if (text == null) throw new ArgumentNullException(nameof(text));
+        if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
+        if (paragraph.InDocument)
+            paragraph = new Paragraph(Document, PackagePart, paragraph.Xml.Normalize(), 0);
 
-        var paragraph = Paragraph.Create(text, formatting);
-        AddElementToContainer(paragraph);
-        return OnAddParagraph(new Paragraph(Document, PackagePart, paragraph, 0));
+        AddElementToContainer(paragraph.Xml);
+        return OnAddParagraph(paragraph);
     }
 
     /// <summary>
@@ -485,8 +401,10 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// </summary>
     protected override void OnAddToDocument()
     {
-        // Make sure we have all the styles in our document owner.
-        Paragraphs.ToList().ForEach(InsertMissingStyles);
+        foreach (var paragraph in Paragraphs)
+        {
+            paragraph.SetOwner(Document, PackagePart, true);
+        }
     }
 
     /// <summary>
@@ -501,19 +419,13 @@ public abstract class BlockContainer : DocXElement, IContainer
         if (blockContainer == null) throw new ArgumentNullException(nameof(blockContainer));
         if (e == null) throw new ArgumentNullException(nameof(e));
 
-        if (e.Name == Name.Paragraph)
-        {
-            return DocumentHelpers.WrapParagraphElement(e, blockContainer.Document, blockContainer.PackagePart, ref current);
-        }
-        if (e.Name == Name.Table)
-        {
-            return new Table(blockContainer.Document, blockContainer.PackagePart, e);
-        }
-        if (e.Name != Name.SectionProperties)
-        {
-            return new UnknownBlock(blockContainer.Document, blockContainer.PackagePart, e);
-        }
-        return null;
+        return e.Name == Name.Paragraph
+            ? DocumentHelpers.WrapParagraphElement(e, blockContainer.Document, blockContainer.PackagePart, ref current)
+            : e.Name == Name.Table
+                ? new Table(blockContainer.Document, blockContainer.PackagePart, e)
+                : e.Name != Name.SectionProperties
+                    ? new UnknownBlock(blockContainer.Document, blockContainer.PackagePart, e)
+                    : null;
     }
 
     /// <summary>
@@ -525,11 +437,8 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// <exception cref="ArgumentNullException"></exception>
     private static XElement?[] SplitParagraph(Paragraph paragraph, int index)
     {
-        if (paragraph == null)
-            throw new ArgumentNullException(nameof(paragraph));
-            
-        if (index < 0)
-            throw new ArgumentOutOfRangeException(nameof(index));
+        if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
+        if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
 
         XElement?[] split = {null, null};
 
@@ -559,16 +468,8 @@ public abstract class BlockContainer : DocXElement, IContainer
                 break;
         }
 
-        if (!before.Elements().Any())
-        {
-            before = null;
-        }
-
-        if (!after.Elements().Any())
-        {
-            after = null;
-        }
-
+        if (!before.Elements().Any()) before = null;
+        if (!after.Elements().Any()) after = null;
         return new[] { before, after };
     }
 }

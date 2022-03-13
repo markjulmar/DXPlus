@@ -16,7 +16,7 @@ namespace DXPlus.Tests
             var p = doc
                 .AddParagraph("This is a second paragraph with a book mark - ")
                 .SetBookmark("bookmark1")
-                .Append(" added into the text.");
+                .Add(" added into the text.");
 
             Assert.True(p.BookmarkExists("bookmark1"));
             Assert.Single(doc.Xml.RemoveNamespaces().XPathSelectElements("//bookmarkStart"));
@@ -36,10 +36,11 @@ namespace DXPlus.Tests
         {
             Document doc = (Document)Document.Create();
 
-            var p = doc.AddParagraph("This is a test paragraph.")
-                .Append(" With lots of text.")
-                .Append(" Added over time.")
-                .Append(" And a final sentence.");
+            var p = doc
+                .AddParagraph("This is a test paragraph.")
+                .Add(" With lots of text.")
+                .Add(" Added over time.")
+                .Add(" And a final sentence.");
 
             var runs = p.Runs.ToList();
 

@@ -12,24 +12,7 @@ public static class ContainerExtensions
     /// </summary>
     /// <returns>Newly added paragraph</returns>
     public static Paragraph AddParagraph(this IContainer container) 
-        => container.Add(string.Empty);
-
-    /// <summary>
-    /// Add a new paragraph with the given text at the end of this container.
-    /// </summary>
-    /// <returns>Newly added paragraph</returns>
-    public static Paragraph AddParagraph(this IContainer container, string text) 
-        => container.Add(text, null);
-
-    /// <summary>
-    /// Insert a paragraph with the given text at the specified paragraph index.
-    /// </summary>
-    /// <param name="container">Container to insert into</param>
-    /// <param name="index">Index to insert new paragraph at</param>
-    /// <param name="text">Text for new paragraph</param>
-    /// <returns>Newly added paragraph</returns>
-    public static Paragraph InsertParagraph(this IContainer container, int index, string text) 
-        => container.Insert(index, text, null);
+        => container.Add(new Paragraph());
 
     /// <summary>
     /// Add a new equation using the specified text at the end of this container.

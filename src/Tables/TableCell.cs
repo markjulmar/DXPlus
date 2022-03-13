@@ -35,7 +35,11 @@ public sealed class TableCell : BlockContainer, IEquatable<TableCell>
     /// <summary>
     /// Gets or Sets the shading fill for this Cell.
     /// </summary>
-    public Shading Shading => new(tcPr);
+    public Shading? Shading
+    {
+        get => Shading.FromElement(tcPr);
+        set => Shading.SetElementValue(tcPr, value);
+    }
 
     /// <summary>
     /// Get the applied gridSpan based on cell merges.
@@ -95,14 +99,14 @@ public sealed class TableCell : BlockContainer, IEquatable<TableCell>
             switch (Paragraphs.Count())
             {
                 case 0:
-                    this.AddParagraph(value);
+                    this.Add(new Paragraph(value));
                     break;
                 case 1:
-                    Paragraphs.First().SetText(value);
+                    Paragraphs.First().Text = value;
                     break;
                 default:
                     Xml.Elements(Name.Paragraph).Remove();
-                    this.AddParagraph(value);
+                    this.Add(new Paragraph(value));
                     break;
             }
         }
@@ -204,7 +208,7 @@ public sealed class TableCell : BlockContainer, IEquatable<TableCell>
     /// </summary>
     public Border? TopBorder
     {
-        get => new(BorderType.Top, tcPr, tcBorders);
+        get => Border.FromElement(BorderType.Top, tcPr, tcBorders);
         set => Border.SetElementValue(BorderType.Top, tcPr, tcBorders, value);
     }
 
@@ -213,7 +217,7 @@ public sealed class TableCell : BlockContainer, IEquatable<TableCell>
     /// </summary>
     public Border? BottomBorder
     {
-        get => new(BorderType.Bottom, tcPr, tcBorders);
+        get => Border.FromElement(BorderType.Bottom, tcPr, tcBorders);
         set => Border.SetElementValue(BorderType.Bottom, tcPr, tcBorders, value);
     }
 
@@ -222,7 +226,7 @@ public sealed class TableCell : BlockContainer, IEquatable<TableCell>
     /// </summary>
     public Border? LeftBorder
     {
-        get => new(BorderType.Left, tcPr, tcBorders);
+        get => Border.FromElement(BorderType.Left, tcPr, tcBorders);
         set => Border.SetElementValue(BorderType.Left, tcPr, tcBorders, value);
     }
 
@@ -231,7 +235,7 @@ public sealed class TableCell : BlockContainer, IEquatable<TableCell>
     /// </summary>
     public Border? RightBorder
     {
-        get => new(BorderType.Right, tcPr, tcBorders);
+        get => Border.FromElement(BorderType.Right, tcPr, tcBorders);
         set => Border.SetElementValue(BorderType.Right, tcPr, tcBorders, value);
     }
 
@@ -240,7 +244,7 @@ public sealed class TableCell : BlockContainer, IEquatable<TableCell>
     /// </summary>
     public Border? InsideHorizontalBorder
     {
-        get => new(BorderType.InsideH, tcPr, tcBorders);
+        get => Border.FromElement(BorderType.InsideH, tcPr, tcBorders);
         set => Border.SetElementValue(BorderType.InsideH, tcPr, tcBorders, value);
     }
 
@@ -249,7 +253,7 @@ public sealed class TableCell : BlockContainer, IEquatable<TableCell>
     /// </summary>
     public Border? InsideVerticalBorder
     {
-        get => new(BorderType.InsideV, tcPr, tcBorders);
+        get => Border.FromElement(BorderType.InsideV, tcPr, tcBorders);
         set => Border.SetElementValue(BorderType.InsideV, tcPr, tcBorders, value);
     }
 
@@ -258,7 +262,7 @@ public sealed class TableCell : BlockContainer, IEquatable<TableCell>
     /// </summary>
     public Border? TopLeftToBottomRightDiagonalBorder
     {
-        get => new(BorderType.TopLeftToBottomRight, tcPr, tcBorders);
+        get => Border.FromElement(BorderType.TopLeftToBottomRight, tcPr, tcBorders);
         set => Border.SetElementValue(BorderType.TopLeftToBottomRight, tcPr, tcBorders, value);
     }
 
@@ -267,7 +271,7 @@ public sealed class TableCell : BlockContainer, IEquatable<TableCell>
     /// </summary>
     public Border? TopRightToBottomLeftDiagonalBorder
     {
-        get => new(BorderType.TopRightToBottomLeft, tcPr, tcBorders);
+        get => Border.FromElement(BorderType.TopRightToBottomLeft, tcPr, tcBorders);
         set => Border.SetElementValue(BorderType.TopRightToBottomLeft, tcPr, tcBorders, value);
     }
 

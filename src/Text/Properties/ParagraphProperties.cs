@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-using System.Drawing;
-using System.Xml.Linq;
+﻿using System.Xml.Linq;
 using DXPlus.Helpers;
 
 namespace DXPlus;
@@ -180,7 +178,11 @@ public sealed class ParagraphProperties
     /// <summary>
     /// The shade pattern applied to this paragraph
     /// </summary>
-    public Shading Shading => new(Xml);
+    public Shading? Shading
+    {
+        get => Shading.FromElement(Xml);
+        set => Shading.SetElementValue(Xml, value);
+    }
 
     /// <summary>
     /// Paragraph border
@@ -192,7 +194,7 @@ public sealed class ParagraphProperties
     /// </summary>
     public Border? TopBorder
     {
-        get => new(BorderType.Top, Xml, pBdr);
+        get => Border.FromElement(BorderType.Top, Xml, pBdr);
         set => Border.SetElementValue(BorderType.Top, Xml, pBdr, value);
     }
 
@@ -201,7 +203,7 @@ public sealed class ParagraphProperties
     /// </summary>
     public Border? BottomBorder
     {
-        get => new(BorderType.Bottom, Xml, pBdr);
+        get => Border.FromElement(BorderType.Bottom, Xml, pBdr);
         set => Border.SetElementValue(BorderType.Bottom, Xml, pBdr, value);
     }
 
@@ -210,7 +212,7 @@ public sealed class ParagraphProperties
     /// </summary>
     public Border? LeftBorder
     {
-        get => new(BorderType.Left, Xml, pBdr);
+        get => Border.FromElement(BorderType.Left, Xml, pBdr);
         set => Border.SetElementValue(BorderType.Left, Xml, pBdr, value);
     }
 
@@ -219,7 +221,7 @@ public sealed class ParagraphProperties
     /// </summary>
     public Border? RightBorder
     {
-        get => new(BorderType.Right, Xml, pBdr);
+        get => Border.FromElement(BorderType.Right, Xml, pBdr);
         set => Border.SetElementValue(BorderType.Right, Xml, pBdr, value);
     }
 
@@ -228,7 +230,7 @@ public sealed class ParagraphProperties
     /// </summary>
     public Border? BetweenBorder
     {
-        get => new(BorderType.Between, Xml, pBdr);
+        get => Border.FromElement(BorderType.Between, Xml, pBdr);
         set => Border.SetElementValue(BorderType.Between, Xml, pBdr, value);
     }
 
@@ -237,7 +239,7 @@ public sealed class ParagraphProperties
     /// </summary>
     public Border? BarBorder
     {
-        get => new(BorderType.Bar, Xml, pBdr);
+        get => Border.FromElement(BorderType.Bar, Xml, pBdr);
         set => Border.SetElementValue(BorderType.Bar, Xml, pBdr, value);
     }
 

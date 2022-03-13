@@ -77,7 +77,7 @@ public sealed class StyleManager : DocXElement
         if (!Enum.IsDefined(typeof(StyleType), type))
             throw new InvalidEnumArgumentException(nameof(type), (int) type, typeof(StyleType));
 
-        basedOnStyle ??= AvailableStyles.Single(s => s.IsDefault && s.Type == type);
+        basedOnStyle ??= AvailableStyles.First(s => s.IsDefault && s.Type == type);
         name = new string(name.Where(char.IsLetterOrDigit).ToArray());
 
         // If the style is a default one, pick off the exception data.

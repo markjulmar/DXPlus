@@ -61,7 +61,7 @@ public sealed class ColorValue : IEquatable<ColorValue>
     /// <param name="color">Theme color enumeration</param>
     /// <param name="tint">Optional tint to apply</param>
     /// <param name="shading">Optional shading to apply</param>
-    public ColorValue(ThemeColor color, byte? tint, byte? shading)
+    public ColorValue(ThemeColor color, byte? tint = null, byte? shading = null)
     {
         ThemeColor = color;
         ThemeTint = tint;
