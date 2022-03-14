@@ -181,10 +181,23 @@ public static class ParagraphExtensions
     /// <returns></returns>
     public static Paragraph SetOutsideBorders(this Paragraph paragraph, Border border)
     {
-        paragraph.Properties.LeftBorder = border;
-        paragraph.Properties.RightBorder = border;
-        paragraph.Properties.TopBorder = border;
-        paragraph.Properties.BottomBorder = border;
+        if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
+        paragraph.Properties.SetOutsideBorders(border);
         return paragraph;
+    }
+
+    /// <summary>
+    /// Set all the outside borders of the table
+    /// </summary>
+    /// <param name="properties"></param>
+    /// <param name="border"></param>
+    /// <returns></returns>
+    public static void SetOutsideBorders(this ParagraphProperties properties, Border border)
+    {
+        if (properties == null) throw new ArgumentNullException(nameof(properties));
+        properties.LeftBorder = border;
+        properties.RightBorder = border;
+        properties.TopBorder = border;
+        properties.BottomBorder = border;
     }
 }

@@ -633,7 +633,7 @@ public sealed class Document : BlockContainer, IDocument
     /// </summary>
     public void Close()
     {
-        Package.Close();
+        documentPackage?.Close();
         memoryStream?.Close();
 
         documentPackage = null;
