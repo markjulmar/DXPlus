@@ -1,5 +1,7 @@
-﻿using System.Diagnostics;
+﻿using System.ComponentModel;
+using System.Diagnostics;
 using System.IO.Packaging;
+using System.Reflection;
 using System.Xml.Linq;
 using DXPlus.Internal;
 
@@ -136,8 +138,26 @@ public sealed class Run : DocXElement, IEquatable<Run>
     public Run(string text)
     {
         Text = text ?? throw new ArgumentNullException(nameof(text));
-        Xml = new XElement(Name.Run, new XElement(Name.Text, text).PreserveSpace());
+
+        var xe = DocumentHelpers.FormatInput(text, null).ToList();
+        if (xe.Count > 1)
+            throw new InvalidEnumArgumentException(
+                "Text cannot mix-in tabs, newlines, or other special characters. Use Run.Create to generate a list of Run objects.");
+
+        Xml = xe.SingleOrDefault() ?? new XElement(Name.Run);
         EndIndex = Text.Length;
+    }
+
+    /// <summary>
+    /// Creates a set of runs from a text string. This properly handles tabs, line breaks, etc.
+    /// </summary>
+    /// <param name="text">Text</param>
+    /// <param name="formatting">Optional formatting</param>
+    /// <returns>Enumerable set of run objects</returns>
+    public static IEnumerable<Run> Create(string text, Formatting? formatting = null)
+    {
+        return DocumentHelpers.FormatInput(text, formatting?.Xml)
+            .Select(xe => new Run(null, null, xe, 0));
     }
 
     /// <summary>
