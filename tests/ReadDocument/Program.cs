@@ -155,7 +155,7 @@ namespace ReadDocument
                     var p = d.Picture;
                     if (p != null)
                     {
-                        text += $"{Environment.NewLine}{prefix}   pic: Id={p.Id}, Rid=\"{p.RelationshipId}\" {p.FileName} ({Math.Round(p.Width,0)}x{Math.Round(p.Height,0)}) - {p.Name}: \"{p.Description}\"";
+                        text += $"{Environment.NewLine}{prefix}   pic: Id={p.Id}, Rid=\"{p.RelationshipId}\" {p.FileName} ({Math.Round(p.Width??0,0)}x{Math.Round(p.Height??0,0)}) - {p.Name}: \"{p.Description}\"";
                         if (p.Hyperlink != null)
                         {
                             text += $", Hyperlink=\"{p.Hyperlink.OriginalString}\"";
@@ -232,6 +232,9 @@ namespace ReadDocument
 
         private static string DumpObject(object obj)
         {
+            if (obj == null)
+                return "";
+
             var sb = new StringBuilder();
             Type t = obj.GetType();
 

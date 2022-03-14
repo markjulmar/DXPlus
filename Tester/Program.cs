@@ -1,116 +1,126 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using DXPlus;
 
 namespace Tester
 {
-    class Program
+    public static class Program
     {
-        public static void Main(string[] args)
+        public static void Main()
         {
             string fn = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "test.docx");
             using var doc = Document.Create(fn);
 
+            WriteTitle(doc);
+            AddVideoToDoc(doc);
             AddImageToDoc(doc);
-            //CreateDocWithHeaderAndFooter(doc);
-            //WriteTitle(doc);
-            //AddVideoToDoc(doc);
-            
+            AddHeaderAndFooter(doc);
+            CreateTableWithList(doc);
+
             doc.Save();
             Console.WriteLine("Wrote document");
         }
 
         private static void AddVideoToDoc(IDocument doc)
         {
-            doc.AddParagraph("This is an introduction.");
-            
-            var p = doc.AddParagraph();
-            p.Properties.Alignment = Alignment.Center;
+            doc.AddRange(new[] {
+                "This is a video.",
+                new Paragraph().WithProperties(new() {Alignment = Alignment.Center})
+                    .Add(doc.CreateVideo(
+                        "video-placeholder.png",
+                        new Uri("https://www.youtube.com/watch?v=5-gF-tmblA8", UriKind.Absolute),
+                        400, 225)),
+                new Paragraph(new [] {
+                            "with a ", 
+                            new Run("boxed", 
+                                new Formatting { Border = new Border(BorderStyle.Dotted, Uom.FromPoints(1))}),
+                            " caption.",
+                        }),
+                "And a closing paragraph.",
 
-            p.Append(doc.CreateVideo(
-                "video-placeholder.png",
-                new Uri("https://www.microsoft.com/en-us/videoplayer/embed/RWwMdr", UriKind.Absolute),
-                400, 225));
-            
-            doc.AddParagraph("And a closing paragraph.");
+                new Paragraph("One more time with a border")
+                    .SetOutsideBorders(new Border(BorderStyle.DoubleWave, 5))
+            });
         }
 
         private static void WriteTitle(IDocument doc)
         {
-            doc.AddParagraph("Introduction").Style(HeadingType.Heading1);
-            doc.AddParagraph("This is some text");
-
-            var p = doc.Paragraphs.First();
-            p.InsertBefore(new Paragraph("This is a title").Style(HeadingType.Title))
-                .Append(new Paragraph($"Last edited at {DateTime.Now.ToShortDateString()} by M. Smith").Style(
-                    HeadingType.Subtitle));
-            
-            doc.Save();
+            doc.AddRange(new[] {"Introduction", "This is some text"});
+            doc.Paragraphs.First()
+             .Style(HeadingType.Heading1)
+             .InsertBefore(new Paragraph("This is a title").Style(HeadingType.Title))
+             .InsertAfter(new Paragraph($"Last edited at {DateTime.Now.ToShortDateString()} by M. Smith").Style(HeadingType.Subtitle));
         }
 
         private static void AddImageToDoc(IDocument doc)
         {
-            var img = doc.AddImage(@"test.svg");
-            var p = doc.AddParagraph("This is a picture:");
-            p.Append(img.CreatePicture());
+            doc.AddParagraph();
 
-            var im2 = doc.AddImage(@"test2.png");
-            p.Append(im2.CreatePicture());
+            var img = doc.CreateImage(@"test.svg");
+            var p = doc.Add("This is a picture:");
+            p.Add(img.CreatePicture(string.Empty, string.Empty));
+
+            var im2 = doc.CreateImage(@"test2.png");
+            p.Add(im2.CreatePicture(string.Empty, string.Empty));
 
             // Add with different size.
-            p = doc.AddParagraph("And a final pic (dup of svg!):");
-            p.Append(img.CreatePicture(50, 50));
+            p = doc.Add("And a final pic (dup of svg!):");
+            p.Add(img.CreatePicture(50, 50));
         }
 
-        private static void CreateDocWithHeaderAndFooter(IDocument doc)
+        private static void AddHeaderAndFooter(IDocument doc)
         {
             var mainSection = doc.Sections.First();
             var header = mainSection.Headers.Default;
 
             var p1 = header.MainParagraph;
-            p1.SetText("This is some text - ");
+            p1.Text = "This is some text - ";
             p1.AddPageNumber(PageNumberFormat.Normal);
-
-            doc.AddParagraph("This is the firt paragraph");
-            doc.AddPageBreak();
-            doc.AddParagraph("This is page 2");
         }
 
         static void CreateTableWithList(IDocument doc)
         {
-            int rows = 2;
-            int columns = 2;
+            doc.AddPageBreak();
+            doc.Add("This is a table.");
 
-            var documentTable = doc.AddTable(rows: rows, columns: columns);
+            var table = new Table(rows: 2, columns: 2) {Design = TableDesign.None};
+            table.SetOutsideBorders(new Border(BorderStyle.Single, Uom.FromPoints(1))) //1pt
+                 .SetInsideBorders(new Border(BorderStyle.Single, Uom.FromPoints(1.5))); // 1.5pt
+
+            doc.Add(table);
+
             var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
+            var rows = table.Rows.ToList();
 
-            documentTable.Design = TableDesign.TableNormal;
+            foreach (var row in rows)
+            {
+                for (int col = 0; col < row.ColumnCount; col++)
+                {
+                    var cell = row.Cells[col];
+                    cell.Shading = new() {Fill = col % 2 == 0 ? Color.Pink : Color.LightBlue};
 
-            AddListToCell(
-                documentTable.Rows.ElementAt(1).Cells[0], nd,
-                new[] { "Item 1", "Item 2", "Item 3", "Item 4" });
+                    AddList(cell.Paragraphs.First(), 
+                        nd, Enumerable.Range(1,5).Select(n => $"Item {n}"));    
+                    
+                }
+            }
 
-            AddListToCell(
-                documentTable.Rows.ElementAt(1).Cells[1], nd,
-                new[] { "Item 5", "Item 6", "Item 7", "Item 8" });
-
-            documentTable.AutoFit = true;
-
-            var t = doc.AddTable(3, 3);
+            table.AutoFit();
         }
 
-        private static void AddListToCell(TableCell cell, NumberingDefinition nd, string[] terms)
+        private static void AddList(Paragraph paragraph, NumberingDefinition nd, IEnumerable<string> terms)
         {
-            var cellParagraph = cell.Paragraphs.First();
-            for (int i = 0; i < terms.Length; i++)
+            int index = 0;
+            foreach (var text in terms)
             {
-                string text = terms[i];
-                if (i == 0)
-                    cellParagraph.ListStyle(nd, 0);
+                if (index++ == 0)
+                    paragraph.ListStyle(nd, 0);
                 else
-                    cellParagraph = cellParagraph.AddParagraph().ListStyle(nd,0);
-                cellParagraph.SetText(text);
+                    paragraph = paragraph.AddParagraph().ListStyle(nd,0);
+                paragraph.Text = text;
             }
         }
     }

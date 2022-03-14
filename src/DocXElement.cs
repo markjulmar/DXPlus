@@ -1,85 +1,96 @@
 ﻿using System.IO.Packaging;
 using System.Xml.Linq;
 
-namespace DXPlus
+namespace DXPlus;
+
+/// <summary>
+/// Represents a single element contained within the document structure.
+/// Wraps the underlying XML element, document owner, and package part.
+/// </summary>
+public abstract class DocXElement
 {
+    private XElement? element;
+    private Document? document;
+    private PackagePart? packagePart;
+
     /// <summary>
-    /// All Document types are derived from DocXElement.
-    /// This class contains properties which every element of a Document must contain.
+    /// Returns whether this element is in the document structure.
+    /// Newly created elements aren't yet in the document and can only be added once.
     /// </summary>
-    public abstract class DocXElement
+    internal bool InDocument => element?.Parent != null && document != null && packagePart != null;
+
+    /// <summary>
+    /// The document owner
+    /// </summary>
+    internal Document Document => document ?? throw new InvalidOperationException("Element not in a document.");
+
+    /// <summary>
+    /// Document owner that doesn't throw
+    /// </summary>
+    internal Document? SafeDocument => document;
+
+    /// <summary>
+    /// Package part that doesn't throw
+    /// </summary>
+    internal PackagePart? SafePackagePart => packagePart;
+
+    /// <summary>
+    /// PackagePart (file) this element is stored in.
+    /// </summary>
+    internal PackagePart PackagePart => packagePart ?? document?.PackagePart ?? throw new InvalidOperationException("Missing package.");
+
+    /// <summary>
+    /// This is the actual Xml that gives this element substance.
+    /// </summary>
+    protected internal virtual XElement Xml
     {
-        protected Document document;
-        protected PackagePart packagePart;
+        get => element ?? throw new InvalidOperationException("Missing XML node.");
+        set => element = value ?? throw new ArgumentNullException(nameof(value));
+    }
 
-        /// <summary>
-        /// The document owner
-        /// </summary>
-        internal Document Document => document;
-
-        /// <summary>
-        /// This is used to assign an owner to the element. The owner
-        /// consists of the owning document object + a zip package.
-        /// </summary>
-        /// <param name="document">Document</param>
-        /// <param name="packagePart">Package</param>
-        internal void SetOwner(Document document, PackagePart packagePart)
+    /// <summary>
+    /// This is used to assign an owner to the element. The owner
+    /// consists of the owning document object + a zip package.
+    /// </summary>
+    /// <param name="document">Document</param>
+    /// <param name="packagePart">Package</param>
+    /// <param name="notify">True to notify about ownership change</param>
+    internal void SetOwner(Document document, PackagePart? packagePart, bool notify)
+    {
+        this.document = document;
+        this.packagePart = packagePart;
+        if (notify)
         {
-            this.document = document;
-            this.packagePart = packagePart;
-
-            if (document != null)
-            {
-                OnDocumentOwnerChanged();
-            }
+            OnAddToDocument();
         }
+    }
 
-        /// <summary>
-        /// PackagePart (file) this element is stored in.
-        /// </summary>
-        internal virtual PackagePart PackagePart => packagePart;
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    internal DocXElement()
+    {
+    }
 
-        /// <summary>
-        /// Default constructor
-        /// </summary>
-        internal DocXElement()
-        {
-        }
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="xml">The XML element that gives this document element substance</param>
+    internal DocXElement(XElement xml)
+    {
+        this.element = xml;
+    }
 
-        /// <summary>
-        /// Store both the document and xml so that they can be accessed by derived types.
-        /// </summary>
-        /// <param name="document">The document that this element belongs to.</param>
-        /// <param name="packagePart">The package this element is in.</param>
-        /// <param name="xml">The Xml that gives this element substance</param>
-        internal DocXElement(IDocument document, PackagePart packagePart, XElement xml)
-        {
-            this.packagePart = packagePart;
-            this.document = (Document) document;
-            this.Xml = xml;
-        }
+    /// <summary>
+    /// This is a reference to the document object that this element belongs to.
+    /// It can be null if the given element hasn't been added to a document yet.
+    /// </summary>
+    public IDocument Owner => Document;
 
-        /// <summary>
-        /// Returns whether this Xml fragment is in a document.
-        /// </summary>
-        internal bool InDom => Xml?.Parent != null;
-
-        /// <summary>
-        /// This is the actual Xml that gives this element substance.
-        /// </summary>
-        internal virtual XElement Xml { get; set; }
-
-        /// <summary>
-        /// This is a reference to the document object that this element belongs to.
-        /// It can be null if the given element hasn't been added to a document yet.
-        /// </summary>
-        public IDocument Owner => Document;
-
-        /// <summary>
-        /// Called when the document owner is changed.
-        /// </summary>
-        protected virtual void OnDocumentOwnerChanged()
-        {
-        }
+    /// <summary>
+    /// Called when the document owner is changed.
+    /// </summary>
+    protected virtual void OnAddToDocument()
+    {
     }
 }

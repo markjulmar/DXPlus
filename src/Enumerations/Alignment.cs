@@ -1,22 +1,50 @@
 ﻿using System.Xml.Serialization;
 
-namespace DXPlus
+namespace DXPlus;
+
+/// <summary>
+/// Text alignment of a Paragraph or List
+/// </summary>
+public enum Alignment
 {
     /// <summary>
-    /// Text alignment of a FirstParagraph or List
+    /// Left
     /// </summary>
-    public enum Alignment
-    {
-        Left,
-        Center,
-        Right,
-        Both,
-        Distribute,
-        [XmlAttribute("numTab")]
-        AlignToListTab,
-        MediumKashida,
-        HighKashida,
-        LowKashida,
-        ThaiDistribute
-    };
-}
+    Left,
+    /// <summary>
+    /// Center
+    /// </summary>
+    Center,
+    /// <summary>
+    /// Right
+    /// </summary>
+    Right,
+    /// <summary>
+    /// Both
+    /// </summary>
+    Both,
+    /// <summary>
+    /// Distribute evenly
+    /// </summary>
+    Distribute,
+    /// <summary>
+    /// Aligned to list
+    /// </summary>
+    [XmlAttribute("numTab")] AlignToListTab,
+    /// <summary>
+    /// Medium Kashida
+    /// </summary>
+    MediumKashida,
+    /// <summary>
+    /// High Kashida
+    /// </summary>
+    HighKashida,
+    /// <summary>
+    /// Low Kashida
+    /// </summary>
+    LowKashida,
+    /// <summary>
+    /// Thai Distributed
+    /// </summary>
+    ThaiDistribute
+};

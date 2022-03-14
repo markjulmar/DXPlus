@@ -1,13 +1,27 @@
-﻿namespace DXPlus
+﻿namespace DXPlus;
+
+/// <summary>
+/// Specifies the possible values for the types of style definitions defined within a document.
+/// </summary>
+public enum StyleType
 {
     /// <summary>
-    /// Specifies the possible values for the types of style definitions defined within a document.
+    /// Paragraph style
     /// </summary>
-    public enum StyleType
-    {
-        Paragraph,
-	    Character,
-	    Table,
-	    Numbering
-    }
+    Paragraph,
+
+    /// <summary>
+    /// Character style
+    /// </summary>
+    Character,
+
+    /// <summary>
+    /// Table style
+    /// </summary>
+    Table,
+
+    /// <summary>
+    /// Numbering style
+    /// </summary>
+    Numbering
 }

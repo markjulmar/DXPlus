@@ -1,143 +1,137 @@
-﻿using DXPlus.Helpers;
-using System;
-using System.IO.Packaging;
-using System.Linq;
+﻿using System.IO.Packaging;
 using System.Xml.Linq;
+using DXPlus.Internal;
 
-namespace DXPlus
+namespace DXPlus;
+
+/// <summary>
+/// Represents a Paragraph or Table in the document.
+/// </summary>
+public abstract class Block : DocXElement
 {
     /// <summary>
-    /// Represents a block of content in the document. This can be a FirstParagraph, Numbered list, or Table.
+    /// Constructor
     /// </summary>
-    public abstract class Block : DocXElement
+    /// <param name="xml">XML for this block</param>
+    protected Block(XElement xml) : base(xml)
     {
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="document"></param>
-        /// <param name="packagePart"></param>
-        /// <param name="xml"></param>
-        protected Block(IDocument document, PackagePart packagePart, XElement xml)
-            : base(document, packagePart, xml)
+    }
+
+    /// <summary>
+    /// Retrieves the container owner (TableCell, Document, Header/Footer).
+    /// </summary>
+    internal BlockContainer? Container
+    {
+        get
         {
+            if (!Xml.InDom()) return null;
+            if (Xml.Parent?.Name == Name.Body) return this.Document;
+            return Xml.Parent != null
+                ? WrapElementBlockContainer(this.Document, this.PackagePart, Xml.Parent)
+                : null;
+        }
+    }
+
+
+    /// <summary>
+    /// Add a page break after the current element.
+    /// </summary>
+    public void AddPageBreak() =>
+        Xml.AddAfterSelf(DocumentHelpers.PageBreak());
+
+    /// <summary>
+    /// Insert a page break before the current element.
+    /// </summary>
+    public void InsertPageBreakBefore() =>
+        Xml.AddBeforeSelf(DocumentHelpers.PageBreak());
+
+    /// <summary>
+    /// Insert a paragraph before this one in the document.
+    /// </summary>
+    /// <param name="paragraph">Paragraph to add.</param>
+    /// <returns>Added paragraph</returns>
+    public Paragraph InsertBefore(Paragraph paragraph)
+    {
+        if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
+        if (!InDocument)
+            throw new InvalidOperationException("Can only append to paragraphs in an existing document structure.");
+        if (paragraph.Xml.InDom())
+            throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
+
+        Xml.AddBeforeSelf(paragraph.Xml);
+        Document.OnAddParagraph(paragraph);
+        return paragraph;
+    }
+
+    /// <summary>
+    /// Add a new paragraph after the current element.
+    /// </summary>
+    /// <param name="paragraph">Paragraph to add</param>
+    public Paragraph InsertAfter(Paragraph paragraph)
+    {
+        if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
+        if (!InDocument)
+            throw new InvalidOperationException("Cannot add paragraphs to unowned paragraphs - must be part of a document structure.");
+        if (paragraph.Xml.InDom())
+            throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
+
+        // If this element is a paragraph and it currently has a table after it, then add the given paragraph
+        // after the table.
+        if (this is Paragraph p && p.Table != null)
+        {
+            p.Table.Xml.AddAfterSelf(paragraph.Xml);
+        }
+        // Otherwise, add the paragraph after this element.
+        else
+        {
+            Xml.AddAfterSelf(paragraph.Xml);
         }
 
-        /// <summary>
-        /// Retrieves the container owner (TableCell, Document, Header/Footer).
-        /// </summary>
-        internal BlockContainer Container
+        // Set the id + owner information.
+        Container!.OnAddParagraph(paragraph);
+
+        return paragraph;
+    }
+
+    /// <summary>
+    /// Wraps a block container from the document. These are elements
+    /// which contain other elements.
+    /// </summary>
+    /// <param name="document">Document owner</param>
+    /// <param name="packagePart">Package part</param>
+    /// <param name="e">Element</param>
+    /// <returns></returns>
+    private static BlockContainer? WrapElementBlockContainer(Document? document, PackagePart? packagePart, XElement e)
+    {
+        if (e.Name == Name.TableCell)
         {
-            get
+            if (e.Parent?.Parent != null)
             {
-                if (!InDom) return null;
-                if (Xml.Parent?.Name == Name.Body) return this.Document;
-                return HelperFunctions.WrapElementBlockContainer(this.Document, this.PackagePart, Xml.Parent);
+                var rowXml = e.Parent;
+                var tableXml = rowXml.Parent;
+                var table = new Table(document, packagePart, tableXml);
+                var row = new TableRow(table, rowXml);
+                return new TableCell(row, e);
             }
         }
 
-
-        /// <summary>
-        /// Add a page break after the current element.
-        /// </summary>
-        public void AddPageBreak() =>
-            Xml.AddAfterSelf(HelperFunctions.PageBreak());
-
-        /// <summary>
-        /// Insert a page break before the current element.
-        /// </summary>
-        public void InsertPageBreakBefore() =>
-            Xml.AddBeforeSelf(HelperFunctions.PageBreak());
-
-        /// <summary>
-        /// Add an empty paragraph after the current element.
-        /// </summary>
-        /// <returns>Created empty paragraph</returns>
-        public Paragraph AddParagraph() => AddParagraph(string.Empty, null);
-
-        /// <summary>
-        /// Add a new paragraph after the current element.
-        /// </summary>
-        /// <param name="paragraph">FirstParagraph to insert</param>
-        public Paragraph AddParagraph(Paragraph paragraph)
+        if (e.Name == Name.Body)
         {
-            if (!this.InDom)
-                throw new InvalidOperationException("Cannot add paragraphs to unowned paragraphs - must be part of a document structure.");
-            if (paragraph == null) 
-                throw new ArgumentNullException(nameof(paragraph));
-            if (paragraph.InDom)
-                throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
-
-            // If this element is a paragraph and it currently
-            // has a table after it, then add the given paragraph
-            // after the table.
-            if (this is Paragraph p && p.Table != null)
-            {
-                p.Table.Xml.AddAfterSelf(paragraph.Xml);
-            }
-            // Otherwise, just add the paragraph.
-            else Xml.AddAfterSelf(paragraph.Xml);
-
-            // Determine the starting index using the container owner.
-            paragraph.SetStartIndex(Container.Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
-
-            return paragraph;
+            return document;
         }
 
-        /// <summary>
-        /// Add a paragraph after the current element using the passed text
-        /// </summary>
-        /// <param name="text">Text for new paragraph</param>
-        /// <param name="formatting">Formatting for the paragraph</param>
-        /// <returns>Newly created paragraph</returns>
-        public Paragraph AddParagraph(string text, Formatting formatting)
+        if (e.Name.LocalName == "hdr" && document != null)
         {
-            var paragraph = new Paragraph(Document, PackagePart, Paragraph.Create(text, formatting), -1);
-            AddParagraph(paragraph);
-            return paragraph;
+            return document.Sections.SelectMany(s => s.Headers)
+                .SingleOrDefault(h => h.Xml == e);
         }
 
-        /// <summary>
-        /// Insert a paragraph before the current element
-        /// </summary>
-        /// <param name="paragraph"></param>
-        public void InsertParagraphBefore(Paragraph paragraph)
+        if (e.Name.LocalName == "ftr" && document != null)
         {
-            if (paragraph == null) 
-                throw new ArgumentNullException(nameof(paragraph));
-            if (paragraph.InDom)
-                throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
-
-            Xml.AddBeforeSelf(paragraph.Xml);
-
-            paragraph.SetStartIndex(Container.Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex);
+            return document.Sections.SelectMany(s => s.Footers)
+                .SingleOrDefault(h => h.Xml == e);
         }
 
-        /// <summary>
-        /// Insert a paragraph before the current element
-        /// </summary>
-        /// <param name="text">Text to use for new paragraph</param>
-        /// <param name="formatting">Formatting to use</param>
-        /// <returns></returns>
-        public Paragraph InsertParagraphBefore(string text, Formatting formatting)
-        {
-            var paragraph = new Paragraph(Document, PackagePart, Paragraph.Create(text, formatting), -1);
-            InsertParagraphBefore(paragraph);
-            return paragraph;
-        }
-
-        /// <summary>
-        /// Insert a table before this element
-        /// </summary>
-        /// <param name="table"></param>
-        public void InsertTableBefore(Table table)
-        {
-            if (table == null) 
-                throw new ArgumentNullException(nameof(table));
-            if (table.InDom)
-                throw new ArgumentException("Cannot add table multiple times.", nameof(table));
-
-            table.SetOwner(Document, PackagePart);
-            Xml.AddBeforeSelf(table.Xml);
-        }
+        throw new Exception($"Unrecognized container type {e.Name}");
     }
 }

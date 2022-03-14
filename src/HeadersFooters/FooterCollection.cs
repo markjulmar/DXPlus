@@ -1,4 +1,6 @@
-﻿namespace DXPlus
+﻿using DXPlus.Internal;
+
+namespace DXPlus
 {
     /// <summary>
     /// Footers found in a document section

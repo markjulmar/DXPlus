@@ -1,18 +1,17 @@
-﻿namespace DXPlus
+﻿namespace DXPlus;
+
+/// <summary>
+/// Edit types tracked in the document.
+/// </summary>
+internal enum EditType
 {
     /// <summary>
-    /// Edit types tracked in the document.
+    /// Paragraph has a tracked insertion
     /// </summary>
-    internal enum EditType
-    {
-        /// <summary>
-        /// FirstParagraph has a tracked insertion
-        /// </summary>
-        Insert,
+    Insert,
 
-        /// <summary>
-        /// FirstParagraph has a tracked deletion
-        /// </summary>
-        Delete
-    }
+    /// <summary>
+    /// Paragraph has a tracked deletion
+    /// </summary>
+    Delete
 }

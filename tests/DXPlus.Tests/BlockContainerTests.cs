@@ -10,7 +10,7 @@ namespace DXPlus.Tests
         {
             using var doc = Document.Create();
 
-            var p = doc.AddParagraph("This is a paragraph.");
+            var p = doc.Add("This is a paragraph.");
             Assert.NotNull(p.Container);
             Assert.Equal(doc as BlockContainer, p.Container);
         }
@@ -20,9 +20,9 @@ namespace DXPlus.Tests
         {
             var doc = Document.Create();
 
-            doc.AddParagraph("This is paragraph #1.");
-            doc.AddTable(3, 2);
-            doc.AddParagraph("This is paragraph #2.");
+            doc.Add("This is paragraph #1.");
+            doc.Add(new Table(3, 2));
+            doc.Add("This is paragraph #2.");
 
             var blocks = doc.Paragraphs.ToList();
 
@@ -43,13 +43,13 @@ namespace DXPlus.Tests
         {
             var doc = Document.Create();
 
-            doc.AddParagraph("This is paragraph #1.");
-            doc.AddParagraph("This is paragraph #2.");
-            doc.AddParagraph("This is paragraph #3.");
-            doc.AddParagraph("This is paragraph #4.");
+            doc.Add("This is paragraph #1.");
+            doc.Add("This is paragraph #2.");
+            doc.Add("This is paragraph #3.");
+            doc.Add("This is paragraph #4.");
             Assert.Equal(4, doc.Paragraphs.Count());
 
-            doc.RemoveParagraph(0);
+            doc.RemoveAt(0);
             Assert.Equal(3, doc.Paragraphs.Count());
             Assert.Equal("This is paragraph #2.", doc.Paragraphs.First().Text);
         }
@@ -59,13 +59,13 @@ namespace DXPlus.Tests
         {
             var doc = Document.Create();
 
-            doc.AddParagraph("This is paragraph #1.");
-            doc.AddParagraph("This is paragraph #2.");
-            doc.AddParagraph("This is paragraph #3.");
-            doc.AddParagraph("This is paragraph #4.");
+            doc.Add("This is paragraph #1.");
+            doc.Add("This is paragraph #2.");
+            doc.Add("This is paragraph #3.");
+            doc.Add("This is paragraph #4.");
             Assert.Equal(4, doc.Paragraphs.Count());
 
-            doc.RemoveParagraph(2);
+            doc.RemoveAt(2);
 
             var paragraphs = doc.Paragraphs.ToList();
 
@@ -80,13 +80,13 @@ namespace DXPlus.Tests
         {
             var doc = Document.Create();
 
-            doc.AddParagraph("This is paragraph #1.");
-            doc.AddParagraph("This is paragraph #2.");
-            doc.AddParagraph("This is paragraph #3.");
-            doc.AddParagraph("This is paragraph #4.");
+            doc.Add("This is paragraph #1.");
+            doc.Add("This is paragraph #2.");
+            doc.Add("This is paragraph #3.");
+            doc.Add("This is paragraph #4.");
             Assert.Equal(4, doc.Paragraphs.Count());
 
-            doc.RemoveParagraph(3);
+            doc.RemoveAt(3);
             Assert.Equal(3, doc.Paragraphs.Count());
             Assert.Equal("This is paragraph #3.", doc.Paragraphs.ElementAt(2).Text);
         }

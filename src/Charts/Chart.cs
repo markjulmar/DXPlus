@@ -1,43 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Xml.Linq;
-using System.Xml.Serialization;
+﻿using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus.Charts
 {
-    /// <summary>
-    /// Specifies the possible positions for a legend.
-    /// </summary>
-    public enum ChartLegendPosition
-    {
-        [XmlAttribute("t")]
-        Top,
-        [XmlAttribute("b")]
-        Bottom,
-        [XmlAttribute("l")]
-        Left,
-        [XmlAttribute("r")]
-        Right,
-        [XmlAttribute("tr")]
-        TopRight
-    }
-
-    /// <summary>
-    /// Specifies the possible ways to display blanks.
-    /// </summary>
-    public enum DisplayBlanksAs
-    {
-        Gap,
-        Span,
-        Zero
-    }
-
     /// <summary>
     /// Represents every Chart in this document.
     /// </summary>
     public abstract class Chart
     {
+        /// <summary>
+        /// The root XML node of the chart (c:chart)
+        /// </summary>
+        private readonly XElement chartRootXml;
+
         /// <summary>
         /// Create an Chart for this document
         /// </summary>
@@ -78,8 +53,8 @@ namespace DXPlus.Charts
 
             if (HasAxis)
             {
-                CategoryAxis = new CategoryAxis("148921728");
-                ValueAxis = new ValueAxis("154227840");
+                CategoryAxis = new CategoryAxis((uint)new Random().Next());
+                ValueAxis = new ValueAxis((uint)new Random().Next());
 
                 var axIDcatXml = XElement.Parse($@"<c:axId val=""{CategoryAxis.Id}"" xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart""/>");
                 var axIDvalXml = XElement.Parse($@"<c:axId val=""{ValueAxis.Id}"" xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart""/>");
@@ -96,26 +71,21 @@ namespace DXPlus.Charts
                     ChartXml.Add(axIDvalXml);
                 }
 
-                plotAreaXml.Add(CategoryAxis.Xml);
+                plotAreaXml.Add(CategoryAxis!.Xml);
                 plotAreaXml.Add(ValueAxis.Xml);
             }
 
-            ChartRootXml = Xml.Root.Element(Namespace.Chart + "chart");
-            ChartRootXml.Element(Namespace.Chart + "autoTitleDeleted").AddAfterSelf(plotAreaXml);
+            chartRootXml = Xml.Root!.Element(Namespace.Chart + "chart")!;
+            chartRootXml.Element(Namespace.Chart + "autoTitleDeleted")!.AddAfterSelf(plotAreaXml);
         }
-
-        /// <summary>
-        /// The category axis
-        /// </summary>
-        public CategoryAxis CategoryAxis { get; }
 
         /// <summary>
         /// Specifies how blank cells shall be plotted on a chart
         /// </summary>
         public DisplayBlanksAs DisplayBlanksAs
         {
-            get => ChartRootXml.Element(Namespace.Chart + "dispBlanksAs").GetEnumValue<DisplayBlanksAs>();
-            set => ChartRootXml.Element(Namespace.Chart + "dispBlanksAs").SetEnumValue(value);
+            get => chartRootXml.Element(Namespace.Chart + "dispBlanksAs")!.GetEnumValue<DisplayBlanksAs>();
+            set => chartRootXml.Element(Namespace.Chart + "dispBlanksAs")!.SetEnumValue(value);
         }
 
         /// <summary>
@@ -124,10 +94,20 @@ namespace DXPlus.Charts
         public virtual bool HasAxis => true;
 
         /// <summary>
+        /// The values axis (can be null).
+        /// </summary>
+        public ValueAxis? ValueAxis { get; }
+
+        /// <summary>
+        /// The Category axis (can be null).
+        /// </summary>
+        public CategoryAxis? CategoryAxis { get; }
+
+        /// <summary>
         /// Chart's legend.
         /// If legend doesn't exist property is null.
         /// </summary>
-        public ChartLegend Legend { get; private set; }
+        public ChartLegend? Legend { get; private set; }
 
         /// <summary>
         /// Return maximum count of series
@@ -137,7 +117,7 @@ namespace DXPlus.Charts
         /// <summary>
         /// Chart's series
         /// </summary>
-        public List<Series> Series
+        public IList<Series> Series
         {
             get
             {
@@ -151,11 +131,6 @@ namespace DXPlus.Charts
                 return series;
             }
         }
-
-        /// <summary>
-        /// Represents the values axis
-        /// </summary>
-        public ValueAxis ValueAxis { get; }
 
         /// <summary>
         /// Get or set 3D view for this chart
@@ -187,11 +162,6 @@ namespace DXPlus.Charts
         internal XDocument Xml { get; }
 
         /// <summary>
-        /// The root XML node of the chart (c:chart)
-        /// </summary>
-        private XElement ChartRootXml { get; }
-
-        /// <summary>
         /// The root XML node of the specific chart (bar, pie, etc.)
         /// </summary>
         protected XElement ChartXml { get; }
@@ -215,7 +185,7 @@ namespace DXPlus.Charts
                 RemoveLegend();
 
             Legend = new ChartLegend(position, overlay);
-            ChartRootXml.GetOrAddElement(Namespace.Chart + "plotArea").AddAfterSelf(Legend.Xml);
+            chartRootXml.GetOrAddElement(Namespace.Chart + "plotArea").AddAfterSelf(Legend.Xml);
         }
 
         /// <summary>
@@ -225,7 +195,7 @@ namespace DXPlus.Charts
         {
             if (HasLegend)
             {
-                Legend.Xml.Remove();
+                Legend?.Xml.Remove();
                 Legend = null;
             }
         }

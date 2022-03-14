@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using DXPlus.Internal;
 using Xunit;
 
 namespace DXPlus.Tests
@@ -20,12 +21,12 @@ namespace DXPlus.Tests
             var header = mainSection.Headers.Default;
 
             var p1 = header.Paragraphs.Single();
-            p1.SetText("This is some text - ");
+            p1.Text = "This is some text - ";
             p1.AddPageNumber(PageNumberFormat.Normal);
 
-            doc.AddParagraph("P1");
+            doc.Add("P1");
             doc.AddPageBreak();
-            doc.AddParagraph("P2");
+            doc.Add("P2");
 
             var p2 = header.Paragraphs.First();
             Assert.Equal(p1, p2);
@@ -39,11 +40,9 @@ namespace DXPlus.Tests
         {
             using var doc = Document.Create();
             var mainSection = doc.Sections.First();
-            var header = mainSection.Headers.Default;
 
             var footer = mainSection.Footers.Default;
-            var p = footer.Paragraphs.Single()
-                .AddParagraph("New paragraph");
+            var p = footer.Paragraphs.Single().AddParagraph("New paragraph");
 
             Assert.NotNull(p.Container);
             Assert.Equal(footer, p.Container);
@@ -54,9 +53,9 @@ namespace DXPlus.Tests
         {
             var doc = Document.Create();
 
-            var p1 = doc.AddParagraph("This is the first paragraph");
-            var p2 = doc.AddParagraph("This is the second paragraph");
-            var p3 = doc.AddParagraph("This is the third paragraph");
+            var p1 = doc.Add("This is the first paragraph");
+            var p2 = doc.Add("This is the second paragraph");
+            var p3 = doc.Add("This is the third paragraph");
 
             Assert.Single(doc.Sections);
             var section = doc.Sections.Single();

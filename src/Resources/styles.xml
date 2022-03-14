@@ -60,7 +60,7 @@
 		<w:lsdException w:name="footer" w:semiHidden="1" w:unhideWhenUsed="1"/>
 		<w:lsdException w:name="index heading" w:semiHidden="1" w:unhideWhenUsed="1"/>
 		<w:lsdException w:name="caption" w:qFormat="1" w:semiHidden="1" w:uiPriority="35" w:unhideWhenUsed="1"/>
-		<w:lsdException w:name="table of figures" w:semiHidden="1" w:unhideWhenUsed="1"/>
+		<w:lsdException w:name="paragraph of figures" w:semiHidden="1" w:unhideWhenUsed="1"/>
 		<w:lsdException w:name="envelope address" w:semiHidden="1" w:unhideWhenUsed="1"/>
 		<w:lsdException w:name="envelope return" w:semiHidden="1" w:unhideWhenUsed="1"/>
 		<w:lsdException w:name="footnote reference" w:semiHidden="1" w:unhideWhenUsed="1"/>
@@ -69,7 +69,7 @@
 		<w:lsdException w:name="page number" w:semiHidden="1" w:unhideWhenUsed="1"/>
 		<w:lsdException w:name="endnote reference" w:semiHidden="1" w:unhideWhenUsed="1"/>
 		<w:lsdException w:name="endnote text" w:semiHidden="1" w:unhideWhenUsed="1"/>
-		<w:lsdException w:name="table of authorities" w:semiHidden="1" w:unhideWhenUsed="1"/>
+		<w:lsdException w:name="paragraph of authorities" w:semiHidden="1" w:unhideWhenUsed="1"/>
 		<w:lsdException w:name="macro" w:semiHidden="1" w:unhideWhenUsed="1"/>
 		<w:lsdException w:name="toa heading" w:semiHidden="1" w:unhideWhenUsed="1"/>
 		<w:lsdException w:name="List" w:semiHidden="1" w:unhideWhenUsed="1"/>
@@ -559,7 +559,7 @@
 		<w:semiHidden/>
 		<w:unhideWhenUsed/>
 	</w:style>
-	<w:style w:default="1" w:styleId="TableNormal" w:type="table">
+	<w:style w:default="1" w:styleId="TableNormal" w:type="paragraph">
 		<w:name w:val="Normal Table"/>
 		<w:uiPriority w:val="99"/>
 		<w:semiHidden/>
@@ -640,7 +640,7 @@
 		<w:unhideWhenUsed/>
 		<w:rsid w:val="006C59F3"/>
 	</w:style>
-	<w:style w:styleId="TableGrid" w:type="table">
+	<w:style w:styleId="TableGrid" w:type="paragraph">
 		<w:name w:val="Table Grid"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="39"/>

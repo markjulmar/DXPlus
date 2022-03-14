@@ -1,70 +1,114 @@
 ﻿using System.Xml.Serialization;
 
-namespace DXPlus
+namespace DXPlus;
+
+/// <summary>
+/// Built-in styles
+/// </summary>
+public enum HeadingType
 {
-    public enum HeadingType
-    {
-        [XmlAttribute("Heading1")]
-        Heading1,
+    /// <summary>
+    /// Heading1
+    /// </summary>
+    [XmlAttribute("Heading1")] Heading1,
 
-        [XmlAttribute("Heading2")]
-        Heading2,
+    /// <summary>
+    /// Heading2
+    /// </summary>
+    [XmlAttribute("Heading2")] Heading2,
 
-        [XmlAttribute("Heading3")]
-        Heading3,
+    /// <summary>
+    /// Heading3
+    /// </summary>
+    [XmlAttribute("Heading3")] Heading3,
 
-        [XmlAttribute("Heading4")]
-        Heading4,
+    /// <summary>
+    /// Heading4
+    /// </summary>
+    [XmlAttribute("Heading4")] Heading4,
 
-        [XmlAttribute("Heading5")]
-        Heading5,
+    /// <summary>
+    /// Heading5
+    /// </summary>
+    [XmlAttribute("Heading5")] Heading5,
 
-        [XmlAttribute("Heading6")]
-        Heading6,
+    /// <summary>
+    /// Heading6
+    /// </summary>
+    [XmlAttribute("Heading6")] Heading6,
 
-        [XmlAttribute("Heading7")]
-        Heading7,
+    /// <summary>
+    /// Heading7
+    /// </summary>
+    [XmlAttribute("Heading7")] Heading7,
 
-        [XmlAttribute("Heading8")]
-        Heading8,
+    /// <summary>
+    /// Heading8
+    /// </summary>
+    [XmlAttribute("Heading8")] Heading8,
 
-        [XmlAttribute("Heading9")]
-        Heading9,
+    /// <summary>
+    /// Heading9
+    /// </summary>
+    [XmlAttribute("Heading9")] Heading9,
 
-        [XmlAttribute("NoSpacing")]
-        NoSpacing,
+    /// <summary>
+    /// NoSpacing
+    /// </summary>
+    [XmlAttribute("NoSpacing")] NoSpacing,
 
-        [XmlAttribute("Title")]
-        Title,
+    /// <summary>
+    /// Title
+    /// </summary>
+    [XmlAttribute("Title")] Title,
 
-        [XmlAttribute("Subtitle")]
-        Subtitle,
+    /// <summary>
+    /// Subtitle
+    /// </summary>
+    [XmlAttribute("Subtitle")] Subtitle,
 
-        [XmlAttribute("Quote")]
-        Quote,
+    /// <summary>
+    /// Quote
+    /// </summary>
+    [XmlAttribute("Quote")] Quote,
 
-        [XmlAttribute("IntenseQuote")]
-        IntenseQuote,
+    /// <summary>
+    /// IntenseQuote
+    /// </summary>
+    [XmlAttribute("IntenseQuote")] IntenseQuote,
 
-        [XmlAttribute("Emphasis")]
-        Emphasis,
+    /// <summary>
+    /// Emphasis
+    /// </summary>
+    [XmlAttribute("Emphasis")] Emphasis,
 
-        [XmlAttribute("IntenseEmphasis")]
-        IntenseEmphasis,
+    /// <summary>
+    /// IntenseEmphasis
+    /// </summary>
+    [XmlAttribute("IntenseEmphasis")] IntenseEmphasis,
 
-        [XmlAttribute("Strong")]
-        Strong,
+    /// <summary>
+    /// Strong
+    /// </summary>
+    [XmlAttribute("Strong")] Strong,
 
-        [XmlAttribute("ListParagraph")]
-        ListParagraph,
+    /// <summary>
+    /// ListParagraph
+    /// </summary>
+    [XmlAttribute("ListParagraph")] ListParagraph,
 
-        [XmlAttribute("SubtleReference")]
-        SubtleReference,
+    /// <summary>
+    /// SubtleReference
+    /// </summary>
+    [XmlAttribute("SubtleReference")] SubtleReference,
 
-        [XmlAttribute("IntenseReference")]
-        IntenseReference,
+    /// <summary>
+    /// IntenseReference
+    /// </summary>
+    [XmlAttribute("IntenseReference")] IntenseReference,
 
-        [XmlAttribute("Caption")]
-        Caption,
-    }
+    /// <summary>
+    /// Caption
+    /// </summary>
+    [XmlAttribute("Caption")] Caption,
 }

@@ -1,9 +1,9 @@
-﻿namespace DXPlus
+﻿namespace DXPlus.Internal
 {
     /// <summary>
     /// Custom property value types supported.
     /// </summary>
-    internal static class CustomProperty
+    internal static class CustomPropertyType
     {
         public const string LPWSTR = "lpwstr";
         public const string I4 = "i4";

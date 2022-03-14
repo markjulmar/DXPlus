@@ -11,7 +11,7 @@ namespace DXPlus.Tests
             using var doc = Document.Create();
             var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
 
-            var p = doc.AddParagraph("1").ListStyle(nd);
+            var p = doc.Add("1").ListStyle(nd);
 
             Assert.True(p.IsListItem());
             Assert.Equal(1, p.GetListNumberingDefinitionId());
@@ -24,7 +24,7 @@ namespace DXPlus.Tests
             using var doc = Document.Create();
             var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
 
-            var p = doc.AddParagraph("Starting list").ListStyle(nd);
+            var p = doc.Add("Starting list").ListStyle(nd);
             p = p.AddParagraph("With another paragraph").ListStyle();
 
             Assert.Equal("ListParagraph", p.Properties.StyleName);
@@ -36,11 +36,11 @@ namespace DXPlus.Tests
             using var doc = Document.Create();
             var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
 
-            doc.AddParagraph("Separator paragraph.");
+            doc.Add("Separator paragraph.");
 
             for (int i = 0; i < 3; i++)
             {
-                doc.AddParagraph($"Item #{i + 1}").ListStyle(nd);
+                doc.Add($"Item #{i + 1}").ListStyle(nd);
             }
 
             var paragraphs = doc.Paragraphs.ToList();
@@ -56,11 +56,11 @@ namespace DXPlus.Tests
             using var doc = Document.Create();
             var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
 
-            doc.AddParagraph("Separator paragraph.");
+            doc.Add("Separator paragraph.");
 
-            doc.AddParagraph($"Item #1").ListStyle(nd);
-            doc.AddParagraph($"Item #2").ListStyle();
-            doc.AddParagraph($"Item #3").ListStyle();
+            doc.Add($"Item #1").ListStyle(nd);
+            doc.Add($"Item #2").ListStyle();
+            doc.Add($"Item #3").ListStyle();
 
             var paragraphs = doc.Paragraphs.ToList();
             Assert.Null(paragraphs[0].GetListNumberingDefinition());
@@ -76,14 +76,14 @@ namespace DXPlus.Tests
             var n1 = doc.NumberingStyles.Create(NumberingFormat.Bullet);
             var n2 = doc.NumberingStyles.Create(NumberingFormat.Numbered);
 
-            doc.AddParagraph("Separator paragraph.");
+            doc.Add("Separator paragraph.");
 
-            doc.AddParagraph($"Item #1").ListStyle(n1);
-            doc.AddParagraph($"Item #2").ListStyle();
-            doc.AddParagraph($"Item #1").ListStyle(n2);
-            doc.AddParagraph($"Item #2").ListStyle();
+            doc.Add($"Item #1").ListStyle(n1);
+            doc.Add($"Item #2").ListStyle();
+            doc.Add($"Item #1").ListStyle(n2);
+            doc.Add($"Item #2").ListStyle();
 
-            doc.AddParagraph("Separator paragraph.");
+            doc.Add("Separator paragraph.");
 
             var paragraphs = doc.Paragraphs.ToList();
 
@@ -103,28 +103,28 @@ namespace DXPlus.Tests
             using var doc = Document.Create();
             var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
 
-            doc.AddParagraph("Separator paragraph.");
-            doc.AddParagraph("Separator paragraph.");
-            doc.AddParagraph("Separator paragraph.");
+            doc.Add("Separator paragraph.");
+            doc.Add("Separator paragraph.");
+            doc.Add("Separator paragraph.");
 
             int i;
             for (i = 0; i < 3; i++)
             {
-                doc.AddParagraph($"Item #{i+1}").ListStyle(nd);
+                doc.Add($"Item #{i+1}").ListStyle(nd);
             }
 
-            doc.AddParagraph("Separator paragraph.");
-            doc.AddParagraph("Separator paragraph.");
-            doc.AddParagraph("Separator paragraph.");
+            doc.Add("Separator paragraph.");
+            doc.Add("Separator paragraph.");
+            doc.Add("Separator paragraph.");
 
             for (; i < 5; i++)
             {
-                doc.AddParagraph($"Item #{i + 1}").ListStyle(nd);
+                doc.Add($"Item #{i + 1}").ListStyle(nd);
             }
 
-            doc.AddParagraph("Separator paragraph.");
-            doc.AddParagraph("Separator paragraph.");
-            doc.AddParagraph("Separator paragraph.");
+            doc.Add("Separator paragraph.");
+            doc.Add("Separator paragraph.");
+            doc.Add("Separator paragraph.");
 
             var list = doc.GetListById(nd.Id).ToList();
             Assert.Equal(5, list.Count);
@@ -140,14 +140,14 @@ namespace DXPlus.Tests
             using var doc = Document.Create();
             var nd = doc.NumberingStyles.Create(NumberingFormat.Numbered);
 
-            doc.AddParagraph("Separator paragraph.");
+            doc.Add("Separator paragraph.");
 
             for (int i = 0; i < 5; i++)
             {
-                doc.AddParagraph($"Item #{i + 1}").ListStyle(nd);
+                doc.Add($"Item #{i + 1}").ListStyle(nd);
             }
 
-            doc.AddParagraph("Separator paragraph.");
+            doc.Add("Separator paragraph.");
 
             var p = doc.Paragraphs.Single(p => p.Text == "Item #2");
             Assert.Equal(1, p.GetListIndex());

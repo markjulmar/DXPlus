@@ -1,4 +1,6 @@
-﻿namespace DXPlus
+﻿using DXPlus.Internal;
+
+namespace DXPlus
 {
     /// <summary>
     /// Represents the headers in a section of the document

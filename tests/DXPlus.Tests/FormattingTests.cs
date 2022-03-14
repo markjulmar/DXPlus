@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Xml.XPath;
+using DXPlus.Internal;
 using Xunit;
 
 namespace DXPlus.Tests
@@ -337,20 +338,25 @@ namespace DXPlus.Tests
         public void UnderlineAddsRemovesElement()
         {
             var rPr = new Formatting();
-            Assert.Equal(UnderlineStyle.None, rPr.UnderlineStyle);
+            Assert.Null(rPr.Underline);
 
-            rPr.UnderlineStyle = UnderlineStyle.SingleLine;
-            Assert.Equal(UnderlineStyle.SingleLine, rPr.UnderlineStyle);
+            rPr.Underline = true;
+            Assert.Equal(UnderlineStyle.SingleLine, rPr.Underline!.Style);
             Assert.Single(rPr.Xml.RemoveNamespaces().XPathSelectElements("u"));
             Assert.Single(rPr.Xml.RemoveNamespaces().XPathSelectElements("u[@val='single']"));
 
-            rPr.UnderlineStyle = UnderlineStyle.DoubleLine;
-            Assert.Equal(UnderlineStyle.DoubleLine, rPr.UnderlineStyle);
+            rPr.Underline.Style = UnderlineStyle.DoubleLine;
+            Assert.Equal(UnderlineStyle.DoubleLine, rPr.Underline.Style);
             Assert.Single(rPr.Xml.RemoveNamespaces().XPathSelectElements("u"));
 
-            rPr.UnderlineStyle = UnderlineStyle.None;
-            Assert.Equal(UnderlineStyle.None, rPr.UnderlineStyle);
+            rPr.Underline.Style = UnderlineStyle.None;
+            Assert.Null(rPr.Underline);
             Assert.Empty(rPr.Xml.RemoveNamespaces().XPathSelectElements("u"));
+
+            rPr.Underline = true;
+            rPr.Underline!.Color = Color.Blue;
+            Assert.Equal(UnderlineStyle.SingleLine, rPr.Underline!.Style);
+            rPr.Underline.Style = UnderlineStyle.None;
         }
 
         [Fact]
@@ -416,18 +422,36 @@ namespace DXPlus.Tests
         }
 
         [Fact]
+        public void UnderlineSetTrueFalse()
+        {
+            var rPr = new Formatting();
+            Assert.Null(rPr.Underline);
+
+            rPr.Underline = true;
+            Assert.NotNull(rPr.Underline);
+            Assert.True(rPr.Underline);
+
+            Assert.Equal(UnderlineStyle.SingleLine, rPr.Underline.Style);
+            Assert.True(rPr.Underline.Color.IsAuto);
+
+            rPr.Underline = false;
+            Assert.Null(rPr.Underline);
+        }
+
+        [Fact]
         public void UnderlineColorAddsRemovesElement()
         {
             var rPr = new Formatting();
-            Assert.Null(rPr.UnderlineColor);
+            Assert.Null(rPr.Underline);
 
-            rPr.UnderlineColor = Color.Red;
-            Assert.NotStrictEqual(Color.Red, rPr.UnderlineColor);
-            Assert.Equal(UnderlineStyle.SingleLine, rPr.UnderlineStyle);
+            rPr.Underline = new Underline {Color = Color.Red};
+
+            Assert.NotStrictEqual(Color.Red, rPr.Underline.Color);
+            Assert.Equal(UnderlineStyle.None, rPr.Underline.Style);
             Assert.NotNull(rPr.Xml.RemoveNamespaces().XPathSelectElement("u[@color='FF0000']"));
 
-            rPr.UnderlineColor = null;
-            Assert.Null(rPr.UnderlineColor);
+            rPr.Underline = null;
+            Assert.Null(rPr.Underline);
             Assert.Null(rPr.Xml.RemoveNamespaces().XPathSelectElement("u[@color='FF0000']"));
         }
 

@@ -1,12 +1,24 @@
 ﻿using System.Xml.Serialization;
 
-namespace DXPlus
+namespace DXPlus;
+
+/// <summary>
+/// Strike through styles
+/// </summary>
+public enum Strikethrough
 {
-    public enum Strikethrough
-    {
-        None,
-        Strike,
-        [XmlAttribute("dstrike")]
-        DoubleStrike
-    };
-}
+    /// <summary>
+    /// None
+    /// </summary>
+    None,
+
+    /// <summary>
+    /// Single-line strike through
+    /// </summary>
+    Strike,
+
+    /// <summary>
+    /// Double-line strike through
+    /// </summary>
+    [XmlAttribute("dstrike")] DoubleStrike
+};

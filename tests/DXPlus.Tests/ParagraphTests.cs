@@ -1,8 +1,8 @@
 using System;
-using System.Drawing;
 using System.Linq;
 using System.Xml.Linq;
 using System.Xml.XPath;
+using DXPlus.Internal;
 using Xunit;
 
 namespace DXPlus.Tests
@@ -23,9 +23,28 @@ namespace DXPlus.Tests
         {
             using var doc = Document.Create();
             var p = new Paragraph();
-            doc.AddParagraph(p);
+            doc.Add(p);
             p.AddParagraph();
             Assert.Equal(2, doc.Paragraphs.Count());
+        }
+
+        [Fact]
+        public void AddToDocSetsStartAndEndIndex()
+        {
+            using var doc = Document.Create();
+
+            var p = new Paragraph("Test");
+            Assert.Null(p.StartIndex);
+
+            doc.Add(p);
+            Assert.Equal(0, p.StartIndex);
+
+            p = new Paragraph("Second paragraph");
+            Assert.Null(p.StartIndex);
+
+            doc.Add(p);
+            Assert.Equal("Test".Length, p.StartIndex);
+            Assert.Equal("Test\nSecond paragraph", doc.Text);
         }
 
         [Fact]
@@ -50,7 +69,7 @@ namespace DXPlus.Tests
             Assert.Equal("doubleProperty", prop.Name);
             Assert.Equal("100.5", prop.Value);
 
-            p.AppendLine();
+            p.Newline();
 
             p.AddCustomPropertyField("dateProperty");
             Assert.Equal(2, p.DocumentProperties.Count());
@@ -83,7 +102,7 @@ namespace DXPlus.Tests
         public void SingleParaDocReturnsNoNextPrevParagraph()
         {
             using var doc = Document.Create();
-            var p = doc.AddParagraph("1");
+            var p = doc.Add("1");
 
             Assert.Null(p.NextParagraph);
             Assert.Null(p.PreviousParagraph);
@@ -93,9 +112,9 @@ namespace DXPlus.Tests
         public void FirstParagraphReturnsNullPrevParagraph()
         {
             using var doc = Document.Create();
-            var p = doc.AddParagraph("1");
-            doc.AddParagraph("2");
-            doc.AddParagraph("3");
+            var p = doc.Add("1");
+            doc.Add("2");
+            doc.Add("3");
 
             Assert.Null(p.PreviousParagraph);
             Assert.NotNull(p.NextParagraph);
@@ -105,9 +124,9 @@ namespace DXPlus.Tests
         public void LastParagraphReturnsNullNextParagraph()
         {
             using var doc = Document.Create();
-            doc.AddParagraph("1");
-            doc.AddParagraph("2");
-            var p = doc.AddParagraph("3");
+            doc.Add("1");
+            doc.Add("2");
+            var p = doc.Add("3");
 
             Assert.NotNull(p.PreviousParagraph);
             Assert.Null(p.NextParagraph);
@@ -117,12 +136,12 @@ namespace DXPlus.Tests
         public void PreviousParagraphReturnsProperObject()
         {
             using var doc = Document.Create();
-            doc.AddParagraph("1");
-            doc.AddParagraph("2");
-            var p1 = doc.AddParagraph("3");
-            doc.AddParagraph("4");
-            var p2 = doc.AddParagraph("5");
-            var p3 = doc.AddParagraph("6");
+            doc.Add("1");
+            doc.Add("2");
+            var p1 = doc.Add("3");
+            doc.Add("4");
+            var p2 = doc.Add("5");
+            var p3 = doc.Add("6");
 
             Assert.Equal("2", p1.PreviousParagraph.Text);
             Assert.Equal("4", p2.PreviousParagraph.Text);
@@ -133,12 +152,12 @@ namespace DXPlus.Tests
         public void NextParagraphReturnsProperObject()
         {
             using var doc = Document.Create();
-            var p1 = doc.AddParagraph("1");
-            doc.AddParagraph("2");
-            var p2 = doc.AddParagraph("3");
-            doc.AddParagraph("4");
-            var p3 = doc.AddParagraph("5");
-            doc.AddParagraph("6");
+            var p1 = doc.Add("1");
+            doc.Add("2");
+            var p2 = doc.Add("3");
+            doc.Add("4");
+            var p3 = doc.Add("5");
+            doc.Add("6");
 
             Assert.Equal("2", p1.NextParagraph.Text);
             Assert.Equal("4", p2.NextParagraph.Text);
@@ -149,7 +168,7 @@ namespace DXPlus.Tests
         public void CheckHeading1()
         {
             using var doc = Document.Create(Filename);
-            doc.AddParagraph("This is a test.").Style(HeadingType.Heading1);
+            doc.Add("This is a test.").Style(HeadingType.Heading1);
             Assert.Equal("Heading1", doc.Paragraphs.First().Properties.StyleName);
         }
 
@@ -159,7 +178,7 @@ namespace DXPlus.Tests
             var doc = Document.Create();
             for (int i = 0; i < 10; i++)
             {
-                doc.AddParagraph($"Paragraph #{i + 1}");
+                doc.Add($"Paragraph #{i + 1}");
             }
 
             Assert.Equal(10, doc.Paragraphs.Count());
@@ -179,14 +198,14 @@ namespace DXPlus.Tests
             int i;
             for (i = 0; i < 5; i++)
             {
-                doc.AddParagraph($"Paragraph #{i + 1}");
+                doc.Add($"Paragraph #{i + 1}");
             }
 
             doc.AddSection(); // All paragraphs above.
 
             for (; i < 10; i++)
             {
-                doc.AddParagraph($"Paragraph #{i + 1}");
+                doc.Add($"Paragraph #{i + 1}");
             }
 
             Assert.Equal(11, doc.Paragraphs.Count()); // add one for section
@@ -209,11 +228,11 @@ namespace DXPlus.Tests
         {
             var microsoftUrl = new Uri("http://www.microsoft.com");
             using var doc = Document.Create(Filename);
-            doc.AddParagraph("Test");
+            doc.Add("Test");
             doc.AddParagraph()
-                .AppendLine("This line contains a ")
-                .Append(new Hyperlink("link", microsoftUrl))
-                .Append(".");
+                .Add("This line contains a ")
+                .Add(new Hyperlink("link", microsoftUrl))
+                .Add(".");
 
             Assert.Single(doc.Hyperlinks);
             Assert.Equal("link", doc.Hyperlinks.First().Text);
@@ -226,9 +245,9 @@ namespace DXPlus.Tests
             var microsoftUrl = new Uri("http://www.microsoft.com");
 
             var paragraph = new Paragraph()
-                .AppendLine("This line contains a ")
-                .Append(new Hyperlink("link", microsoftUrl))
-                .Append(".");
+                .Add("This line contains a ")
+                .Add(new Hyperlink("link", microsoftUrl))
+                .Add(".");
 
             Assert.Single(paragraph.Hyperlinks);
             Assert.Equal("link", paragraph.Hyperlinks.First().Text);
@@ -242,15 +261,15 @@ namespace DXPlus.Tests
             var microsoftUrl = new Uri("http://www.microsoft.com");
 
             var paragraph = new Paragraph()
-                .AppendLine("This line contains a ")
-                .Append(new Hyperlink("link", microsoftUrl))
-                .Append(".");
+                .Add("This line contains a ")
+                .Add(new Hyperlink("link", microsoftUrl))
+                .Add(".");
 
             Assert.Single(paragraph.Hyperlinks);
             Assert.Empty(paragraph.Hyperlinks.First().Id);
 
             var doc = Document.Create();
-            doc.AddParagraph(paragraph);
+            doc.Add((Paragraph) paragraph);
             Assert.NotEmpty(paragraph.Hyperlinks.First().Id);
         }
 
@@ -267,7 +286,7 @@ namespace DXPlus.Tests
             Assert.False(section.Headers.First.Exists);
             Assert.False(section.Properties.DifferentFirstPage);
 
-            section.Headers.First.Paragraphs.First().SetText("Page Header 1");
+            section.Headers.First.Paragraphs.First().Text = "Page Header 1";
             Assert.False(section.Headers.Even.Exists);
             Assert.False(section.Headers.Default.Exists);
             Assert.True(section.Headers.First.Exists);
@@ -284,7 +303,7 @@ namespace DXPlus.Tests
             var section = doc.Sections.Single();
             Assert.NotNull(section.Headers);
 
-            section.Headers.First.MainParagraph.SetText("Page Header 1");
+            section.Headers.First.MainParagraph.Text = "Page Header 1";
             Assert.False(section.Headers.Even.Exists);
             Assert.False(section.Headers.Default.Exists);
             Assert.True(section.Headers.First.Exists);
@@ -330,50 +349,52 @@ namespace DXPlus.Tests
             var p = new Paragraph();
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr"));
 
-            p.WithFormatting(new Formatting {Bold = true});
+            p.MergeFormatting(new Formatting {Bold = true});
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr"));
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/b"));
         }
 
         [Fact]
-        public void WithFormattingNullRemovesParagraphProperties()
+        public void ClearFormattingNullRemovesParagraphProperties()
         {
-            var p = new Paragraph().WithFormatting(new Formatting());
+            var p = new Paragraph().MergeFormatting(new Formatting());
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr"));
 
-            p.WithFormatting(null);
+            p.ClearFormatting();
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr"));
         }
 
         [Fact]
-        public void WithFormattingReplacesProperties()
+        public void WithFormattingMergesProperties()
         {
-            var p = new Paragraph().WithFormatting(new Formatting {Bold = true});
+            var p = new Paragraph().MergeFormatting(new Formatting {Bold = true});
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/rPr"));
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/rPr/b"));
 
-            p.WithFormatting(new Formatting {Italic = true});
+            p.MergeFormatting(new Formatting {Italic = true});
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr"));
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/i"));
-            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/b"));
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr/b"));
         }
 
         [Fact]
         public void WithFormattingAffectsRun()
         {
-            var p = new Paragraph("This is a test").WithFormatting(new Formatting { Bold = true });
+            var p = new Paragraph("This is a test").MergeFormatting(new Formatting { Bold = true });
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//r/rPr"));
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//r/rPr/b"));
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/rPr"));
         }
 
         [Fact]
-        public void WithFormattingNullRemovesRunProperties()
+        public void ClearFormattingNullRemovesRunProperties()
         {
-            var p = new Paragraph("This is a test").WithFormatting(new Formatting { Bold = true });
+            var p = new Paragraph("This is a test").MergeFormatting(new Formatting { Bold = true });
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//r/rPr"));
 
-            p.WithFormatting(null);
+            Assert.Throws<ArgumentNullException>(() => p.MergeFormatting(null));
+
+            p.ClearFormatting();
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//r/rPr"));
         }
 
@@ -381,17 +402,17 @@ namespace DXPlus.Tests
         public void WithFormattingAffectsLastRun()
         {
             var p = new Paragraph("This is a test")
-                .AppendLine("With a second line")
-                .AppendLine("and a final line")
-                .WithFormatting(new Formatting { Bold = true });
+                .Add("With a second line")
+                .Add("and a final line")
+                .MergeFormatting(new Formatting { Bold = true });
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//r/rPr"));
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//r/rPr/b"));
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//pPr/rPr"));
 
             var runs = p.Runs.Reverse().ToList();
-            Assert.Equal(5, runs.Count);
-            Assert.True(runs[1].Properties.Bold); // skip LF
-            Assert.Equal("and a final line", runs[1].Text);
+            Assert.Equal(3, runs.Count);
+            Assert.True(runs[0].Properties.Bold); // skip LF
+            Assert.Equal("and a final line", runs[0].Text);
         }
 
         [Fact]
@@ -417,11 +438,12 @@ namespace DXPlus.Tests
         public void SetTextReplacesContents()
         {
             var p = new Paragraph();
-            p.InsertText("This is a test. ");
-            p.AppendLine("Will it work?");
+            p.Add("This is a test. ");
+            p.Add("Will it work?");
+            p.Newline();
             Assert.Equal("This is a test. Will it work?\n", p.Text);
 
-            p.SetText("of the emergency broadcast system.");
+            p.Text = "of the emergency broadcast system.";
             Assert.Equal("of the emergency broadcast system.", p.Text);
             Assert.Equal("of the emergency broadcast system.", p.Xml.RemoveNamespaces().Value);
         }
@@ -433,9 +455,9 @@ namespace DXPlus.Tests
             Assert.NotNull(doc.PackagePart);
 
             Paragraph p = new Paragraph("Test");
-            Assert.Null(p.PackagePart);
+            Assert.Throws<InvalidOperationException>(() => p.PackagePart);
 
-            doc.AddParagraph(p);
+            doc.Add(p);
             Assert.NotNull(p.PackagePart);
             Assert.Equal(doc.PackagePart, p.PackagePart);
         }
@@ -453,10 +475,10 @@ namespace DXPlus.Tests
         public void AppendAddsParagraph()
         {
             using var doc = Document.Create();
-            var firstParagraph = doc.AddParagraph("First paragraph");
-            var secondParagraph = doc.AddParagraph("Another paragraph");
+            var firstParagraph = doc.Add("First paragraph");
+            var secondParagraph = doc.Add("Another paragraph");
 
-            var p = firstParagraph.Append(new Paragraph("Injected paragraph"));
+            var p = firstParagraph.InsertAfter(new Paragraph("Injected paragraph"));
             Assert.Equal(3, doc.Paragraphs.Count());
 
             var ps = doc.Paragraphs.ToList();
@@ -467,8 +489,8 @@ namespace DXPlus.Tests
         public void InsertBeforeAddsParagraph()
         {
             using var doc = Document.Create();
-            var firstParagraph = doc.AddParagraph("First paragraph");
-            var secondParagraph = doc.AddParagraph("Another paragraph");
+            var firstParagraph = doc.Add("First paragraph");
+            var secondParagraph = doc.Add("Another paragraph");
 
             var p = secondParagraph.InsertBefore(new Paragraph("Injected paragraph"));
             Assert.Equal(3, doc.Paragraphs.Count());
@@ -481,10 +503,10 @@ namespace DXPlus.Tests
         public void InsertBeforeFirstParagraphAddsNewIntro()
         {
             using var doc = Document.Create();
-            doc.AddParagraph("Introduction").Style(HeadingType.Heading1);
+            doc.Add("Introduction").Style(HeadingType.Heading1);
             
-            doc.AddParagraph("Some text goes here.")
-                .Append("With more text");
+            doc.Add("Some text goes here.")
+               .Add("With more text");
 
             Assert.Equal(2, doc.Paragraphs.Count());
 
@@ -501,10 +523,10 @@ namespace DXPlus.Tests
         public void AppendToLastParagraphAddsSummary()
         {
             using var doc = Document.Create();
-            var firstParagraph = doc.AddParagraph("First paragraph");
-            var secondParagraph = doc.AddParagraph("Another paragraph");
+            var firstParagraph = doc.Add("First paragraph");
+            var secondParagraph = doc.Add("Another paragraph");
 
-            var p = secondParagraph.Append(new Paragraph("Injected paragraph"));
+            var p = secondParagraph.InsertAfter(new Paragraph("Injected paragraph"));
             Assert.Equal(3, doc.Paragraphs.Count());
 
             var ps = doc.Paragraphs.ToList();
@@ -515,15 +537,15 @@ namespace DXPlus.Tests
         public void InsertParagraphAtZeroAddsToBeginning()
         {
             using var doc = Document.Create(Filename);
-            var firstParagraph = doc.AddParagraph("First paragraph");
+            var firstParagraph = doc.Add("First paragraph");
             Assert.Single(doc.Paragraphs);
             Assert.Equal("First paragraph", firstParagraph.Text);
 
-            var secondParagraph = doc.AddParagraph("Another paragraph");
+            var secondParagraph = doc.Add("Another paragraph");
             Assert.Equal(2, doc.Paragraphs.Count());
             Assert.Equal("Another paragraph", secondParagraph.Text);
 
-            var p = doc.InsertParagraph(0, " Inserted Text ");
+            var p = doc.Insert(0, " Inserted Text ");
             Assert.Equal(3, doc.Paragraphs.Count());
 
             Assert.Equal(" Inserted Text ", doc.Paragraphs.First().Text);
@@ -533,11 +555,11 @@ namespace DXPlus.Tests
         public void InsertParagraphInMiddleSplitsParagraph()
         {
             using var doc = Document.Create(Filename);
-            var firstParagraph = doc.AddParagraph("First paragraph");
+            var firstParagraph = doc.Add("First paragraph");
             Assert.Single(doc.Paragraphs);
             Assert.Equal("First paragraph", firstParagraph.Text);
 
-            var p = doc.InsertParagraph(5, " Inserted Text ");
+            var p = doc.Insert(5, " Inserted Text ");
             Assert.Equal(3, doc.Paragraphs.Count());
 
             Assert.Equal("First", doc.Paragraphs.First().Text);
@@ -550,7 +572,7 @@ namespace DXPlus.Tests
         {
             const string text = "This is a paragraph in a document where we are looking to remove some text.";
             using var doc = Document.Create(Filename);
-            var p = doc.AddParagraph(text);
+            var p = doc.Add(text);
             Assert.Single(doc.Paragraphs);
             Assert.Equal(text, p.Text);
 
@@ -563,7 +585,7 @@ namespace DXPlus.Tests
         {
             const string text = "Test";
             using var doc = Document.Create();
-            var p = doc.AddParagraph(text);
+            var p = doc.Add(text);
             Assert.Single(doc.Paragraphs);
             Assert.Equal(text, p.Text);
 
@@ -575,10 +597,10 @@ namespace DXPlus.Tests
         public void RemoveTextWithMultipleRunsSpansRun()
         {
             using var doc = Document.Create(Filename);
-            var p = doc.AddParagraph("This")
-                .Append(" is ").WithFormatting(new Formatting() { Bold = true })
-                .Append("a ").WithFormatting(new Formatting() { Bold = true })
-                .Append("test.");
+            var p = doc.Add("This")
+                .Add(" is ").MergeFormatting(new Formatting() { Bold = true })
+                .Add("a ").MergeFormatting(new Formatting() { Bold = true })
+                .Add("test.");
 
             Assert.Equal("This is a test.", p.Text);
 
@@ -598,9 +620,9 @@ namespace DXPlus.Tests
                 new XElement(Name.Run,
                     new XElement(Name.Text, "here.")));
 
-            var p = new Paragraph(null, null, e, 0);
+            var p = new Paragraph(null, null, e, null);
             Assert.Equal("Some text goes here.", p.Text);
-            Assert.Equal(0, p.StartIndex);
+            Assert.Null(p.StartIndex);
 
             p.RemoveText(5, 5);
             Assert.Equal("Some goes here.", p.Text);
@@ -634,7 +656,7 @@ namespace DXPlus.Tests
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("pPr"));
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr"));
 
-            p.WithFormatting(new Formatting());
+            p.MergeFormatting(new Formatting());
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("pPr"));
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//r/rPr"));
 
@@ -646,14 +668,14 @@ namespace DXPlus.Tests
         [Fact]
         public void ParagraphRunPropertiesAlwaysInsertFirst()
         {
-            Paragraph p = new Paragraph();
+            var p = new Paragraph();
 
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("pPr"));
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//rPr"));
 
-            p.SetText("This is a test");
+            p.Text = "This is a test";
 
-            p.WithFormatting(new Formatting());
+            p.MergeFormatting(new Formatting());
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("pPr"));
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//r/rPr"));
 
@@ -672,7 +694,7 @@ namespace DXPlus.Tests
         {
             var p = new Paragraph();
 
-            p.Append("This is a test").WithFormatting(new Formatting { Bold = true });
+            p.Add("This is a test").MergeFormatting(new Formatting { Bold = true });
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//r"));
 
             var lastRun = p.Xml.Elements(Name.Run).Last();
@@ -684,12 +706,14 @@ namespace DXPlus.Tests
         public void FormattingChangesSkipLineBreaks()
         {
             var p = new Paragraph();
+            Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("//r"));
 
-            p.AppendLine("This is a test").WithFormatting(new Formatting { Bold = true });
-            Assert.Equal(2, p.Xml.RemoveNamespaces().XPathSelectElements("//r").Count());
+            p.Add("This is a test").MergeFormatting(new Formatting { Bold = true });
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("//r"));
 
             var textRun = p.Xml.Elements(Name.Run).First();
             var properties = textRun.Element(Name.RunProperties);
+            Assert.NotNull(properties);
             Assert.Single(properties.Elements(Name.Bold));
         }
 
@@ -698,7 +722,7 @@ namespace DXPlus.Tests
         {
             var doc = Document.Create();
 
-            var p1 = doc.AddParagraph("This is a test");
+            var p1 = doc.Add("This is a test");
             var p2 = doc.Paragraphs.First();
 
             Assert.Equal(p1,p2);  // value equality
@@ -719,12 +743,12 @@ namespace DXPlus.Tests
         public void UnownedParagraphInsertsImage()
         {
             var document = Document.Create();
-            var image = document.AddImage("1022.jpg");
+            var image = document.CreateImage("1022.jpg");
             var drawing = image.CreatePicture(150, 150);
             var pic = drawing.Picture;
 
             var paragraph = new Paragraph();
-            paragraph.Append(drawing);
+            paragraph.Add(drawing);
 
             Assert.Single(paragraph.Pictures);
             Assert.Same(pic.Xml, paragraph.Pictures.Single().Xml);
@@ -734,17 +758,25 @@ namespace DXPlus.Tests
         public void AssigningDocOwnerUpdatesImage()
         {
             var document = Document.Create();
-            var image = document.AddImage("1022.jpg");
+            var image = document.CreateImage("1022.jpg");
             var picture = image.CreatePicture(150, 150);
 
             var paragraph = new Paragraph();
-            paragraph.Append(picture);
+            paragraph.Add(picture);
 
             Assert.Single(paragraph.Pictures);
-            Assert.Null(paragraph.Pictures[0].PackagePart);
+            Assert.Null(paragraph.Pictures[0].SafePackagePart);
 
-            document.AddParagraph(paragraph);
+            document.Add(paragraph);
             Assert.NotNull(paragraph.Pictures[0].PackagePart);
+        }
+
+        [Fact]
+        public void AddMultipleParagraphsWithAddRange()
+        {
+            var document = Document.Create();
+            document.AddRange(new [] { "Starting text", "More text", "Another paragraph", "Last paragraph" });
+            Assert.Equal(4, document.Paragraphs.Count());
         }
 
         [Fact]
@@ -754,25 +786,58 @@ namespace DXPlus.Tests
 
             var document = Document.Create();
 
-            document.AddParagraph("Starting paragraph.");
+            document.Add("Starting paragraph.");
 
             var paragraph = document.AddParagraph();
-            var image = document.AddImage("1022.jpg");
+            var image = document.CreateImage("1022.jpg");
             var picture = image.CreatePicture(150, 150);
             
-            paragraph.Append(picture);
+            paragraph.Add(picture);
             picture.AddCaption(text);
 
-            document.AddParagraph("Ending paragraph");
+            document.Add("Ending paragraph");
 
             Assert.Equal("Figure 1" + text, picture.GetCaption());
             Assert.Throws<ArgumentException>(() => picture.AddCaption(text));
 
             var picture2 = image.CreatePicture(200, 200);
-            document.AddParagraph().Append(picture2);
+            document.AddParagraph().Add(picture2);
             picture2.AddCaption("Another picture");
 
             Assert.Equal("Figure 2 Another picture", picture2.GetCaption());
+        }
+
+        [Fact]
+        public void FindReplaceReturnsFalseWhenNotFound()
+        {
+            var p = new Paragraph("This is a test paragraph");
+            Assert.False(p.FindReplace("tst", "Test"));
+
+            p = new Paragraph();
+            Assert.False(p.FindReplace("test", null));
+        }
+
+        [Fact]
+        public void FindReplaceReplaceCharacter()
+        {
+            var p = new Paragraph("This is a test paragraph");
+            Assert.True(p.FindReplace("test", "Test"));
+            Assert.Equal("This is a Test paragraph", p.Text);
+            Assert.Throws<ArgumentNullException>(() => p.FindReplace(null, null));
+        }
+
+        [Fact]
+        public void FindReplaceCanRemoveWords()
+        {
+            var p = new Paragraph("This is a test paragraph");
+            Assert.True(p.FindReplace("test ", null));
+            Assert.Equal("This is a paragraph", p.Text);
+
+            Assert.True(p.FindReplace("paragraph", null));
+            Assert.Equal("This is a ", p.Text);
+
+            Assert.True(p.FindReplace("This is a ", null));
+            Assert.Equal("", p.Text);
         }
     }
 }

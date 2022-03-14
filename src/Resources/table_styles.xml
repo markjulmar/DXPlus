@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <w:styles xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-	<w:style w:default="1" w:styleId="TableNormal" w:type="table">
+	<w:style w:default="1" w:styleId="TableNormal" w:type="paragraph">
 		<w:name w:val="Normal Table"/>
 		<w:uiPriority w:val="99"/>
 		<w:semiHidden/>
@@ -16,7 +16,7 @@
 			</w:tblCellMar>
 		</w:tblPr>
 	</w:style>
-	<w:style w:styleId="TableGrid" w:type="table">
+	<w:style w:styleId="TableGrid" w:type="paragraph">
 		<w:name w:val="Table Grid"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="39"/>
@@ -35,7 +35,7 @@
 			</w:tblBorders>
 		</w:tblPr>
 	</w:style>
-	<w:style w:styleId="TableGridLight" w:type="table">
+	<w:style w:styleId="TableGridLight" w:type="paragraph">
 		<w:name w:val="Grid Table Light"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="40"/>
@@ -54,7 +54,7 @@
 			</w:tblBorders>
 		</w:tblPr>
 	</w:style>
-	<w:style w:styleId="LightShading" w:type="table">
+	<w:style w:styleId="LightShading" w:type="paragraph">
 		<w:name w:val="Light Shading"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="60"/>
@@ -157,7 +157,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightShading-Accent1" w:type="table">
+	<w:style w:styleId="LightShading-Accent1" w:type="paragraph">
 		<w:name w:val="Light Shading Accent 1"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="60"/>
@@ -260,7 +260,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightShading-Accent2" w:type="table">
+	<w:style w:styleId="LightShading-Accent2" w:type="paragraph">
 		<w:name w:val="Light Shading Accent 2"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="60"/>
@@ -363,7 +363,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightShading-Accent3" w:type="table">
+	<w:style w:styleId="LightShading-Accent3" w:type="paragraph">
 		<w:name w:val="Light Shading Accent 3"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="60"/>
@@ -466,7 +466,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightShading-Accent4" w:type="table">
+	<w:style w:styleId="LightShading-Accent4" w:type="paragraph">
 		<w:name w:val="Light Shading Accent 4"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="60"/>
@@ -569,7 +569,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightShading-Accent5" w:type="table">
+	<w:style w:styleId="LightShading-Accent5" w:type="paragraph">
 		<w:name w:val="Light Shading Accent 5"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="60"/>
@@ -672,7 +672,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightShading-Accent6" w:type="table">
+	<w:style w:styleId="LightShading-Accent6" w:type="paragraph">
 		<w:name w:val="Light Shading Accent 6"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="60"/>
@@ -775,7 +775,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightList" w:type="table">
+	<w:style w:styleId="LightList" w:type="paragraph">
 		<w:name w:val="Light List"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="61"/>
@@ -867,7 +867,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightList-Accent1" w:type="table">
+	<w:style w:styleId="LightList-Accent1" w:type="paragraph">
 		<w:name w:val="Light List Accent 1"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="61"/>
@@ -959,7 +959,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightList-Accent2" w:type="table">
+	<w:style w:styleId="LightList-Accent2" w:type="paragraph">
 		<w:name w:val="Light List Accent 2"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="61"/>
@@ -1051,7 +1051,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightList-Accent3" w:type="table">
+	<w:style w:styleId="LightList-Accent3" w:type="paragraph">
 		<w:name w:val="Light List Accent 3"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="61"/>
@@ -1143,7 +1143,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightList-Accent4" w:type="table">
+	<w:style w:styleId="LightList-Accent4" w:type="paragraph">
 		<w:name w:val="Light List Accent 4"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="61"/>
@@ -1235,7 +1235,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightList-Accent5" w:type="table">
+	<w:style w:styleId="LightList-Accent5" w:type="paragraph">
 		<w:name w:val="Light List Accent 5"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="61"/>
@@ -1327,7 +1327,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightList-Accent6" w:type="table">
+	<w:style w:styleId="LightList-Accent6" w:type="paragraph">
 		<w:name w:val="Light List Accent 6"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="61"/>
@@ -1419,7 +1419,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightGrid" w:type="table">
+	<w:style w:styleId="LightGrid" w:type="paragraph">
 		<w:name w:val="Light Grid"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="62"/>
@@ -1549,7 +1549,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightGrid-Accent1" w:type="table">
+	<w:style w:styleId="LightGrid-Accent1" w:type="paragraph">
 		<w:name w:val="Light Grid Accent 1"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="62"/>
@@ -1679,7 +1679,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightGrid-Accent2" w:type="table">
+	<w:style w:styleId="LightGrid-Accent2" w:type="paragraph">
 		<w:name w:val="Light Grid Accent 2"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="62"/>
@@ -1809,7 +1809,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightGrid-Accent3" w:type="table">
+	<w:style w:styleId="LightGrid-Accent3" w:type="paragraph">
 		<w:name w:val="Light Grid Accent 3"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="62"/>
@@ -1939,7 +1939,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightGrid-Accent4" w:type="table">
+	<w:style w:styleId="LightGrid-Accent4" w:type="paragraph">
 		<w:name w:val="Light Grid Accent 4"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="62"/>
@@ -2069,7 +2069,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightGrid-Accent5" w:type="table">
+	<w:style w:styleId="LightGrid-Accent5" w:type="paragraph">
 		<w:name w:val="Light Grid Accent 5"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="62"/>
@@ -2199,7 +2199,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="LightGrid-Accent6" w:type="table">
+	<w:style w:styleId="LightGrid-Accent6" w:type="paragraph">
 		<w:name w:val="Light Grid Accent 6"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="62"/>
@@ -2329,7 +2329,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumShading1" w:type="table">
+	<w:style w:styleId="MediumShading1" w:type="paragraph">
 		<w:name w:val="Medium Shading 1"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="63"/>
@@ -2435,7 +2435,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumShading1-Accent1" w:type="table">
+	<w:style w:styleId="MediumShading1-Accent1" w:type="paragraph">
 		<w:name w:val="Medium Shading 1 Accent 1"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="63"/>
@@ -2541,7 +2541,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumShading1-Accent2" w:type="table">
+	<w:style w:styleId="MediumShading1-Accent2" w:type="paragraph">
 		<w:name w:val="Medium Shading 1 Accent 2"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="63"/>
@@ -2647,7 +2647,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumShading1-Accent3" w:type="table">
+	<w:style w:styleId="MediumShading1-Accent3" w:type="paragraph">
 		<w:name w:val="Medium Shading 1 Accent 3"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="63"/>
@@ -2753,7 +2753,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumShading1-Accent4" w:type="table">
+	<w:style w:styleId="MediumShading1-Accent4" w:type="paragraph">
 		<w:name w:val="Medium Shading 1 Accent 4"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="63"/>
@@ -2859,7 +2859,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumShading1-Accent5" w:type="table">
+	<w:style w:styleId="MediumShading1-Accent5" w:type="paragraph">
 		<w:name w:val="Medium Shading 1 Accent 5"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="63"/>
@@ -2965,7 +2965,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumShading1-Accent6" w:type="table">
+	<w:style w:styleId="MediumShading1-Accent6" w:type="paragraph">
 		<w:name w:val="Medium Shading 1 Accent 6"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="63"/>
@@ -3071,7 +3071,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumShading2" w:type="table">
+	<w:style w:styleId="MediumShading2" w:type="paragraph">
 		<w:name w:val="Medium Shading 2"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="64"/>
@@ -3220,7 +3220,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumShading2-Accent1" w:type="table">
+	<w:style w:styleId="MediumShading2-Accent1" w:type="paragraph">
 		<w:name w:val="Medium Shading 2 Accent 1"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="64"/>
@@ -3369,7 +3369,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumShading2-Accent2" w:type="table">
+	<w:style w:styleId="MediumShading2-Accent2" w:type="paragraph">
 		<w:name w:val="Medium Shading 2 Accent 2"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="64"/>
@@ -3518,7 +3518,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumShading2-Accent3" w:type="table">
+	<w:style w:styleId="MediumShading2-Accent3" w:type="paragraph">
 		<w:name w:val="Medium Shading 2 Accent 3"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="64"/>
@@ -3667,7 +3667,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumShading2-Accent4" w:type="table">
+	<w:style w:styleId="MediumShading2-Accent4" w:type="paragraph">
 		<w:name w:val="Medium Shading 2 Accent 4"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="64"/>
@@ -3816,7 +3816,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumShading2-Accent5" w:type="table">
+	<w:style w:styleId="MediumShading2-Accent5" w:type="paragraph">
 		<w:name w:val="Medium Shading 2 Accent 5"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="64"/>
@@ -3965,7 +3965,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumShading2-Accent6" w:type="table">
+	<w:style w:styleId="MediumShading2-Accent6" w:type="paragraph">
 		<w:name w:val="Medium Shading 2 Accent 6"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="64"/>
@@ -4114,7 +4114,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumList1" w:type="table">
+	<w:style w:styleId="MediumList1" w:type="paragraph">
 		<w:name w:val="Medium List 1"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="65"/>
@@ -4198,7 +4198,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumList1-Accent1" w:type="table">
+	<w:style w:styleId="MediumList1-Accent1" w:type="paragraph">
 		<w:name w:val="Medium List 1 Accent 1"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="65"/>
@@ -4282,7 +4282,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumList1-Accent2" w:type="table">
+	<w:style w:styleId="MediumList1-Accent2" w:type="paragraph">
 		<w:name w:val="Medium List 1 Accent 2"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="65"/>
@@ -4366,7 +4366,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumList1-Accent3" w:type="table">
+	<w:style w:styleId="MediumList1-Accent3" w:type="paragraph">
 		<w:name w:val="Medium List 1 Accent 3"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="65"/>
@@ -4450,7 +4450,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumList1-Accent4" w:type="table">
+	<w:style w:styleId="MediumList1-Accent4" w:type="paragraph">
 		<w:name w:val="Medium List 1 Accent 4"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="65"/>
@@ -4534,7 +4534,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumList1-Accent5" w:type="table">
+	<w:style w:styleId="MediumList1-Accent5" w:type="paragraph">
 		<w:name w:val="Medium List 1 Accent 5"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="65"/>
@@ -4618,7 +4618,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumList1-Accent6" w:type="table">
+	<w:style w:styleId="MediumList1-Accent6" w:type="paragraph">
 		<w:name w:val="Medium List 1 Accent 6"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="65"/>
@@ -4702,7 +4702,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumList2" w:type="table">
+	<w:style w:styleId="MediumList2" w:type="paragraph">
 		<w:name w:val="Medium List 2"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="66"/>
@@ -4830,7 +4830,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumList2-Accent1" w:type="table">
+	<w:style w:styleId="MediumList2-Accent1" w:type="paragraph">
 		<w:name w:val="Medium List 2 Accent 1"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="66"/>
@@ -4958,7 +4958,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumList2-Accent2" w:type="table">
+	<w:style w:styleId="MediumList2-Accent2" w:type="paragraph">
 		<w:name w:val="Medium List 2 Accent 2"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="66"/>
@@ -5086,7 +5086,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumList2-Accent3" w:type="table">
+	<w:style w:styleId="MediumList2-Accent3" w:type="paragraph">
 		<w:name w:val="Medium List 2 Accent 3"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="66"/>
@@ -5214,7 +5214,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumList2-Accent4" w:type="table">
+	<w:style w:styleId="MediumList2-Accent4" w:type="paragraph">
 		<w:name w:val="Medium List 2 Accent 4"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="66"/>
@@ -5342,7 +5342,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumList2-Accent5" w:type="table">
+	<w:style w:styleId="MediumList2-Accent5" w:type="paragraph">
 		<w:name w:val="Medium List 2 Accent 5"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="66"/>
@@ -5470,7 +5470,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumList2-Accent6" w:type="table">
+	<w:style w:styleId="MediumList2-Accent6" w:type="paragraph">
 		<w:name w:val="Medium List 2 Accent 6"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="66"/>
@@ -5598,7 +5598,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid1" w:type="table">
+	<w:style w:styleId="MediumGrid1" w:type="paragraph">
 		<w:name w:val="Medium Grid 1"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="67"/>
@@ -5671,7 +5671,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid1-Accent1" w:type="table">
+	<w:style w:styleId="MediumGrid1-Accent1" w:type="paragraph">
 		<w:name w:val="Medium Grid 1 Accent 1"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="67"/>
@@ -5744,7 +5744,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid1-Accent2" w:type="table">
+	<w:style w:styleId="MediumGrid1-Accent2" w:type="paragraph">
 		<w:name w:val="Medium Grid 1 Accent 2"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="67"/>
@@ -5817,7 +5817,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid1-Accent3" w:type="table">
+	<w:style w:styleId="MediumGrid1-Accent3" w:type="paragraph">
 		<w:name w:val="Medium Grid 1 Accent 3"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="67"/>
@@ -5890,7 +5890,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid1-Accent4" w:type="table">
+	<w:style w:styleId="MediumGrid1-Accent4" w:type="paragraph">
 		<w:name w:val="Medium Grid 1 Accent 4"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="67"/>
@@ -5963,7 +5963,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid1-Accent5" w:type="table">
+	<w:style w:styleId="MediumGrid1-Accent5" w:type="paragraph">
 		<w:name w:val="Medium Grid 1 Accent 5"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="67"/>
@@ -6036,7 +6036,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid1-Accent6" w:type="table">
+	<w:style w:styleId="MediumGrid1-Accent6" w:type="paragraph">
 		<w:name w:val="Medium Grid 1 Accent 6"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="67"/>
@@ -6109,7 +6109,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid2" w:type="table">
+	<w:style w:styleId="MediumGrid2" w:type="paragraph">
 		<w:name w:val="Medium Grid 2"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="68"/>
@@ -6234,7 +6234,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid2-Accent1" w:type="table">
+	<w:style w:styleId="MediumGrid2-Accent1" w:type="paragraph">
 		<w:name w:val="Medium Grid 2 Accent 1"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="68"/>
@@ -6359,7 +6359,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid2-Accent2" w:type="table">
+	<w:style w:styleId="MediumGrid2-Accent2" w:type="paragraph">
 		<w:name w:val="Medium Grid 2 Accent 2"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="68"/>
@@ -6484,7 +6484,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid2-Accent3" w:type="table">
+	<w:style w:styleId="MediumGrid2-Accent3" w:type="paragraph">
 		<w:name w:val="Medium Grid 2 Accent 3"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="68"/>
@@ -6609,7 +6609,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid2-Accent4" w:type="table">
+	<w:style w:styleId="MediumGrid2-Accent4" w:type="paragraph">
 		<w:name w:val="Medium Grid 2 Accent 4"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="68"/>
@@ -6734,7 +6734,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid2-Accent5" w:type="table">
+	<w:style w:styleId="MediumGrid2-Accent5" w:type="paragraph">
 		<w:name w:val="Medium Grid 2 Accent 5"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="68"/>
@@ -6859,7 +6859,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid2-Accent6" w:type="table">
+	<w:style w:styleId="MediumGrid2-Accent6" w:type="paragraph">
 		<w:name w:val="Medium Grid 2 Accent 6"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="68"/>
@@ -6984,7 +6984,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid3" w:type="table">
+	<w:style w:styleId="MediumGrid3" w:type="paragraph">
 		<w:name w:val="Medium Grid 3"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="69"/>
@@ -7125,7 +7125,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid3-Accent1" w:type="table">
+	<w:style w:styleId="MediumGrid3-Accent1" w:type="paragraph">
 		<w:name w:val="Medium Grid 3 Accent 1"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="69"/>
@@ -7266,7 +7266,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid3-Accent2" w:type="table">
+	<w:style w:styleId="MediumGrid3-Accent2" w:type="paragraph">
 		<w:name w:val="Medium Grid 3 Accent 2"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="69"/>
@@ -7407,7 +7407,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid3-Accent3" w:type="table">
+	<w:style w:styleId="MediumGrid3-Accent3" w:type="paragraph">
 		<w:name w:val="Medium Grid 3 Accent 3"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="69"/>
@@ -7548,7 +7548,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid3-Accent4" w:type="table">
+	<w:style w:styleId="MediumGrid3-Accent4" w:type="paragraph">
 		<w:name w:val="Medium Grid 3 Accent 4"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="69"/>
@@ -7689,7 +7689,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid3-Accent5" w:type="table">
+	<w:style w:styleId="MediumGrid3-Accent5" w:type="paragraph">
 		<w:name w:val="Medium Grid 3 Accent 5"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="69"/>
@@ -7830,7 +7830,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="MediumGrid3-Accent6" w:type="table">
+	<w:style w:styleId="MediumGrid3-Accent6" w:type="paragraph">
 		<w:name w:val="Medium Grid 3 Accent 6"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="69"/>
@@ -7971,7 +7971,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="DarkList" w:type="table">
+	<w:style w:styleId="DarkList" w:type="paragraph">
 		<w:name w:val="Dark List"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="70"/>
@@ -8085,7 +8085,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="DarkList-Accent1" w:type="table">
+	<w:style w:styleId="DarkList-Accent1" w:type="paragraph">
 		<w:name w:val="Dark List Accent 1"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="70"/>
@@ -8199,7 +8199,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="DarkList-Accent2" w:type="table">
+	<w:style w:styleId="DarkList-Accent2" w:type="paragraph">
 		<w:name w:val="Dark List Accent 2"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="70"/>
@@ -8313,7 +8313,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="DarkList-Accent3" w:type="table">
+	<w:style w:styleId="DarkList-Accent3" w:type="paragraph">
 		<w:name w:val="Dark List Accent 3"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="70"/>
@@ -8427,7 +8427,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="DarkList-Accent4" w:type="table">
+	<w:style w:styleId="DarkList-Accent4" w:type="paragraph">
 		<w:name w:val="Dark List Accent 4"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="70"/>
@@ -8541,7 +8541,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="DarkList-Accent5" w:type="table">
+	<w:style w:styleId="DarkList-Accent5" w:type="paragraph">
 		<w:name w:val="Dark List Accent 5"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="70"/>
@@ -8655,7 +8655,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="DarkList-Accent6" w:type="table">
+	<w:style w:styleId="DarkList-Accent6" w:type="paragraph">
 		<w:name w:val="Dark List Accent 6"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="70"/>
@@ -8769,7 +8769,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulShading" w:type="table">
+	<w:style w:styleId="ColorfulShading" w:type="paragraph">
 		<w:name w:val="Colorful Shading"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="71"/>
@@ -8891,7 +8891,7 @@
 			</w:rPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulShading-Accent1" w:type="table">
+	<w:style w:styleId="ColorfulShading-Accent1" w:type="paragraph">
 		<w:name w:val="Colorful Shading Accent 1"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="71"/>
@@ -9013,7 +9013,7 @@
 			</w:rPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulShading-Accent2" w:type="table">
+	<w:style w:styleId="ColorfulShading-Accent2" w:type="paragraph">
 		<w:name w:val="Colorful Shading Accent 2"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="71"/>
@@ -9135,7 +9135,7 @@
 			</w:rPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulShading-Accent3" w:type="table">
+	<w:style w:styleId="ColorfulShading-Accent3" w:type="paragraph">
 		<w:name w:val="Colorful Shading Accent 3"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="71"/>
@@ -9247,7 +9247,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulShading-Accent4" w:type="table">
+	<w:style w:styleId="ColorfulShading-Accent4" w:type="paragraph">
 		<w:name w:val="Colorful Shading Accent 4"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="71"/>
@@ -9369,7 +9369,7 @@
 			</w:rPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulShading-Accent5" w:type="table">
+	<w:style w:styleId="ColorfulShading-Accent5" w:type="paragraph">
 		<w:name w:val="Colorful Shading Accent 5"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="71"/>
@@ -9491,7 +9491,7 @@
 			</w:rPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulShading-Accent6" w:type="table">
+	<w:style w:styleId="ColorfulShading-Accent6" w:type="paragraph">
 		<w:name w:val="Colorful Shading Accent 6"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="71"/>
@@ -9613,7 +9613,7 @@
 			</w:rPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulList" w:type="table">
+	<w:style w:styleId="ColorfulList" w:type="paragraph">
 		<w:name w:val="Colorful List"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="72"/>
@@ -9699,7 +9699,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulList-Accent1" w:type="table">
+	<w:style w:styleId="ColorfulList-Accent1" w:type="paragraph">
 		<w:name w:val="Colorful List Accent 1"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="72"/>
@@ -9785,7 +9785,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulList-Accent2" w:type="table">
+	<w:style w:styleId="ColorfulList-Accent2" w:type="paragraph">
 		<w:name w:val="Colorful List Accent 2"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="72"/>
@@ -9871,7 +9871,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulList-Accent3" w:type="table">
+	<w:style w:styleId="ColorfulList-Accent3" w:type="paragraph">
 		<w:name w:val="Colorful List Accent 3"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="72"/>
@@ -9957,7 +9957,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulList-Accent4" w:type="table">
+	<w:style w:styleId="ColorfulList-Accent4" w:type="paragraph">
 		<w:name w:val="Colorful List Accent 4"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="72"/>
@@ -10043,7 +10043,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulList-Accent5" w:type="table">
+	<w:style w:styleId="ColorfulList-Accent5" w:type="paragraph">
 		<w:name w:val="Colorful List Accent 5"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="72"/>
@@ -10129,7 +10129,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulList-Accent6" w:type="table">
+	<w:style w:styleId="ColorfulList-Accent6" w:type="paragraph">
 		<w:name w:val="Colorful List Accent 6"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="72"/>
@@ -10215,7 +10215,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulGrid" w:type="table">
+	<w:style w:styleId="ColorfulGrid" w:type="paragraph">
 		<w:name w:val="Colorful Grid"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="73"/>
@@ -10295,7 +10295,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulGrid-Accent1" w:type="table">
+	<w:style w:styleId="ColorfulGrid-Accent1" w:type="paragraph">
 		<w:name w:val="Colorful Grid Accent 1"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="73"/>
@@ -10375,7 +10375,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulGrid-Accent2" w:type="table">
+	<w:style w:styleId="ColorfulGrid-Accent2" w:type="paragraph">
 		<w:name w:val="Colorful Grid Accent 2"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="73"/>
@@ -10455,7 +10455,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulGrid-Accent3" w:type="table">
+	<w:style w:styleId="ColorfulGrid-Accent3" w:type="paragraph">
 		<w:name w:val="Colorful Grid Accent 3"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="73"/>
@@ -10535,7 +10535,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulGrid-Accent4" w:type="table">
+	<w:style w:styleId="ColorfulGrid-Accent4" w:type="paragraph">
 		<w:name w:val="Colorful Grid Accent 4"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="73"/>
@@ -10615,7 +10615,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulGrid-Accent5" w:type="table">
+	<w:style w:styleId="ColorfulGrid-Accent5" w:type="paragraph">
 		<w:name w:val="Colorful Grid Accent 5"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="73"/>
@@ -10695,7 +10695,7 @@
 			</w:tcPr>
 		</w:tblStylePr>
 	</w:style>
-	<w:style w:styleId="ColorfulGrid-Accent6" w:type="table">
+	<w:style w:styleId="ColorfulGrid-Accent6" w:type="paragraph">
 		<w:name w:val="Colorful Grid Accent 6"/>
 		<w:basedOn w:val="TableNormal"/>
 		<w:uiPriority w:val="73"/>
