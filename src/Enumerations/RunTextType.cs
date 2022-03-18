@@ -6,6 +6,16 @@
 internal static class RunTextType
 {
     /// <summary>
+    /// Inserted text
+    /// </summary>
+    public const string InsertMarker = "ins";
+
+    /// <summary>
+    /// Deleted text
+    /// </summary>
+    public const string DeleteMarker = "del";
+
+    /// <summary>
     /// Text
     /// </summary>
     public const string Text = "t";
@@ -29,4 +39,14 @@ internal static class RunTextType
     /// Carriage return
     /// </summary>
     public const string CarriageReturn = "cr";
+
+    /// <summary>
+    /// Comment reference
+    /// </summary>
+    public const string CommentReference = "commentReference";
+
+    /// <summary>
+    /// Drawing
+    /// </summary>
+    public const string Drawing = "drawing";
 }

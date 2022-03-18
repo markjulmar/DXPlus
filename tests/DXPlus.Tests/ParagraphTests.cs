@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using System.Linq;
 using System.Xml.Linq;
 using System.Xml.XPath;
@@ -615,7 +614,7 @@ namespace DXPlus.Tests
             var e = new XElement(Name.Paragraph,
                 new XElement(Name.Run,
                     new XElement(Name.Text, "Some ")),
-                new XElement(Namespace.Main + "ins",
+                new XElement(Namespace.Main + RunTextType.InsertMarker,
                     new XElement(Name.Run,
                         new XElement(Name.Text, "text goes "))),
                 new XElement(Name.Run,
@@ -635,7 +634,7 @@ namespace DXPlus.Tests
             var e = new XElement(Name.Paragraph,
                 new XElement(Name.Run,
                     new XElement(Name.Text, "Some ")),
-                new XElement(Namespace.Main + "ins",
+                new XElement(Namespace.Main + RunTextType.InsertMarker,
                     new XElement(Name.Run,
                         new XElement(Name.Text, "text goes "))),
                 new XElement(Name.Run,
@@ -839,6 +838,34 @@ namespace DXPlus.Tests
 
             Assert.True(p.FindReplace("This is a ", null));
             Assert.Equal("", p.Text);
+        }
+
+        [Fact]
+        public void TextSkipsDeletedText()
+        {
+            string xml =
+                @"<w:p xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
+                    <w:r>
+				        <w:t xml:space=""preserve"">This is a test with </w:t>
+			        </w:r>
+			        <w:del>
+				        <w:r>
+					        <w:delText xml:space=""preserve"">deleted </w:delText>
+				        </w:r>
+			        </w:del>
+			        <w:ins>
+				        <w:r>
+					        <w:t xml:space=""preserve"">inserted </w:t>
+				        </w:r>
+			        </w:ins>
+			        <w:r>
+				        <w:t>text.</w:t>
+			        </w:r>
+		        </w:p>";
+
+            var p = new Paragraph(null, null, XElement.Parse(xml), null);
+
+            Assert.Equal("This is a test with inserted text.", p.Text);
         }
     }
 }

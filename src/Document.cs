@@ -616,7 +616,7 @@ public sealed class Document : BlockContainer, IDocument
         // Insert a new chart into a paragraph.
         var p = this.AddParagraph();
         var chartElement = new XElement(Name.Run,
-            new XElement(Namespace.Main + "drawing",
+            new XElement(Namespace.Main + RunTextType.Drawing,
                 new XElement(Namespace.WordProcessingDrawing + "inline",
                     new XElement(Namespace.WordProcessingDrawing + "extent",
                         new XAttribute("cx", 5486400),
@@ -1001,7 +1001,7 @@ public sealed class Document : BlockContainer, IDocument
         ThrowIfNoPackage();
 
         var trackerIds = mainDoc!.Descendants()
-            .Where(d => d.Name.LocalName is "ins" or "del")
+            .Where(d => d.Name.LocalName is RunTextType.InsertMarker or RunTextType.DeleteMarker)
             .Select(d => d.Attribute(Name.Id))
             .OmitNull()
             .ToList();

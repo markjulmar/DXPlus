@@ -535,5 +535,19 @@ internal static class XLinqExtensions
     /// <returns>Results from query</returns>
     public static XElement? QueryElement(this XElement element, string query) 
         => element.XPathSelectElement(query, Namespace.NamespaceManager());
+
+    /// <summary>
+    /// Clone an XElement into a new object
+    /// </summary>
+    /// <param name="element"></param>
+    /// <returns></returns>
+    public static XElement Clone(this XElement element)
+    {
+        return new XElement(
+            element.Name,
+            element.Attributes(),
+            element.Nodes().Select(n => n is XElement e ? Clone(e) : n)
+        );
+    }
 }
 

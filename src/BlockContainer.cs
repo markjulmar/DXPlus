@@ -193,8 +193,8 @@ public abstract class BlockContainer : DocXElement, IContainer
         }
         else
         {
-            var split = SplitParagraph(insertPos, index - insertPos.StartIndex!.Value);
-            insertPos.Xml.ReplaceWith(split[0], paragraph.Xml, split[1]);
+            var (leftElement, rightElement) = Split(insertPos, index - insertPos.StartIndex!.Value);
+            insertPos.Xml.ReplaceWith(leftElement, paragraph.Xml, rightElement);
         }
 
         return OnAddParagraph(paragraph);
@@ -389,8 +389,8 @@ public abstract class BlockContainer : DocXElement, IContainer
         var firstParagraph = Document.FindParagraphByIndex(index);
         if (firstParagraph != null)
         {
-            var split = SplitParagraph(firstParagraph, index - firstParagraph.StartIndex!.Value);
-            firstParagraph.Xml.ReplaceWith(split[0], table.Xml, split[1]);
+            var (leftElement, rightElement) = Split(firstParagraph, index - firstParagraph.StartIndex!.Value);
+            firstParagraph.Xml.ReplaceWith(leftElement, table.Xml, rightElement);
         }
 
         return table;
@@ -435,41 +435,32 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// <param name="index">Character index to split at</param>
     /// <returns>Left/Right split</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    private static XElement?[] SplitParagraph(Paragraph paragraph, int index)
+    private static (XElement? leftElement, XElement? rightElement) Split(Paragraph paragraph, int index)
     {
         if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
         if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
 
-        XElement?[] split = {null, null};
-
         var r = paragraph.FindRunAffectedByEdit(EditType.Insert, index);
-        if (r == null)
-            return split;
+        if (r == null) return (null, null);
+
+        string? editType = r.Xml.Parent?.Name.LocalName;
 
         XElement? before, after;
-        switch (r.Xml.Parent?.Name.LocalName)
+        if (editType is RunTextType.InsertMarker or RunTextType.DeleteMarker)
         {
-            case "ins":
-                split = paragraph.SplitEdit(r.Xml.Parent, index, EditType.Insert);
-                before = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.Parent.ElementsBeforeSelf(), split[0]);
-                after = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.Parent.ElementsAfterSelf(), split[1]);
-                break;
-
-            case "del":
-                split = paragraph.SplitEdit(r.Xml.Parent, index, EditType.Delete);
-                before = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.Parent.ElementsBeforeSelf(), split[0]);
-                after = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.Parent.ElementsAfterSelf(), split[1]);
-                break;
-
-            default:
-                split = r.SplitAtIndex(index);
-                before = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.ElementsBeforeSelf(), split[0]);
-                after = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), split[1], r.Xml.ElementsAfterSelf());
-                break;
+            var (leftElement, rightElement) = paragraph.Split(r.Xml.Parent!, index, editType == RunTextType.InsertMarker ? EditType.Insert : EditType.Delete);
+            before = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.Parent!.ElementsBeforeSelf(), leftElement);
+            after = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.Parent.ElementsAfterSelf(), rightElement);
+        }
+        else
+        {
+            var (leftElement, rightElement) = r.Split(index);
+            before = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.ElementsBeforeSelf(), leftElement);
+            after = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), rightElement, r.Xml.ElementsAfterSelf());
         }
 
         if (!before.Elements().Any()) before = null;
         if (!after.Elements().Any()) after = null;
-        return new[] { before, after };
+        return (before, after);
     }
 }

@@ -76,12 +76,15 @@ public sealed class Picture : DocXElement, IEquatable<Picture>
         get
         {
             var xml = Xml;
+
             while (xml.Parent != null)
             {
-                if (xml.Parent.Name.LocalName == "drawing")
+                if (xml.Parent.Name.LocalName == RunTextType.Drawing)
                 {
                     return new Drawing(Document, PackagePart, xml.Parent);
                 }
+
+                xml = xml.Parent;
             }
             return null;
         }

@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Xml.Linq;
 using DXPlus.Internal;
+using Microsoft.VisualBasic.CompilerServices;
 
 namespace DXPlus;
 
@@ -12,6 +13,7 @@ namespace DXPlus;
 /// </summary>
 public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
 {
+    private new XElement Xml => base.Xml!;
     private readonly HashSet<string> setProperties = new();
 
     /// <summary>
@@ -19,11 +21,11 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// </summary>
     public bool Bold
     {
-        get => Xml!.Element(Name.Bold) != null;
+        get => Xml.Element(Name.Bold) != null;
         set
         {
-            Xml!.SetElementValue(Name.Bold, value ? string.Empty : null);
-            Xml!.SetElementValue(Name.Bold + "Cs", value ? string.Empty : null);
+            Xml.SetElementValue(Name.Bold, value ? string.Empty : null);
+            Xml.SetElementValue(Name.Bold + "Cs", value ? string.Empty : null);
             setProperties.Add(nameof(Bold));
         }
     }
@@ -33,11 +35,11 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// </summary>
     public bool Italic
     {
-        get => Xml!.Element(Name.Italic) != null;
+        get => Xml.Element(Name.Italic) != null;
         set
         {
-            Xml!.SetElementValue(Name.Italic, value ? string.Empty : null);
-            Xml!.SetElementValue(Name.Italic + "Cs", value ? string.Empty : null);
+            Xml.SetElementValue(Name.Italic, value ? string.Empty : null);
+            Xml.SetElementValue(Name.Italic + "Cs", value ? string.Empty : null);
             setProperties.Add(nameof(Italic));
         }
     }
@@ -47,17 +49,17 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// </summary>
     public CapsStyle CapsStyle
     {
-        get => Xml!.Element(Namespace.Main + CapsStyle.SmallCaps.GetEnumName()) != null
+        get => Xml.Element(Namespace.Main + CapsStyle.SmallCaps.GetEnumName()) != null
             ? CapsStyle.SmallCaps
-            : Xml!.Element(Namespace.Main + CapsStyle.Caps.GetEnumName()) != null
+            : Xml.Element(Namespace.Main + CapsStyle.Caps.GetEnumName()) != null
                 ? CapsStyle.Caps
                 : CapsStyle.None;
         set
         {
-            Xml!.Element(Namespace.Main + CapsStyle.SmallCaps.GetEnumName())?.Remove();
-            Xml!.Element(Namespace.Main + CapsStyle.Caps.GetEnumName())?.Remove();
+            Xml.Element(Namespace.Main + CapsStyle.SmallCaps.GetEnumName())?.Remove();
+            Xml.Element(Namespace.Main + CapsStyle.Caps.GetEnumName())?.Remove();
             if (value != CapsStyle.None)
-                Xml!.Add(new XElement(Namespace.Main + value.GetEnumName()));
+                Xml.Add(new XElement(Namespace.Main + value.GetEnumName()));
             setProperties.Add(nameof(CapsStyle));
         }
     }
@@ -69,7 +71,7 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     {
         get
         {
-            var color = Xml!.Element(Name.Color);
+            var color = Xml.Element(Name.Color);
             return color == null ? null : new ColorValue(color);
         }
 
@@ -77,11 +79,11 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
         {
             if (value == null || value.IsEmpty)
             {
-                Xml!.Element(Name.Color)?.Remove();
+                Xml.Element(Name.Color)?.Remove();
             }
             else
             {
-                var element = Xml!.GetOrAddElement(Name.Color);
+                var element = Xml.GetOrAddElement(Name.Color);
                 value.SetElementValues(element);
             }
         }
@@ -94,13 +96,13 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     {
         get
         {
-            var name = Xml!.Element(Name.Language)?.GetVal();
+            var name = Xml.Element(Name.Language)?.GetVal();
             return name != null ? CultureInfo.GetCultureInfo(name) : null;
         }
 
         set
         {
-            Xml!.AddElementVal(Name.Language, value?.Name);
+            Xml.AddElementVal(Name.Language, value?.Name);
             setProperties.Add(nameof(Culture));
         }
     }
@@ -112,17 +114,17 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     {
         get
         {
-            var font = Xml!.Element(Name.RunFonts);
+            var font = Xml.Element(Name.RunFonts);
             if (font == null) return null;
             var name = font.AttributeValue(Namespace.Main + "ascii");
             return !string.IsNullOrEmpty(name) ? new FontFamily(name) : null;
         }
         set
         {
-            Xml!.Element(Name.RunFonts)?.Remove();
+            Xml.Element(Name.RunFonts)?.Remove();
             if (value != null)
             {
-                Xml!.Add(new XElement(Name.RunFonts,
+                Xml.Add(new XElement(Name.RunFonts,
                     new XAttribute(Namespace.Main + "ascii", value.Name),
                     new XAttribute(Namespace.Main + "hAnsi", value.Name),
                     new XAttribute(Namespace.Main + "cs", value.Name)));
@@ -136,7 +138,7 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// </summary>
     public double? FontSize
     {
-        get => double.TryParse(Xml!.Element(Name.Size)?.GetVal(), out var result) ? result / 2 : null;
+        get => double.TryParse(Xml.Element(Name.Size)?.GetVal(), out var result) ? result / 2 : null;
 
         set
         {
@@ -148,13 +150,13 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
                 fontSize = Math.Min(Math.Max(0, fontSize), 1638.0);
                 fontSize = Math.Round(fontSize * 2, MidpointRounding.AwayFromZero) / 2;
 
-                Xml!.AddElementVal(Name.Size, fontSize * 2);
-                Xml!.AddElementVal(Name.Size + "Cs", fontSize * 2);
+                Xml.AddElementVal(Name.Size, fontSize * 2);
+                Xml.AddElementVal(Name.Size + "Cs", fontSize * 2);
             }
             else
             {
-                Xml!.Element(Name.Size)?.Remove();
-                Xml!.Element(Name.Size + "Cs")?.Remove();
+                Xml.Element(Name.Size)?.Remove();
+                Xml.Element(Name.Size + "Cs")?.Remove();
             }
             setProperties.Add(nameof(FontSize));
         }
@@ -165,10 +167,10 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// </summary>
     public bool IsHidden
     {
-        get => Xml!.Element(Name.Vanish) != null;
+        get => Xml.Element(Name.Vanish) != null;
         set
         {
-            Xml!.SetElementValue(Name.Vanish, value ? string.Empty : null);
+            Xml.SetElementValue(Name.Vanish, value ? string.Empty : null);
             setProperties.Add(nameof(IsHidden));
         }
     }
@@ -178,10 +180,10 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// </summary>
     public Highlight Highlight
     {
-        get => Xml!.Element(Name.Highlight)?.TryGetEnumValue<Highlight>(out var result) == true ? result : Highlight.None;
+        get => Xml.Element(Name.Highlight)?.TryGetEnumValue<Highlight>(out var result) == true ? result : Highlight.None;
         set
         {
-            Xml!.AddElementVal(Name.Highlight, value == Highlight.None ? null : value.GetEnumName());
+            Xml.AddElementVal(Name.Highlight, value == Highlight.None ? null : value.GetEnumName());
             setProperties.Add(nameof(Highlight));
         }
     }
@@ -192,10 +194,10 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     public int? Kerning
     {
         // Value is represented in half-pts (1/144") in the document structure.
-        get => int.TryParse(Xml!.Element(Name.Kerning)?.GetVal(), out var result) ? (int?) result / 2 : null;
+        get => int.TryParse(Xml.Element(Name.Kerning)?.GetVal(), out var result) ? (int?) result / 2 : null;
         set
         {
-            Xml!.AddElementVal(Name.Kerning, (value * 2)?.ToString());
+            Xml.AddElementVal(Name.Kerning, (value * 2)?.ToString());
             setProperties.Add(nameof(Kerning));
         }
     }
@@ -208,7 +210,7 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
         get
         {
             var appliedEffects = Enum.GetValues(typeof(Effect)).Cast<Effect>()
-                .Select(e => Xml!.Element(Namespace.Main + e.GetEnumName()))
+                .Select(e => Xml.Element(Namespace.Main + e.GetEnumName()))
                 .Select(e => (e != null && e.Name.LocalName.TryGetEnumValue<Effect>(out var result)) ? result : Effect.None)
                 .Where(e => e != Effect.None)
                 .ToList();
@@ -230,7 +232,7 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
             foreach (var eval in Enum.GetValues(typeof(Effect)).Cast<Effect>())
             {
                 if (eval != Effect.None)
-                    Xml!.Element(Namespace.Main + eval.GetEnumName())?.Remove();
+                    Xml.Element(Namespace.Main + eval.GetEnumName())?.Remove();
             }
 
             // Now add the new effect.
@@ -239,11 +241,11 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
                 case Effect.None:
                     break;
                 case Effect.OutlineShadow:
-                    Xml!.Add(new XElement(Namespace.Main + Effect.Outline.GetEnumName()),
+                    Xml.Add(new XElement(Namespace.Main + Effect.Outline.GetEnumName()),
                         new XElement(Namespace.Main + Effect.Shadow.GetEnumName()));
                     break;
                 default:
-                    Xml!.Add(new XElement(Namespace.Main + value.GetEnumName()));
+                    Xml.Add(new XElement(Namespace.Main + value.GetEnumName()));
                     break;
             }
             setProperties.Add(nameof(Effect));
@@ -256,16 +258,16 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// </summary>
     public double? Spacing
     {
-        get => double.TryParse(Xml!.Element(Name.Spacing).GetVal(), out var result) ? result : null;
+        get => double.TryParse(Xml.Element(Name.Spacing).GetVal(), out var result) ? result : null;
         set
         {
             if (value == null)
             {
-                Xml!.Attribute(Name.Spacing)?.Remove();
+                Xml.Attribute(Name.Spacing)?.Remove();
             }
             else
             {
-                Xml!.AddElementVal(Name.Spacing, value.Value.ToString(CultureInfo.InvariantCulture));
+                Xml.AddElementVal(Name.Spacing, value.Value.ToString(CultureInfo.InvariantCulture));
             }
 
             setProperties.Add(nameof(Spacing));
@@ -278,7 +280,7 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// </summary>
     public int? ExpansionScale
     {
-        get => int.TryParse(Xml!.Element(Namespace.Main + "w").GetVal(), out var result) ? result : null;
+        get => int.TryParse(Xml.Element(Namespace.Main + "w").GetVal(), out var result) ? result : null;
 
         set
         {
@@ -287,7 +289,7 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
                 if (value < 0 || value > 600)
                     throw new ArgumentOutOfRangeException(nameof(ExpansionScale), "Value must be between 0 and 600.");
             }
-            Xml!.AddElementVal(Namespace.Main + "w", value?.ToString());
+            Xml.AddElementVal(Namespace.Main + "w", value?.ToString());
             setProperties.Add(nameof(ExpansionScale));
         }
     }
@@ -300,10 +302,10 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     public double? Position
     {
         // Measured in half-pts (1/144")
-        get => double.TryParse(Xml!.Element(Name.Position).GetVal(), out var value) ? (double?) value/2.0 : null;
+        get => double.TryParse(Xml.Element(Name.Position).GetVal(), out var value) ? (double?) value/2.0 : null;
         set
         {
-            Xml!.AddElementVal(Name.Position, value != null
+            Xml.AddElementVal(Name.Position, value != null
                 ? Math.Round(value.Value * 2, 2).ToString(CultureInfo.InvariantCulture)
                 : null);
             setProperties.Add(nameof(Position));
@@ -315,16 +317,16 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// </summary>
     public bool Subscript
     {
-        get => Xml!.Element(Name.VerticalAlign)?.GetVal() == "subscript";
+        get => Xml.Element(Name.VerticalAlign)?.GetVal() == "subscript";
         set
         {
             if (value)
             {
-                Xml!.AddElementVal(Name.VerticalAlign, "subscript");
+                Xml.AddElementVal(Name.VerticalAlign, "subscript");
             }
             else if (Subscript)
             {
-                Xml!.Element(Name.VerticalAlign)?.Remove();
+                Xml.Element(Name.VerticalAlign)?.Remove();
             }
             setProperties.Add(nameof(Subscript));
             setProperties.Add(nameof(Superscript));
@@ -336,16 +338,16 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// </summary>
     public bool Superscript
     {
-        get => Xml!.Element(Name.VerticalAlign)?.GetVal() == "superscript";
+        get => Xml.Element(Name.VerticalAlign)?.GetVal() == "superscript";
         set
         {
             if (value)
             {
-                Xml!.AddElementVal(Name.VerticalAlign, "superscript");
+                Xml.AddElementVal(Name.VerticalAlign, "superscript");
             }
             else if (Superscript)
             {
-                Xml!.Element(Name.VerticalAlign)?.Remove();
+                Xml.Element(Name.VerticalAlign)?.Remove();
             }
             setProperties.Add(nameof(Subscript));
             setProperties.Add(nameof(Superscript));
@@ -357,10 +359,10 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// </summary>
     public bool NoProof
     {
-        get => Xml!.Element(Name.NoProof) != null;
+        get => Xml.Element(Name.NoProof) != null;
         set
         {
-            Xml!.SetElementValue(Name.NoProof, value ? string.Empty : null);
+            Xml.SetElementValue(Name.NoProof, value ? string.Empty : null);
             setProperties.Add(nameof(NoProof));
         }
     }
@@ -372,14 +374,14 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     {
         get
         {
-            var e = Xml!.Element(Name.Underline);
+            var e = Xml.Element(Name.Underline);
             return e == null ? null : new(Xml, e);
         }
         set
         {
-            Xml!.Element(Name.Underline)?.Remove();
+            Xml.Element(Name.Underline)?.Remove();
             if (value == null) return;
-            Xml!.Add(value.Xml);
+            Xml.Add(value.Xml);
         }
     }
 
@@ -389,11 +391,11 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// </summary>
     public Emphasis Emphasis
     {
-        get => Xml!.Element(Name.Emphasis).GetVal().TryGetEnumValue<Emphasis>(out var result)
+        get => Xml.Element(Name.Emphasis).GetVal().TryGetEnumValue<Emphasis>(out var result)
             ? result : Emphasis.None;
         set
         {
-            Xml!.AddElementVal(Name.Emphasis, value != Emphasis.None ? value.GetEnumName() : null);
+            Xml.AddElementVal(Name.Emphasis, value != Emphasis.None ? value.GetEnumName() : null);
             setProperties.Add(nameof(Emphasis));
         }
     }
@@ -404,19 +406,19 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// </summary>
     public Strikethrough StrikeThrough
     {
-        get => Xml!.Element(Namespace.Main + Strikethrough.Strike.GetEnumName()) != null
+        get => Xml.Element(Namespace.Main + Strikethrough.Strike.GetEnumName()) != null
             ? Strikethrough.Strike
-            : Xml!.Element(Namespace.Main + Strikethrough.DoubleStrike.GetEnumName()) != null
+            : Xml.Element(Namespace.Main + Strikethrough.DoubleStrike.GetEnumName()) != null
                 ? Strikethrough.DoubleStrike
                 : Strikethrough.None;
         set
         {
-            Xml!.Element(Namespace.Main + Strikethrough.Strike.GetEnumName())?.Remove();
-            Xml!.Element(Namespace.Main + Strikethrough.DoubleStrike.GetEnumName())?.Remove();
+            Xml.Element(Namespace.Main + Strikethrough.Strike.GetEnumName())?.Remove();
+            Xml.Element(Namespace.Main + Strikethrough.DoubleStrike.GetEnumName())?.Remove();
 
             if (value != Strikethrough.None)
             {
-                Xml!.AddElementVal(Namespace.Main + value.GetEnumName(), true);
+                Xml.AddElementVal(Namespace.Main + value.GetEnumName(), true);
             }
 
             setProperties.Add(nameof(StrikeThrough));
@@ -428,8 +430,8 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// </summary>
     public Shading? Shading
     {
-        get => Shading.FromElement(Xml!);
-        set => Shading.SetElementValue(Xml!, value);
+        get => Shading.FromElement(Xml);
+        set => Shading.SetElementValue(Xml, value);
     }
 
     /// <summary>
@@ -437,16 +439,15 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// </summary>
     public Border? Border
     {
-        get => Border.FromElement(BorderType.Text, Xml!, null);
-        set => Border.SetElementValue(BorderType.Text, Xml!, null, value);
+        get => Border.FromElement(BorderType.Text, Xml, null);
+        set => Border.SetElementValue(BorderType.Text, Xml, null, value);
     }
 
     /// <summary>
     /// Constructor
     /// </summary>
-    public Formatting()
+    public Formatting() : this(new XElement(Name.RunProperties))
     {
-        Xml = new XElement(Name.RunProperties);
     }
 
     /// <summary>
@@ -455,7 +456,7 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// <param name="element">Element containing run properties</param>
     internal Formatting(XElement element)
     {
-        Xml = element;
+        base.Xml = element ?? throw new ArgumentNullException(nameof(element));
     }
 
     /// <summary>
@@ -466,7 +467,7 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     public bool Equals(Formatting? other)
     {
         return ReferenceEquals(this, other) 
-               || (other != null && XNode.DeepEquals(Xml!.Normalize(), other.Xml!.Normalize()));
+               || other != null && XNode.DeepEquals(Xml.Normalize(), other.Xml.Normalize());
     }
 
     /// <summary>
@@ -480,14 +481,40 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// Returns hashcode for this formatting object
     /// </summary>
     /// <returns></returns>
-    public override int GetHashCode() => Xml!.GetHashCode();
+    public override int GetHashCode() => Xml.GetHashCode();
+
+    /// <summary>
+    /// Merge two formatting objects together
+    /// </summary>
+    /// <param name="lhs">Left hand operand</param>
+    /// <param name="rhs">Right hand operand</param>
+    /// <returns>Merged formatting object</returns>
+    public static Formatting operator +(Formatting lhs, Formatting rhs) => new Formatting(lhs.Xml.Clone()).Merge(rhs);
+
+    /// <summary>
+    /// Remove a set of formatting from the passed formatting object
+    /// </summary>
+    /// <param name="lhs">Left hand operand</param>
+    /// <param name="rhs">Right hand operand</param>
+    /// <returns>New formatting of left side minus right side</returns>
+    public static Formatting operator -(Formatting lhs, Formatting rhs)
+    {
+        var formatting = new Formatting(lhs.Xml.Clone());
+        foreach (var name in rhs.Xml.Elements())
+        {
+            var e = formatting.Xml.Element(name.Name); 
+            if (e != null && XNode.DeepEquals(e.Normalize(), name.Normalize()))
+                e.Remove();
+        }
+        return formatting;
+    }
 
     /// <summary>
     /// Merge in the given formatting into this formatting object. This will add/remove settings
     /// from the given formatting into this one.
     /// </summary>
     /// <param name="other">Formatting to merge in</param>
-    public void Merge(Formatting other)
+    public Formatting Merge(Formatting other)
     {
         // First merge any changed properties.
         foreach (var propertyName in other.setProperties)
@@ -499,10 +526,12 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
         }
 
         // Now walk the XML graph and copy over any specifically set element.
-        foreach (var el in other.Xml!.Descendants())
+        foreach (var el in other.Xml.Descendants())
         {
-            if (Xml!.Element(el.Name) == null)
-                Xml!.Add(el.Clone());
+            if (Xml.Element(el.Name) == null)
+                Xml.Add(el.Clone());
         }
+
+        return this;
     }
 }

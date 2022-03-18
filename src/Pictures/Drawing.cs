@@ -30,7 +30,7 @@ public sealed class Drawing: DocXElement, IEquatable<Drawing>, ITextElement
     /// <summary>
     /// Element type (for ITextElement)
     /// </summary>
-    public string ElementType => "drawing";
+    public string ElementType => RunTextType.Drawing;
         
     /// <summary>
     /// Gets or sets the name of this drawing
@@ -142,7 +142,7 @@ public sealed class Drawing: DocXElement, IEquatable<Drawing>, ITextElement
     /// <param name="xml">The XElement to wrap</param>
     internal Drawing(Document document, PackagePart packagePart, XElement xml) : base(xml)
     {
-        if (xml.Name.LocalName != "drawing")
+        if (xml.Name.LocalName != RunTextType.Drawing)
             throw new ArgumentException("Root element must be <drawing> for Drawing.");
         SetOwner(document, packagePart, false);
     }

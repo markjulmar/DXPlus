@@ -455,6 +455,15 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
+    /// Simplify this paragraph by removing spell check values and merging
+    /// adjacent Run elements with the same properties.
+    /// </summary>
+    public void Simplify()
+    {
+
+    }
+
+    /// <summary>
     /// Add a run of text to this paragraph
     /// </summary>
     /// <param name="run">Run of text to add</param>
@@ -583,10 +592,10 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
             else
             {
                 // Split this run at the point you want to insert
-                var splitRun = run.SplitAtIndex(charIndex);
+                var (leftElement, rightElement) = run.Split(charIndex);
 
                 // Replace the original run.
-                run.Xml.ReplaceWith(splitRun[0], hyperlink.Xml, splitRun[1]);
+                run.Xml.ReplaceWith(leftElement, hyperlink.Xml, rightElement);
             }
         }
 
@@ -596,7 +605,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// <summary>
     /// Returns a list of Hyperlinks in this paragraph.
     /// </summary>
-    public IReadOnlyList<Hyperlink> Hyperlinks => Hyperlink.Enumerate(this, unownedHyperlinks).ToList();
+    public IEnumerable<Hyperlink> Hyperlinks => Hyperlink.Enumerate(this, unownedHyperlinks);
 
     /// <summary>
     /// Append a hyperlink to a paragraph.
@@ -686,8 +695,8 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
             var r = FindRunAffectedByEdit(EditType.Insert, index.Value);
             if (r != null)
             {
-                var splitEdit = SplitEdit(r.Xml, index.Value, EditType.Insert);
-                r.Xml.ReplaceWith(splitEdit[0], fldSimple, splitEdit[1]);
+                var (leftElement, rightElement) = Split(r.Xml, index.Value, EditType.Insert);
+                r.Xml.ReplaceWith(leftElement, fldSimple, rightElement);
             }
         }
     }
@@ -905,10 +914,10 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
             else
             {
                 // Split this run at the point you want to insert
-                var splitRun = run.SplitAtIndex(index);
+                var (leftElement, rightElement) = run.Split(index);
 
                 // Replace the original run.
-                run.Xml.ReplaceWith(splitRun[0], xml, splitRun[1]);
+                run.Xml.ReplaceWith(leftElement, xml, rightElement);
             }
         }
 
@@ -938,18 +947,15 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
                 throw new InvalidOperationException("Orphaned run not connected to paragraph.");
             }
 
-            switch (parentElement.Name.LocalName)
+            if (parentElement.Name.LocalName is RunTextType.InsertMarker or RunTextType.DeleteMarker)
             {
-                case "ins":
-                case "del":
-                    var splitEdit = SplitEdit(parentElement, index, EditType.Insert);
-                    parentElement.ReplaceWith(splitEdit[0], insert, splitEdit[1]);
-                    break;
-
-                default:
-                    var splitRun = run.SplitAtIndex(index);
-                    run.Xml.ReplaceWith(splitRun[0], insert, splitRun[1]);
-                    break;
+                var (leftElement, rightElement) = Split(parentElement, index, EditType.Insert);
+                parentElement.ReplaceWith(leftElement, insert, rightElement);
+            }
+            else
+            {
+                var (leftElement, rightElement) = run.Split(index);
+                run.Xml.ReplaceWith(leftElement, insert, rightElement);
             }
         }
 
@@ -974,7 +980,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
-    /// Removes characters from a DXPlus.Document.paragraph.
+    /// Removes characters from this Paragraph.
     /// </summary>
     /// <param name="index">The position to begin deleting characters.</param>
     /// <param name="count">The number of characters to delete</param>
@@ -992,29 +998,29 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
             var parentElement = run?.Xml.Parent;
             switch (parentElement?.Name.LocalName)
             {
-                case "ins":
-                case "del":
+                case RunTextType.InsertMarker:
+                case RunTextType.DeleteMarker:
                 {
-                    var splitEditBefore = SplitEdit(parentElement, index, EditType.Delete);
+                    var splitEditBefore = Split(parentElement, index, EditType.Delete);
                     int take = count - processed;
-                    var splitEditAfter = SplitEdit(parentElement, index + take, EditType.Delete);
-                    var before = splitEditBefore[1];
+                    var splitEditAfter = Split(parentElement, index + take, EditType.Delete);
+                    var before = splitEditBefore.rightElement;
                     Debug.Assert(before != null);
-                    var middle = SplitEdit(before, index + take, EditType.Delete)[1];
+                    var middle = Split(before, index + take, EditType.Delete).rightElement;
                     processed += DocumentHelpers.GetTextLength(middle);
-                    parentElement.ReplaceWith(splitEditBefore[0], null, splitEditAfter[1]);
+                    parentElement.ReplaceWith(splitEditBefore.leftElement, null, splitEditAfter.rightElement);
                 }
                     break;
 
                 default:
                     if (run != null && DocumentHelpers.GetTextLength(run.Xml) > 0)
                     {
-                        var splitRunBefore = run.SplitAtIndex(index);
+                        var splitRunBefore = run.Split(index);
                         int min = Math.Min(index + (count - processed), run.EndIndex);
-                        var splitRunAfter = run.SplitAtIndex(min);
-                        var middle = new Run(SafeDocument, SafePackagePart, splitRunBefore[1]!, run.StartIndex + DocumentHelpers.GetTextLength(splitRunBefore[0])).SplitAtIndex(min)[0];
+                        var splitRunAfter = run.Split(min);
+                        var middle = new Run(SafeDocument, SafePackagePart, splitRunBefore.rightElement!, run.StartIndex + DocumentHelpers.GetTextLength(splitRunBefore.leftElement)).Split(min).leftElement;
                         processed += DocumentHelpers.GetTextLength(middle);
-                        run.Xml.ReplaceWith(splitRunBefore[0], null, splitRunAfter[1]);
+                        run.Xml.ReplaceWith(splitRunBefore.leftElement, null, splitRunAfter.rightElement);
                     }
                     else
                     {
@@ -1030,7 +1036,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
                 && parentElement.Parent != null
                 && parentElement.Parent.Name.LocalName != "tc"
                 && parentElement.Parent.Elements(Name.Paragraph).Any()
-                && !parentElement.Descendants(Namespace.Main + "drawing").Any())
+                && !parentElement.Descendants(Namespace.Main + RunTextType.Drawing).Any())
             {
                 parentElement.Remove();
             }
@@ -1076,14 +1082,12 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     internal Run? FindRunAffectedByEdit(EditType editType, int index)
     {
         int len = DocumentHelpers.GetText(Xml).Length;
-        if (index < 0 || (editType == EditType.Insert && index > len) || (editType == EditType.Delete && index >= len))
-        {
+        if (index < 0 || editType == EditType.Insert && index > len 
+                      || editType == EditType.Delete && index >= len)
             throw new ArgumentOutOfRangeException(nameof(index));
-        }
 
         int count = 0; 
         Run? run = null;
-        
         RecursiveSearchForRunByIndex(Xml, editType, index, ref count, ref run);
 
         return run;
@@ -1132,28 +1136,27 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// <param name="index">Character index to split on</param>
     /// <param name="type">Type of edit being performed (insert/delete)</param>
     /// <returns>Split XElement array</returns>
-    internal XElement?[] SplitEdit(XElement element, int index, EditType type)
+    internal (XElement? leftElement, XElement? rightElement) Split(XElement element, int index, EditType type)
     {
         // Find the run containing the index
         var run = FindRunAffectedByEdit(type, index);
-        if (run == null)
-            return new XElement?[] {null, null};
+        if (run == null) return (null, null);
 
-        var splitRun = run.SplitAtIndex(index);
+        var (leftElement, rightElement) = run.Split(index);
 
-        XElement? splitLeft = new(element.Name, element.Attributes(), run.Xml.ElementsBeforeSelf(), splitRun[0]);
+        XElement? splitLeft = new(element.Name, element.Attributes(), run.Xml.ElementsBeforeSelf(), leftElement);
         if (DocumentHelpers.GetTextLength(splitLeft) == 0)
         {
             splitLeft = null;
         }
 
-        XElement? splitRight = new(element.Name, element.Attributes(), splitRun[1], run.Xml.ElementsAfterSelf());
+        XElement? splitRight = new(element.Name, element.Attributes(), rightElement, run.Xml.ElementsAfterSelf());
         if (DocumentHelpers.GetTextLength(splitRight) == 0)
         {
             splitRight = null;
         }
 
-        return new[] { splitLeft, splitRight };
+        return (splitLeft, splitRight);
     }
 
     /// <summary>

@@ -215,8 +215,9 @@ internal static class DocumentHelpers
 
         sb ??= new StringBuilder();
 
-        // Skip property blocks.
+        // Skip properties and deleted blocks
         if (xml.Name == Name.ParagraphProperties
+            || xml.Name == Namespace.Main + RunTextType.DeleteMarker
             || xml.Name == Name.RunProperties)
             return sb;
                 
@@ -246,26 +247,12 @@ internal static class DocumentHelpers
                 return "\n";
 
             case {LocalName: RunTextType.Text}:
-            case {LocalName: RunTextType.DeletedText}:
+            //case {LocalName: RunTextType.DeletedText}:
                 return e.Value;
 
             default:
                 return string.Empty;
         }
-    }
-
-    /// <summary>
-    /// Clone an XElement into a new object
-    /// </summary>
-    /// <param name="element"></param>
-    /// <returns></returns>
-    internal static XElement Clone(this XElement element)
-    {
-        return new XElement(
-            element.Name,
-            element.Attributes(),
-            element.Nodes().Select(n => n is XElement e ? Clone(e) : n)
-        );
     }
 
     /// <summary>

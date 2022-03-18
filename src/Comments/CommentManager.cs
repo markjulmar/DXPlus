@@ -18,7 +18,7 @@ internal class CommentManager : DocXElement
 
     private static readonly XName CommentStart = Namespace.Main + "commentRangeStart";
     private static readonly XName CommentEnd = Namespace.Main + "commentRangeEnd";
-    private static readonly XName CommentReference = Namespace.Main + "commentReference";
+    private static readonly XName CommentReference = Namespace.Main + RunTextType.CommentReference;
 
     /// <summary>
     /// Constructor
