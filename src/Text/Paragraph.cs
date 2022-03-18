@@ -455,15 +455,6 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
-    /// Simplify this paragraph by removing spell check values and merging
-    /// adjacent Run elements with the same properties.
-    /// </summary>
-    public void Simplify()
-    {
-
-    }
-
-    /// <summary>
     /// Add a run of text to this paragraph
     /// </summary>
     /// <param name="run">Run of text to add</param>
