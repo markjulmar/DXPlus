@@ -20,11 +20,11 @@ public sealed class Text : TextElement
         {
             if (!value)
             {
-                Xml.Attribute(xspace)?.Remove();
+                Xml!.Attribute(xspace)?.Remove();
             }
             else
             {
-                Xml.SetAttributeValue(xspace, "preserve");
+                Xml!.SetAttributeValue(xspace, "preserve");
             }
         }
     }
@@ -34,8 +34,8 @@ public sealed class Text : TextElement
     /// </summary>
     public string Value
     {
-        get => Xml.Value;
-        set => Xml.Value = value;
+        get => Xml!.Value;
+        set => Xml!.Value = value;
     }
 
     /// <summary>

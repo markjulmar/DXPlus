@@ -336,5 +336,16 @@ namespace DXPlus.Tests
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("shd"));
         }
 
+        [Fact]
+        public void CanAddTabStops()
+        {
+            var p = new ParagraphProperties();
+            Assert.Empty(p.TabStops);
+
+            p.TabStops.Add(new TabStop(TabStopType.Left, Uom.FromInches(1.5).Dxa));
+            Assert.Single(p.TabStops);
+            Assert.Equal(TabStopType.Left, p.TabStops[0].Type);
+            Assert.Equal(2160, p.TabStops[0].Value);
+        }
     }
 }

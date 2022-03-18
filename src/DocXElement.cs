@@ -4,12 +4,22 @@ using System.Xml.Linq;
 namespace DXPlus;
 
 /// <summary>
+/// Wraps a single element in one of the Word XML documents
+/// </summary>
+public abstract class XElementWrapper
+{
+    /// <summary>
+    /// This is the actual Xml that gives this element substance.
+    /// </summary>
+    protected internal XElement? Xml { get; set; }
+}
+
+/// <summary>
 /// Represents a single element contained within the document structure.
 /// Wraps the underlying XML element, document owner, and package part.
 /// </summary>
-public abstract class DocXElement
+public abstract class DocXElement : XElementWrapper
 {
-    private XElement? element;
     private Document? document;
     private PackagePart? packagePart;
 
@@ -17,7 +27,7 @@ public abstract class DocXElement
     /// Returns whether this element is in the document structure.
     /// Newly created elements aren't yet in the document and can only be added once.
     /// </summary>
-    internal bool InDocument => element?.Parent != null && document != null && packagePart != null;
+    internal bool InDocument => base.Xml?.Parent != null && document != null && packagePart != null;
 
     /// <summary>
     /// The document owner
@@ -42,10 +52,10 @@ public abstract class DocXElement
     /// <summary>
     /// This is the actual Xml that gives this element substance.
     /// </summary>
-    protected internal virtual XElement Xml
+    protected internal new virtual XElement Xml
     {
-        get => element ?? throw new InvalidOperationException("Missing XML node.");
-        set => element = value ?? throw new ArgumentNullException(nameof(value));
+        get => base.Xml ?? throw new InvalidOperationException("Missing XML node.");
+        set => base.Xml = value ?? throw new ArgumentNullException(nameof(value));
     }
 
     /// <summary>
@@ -78,7 +88,7 @@ public abstract class DocXElement
     /// <param name="xml">The XML element that gives this document element substance</param>
     internal DocXElement(XElement xml)
     {
-        this.element = xml;
+        base.Xml = xml;
     }
 
     /// <summary>

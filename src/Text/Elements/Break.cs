@@ -14,7 +14,7 @@ public sealed class Break : TextElement
     public BreakType Type
     {
         get => Enum.TryParse<BreakType>(Xml.AttributeValue(Name.Type), ignoreCase:true, out var bt) ? bt : BreakType.Line;
-        set => Xml.SetAttributeValue(Name.Type, value.GetEnumName());
+        set => Xml!.SetAttributeValue(Name.Type, value.GetEnumName());
     }
 
     /// <summary>
@@ -34,7 +34,7 @@ public sealed class Break : TextElement
         set
         {
             if (Type != BreakType.Line) return;
-            Xml.SetAttributeValue(Namespace.Main + "clear", value==null ? null : value.Value.GetEnumName());
+            Xml!.SetAttributeValue(Namespace.Main + "clear", value==null ? null : value.Value.GetEnumName());
         }
     }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Xml.Linq;
 using System.Xml.XPath;
@@ -52,31 +53,31 @@ namespace DXPlus.Tests
         {
             using var doc = Document.Create();
 
-            doc.AddCustomProperty("intProperty", 100);
-            doc.AddCustomProperty("stringProperty", "100");
-            doc.AddCustomProperty("doubleProperty", 100.5);
-            doc.AddCustomProperty("dateProperty", new DateTime(2010, 1, 1));
-            doc.AddCustomProperty("boolProperty", true);
+            doc.CustomProperties.Add("intProperty", 100);
+            doc.CustomProperties.Add("stringProperty", "100");
+            doc.CustomProperties.Add("doubleProperty", 100.5);
+            doc.CustomProperties.Add("dateProperty", new DateTime(2010, 1, 1));
+            doc.CustomProperties.Add("boolProperty", true);
 
             Assert.Equal(5, doc.CustomProperties.Count);
 
             var p = doc.AddParagraph();
 
             p.AddCustomPropertyField("doubleProperty");
-            Assert.Single(p.DocumentProperties);
+            Assert.Single(p.Fields);
 
-            var prop = p.DocumentProperties.Single();
+            var prop = p.Fields.Single();
             Assert.Equal("doubleProperty", prop.Name);
             Assert.Equal("100.5", prop.Value);
 
             p.Newline();
 
             p.AddCustomPropertyField("dateProperty");
-            Assert.Equal(2, p.DocumentProperties.Count());
+            Assert.Equal(2, p.Fields.Count());
 
-            prop = p.DocumentProperties.Skip(1).Single();
+            prop = p.Fields.Skip(1).Single();
             Assert.Equal("dateProperty", prop.Name);
-            Assert.Equal(new DateTime(2010, 1, 1).ToString(), prop.Value);
+            Assert.Equal(new DateTime(2010, 1, 1), DateTime.Parse(prop.Value));
         }
 
         [Fact]
@@ -85,15 +86,15 @@ namespace DXPlus.Tests
             const string text = "The title.";
             using var doc = Document.Create();
 
-            doc.SetPropertyValue(DocumentPropertyName.Title, text);
-            Assert.Equal(text, doc.DocumentProperties[DocumentPropertyName.Title]);
+            doc.Properties.Title = text;
+            Assert.Equal(text, doc.Properties.Title);
 
             var p = doc.AddParagraph();
             p.AddDocumentPropertyField(DocumentPropertyName.Title);
 
-            Assert.Single(p.DocumentProperties);
+            Assert.Single(p.Fields);
 
-            var prop = p.DocumentProperties.Single();
+            var prop = p.Fields.Single();
             Assert.Equal("TITLE", prop.Name);
             Assert.Equal(text, prop.Value);
         }

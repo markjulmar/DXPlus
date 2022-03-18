@@ -171,15 +171,13 @@ internal static class DocumentHelpers
 
         switch (xml.Name.LocalName)
         {
-            case "tab":
-            case "cr":
-            case "br":
-            case "tr":
-            case "tc":
+            case RunTextType.Tab:
+            case RunTextType.CarriageReturn:
+            case RunTextType.LineBreak:
                 return 1;
 
-            case "t":
-            case "delText":
+            case RunTextType.Text:
+            case RunTextType.DeletedText:
                 return xml.Value.Length;
 
             default:
@@ -240,17 +238,15 @@ internal static class DocumentHelpers
     {
         switch (e.Name)
         {
-            case {LocalName: "tab"}:
-            case {LocalName: "tc"}:
+            case {LocalName: RunTextType.Tab}:
                 return "\t";
 
-            case {LocalName: "cr"}:
-            case {LocalName: "tr"}:
-            case {LocalName: "br"}:
+            case {LocalName: RunTextType.CarriageReturn}:
+            case {LocalName: RunTextType.LineBreak}:
                 return "\n";
 
-            case {LocalName: "t"}:
-            case {LocalName: "delText"}:
+            case {LocalName: RunTextType.Text}:
+            case {LocalName: RunTextType.DeletedText}:
                 return e.Value;
 
             default:
@@ -284,8 +280,8 @@ internal static class DocumentHelpers
         if (string.IsNullOrEmpty(text))
             return newRuns;
 
-        var tab = new XElement(Namespace.Main + "tab");
-        var lineBreak = new XElement(Namespace.Main + "br");
+        var tab = new XElement(Namespace.Main + RunTextType.Tab);
+        var lineBreak = new XElement(Namespace.Main + RunTextType.LineBreak);
         var sb = new StringBuilder();
 
         foreach (var c in text)
@@ -299,7 +295,7 @@ internal static class DocumentHelpers
                             new XElement(Name.Text, sb.ToString()).PreserveSpace()));
                         sb = new StringBuilder();
                     }
-                    newRuns.Add(new XElement(Name.Run, rPr, tab));
+                    newRuns.Add(new XElement(Name.Run, rPr, tab.Clone()));
                     break;
 
                 case '\r':
@@ -310,7 +306,7 @@ internal static class DocumentHelpers
                             new XElement(Name.Text, sb.ToString()).PreserveSpace()));
                         sb = new StringBuilder();
                     }
-                    newRuns.Add(new XElement(Name.Run, rPr, lineBreak));
+                    newRuns.Add(new XElement(Name.Run, rPr, lineBreak.Clone()));
                     break;
 
                 default:
@@ -376,16 +372,16 @@ internal static class DocumentHelpers
     internal static XElement PreserveSpace(this XElement e)
     {
         if (!e.Name.Equals(Name.Text)
-            && !e.Name.Equals(Namespace.Main + "delText"))
+            && !e.Name.Equals(Namespace.Main + RunTextType.DeletedText))
         {
-            throw new ArgumentException($"{nameof(PreserveSpace)} can only work with elements of type 't' or 'delText'", nameof(e));
+            throw new ArgumentException($"{nameof(PreserveSpace)} can only work with elements of type '{RunTextType.Text}' or '{RunTextType.DeletedText}'", nameof(e));
         }
 
         // Check if this w:t contains a space attribute
         var space = e.Attributes().SingleOrDefault(a => a.Name.Equals(XNamespace.Xml + "space"));
 
         // This w:t's text begins or ends with whitespace
-        if (e.Value.StartsWith(" ") || e.Value.EndsWith(" "))
+        if (e.Value.StartsWith(' ') || e.Value.EndsWith(' '))
         {
             // If this w:t contains no space attribute, add one.
             if (space == null)
@@ -429,7 +425,7 @@ internal static class DocumentHelpers
     /// <returns>Page break element</returns>
     internal static XElement PageBreak() => new(Name.Paragraph,
         new XAttribute(Name.ParagraphId, GenerateHexId()),
-        new XElement(Name.Run, new XElement(Namespace.Main + "br",
+        new XElement(Name.Run, new XElement(Namespace.Main + RunTextType.LineBreak,
             new XAttribute(Namespace.Main + "type", "page"))));
 
     /// <summary>
@@ -446,20 +442,16 @@ internal static class DocumentHelpers
             {
                 switch (el.Name.LocalName)
                 {
-                    case "tab":
-                        if (el.Parent?.Name.LocalName != "tabs")
-                        {
-                            goto case "br";
-                        }
-
+                    case RunTextType.Tab:
+                        if (el.Parent?.Name.LocalName != "tabs") count++;
                         break;
 
-                    case "br":
+                    case RunTextType.LineBreak:
                         count++;
                         break;
 
-                    case "t":
-                    case "delText":
+                    case RunTextType.Text:
+                    case RunTextType.DeletedText:
                         count += el.Value.Length;
                         break;
                 }

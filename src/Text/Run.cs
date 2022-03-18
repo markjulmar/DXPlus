@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.IO.Packaging;
-using System.Reflection;
 using System.Xml.Linq;
 using DXPlus.Internal;
 
@@ -73,10 +72,11 @@ public sealed class Run : DocXElement, IEquatable<Run>
     {
         return child.Name.LocalName switch
         {
-            "br" => new Break(this, child),
-            "t" => new Text(this, child),
+            RunTextType.LineBreak => new Break(this, child),
+            RunTextType.Text => new Text(this, child),
             "drawing" => new Drawing(Document, Document.PackagePart, child),
             "commentReference" => new CommentRef(this, child),
+            // Tab, delText, etc.
             _ => new TextElement(this, child),
         };
     }
@@ -105,7 +105,7 @@ public sealed class Run : DocXElement, IEquatable<Run>
             Xml.GetRunProperties()?.Remove();
             if (value != null)
             {
-                var xml = value.Xml;
+                var xml = value.Xml!;
                 if (xml.Parent != null)
                     xml = xml.Clone();
                 Xml.AddFirst(xml);
@@ -262,7 +262,7 @@ public sealed class Run : DocXElement, IEquatable<Run>
 
         XElement? splitLeft = null, splitRight = null;
 
-        if (xml.Name.LocalName is "t" or "delText")
+        if (xml.Name.LocalName is RunTextType.Text or RunTextType.DeletedText)
         {
             // The original text element, now containing only the text before the index point.
             splitLeft = new XElement(xml.Name, xml.Attributes(), xml.Value[..(index - startIndex)]);

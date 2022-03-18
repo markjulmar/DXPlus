@@ -62,7 +62,7 @@ public interface IContainer
     /// </summary>
     /// <param name="bookmarkName">Bookmark name</param>
     /// <param name="toInsert">Text to insert</param>
-    bool InsertAtBookmark(string bookmarkName, string toInsert);
+    bool InsertTextAtBookmark(string bookmarkName, string toInsert);
 
     /// <summary>
     /// Insert a paragraph into this container at a specific index

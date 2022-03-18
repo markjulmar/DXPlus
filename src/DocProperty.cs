@@ -43,7 +43,7 @@ public sealed class DocProperty : DocXElement, IEquatable<DocProperty>
             Name = instr.Contains(DocPropertyText)
                 ? dpre.Match(instr).Groups["name"].Value.Trim('"')
                 : instr[..instr.IndexOf(' ')];
-            Value = Xml.Descendants().First(e => e.Name == Internal.Name.Text)?.Value;
+            Value = Xml.Descendants().First(e => e.Name == Internal.Name.Text).Value;
         }
         // Complex field
         else

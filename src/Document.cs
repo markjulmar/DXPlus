@@ -42,11 +42,12 @@ public sealed class Document : BlockContainer, IDocument
         stream.Seek(0, SeekOrigin.Begin);
         stream.CopyTo(ms);
 
-        var document = new Document();
-
-        document.documentPackage = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite);
-        document.memoryStream = ms;
-        document.stream = stream;
+        var document = new Document
+        {
+            documentPackage = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite),
+            memoryStream = ms,
+            stream = stream
+        };
 
         document.LoadDocumentParts();
 
@@ -78,11 +79,12 @@ public sealed class Document : BlockContainer, IDocument
         }
 
         // Create the document
-        var document = new Document();
-
-        document.documentPackage = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite);
-        document.filename = filename;
-        document.memoryStream = ms;
+        var document = new Document
+        {
+            documentPackage = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite),
+            filename = filename,
+            memoryStream = ms
+        };
 
         document.LoadDocumentParts();
 
@@ -139,6 +141,11 @@ public sealed class Document : BlockContainer, IDocument
     /// The style manager for this document.
     /// </summary>
     public StyleManager Styles => styleManager ??= AddDefaultStyles();
+
+    /// <summary>
+    /// Basic text of this container
+    /// </summary>
+    public string Text => string.Join('\n', Paragraphs.Select(p => p.Text));
 
     /// <summary>
     /// Returns all comments in the document
@@ -216,92 +223,24 @@ public sealed class Document : BlockContainer, IDocument
     ///<summary>
     /// Returns the list of document properties with corresponding values.
     ///</summary>
-    public IReadOnlyDictionary<DocumentPropertyName, string> DocumentProperties
+    public CoreProperties Properties
     {
         get
         {
             ThrowIfNoPackage();
-            return CorePropertyHelpers.Get(Package);
+            return coreProperties ??= new(Package, this);
         }
-    }
-
-    /// <summary>
-    /// Set a known core property value
-    /// </summary>
-    /// <param name="name">Property to set</param>
-    /// <param name="value">Value to assign</param>
-    public void SetPropertyValue(DocumentPropertyName name, string value)
-    {
-        ThrowIfNoPackage();
-        _ = CorePropertyHelpers.SetValue(Package, name.GetEnumName(), value);
-        UpdateComplexFieldUsage(name.ToString().ToUpper(), value);
     }
 
     /// <summary>
     /// Returns a list of custom properties in this document.
     /// </summary>
-    public IReadOnlyDictionary<string, object> CustomProperties
+    public ICustomPropertyCollection CustomProperties
     {
         get
         {
             ThrowIfNoPackage();
-            return CustomPropertyHelpers.Get(Package);
-        }
-    }
-
-    /// <summary>
-    /// Add a custom property to this document.
-    /// If a custom property already exists with the same name it will be replace.
-    /// CustomProperty names are case insensitive.
-    /// </summary>
-    public void AddCustomProperty(string name, string value) => AddCustomProperty(name, Internal.CustomPropertyType.LPWSTR, value);
-
-    /// <summary>
-    /// Add a custom property to this document.
-    /// If a custom property already exists with the same name it will be replace.
-    /// CustomProperty names are case insensitive.
-    /// </summary>
-    public void AddCustomProperty(string name, double value) => AddCustomProperty(name, Internal.CustomPropertyType.R8, value);
-
-    /// <summary>
-    /// Add a custom property to this document.
-    /// If a custom property already exists with the same name it will be replace.
-    /// CustomProperty names are case insensitive.
-    /// </summary>
-    public void AddCustomProperty(string name, bool value) => AddCustomProperty(name, Internal.CustomPropertyType.BOOL, value);
-
-    /// <summary>
-    /// Add a custom property to this document.
-    /// If a custom property already exists with the same name it will be replace.
-    /// CustomProperty names are case insensitive.
-    /// </summary>
-    public void AddCustomProperty(string name, DateTime value) => AddCustomProperty(name, Internal.CustomPropertyType.FILETIME, value.ToUniversalTime());
-
-    /// <summary>
-    /// Add a custom property to this document.
-    /// If a custom property already exists with the same name it will be replace.
-    /// CustomProperty names are case insensitive.
-    /// </summary>
-    public void AddCustomProperty(string name, int value) => AddCustomProperty(name, Internal.CustomPropertyType.I4, value);
-
-    /// <summary>
-    /// Add a custom property to this document.
-    /// If a custom property already exists with the same name it will be replace.
-    /// CustomProperty names are case insensitive.
-    /// </summary>
-    private void AddCustomProperty(string name, string type, object value)
-    {
-        ThrowIfNoPackage();
-
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Value cannot be null or whitespace.", nameof(name));
-        if (string.IsNullOrWhiteSpace(type))
-            throw new ArgumentException("Value cannot be null or whitespace.", nameof(type));
-        if (value == null) throw new ArgumentNullException(nameof(value));
-
-        if (CustomPropertyHelpers.Add(Package, name, type, value))
-        {
-            UpdateComplexFieldUsage(name.ToUpperInvariant(), value.ToString()??"");
+            return customProperties ??= new(Package, this);
         }
     }
 
@@ -811,6 +750,9 @@ public sealed class Document : BlockContainer, IDocument
         styleManager?.Save();
         numberingStyles?.Save();
 
+        coreProperties?.Save();
+        customProperties?.Save();
+
         settingsPart.Save(settingsDoc);
         
         if (endnotesDoc != null)
@@ -1075,7 +1017,7 @@ public sealed class Document : BlockContainer, IDocument
     /// </summary>
     /// <param name="name">Name of the core property</param>
     /// <param name="value">Value</param>
-    private void UpdateComplexFieldUsage(string name, string value)
+    internal void UpdateComplexFieldUsage(string name, string value)
     {
         ThrowIfNoPackage();
 
@@ -1475,8 +1417,8 @@ public sealed class Document : BlockContainer, IDocument
         // Add the default styles + relationship
         _ = AddDefaultStylesXml(package, out _);
 
-        // Create the document properties.
-        _ = CorePropertyHelpers.CreateCoreProperties(package, out _);
+        // Create the default document properties.
+        _ = CoreProperties.CreateCoreProperties(package, out _);
 
         // Save the main new document back to the package.
         mainDocumentPart.Save(mainDoc);
@@ -1664,6 +1606,16 @@ public sealed class Document : BlockContainer, IDocument
     /// Comment manager for the document
     /// </summary>
     private CommentManager? commentManager;
+
+    /// <summary>
+    /// Core properties in document
+    /// </summary>
+    private CoreProperties? coreProperties;
+
+    /// <summary>
+    /// Custom properties in the document
+    /// </summary>
+    private CustomPropertyCollection? customProperties;
 
     /// <summary>
     /// Exception thrown if we end up in a bad state

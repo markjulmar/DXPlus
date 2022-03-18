@@ -86,8 +86,6 @@ public sealed class TableOfContents : DocXElement, IEquatable<TableOfContents>
     /// <param name="headerStyle">Header style, null to use the default style</param>
     private static void EnsureTocStylesArePresent(IDocument document, string headerStyle)
     {
-        headerStyle ??= HeaderStyle;
-
         var availableStyles = new (string headerStyle, StyleType applyTo, Func<string, string, XElement> template, string name)[]
         {
             (headerStyle, StyleType.Paragraph, Resource.TocHeadingStyleBase, headerStyle),

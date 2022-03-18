@@ -6,19 +6,17 @@ namespace DXPlus;
 /// <summary>
 /// This manages the [pPr] element in a Word document structure which holds all paragraph-level properties.
 /// </summary>
-public sealed class ParagraphProperties
+public sealed class ParagraphProperties : XElementWrapper
 {
     private const string DefaultStyle = "Normal";
-
-    internal XElement Xml { get; }
 
     /// <summary>
     /// True to keep with the next element on the page.
     /// </summary>
     public bool KeepWithNext
     {
-        get => Xml.Element(Name.KeepNext) != null;
-        set => Xml.SetElementValue(Name.KeepNext, value ? string.Empty : null);
+        get => Xml!.Element(Name.KeepNext) != null;
+        set => Xml!.SetElementValue(Name.KeepNext, value ? string.Empty : null);
     }
 
     /// <summary>
@@ -26,8 +24,8 @@ public sealed class ParagraphProperties
     /// </summary>
     public bool KeepLinesTogether
     {
-        get => Xml.Element(Name.KeepLines) != null;
-        set => Xml.SetElementValue(Name.KeepLines, value ? string.Empty : null);
+        get => Xml!.Element(Name.KeepLines) != null;
+        set => Xml!.SetElementValue(Name.KeepLines, value ? string.Empty : null);
     }
 
     /// <summary>
@@ -35,9 +33,9 @@ public sealed class ParagraphProperties
     /// </summary>
     public Alignment Alignment
     {
-        get => Xml.Element(Name.ParagraphAlignment).GetVal()
+        get => Xml!.Element(Name.ParagraphAlignment).GetVal()
             .TryGetEnumValue<Alignment>(out var result) ? result : Alignment.Left;
-        set => Xml.AddElementVal(Name.ParagraphAlignment, value == Alignment.Left ? null : value.GetEnumName());
+        set => Xml!.AddElementVal(Name.ParagraphAlignment, value == Alignment.Left ? null : value.GetEnumName());
     }
 
     ///<summary>
@@ -47,7 +45,7 @@ public sealed class ParagraphProperties
     {
         get
         {
-            var styleElement = Xml.Element(Name.ParagraphStyle);
+            var styleElement = Xml!.Element(Name.ParagraphStyle);
             var attr = styleElement?.Attribute(Name.MainVal);
             return attr != null && !string.IsNullOrEmpty(attr.Value) ? attr.Value : DefaultStyle;
         }
@@ -56,7 +54,7 @@ public sealed class ParagraphProperties
             //TODO: should this be case-sensitive?
             if (string.IsNullOrWhiteSpace(value))
                 value = DefaultStyle;
-            Xml.AddElementVal(Name.ParagraphStyle, value != DefaultStyle ? value : null);
+            Xml!.AddElementVal(Name.ParagraphStyle, value != DefaultStyle ? value : null);
         }
     }
 
@@ -74,9 +72,9 @@ public sealed class ParagraphProperties
     /// </summary>
     public LineRule? LineRule
     {
-        get => Xml.Element(Name.Spacing).AttributeValue(Namespace.Main + "lineRule")
+        get => Xml!.Element(Name.Spacing).AttributeValue(Namespace.Main + "lineRule")
             .TryGetEnumValue<LineRule>(out var result) ? result : null;
-        set => Xml.GetOrAddElement(Name.Spacing).SetAttributeValue(Namespace.Main + "lineRule", value?.GetEnumName());
+        set => Xml!.GetOrAddElement(Name.Spacing).SetAttributeValue(Namespace.Main + "lineRule", value?.GetEnumName());
     }
 
     /// <summary>
@@ -104,7 +102,7 @@ public sealed class ParagraphProperties
     /// <returns>Value in dxa units, or null if not set</returns>
     private double? GetLineSpacing(string type)
     {
-        var value = Xml.Element(Name.Spacing).AttributeValue(Namespace.Main + type, null);
+        var value = Xml!.Element(Name.Spacing).AttributeValue(Namespace.Main + type, null);
         return value != null ? double.Parse(value) : null;
     }
 
@@ -117,12 +115,12 @@ public sealed class ParagraphProperties
     {
         if (value != null)
         {
-            Xml.GetOrAddElement(Name.Spacing).SetAttributeValue(Namespace.Main + type, value);
+            Xml!.GetOrAddElement(Name.Spacing).SetAttributeValue(Namespace.Main + type, value);
         }
         else
         {
             // Remove the 'spacing' element if it only specifies line spacing
-            var el = Xml.Element(Name.Spacing);
+            var el = Xml!.Element(Name.Spacing);
             el?.Attribute(Namespace.Main + type)?.Remove();
             if (el?.HasAttributes == false)
             {
@@ -136,19 +134,19 @@ public sealed class ParagraphProperties
     /// </summary>
     public double? LeftIndent
     {
-        get => double.TryParse(Xml.AttributeValue(Name.Indent, Name.Left), out var v) ? v : null;
+        get => double.TryParse(Xml!.AttributeValue(Name.Indent, Name.Left), out var v) ? v : null;
         set
         {
             if (value == null)
             {
-                var e = Xml.Element(Name.Indent);
+                var e = Xml!.Element(Name.Indent);
                 e?.Attribute(Name.Left)?.Remove();
                 if (e?.HasAttributes == false)
                     e.Remove();
             }
             else
             {
-                Xml.SetAttributeValue(Name.Indent, Name.Left, value);
+                Xml!.SetAttributeValue(Name.Indent, Name.Left, value);
             }
         }
     }
@@ -158,19 +156,19 @@ public sealed class ParagraphProperties
     /// </summary>
     public double? RightIndent
     {
-        get => double.TryParse(Xml.AttributeValue(Name.Indent, Name.Right), out var v) ? v : null;
+        get => double.TryParse(Xml!.AttributeValue(Name.Indent, Name.Right), out var v) ? v : null;
         set
         {
             if (value == null)
             {
-                var e = Xml.Element(Name.Indent);
+                var e = Xml!.Element(Name.Indent);
                 e?.Attribute(Name.Right)?.Remove();
                 if (e?.HasAttributes == false)
                     e.Remove();
             }
             else
             {
-                Xml.SetAttributeValue(Name.Indent, Name.Right, value);
+                Xml!.SetAttributeValue(Name.Indent, Name.Right, value);
             }
         }
     }
@@ -180,8 +178,8 @@ public sealed class ParagraphProperties
     /// </summary>
     public Shading? Shading
     {
-        get => Shading.FromElement(Xml);
-        set => Shading.SetElementValue(Xml, value);
+        get => Shading.FromElement(Xml!);
+        set => Shading.SetElementValue(Xml!, value);
     }
 
     /// <summary>
@@ -194,8 +192,8 @@ public sealed class ParagraphProperties
     /// </summary>
     public Border? TopBorder
     {
-        get => Border.FromElement(BorderType.Top, Xml, pBdr);
-        set => Border.SetElementValue(BorderType.Top, Xml, pBdr, value);
+        get => Border.FromElement(BorderType.Top, Xml!, pBdr);
+        set => Border.SetElementValue(BorderType.Top, Xml!, pBdr, value);
     }
 
     /// <summary>
@@ -203,8 +201,8 @@ public sealed class ParagraphProperties
     /// </summary>
     public Border? BottomBorder
     {
-        get => Border.FromElement(BorderType.Bottom, Xml, pBdr);
-        set => Border.SetElementValue(BorderType.Bottom, Xml, pBdr, value);
+        get => Border.FromElement(BorderType.Bottom, Xml!, pBdr);
+        set => Border.SetElementValue(BorderType.Bottom, Xml!, pBdr, value);
     }
 
     /// <summary>
@@ -212,8 +210,8 @@ public sealed class ParagraphProperties
     /// </summary>
     public Border? LeftBorder
     {
-        get => Border.FromElement(BorderType.Left, Xml, pBdr);
-        set => Border.SetElementValue(BorderType.Left, Xml, pBdr, value);
+        get => Border.FromElement(BorderType.Left, Xml!, pBdr);
+        set => Border.SetElementValue(BorderType.Left, Xml!, pBdr, value);
     }
 
     /// <summary>
@@ -221,8 +219,8 @@ public sealed class ParagraphProperties
     /// </summary>
     public Border? RightBorder
     {
-        get => Border.FromElement(BorderType.Right, Xml, pBdr);
-        set => Border.SetElementValue(BorderType.Right, Xml, pBdr, value);
+        get => Border.FromElement(BorderType.Right, Xml!, pBdr);
+        set => Border.SetElementValue(BorderType.Right, Xml!, pBdr, value);
     }
 
     /// <summary>
@@ -230,8 +228,8 @@ public sealed class ParagraphProperties
     /// </summary>
     public Border? BetweenBorder
     {
-        get => Border.FromElement(BorderType.Between, Xml, pBdr);
-        set => Border.SetElementValue(BorderType.Between, Xml, pBdr, value);
+        get => Border.FromElement(BorderType.Between, Xml!, pBdr);
+        set => Border.SetElementValue(BorderType.Between, Xml!, pBdr, value);
     }
 
     /// <summary>
@@ -239,8 +237,8 @@ public sealed class ParagraphProperties
     /// </summary>
     public Border? BarBorder
     {
-        get => Border.FromElement(BorderType.Bar, Xml, pBdr);
-        set => Border.SetElementValue(BorderType.Bar, Xml, pBdr, value);
+        get => Border.FromElement(BorderType.Bar, Xml!, pBdr);
+        set => Border.SetElementValue(BorderType.Bar, Xml!, pBdr, value);
     }
 
     /// <summary>
@@ -248,10 +246,10 @@ public sealed class ParagraphProperties
     /// </summary>
     public double? FirstLineIndent
     {
-        get => double.TryParse(Xml.AttributeValue(Name.Indent, Name.FirstLine), out var v) ? v : null;
+        get => double.TryParse(Xml!.AttributeValue(Name.Indent, Name.FirstLine), out var v) ? v : null;
         set
         {
-            var e = Xml.Element(Name.Indent);
+            var e = Xml!.Element(Name.Indent);
             if (value == null)
             {
                 e?.Attribute(Name.FirstLine)?.Remove();
@@ -261,7 +259,7 @@ public sealed class ParagraphProperties
             else
             {
                 e?.Attribute(Name.Hanging)?.Remove();
-                Xml.SetAttributeValue(Name.Indent, Name.FirstLine, value.Value);
+                Xml!.SetAttributeValue(Name.Indent, Name.FirstLine, value.Value);
             }
         }
     }
@@ -271,11 +269,11 @@ public sealed class ParagraphProperties
     /// </summary>
     public double? HangingIndent
     {
-        get => double.TryParse(Xml.AttributeValue(Name.Indent, Name.Hanging), out var v) ? v : null;
+        get => double.TryParse(Xml!.AttributeValue(Name.Indent, Name.Hanging), out var v) ? v : null;
 
         set
         {
-            var e = Xml.Element(Name.Indent);
+            var e = Xml!.Element(Name.Indent);
             if (value == null)
             {
                 e?.Attribute(Name.Hanging)?.Remove();
@@ -285,7 +283,7 @@ public sealed class ParagraphProperties
             else
             {
                 e?.Attribute(Name.FirstLine)?.Remove();
-                Xml.SetAttributeValue(Name.Indent, Name.Hanging, value.Value);
+                Xml!.SetAttributeValue(Name.Indent, Name.Hanging, value.Value);
             }
         }
     }
@@ -295,8 +293,8 @@ public sealed class ParagraphProperties
     /// </summary>
     public bool WordWrap
     {
-        get => Xml.Element(Name.WordWrap)?.BoolAttributeValue(Name.MainVal) ?? false;
-        set => Xml.GetOrAddElement(Name.WordWrap).SetAttributeValue(Name.MainVal, value ? 1 : 0);
+        get => Xml!.Element(Name.WordWrap)?.BoolAttributeValue(Name.MainVal) ?? false;
+        set => Xml!.GetOrAddElement(Name.WordWrap).SetAttributeValue(Name.MainVal, value ? 1 : 0);
     }
 
     /// <summary>
@@ -304,14 +302,21 @@ public sealed class ParagraphProperties
     /// </summary>
     public Direction Direction
     {
-        get => Xml.Element(Name.RightToLeft) == null ? Direction.LeftToRight : Direction.RightToLeft;
-        set => Xml.SetElementValue(Name.RightToLeft, value == Direction.RightToLeft ? string.Empty : null);
+        get => Xml!.Element(Name.RightToLeft) == null ? Direction.LeftToRight : Direction.RightToLeft;
+        set => Xml!.SetElementValue(Name.RightToLeft, value == Direction.RightToLeft ? string.Empty : null);
     }
 
     /// <summary>
     /// Default formatting options for the paragraph
     /// </summary>
-    public Formatting DefaultFormatting => new(Xml.CreateRunProperties());
+    public Formatting DefaultFormatting => new(Xml!.CreateRunProperties());
+
+    /// <summary>
+    /// Specifies a sequence of custom tab stops which will be used for the tab characters in this paragraph.
+    /// If these are omitted, stops are determined by the setting in the style.
+    /// </summary>
+    public IList<TabStop> TabStops => new XElementCollection<TabStop>(Xml!, Namespace.Main + "tabs",
+        Namespace.Main + RunTextType.Tab, xe => new TabStop(xe));
 
     /// <summary>
     /// Formatting properties for the paragraph

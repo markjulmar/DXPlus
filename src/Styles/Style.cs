@@ -8,17 +8,15 @@ namespace DXPlus;
 /// Style definition which groups all the style properties.
 /// </summary>
 [DebuggerDisplay("{Id} - {Name} Type={Type} Default={IsDefault}")]
-public sealed class Style
+public sealed class Style : XElementWrapper
 {
-    private XElement Xml { get; }
-
     /// <summary>
     /// Unique id for this style
     /// </summary>
     public string? Id
     {
         get => Xml.AttributeValue(Namespace.Main + "styleId");
-        set => Xml.SetAttributeValue(Namespace.Main + "styleId", value);
+        set => Xml!.SetAttributeValue(Namespace.Main + "styleId", value);
     }
 
     /// <summary>
@@ -26,8 +24,8 @@ public sealed class Style
     /// </summary>
     public string? Name
     {
-        get => Xml.Element(Internal.Name.NameId).GetVal();
-        set => Xml.AddElementVal(Internal.Name.NameId, value);
+        get => Xml!.Element(Internal.Name.NameId).GetVal();
+        set => Xml!.AddElementVal(Internal.Name.NameId, value);
     }
 
     /// <summary>
@@ -35,8 +33,8 @@ public sealed class Style
     /// </summary>
     public bool IsCustom
     {
-        get => Xml.BoolAttributeValue(Namespace.Main + "customStyle") == true;
-        set => Xml.SetAttributeValue(Namespace.Main + "customStyle", value ? "1" : null);
+        get => Xml!.BoolAttributeValue(Namespace.Main + "customStyle") == true;
+        set => Xml!.SetAttributeValue(Namespace.Main + "customStyle", value ? "1" : null);
     }
 
     /// <summary>
@@ -44,8 +42,8 @@ public sealed class Style
     /// </summary>
     public bool IsDefault
     {
-        get => Xml.BoolAttributeValue(Namespace.Main + "default") == true;
-        set => Xml.SetAttributeValue(Namespace.Main + "default", value ? "1" : null);
+        get => Xml!.BoolAttributeValue(Namespace.Main + "default") == true;
+        set => Xml!.SetAttributeValue(Namespace.Main + "default", value ? "1" : null);
     }
 
     /// <summary>
@@ -53,30 +51,30 @@ public sealed class Style
     /// </summary>
     public StyleType Type
     {
-        get => Xml.AttributeValue(Namespace.Main + "type").TryGetEnumValue<StyleType>(out var result)
+        get => Xml!.AttributeValue(Namespace.Main + "type").TryGetEnumValue<StyleType>(out var result)
             ? result
             : StyleType.Paragraph;
 
-        set => Xml.SetAttributeValue(Namespace.Main + "type", value.GetEnumName());
+        set => Xml!.SetAttributeValue(Namespace.Main + "type", value.GetEnumName());
     }
 
     /// <summary>
     /// Retrieve the formatting options
     /// </summary>
-    public Formatting Formatting => new(Xml.GetOrAddElement(Internal.Name.RunProperties));
+    public Formatting Formatting => new(Xml!.GetOrAddElement(Internal.Name.RunProperties));
 
     /// <summary>
     /// FirstParagraph properties
     /// </summary>
-    public ParagraphProperties ParagraphFormatting => new(Xml.GetOrAddElement(Internal.Name.ParagraphProperties));
+    public ParagraphProperties ParagraphFormatting => new(Xml!.GetOrAddElement(Internal.Name.ParagraphProperties));
 
     /// <summary>
     /// The style this one is based on.
     /// </summary>
     public string? BasedOn
     {
-        get => Xml.Element(Namespace.Main + "basedOn").GetVal(null);
-        set => Xml.AddElementVal(Namespace.Main + "basedOn", string.IsNullOrWhiteSpace(value) ? null : value);
+        get => Xml!.Element(Namespace.Main + "basedOn").GetVal(null);
+        set => Xml!.AddElementVal(Namespace.Main + "basedOn", string.IsNullOrWhiteSpace(value) ? null : value);
     }
 
     /// <summary>
@@ -84,8 +82,8 @@ public sealed class Style
     /// </summary>
     public string? NextParagraphStyle
     {
-        get => Xml.Element(Namespace.Main + "next").GetVal(null);
-        set => Xml.AddElementVal(Namespace.Main + "next", string.IsNullOrWhiteSpace(value) ? null : value);
+        get => Xml!.Element(Namespace.Main + "next").GetVal(null);
+        set => Xml!.AddElementVal(Namespace.Main + "next", string.IsNullOrWhiteSpace(value) ? null : value);
     }
 
     /// <summary>
@@ -93,8 +91,8 @@ public sealed class Style
     /// </summary>
     public string? LinkedStyle
     {
-        get => Xml.Element(Namespace.Main + "link").GetVal(null);
-        set => Xml.AddElementVal(Namespace.Main + "link", string.IsNullOrWhiteSpace(value) ? null : value);
+        get => Xml!.Element(Namespace.Main + "link").GetVal(null);
+        set => Xml!.AddElementVal(Namespace.Main + "link", string.IsNullOrWhiteSpace(value) ? null : value);
     }
 
     // TODO: add tblPr, tblStylePr, tcPr, trPr

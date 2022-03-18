@@ -9,6 +9,16 @@ namespace DXPlus.Charts
     public abstract class Chart
     {
         /// <summary>
+        /// The document related to this chart
+        /// </summary>
+        internal XDocument Xml { get; }
+
+        /// <summary>
+        /// The root XML node of the specific chart (bar, pie, etc.)
+        /// </summary>
+        protected XElement ChartXml { get; }
+
+        /// <summary>
         /// The root XML node of the chart (c:chart)
         /// </summary>
         private readonly XElement chartRootXml;
@@ -155,16 +165,6 @@ namespace DXPlus.Charts
                 }
             }
         }
-
-        /// <summary>
-        /// The XML representation of this chart
-        /// </summary>
-        internal XDocument Xml { get; }
-
-        /// <summary>
-        /// The root XML node of the specific chart (bar, pie, etc.)
-        /// </summary>
-        protected XElement ChartXml { get; }
 
         /// <summary>
         /// True if this chart has a legend

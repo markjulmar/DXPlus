@@ -30,7 +30,7 @@ public enum DocumentPropertyName
     /// <summary>
     /// Description/Comments
     /// </summary>
-    [XmlAttribute("dc:description")] Comments,
+    [XmlAttribute("dc:description")] Description,
 
     /// <summary>
     /// Last modified by author

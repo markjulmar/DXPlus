@@ -235,7 +235,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// <summary>
     /// Returns a list of DocProperty elements in this document.
     /// </summary>
-    public IEnumerable<DocProperty> DocumentProperties
+    public IEnumerable<DocProperty> Fields
     {
         get
         {
@@ -246,7 +246,9 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
 
             // Look for complex field insertions in the paragraph. These should always be in run elements and
             // have a start, name, sep, value section.
-            foreach (var field in Xml.Descendants(Name.ComplexField).Where(e => e.AttributeValue(Namespace.Main + "fldCharType") == "begin").ToList())
+            foreach (var field in Xml.Descendants(Name.ComplexField)
+                         .Where(e => e.AttributeValue(Namespace.Main + "fldCharType") == "begin")
+                         .ToList())
             {
                 // Start of a field. Walk down the tree looking for the name (instrText).
                 var node = field.Parent;
@@ -402,7 +404,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
             var pPr = Xml.Element(Name.ParagraphProperties);
             pPr?.Remove();
 
-            var xml = value.Xml;
+            var xml = value.Xml!;
             if (xml.Parent != null)
                 xml = xml.Clone();
             
@@ -594,7 +596,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// <summary>
     /// Returns a list of Hyperlinks in this paragraph.
     /// </summary>
-    public List<Hyperlink> Hyperlinks => Hyperlink.Enumerate(this, unownedHyperlinks).ToList();
+    public IReadOnlyList<Hyperlink> Hyperlinks => Hyperlink.Enumerate(this, unownedHyperlinks).ToList();
 
     /// <summary>
     /// Append a hyperlink to a paragraph.
@@ -765,14 +767,14 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// </summary>
     /// <param name="bookmarkName">Bookmark name</param>
     /// <param name="toInsert">Text to insert</param>
-    public bool InsertAtBookmark(string bookmarkName, string toInsert)
+    public bool InsertTextAtBookmark(string bookmarkName, string toInsert)
     {
         var bookmark = GetBookmarks().SingleOrDefault(bm => bm.Name == bookmarkName);
         if (bookmark == null) 
             return false;
             
         var run = DocumentHelpers.FormatInput(toInsert, null);
-        bookmark.Xml.AddBeforeSelf(run);
+        bookmark.Xml!.AddBeforeSelf(run);
         return true;
     }
 
@@ -783,10 +785,10 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// <param name="formatting">The formatting to use for this text.</param>
     public Paragraph AddDocumentPropertyField(DocumentPropertyName name, Formatting? formatting = null)
     {
-        if (Document == null)
-            throw new InvalidOperationException("Cannot add document properties without a document owner.");
+        if (!InDocument)
+            throw new InvalidOperationException("Cannot add fields without a document owner.");
 
-        Document.DocumentProperties.TryGetValue(name, out var propertyValue);
+        var propertyValue = Document.Properties.GetValue(name);
         if (!string.IsNullOrEmpty(propertyValue))
         {
             _ = AddComplexField(name.ToString().ToUpperInvariant(), propertyValue, formatting);
@@ -804,11 +806,11 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(name));
-        if (Document == null)
-            throw new InvalidOperationException("Cannot add document properties without a document owner.");
+        if (!InDocument)
+            throw new InvalidOperationException("Cannot add fields without a document owner.");
 
         Document.CustomProperties.TryGetValue(name, out var propertyValue);
-        _ = AddComplexField(name, propertyValue?.ToString(), formatting);
+        _ = AddComplexField(name, propertyValue?.Value, formatting);
 
         return this;
     }
@@ -820,7 +822,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// <param name="fieldValue">Value of field</param>
     /// <param name="formatting">Formatting to apply</param>
     /// <returns>Inserted DocProperty</returns>
-    private DocProperty AddComplexField(string name, string? fieldValue, Formatting? formatting = null)
+    private DocProperty AddComplexField(string name, string? fieldValue, Formatting? formatting)
     {
         if (Document == null || PackagePart == null)
             throw new InvalidOperationException("Paragraph not part of document.");
@@ -864,30 +866,6 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
         Xml.Add(start, pdef, sep, value, end);
         return new DocProperty(Document, PackagePart, pdef, value);
     }
-
-    //TODO: add simple field property
-    /*
-    /// <summary>
-    /// Insert a field of type document property, this field will display the custom property cp, at the end of this paragraph.
-    /// </summary>
-    /// <param name="name"></param>
-    /// <param name="formatting">The formatting to use for this text.</param>
-    public DocProperty AddDocumentProperty2(DocumentPropertyName name, Formatting formatting = null)
-    {
-        if (Document == null)
-            throw new InvalidOperationException("Cannot add document properties without a document owner.");
-
-        var p = Document.DocumentProperties.SingleOrDefault(p => p.Name == name);
-        XElement xml = new XElement(Name.SimpleField,
-            new XAttribute(Name.Instr, $@"DOCPROPERTY {name.GetEnumName()} \* MERGEFORMAT"),
-            new XElement(Name.Run, new XElement(Name.Text, formatting?.Xml, p.Value))
-        );
-
-        Xml.Add(xml);
-
-        return new DocProperty(Document, xml);
-    }
-    */
 
     /// <summary>
     /// Insert a Picture into a paragraph at the given text index.

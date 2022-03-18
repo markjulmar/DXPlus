@@ -146,7 +146,7 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// </summary>
     /// <param name="bookmarkName">Bookmark name</param>
     /// <param name="toInsert">Text to insert</param>
-    public bool InsertAtBookmark(string bookmarkName, string toInsert)
+    public bool InsertTextAtBookmark(string bookmarkName, string toInsert)
     {
         if (string.IsNullOrWhiteSpace(bookmarkName))
         {
@@ -156,13 +156,13 @@ public abstract class BlockContainer : DocXElement, IContainer
         // Try headers first
         if (Sections.SelectMany(s => s.Headers)
             .SelectMany(header => header.Paragraphs)
-            .Any(paragraph => paragraph.InsertAtBookmark(bookmarkName, toInsert)))
+            .Any(paragraph => paragraph.InsertTextAtBookmark(bookmarkName, toInsert)))
         {
             return true;
         }
 
         // Body
-        if (Paragraphs.Any(paragraph => paragraph.InsertAtBookmark(bookmarkName, toInsert)))
+        if (Paragraphs.Any(paragraph => paragraph.InsertTextAtBookmark(bookmarkName, toInsert)))
         {
             return true;
         }
@@ -170,7 +170,7 @@ public abstract class BlockContainer : DocXElement, IContainer
         // Footers
         return Sections.SelectMany(s => s.Footers)
             .SelectMany(header => header.Paragraphs)
-            .Any(paragraph => paragraph.InsertAtBookmark(bookmarkName, toInsert));
+            .Any(paragraph => paragraph.InsertTextAtBookmark(bookmarkName, toInsert));
     }
 
     /// <summary>

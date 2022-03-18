@@ -4,15 +4,15 @@ This library is a fork of [DocX](http://docx.codeplex.com/) which has been heavi
 
 ![Build and Publish DXPlus library](https://github.com/markjulmar/DXPlus/workflows/Build%20and%20Publish%20DXPlus%20library/badge.svg)
 
-The library is available on NuGet as an unlisted entry.
+The library is available on NuGet:
 
 ```
-Install-Package Julmar.DxPlus -Version 1.0.0-prerelease
+Install-Package Julmar.DxPlus -Version 1.2.0
 ```
 
 > **Note**:
 >
-> The original DocX library has been purchased by Xceed and is now maintained in [their GitHub repo](https://github.com/xceedsoftware/DocX) with full support. If you want a fully supported library with the same features, definitely check out their version.
+> The original DocX code has been purchased by Xceed and is now maintained in [their open source GitHub repo](https://github.com/xceedsoftware/DocX) with options for support.
 
 ## Usage
 
