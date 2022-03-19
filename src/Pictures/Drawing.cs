@@ -31,7 +31,12 @@ public sealed class Drawing: DocXElement, IEquatable<Drawing>, ITextElement
     /// Element type (for ITextElement)
     /// </summary>
     public string ElementType => RunTextType.Drawing;
-        
+
+    /// <summary>
+    /// Text length for this element
+    /// </summary>
+    public int Length => 0;
+
     /// <summary>
     /// Gets or sets the name of this drawing
     /// </summary>

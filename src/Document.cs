@@ -1347,26 +1347,21 @@ public sealed class Document : BlockContainer, IDocument
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     internal Paragraph? FindParagraphByIndex(int index)
     {
-        if (index < 0)
-            throw new ArgumentOutOfRangeException(nameof(index));
+        if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
 
-        // Collect all the paragraphs based on what character they end on.
-        var lookup = Paragraphs
-            .Where(p => p.StartIndex != null && p.EndIndex != null
-                        && p.StartIndex! < p.EndIndex!)
-            .ToDictionary(paragraph => paragraph.EndIndex!.Value);
+        // Special case inserting at the beginning of the document.
+        if (index == 0) return Paragraphs.FirstOrDefault();
 
-        // If the insertion position is first (0) and there are no paragraphs, then return null.
-        if (lookup.Keys.Count == 0 && index == 0)
+        // Find the correct paragraph based on the length.
+        int count = 0;
+        foreach (var paragraph in Paragraphs)
         {
-            return null;
+            count += paragraph.Text.Length;
+            if (count > index) return paragraph;
         }
 
-        // Find the paragraph that contains the index
-        foreach (int paragraphEndIndex in lookup.Keys.Where(paragraphEndIndex => paragraphEndIndex >= index))
-        {
-            return lookup[paragraphEndIndex];
-        }
+        // Special case end of document.
+        if (count == index) return null;
 
         throw new ArgumentOutOfRangeException(nameof(index));
     }

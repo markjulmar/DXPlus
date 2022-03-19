@@ -21,7 +21,7 @@ public static class ParagraphExtensions
     public static Paragraph Newline(this Paragraph paragraph)
     {
         if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
-        return paragraph.Add("\n");
+        return paragraph.AddText("\n");
     }
 
     /// <summary>
@@ -144,7 +144,7 @@ public static class ParagraphExtensions
         }
 
         var captionParagraph = new Paragraph().Style(HeadingType.Caption.ToString());
-        captionParagraph.Add("Figure ");
+        captionParagraph.AddText("Figure ");
 
         var figureIds =
             document.Xml.Descendants(Name.SimpleField)
@@ -167,7 +167,7 @@ public static class ParagraphExtensions
         if (captionText[0] != ':' && captionText[0] != ' ')
             captionText = " " + captionText;
             
-        captionParagraph.Add(captionText);
+        captionParagraph.AddText(captionText);
 
         previousParagraph.Xml.AddAfterSelf(captionParagraph.Xml);
         return captionParagraph;
@@ -200,4 +200,19 @@ public static class ParagraphExtensions
         properties.TopBorder = border;
         properties.BottomBorder = border;
     }
+
+    /// <summary>
+    /// Attaches a comment to this paragraph.
+    /// </summary>
+    /// <param name="paragraph"></param>
+    /// <param name="comment">Comment to add</param>
+    public static void AttachComment(this Paragraph paragraph, Comment comment) => paragraph.AttachComment(comment, paragraph.Runs.First());
+
+    /// <summary>
+    /// Attach a comment to this Run
+    /// </summary>
+    /// <param name="paragraph"></param>
+    /// <param name="comment">Comment</param>
+    /// <param name="run">Text run</param>
+    public static void AttachComment(this Paragraph paragraph, Comment comment, Run run) => paragraph.AttachComment(comment, run, run);
 }

@@ -1,4 +1,5 @@
 ﻿using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus;
 
@@ -8,6 +9,11 @@ namespace DXPlus;
 public class TextElement : XElementWrapper, ITextElement
 {
     /// <summary>
+    /// XML for this element
+    /// </summary>
+    protected new XElement Xml => base.Xml!;
+
+    /// <summary>
     /// Parent run object
     /// </summary>
     public Run Parent { get; }
@@ -15,7 +21,12 @@ public class TextElement : XElementWrapper, ITextElement
     /// <summary>
     /// Name for this element.
     /// </summary>
-    public string ElementType => Xml!.Name.LocalName;
+    public string ElementType => Xml.Name.LocalName;
+
+    /// <summary>
+    /// Length of this element
+    /// </summary>
+    public int Length => DocumentHelpers.GetSize(Xml);
 
     /// <summary>
     /// Constructor
@@ -25,6 +36,6 @@ public class TextElement : XElementWrapper, ITextElement
     internal TextElement(Run runOwner, XElement xml)
     {
         this.Parent = runOwner ?? throw new ArgumentNullException(nameof(runOwner));
-        this.Xml = xml ?? throw new ArgumentNullException(nameof(xml));
+        base.Xml = xml ?? throw new ArgumentNullException(nameof(xml));
     }
 }

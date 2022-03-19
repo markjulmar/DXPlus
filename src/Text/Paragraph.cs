@@ -10,7 +10,7 @@ namespace DXPlus;
 /// <summary>
 /// Represents a document paragraph.
 /// </summary>
-[DebuggerDisplay("{Text}")]
+[DebuggerDisplay("({StartIndex}-{EndIndex}) {Text}")]
 public sealed class Paragraph : Block, IEquatable<Paragraph>
 {
     private Table? tableAfterParagraph;
@@ -46,12 +46,12 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// <summary>
     /// Starting index for this paragraph
     /// </summary>
-    internal int? StartIndex { get; private set; }
+    internal int? StartIndex { get; set; }
 
     /// <summary>
     /// End index for this paragraph
     /// </summary>
-    internal int? EndIndex { get; private set; }
+    internal int? EndIndex => StartIndex + DocumentHelpers.GetTextLength(Xml);
 
     /// <summary>
     /// Create a paragraph from a string.
@@ -114,24 +114,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
             SetOwner(document, packagePart, false);
 
         StartIndex = startIndex;
-        if (startIndex != null)
-        {
-            EndIndex = startIndex + DocumentHelpers.GetTextLength(xml);
-        }
     }
-
-    /// <summary>
-    /// Attaches a comment to this paragraph.
-    /// </summary>
-    /// <param name="comment">Comment to add</param>
-    public void AttachComment(Comment comment) => AttachComment(comment, Runs.First());
-
-    /// <summary>
-    /// Attach a comment to this Run
-    /// </summary>
-    /// <param name="comment">Comment</param>
-    /// <param name="run">Text run</param>
-    public void AttachComment(Comment comment, Run run) => AttachComment(comment, run, run);
 
     /// <summary>
     /// Attach a comment to this Run
@@ -198,10 +181,8 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// <returns>This paragraph</returns>
     public Paragraph ClearFormatting()
     {
-        foreach (var run in this.Runs)
-            run.Properties = null;
+        Runs.ToList().ForEach(r => r.Properties = null);
         DefaultFormatting = null;
-
         return this;
     }
 
@@ -399,7 +380,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
             return new ParagraphProperties(pPr);
         }
             
-        private set
+        set
         {
             var pPr = Xml.Element(Name.ParagraphProperties);
             pPr?.Remove();
@@ -410,17 +391,6 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
             
             Xml.AddFirst(xml);
         }
-    }
-
-    /// <summary>
-    /// Sets the properties on the paragraph with a fluent method.
-    /// </summary>
-    /// <param name="properties"></param>
-    /// <returns></returns>
-    public Paragraph WithProperties(ParagraphProperties properties)
-    {
-        Properties = properties;
-        return this;
     }
 
     /// <summary>
@@ -459,7 +429,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// </summary>
     /// <param name="run">Run of text to add</param>
     /// <returns>Paragraph with the text added</returns>
-    public Paragraph Add(Run run)
+    public Paragraph AddText(Run run)
     {
         Xml.Add(run.Xml);
         return this;
@@ -474,7 +444,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     {
         if (runs == null) throw new ArgumentNullException(nameof(runs));
         foreach (var run in runs)
-            Add(run);
+            AddText(run);
         return this;
     }
 
@@ -603,7 +573,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// </summary>
     /// <param name="hyperlink">The hyperlink to append.</param>
     /// <returns>The paragraph with the hyperlink appended.</returns>
-    public Paragraph Add(Hyperlink hyperlink)
+    public Paragraph AddText(Hyperlink hyperlink)
     {
         if (InDocument)
         {
@@ -697,7 +667,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// </summary>
     /// <param name="drawing">The Picture to append.</param>
     /// <returns>The paragraph with the Picture now appended.</returns>
-    public Paragraph Add(Drawing drawing)
+    public Paragraph AddText(Drawing drawing)
     {
         if (InDocument)
         {
@@ -1065,19 +1035,83 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
+    /// Split the paragraph at a specific character index
+    /// </summary>
+    /// <param name="index">Character index to split at</param>
+    /// <returns>Left/Right split</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    internal (XElement? leftElement, XElement? rightElement) Split(int index)
+    {
+        if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
+
+        var r = FindRunAffectedByEdit(EditType.Insert, index);
+        if (r == null) return (null, null);
+
+        string? editType = r.Xml.Parent?.Name.LocalName;
+
+        XElement? before, after;
+        if (editType is RunTextType.InsertMarker or RunTextType.DeleteMarker)
+        {
+            var (leftElement, rightElement) = Split(r.Xml.Parent!, index, editType == RunTextType.InsertMarker ? EditType.Insert : EditType.Delete);
+            before = new XElement(Xml.Name, Xml.Attributes(), r.Xml.Parent!.ElementsBeforeSelf(), leftElement);
+            after = new XElement(Xml.Name, Xml.Attributes(), r.Xml.Parent.ElementsAfterSelf(), rightElement);
+        }
+        else
+        {
+            var (leftElement, rightElement) = r.Split(index);
+            before = new XElement(Xml.Name, Xml.Attributes(), r.Xml.ElementsBeforeSelf(), leftElement);
+            after = new XElement(Xml.Name, Xml.Attributes(), rightElement, r.Xml.ElementsAfterSelf());
+        }
+
+        if (!before.Elements().Any()) before = null;
+        if (!after.Elements().Any()) after = null;
+        return (before, after);
+    }
+
+    /// <summary>
+    /// Splits a tracked edit (ins/del)
+    /// </summary>
+    /// <param name="element">Parent element to split</param>
+    /// <param name="index">Character index to split on</param>
+    /// <param name="type">Type of edit being performed (insert/delete)</param>
+    /// <returns>Split XElement array</returns>
+    private (XElement? leftElement, XElement? rightElement) Split(XElement element, int index, EditType type)
+    {
+        // Find the run containing the index
+        var run = FindRunAffectedByEdit(type, index);
+        if (run == null) return (null, null);
+
+        var (leftElement, rightElement) = run.Split(index);
+
+        XElement? splitLeft = new(element.Name, element.Attributes(), run.Xml.ElementsBeforeSelf(), leftElement);
+        if (DocumentHelpers.GetTextLength(splitLeft) == 0)
+        {
+            splitLeft = null;
+        }
+
+        XElement? splitRight = new(element.Name, element.Attributes(), rightElement, run.Xml.ElementsAfterSelf());
+        if (DocumentHelpers.GetTextLength(splitRight) == 0)
+        {
+            splitRight = null;
+        }
+
+        return (splitLeft, splitRight);
+    }
+
+    /// <summary>
     /// Walk all the text runs in the paragraph and find the one containing a specific index.
     /// </summary>
     /// <param name="editType">Type of edit being performed (insert or delete)</param>
     /// <param name="index">Index to look for</param>
     /// <returns>Run containing index</returns>
-    internal Run? FindRunAffectedByEdit(EditType editType, int index)
+    private Run? FindRunAffectedByEdit(EditType editType, int index)
     {
         int len = DocumentHelpers.GetText(Xml).Length;
-        if (index < 0 || editType == EditType.Insert && index > len 
+        if (index < 0 || editType == EditType.Insert && index > len
                       || editType == EditType.Delete && index >= len)
             throw new ArgumentOutOfRangeException(nameof(index));
 
-        int count = 0; 
+        int count = 0;
         Run? run = null;
         RecursiveSearchForRunByIndex(Xml, editType, index, ref count, ref run);
 
@@ -1118,36 +1152,6 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
                 }
             }
         }
-    }
-
-    /// <summary>
-    /// Splits a tracked edit (ins/del)
-    /// </summary>
-    /// <param name="element">Parent element to split</param>
-    /// <param name="index">Character index to split on</param>
-    /// <param name="type">Type of edit being performed (insert/delete)</param>
-    /// <returns>Split XElement array</returns>
-    internal (XElement? leftElement, XElement? rightElement) Split(XElement element, int index, EditType type)
-    {
-        // Find the run containing the index
-        var run = FindRunAffectedByEdit(type, index);
-        if (run == null) return (null, null);
-
-        var (leftElement, rightElement) = run.Split(index);
-
-        XElement? splitLeft = new(element.Name, element.Attributes(), run.Xml.ElementsBeforeSelf(), leftElement);
-        if (DocumentHelpers.GetTextLength(splitLeft) == 0)
-        {
-            splitLeft = null;
-        }
-
-        XElement? splitRight = new(element.Name, element.Attributes(), rightElement, run.Xml.ElementsAfterSelf());
-        if (DocumentHelpers.GetTextLength(splitRight) == 0)
-        {
-            splitRight = null;
-        }
-
-        return (splitLeft, splitRight);
     }
 
     /// <summary>
@@ -1194,17 +1198,6 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
                 picture.RelationshipId = picture.GetOrCreateImageRelationship();
             }
         }
-    }
-
-    /// <summary>
-    /// This is used to change the start/end index for this paragraph object
-    /// when it's inserted into a container.
-    /// </summary>
-    /// <param name="index">New starting index</param>
-    internal void SetStartIndex(int index)
-    {
-        StartIndex = index;
-        EndIndex = index + DocumentHelpers.GetTextLength(Xml);
     }
 
     /// <summary>

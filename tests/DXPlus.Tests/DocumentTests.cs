@@ -49,7 +49,7 @@ namespace DXPlus.Tests
 
             var p = doc.Add("This")
                 .AddDocumentPropertyField(DocumentPropertyName.Title)
-                .Add("of the emergency broadcast system.");
+                .AddText("of the emergency broadcast system.");
             
             Assert.Equal("This is a test of the emergency broadcast system.", p.Text);
         }
@@ -76,7 +76,7 @@ namespace DXPlus.Tests
 
             var p = doc.Add("This")
                 .AddCustomPropertyField("NewProp")
-                .Add("of the emergency broadcast system.");
+                .AddText("of the emergency broadcast system.");
             
             Assert.Equal("This is a test of the emergency broadcast system.", p.Text);
         }
@@ -126,7 +126,7 @@ namespace DXPlus.Tests
 
             var p = doc.Add("This is number ")
                 .AddDocumentPropertyField(DocumentPropertyName.Title)
-                .Add(".");
+                .AddText(".");
             
             Assert.Equal("This is number one.", p.Text);
 

@@ -186,15 +186,15 @@ public abstract class BlockContainer : DocXElement, IContainer
         if (!InDocument)
             throw new InvalidOperationException("Must be part of document structure.");
 
-        var insertPos = Document.FindParagraphByIndex(index);
-        if (insertPos == null)
+        var targetParagraph = Document.FindParagraphByIndex(index);
+        if (targetParagraph == null)
         {
             AddElementToContainer(paragraph.Xml);
         }
         else
         {
-            var (leftElement, rightElement) = Split(insertPos, index - insertPos.StartIndex!.Value);
-            insertPos.Xml.ReplaceWith(leftElement, paragraph.Xml, rightElement);
+            var (leftElement, rightElement) = targetParagraph.Split(index - targetParagraph.StartIndex!.Value);
+            targetParagraph.Xml.ReplaceWith(leftElement, paragraph.Xml, rightElement);
         }
 
         return OnAddParagraph(paragraph);
@@ -259,7 +259,7 @@ public abstract class BlockContainer : DocXElement, IContainer
         }
 
         paragraph.SetOwner(Document, PackagePart, true);
-        paragraph.SetStartIndex(Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex!.Value);
+        paragraph.StartIndex = Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex!.Value;
 
         return paragraph;
     }
@@ -389,7 +389,7 @@ public abstract class BlockContainer : DocXElement, IContainer
         var firstParagraph = Document.FindParagraphByIndex(index);
         if (firstParagraph != null)
         {
-            var (leftElement, rightElement) = Split(firstParagraph, index - firstParagraph.StartIndex!.Value);
+            var (leftElement, rightElement) = firstParagraph.Split(index - firstParagraph.StartIndex!.Value);
             firstParagraph.Xml.ReplaceWith(leftElement, table.Xml, rightElement);
         }
 
@@ -426,41 +426,5 @@ public abstract class BlockContainer : DocXElement, IContainer
                 : e.Name != Name.SectionProperties
                     ? new UnknownBlock(blockContainer.Document, blockContainer.PackagePart, e)
                     : null;
-    }
-
-    /// <summary>
-    /// Split a paragraph at a specific index
-    /// </summary>
-    /// <param name="paragraph">FirstParagraph to split</param>
-    /// <param name="index">Character index to split at</param>
-    /// <returns>Left/Right split</returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    private static (XElement? leftElement, XElement? rightElement) Split(Paragraph paragraph, int index)
-    {
-        if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
-        if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
-
-        var r = paragraph.FindRunAffectedByEdit(EditType.Insert, index);
-        if (r == null) return (null, null);
-
-        string? editType = r.Xml.Parent?.Name.LocalName;
-
-        XElement? before, after;
-        if (editType is RunTextType.InsertMarker or RunTextType.DeleteMarker)
-        {
-            var (leftElement, rightElement) = paragraph.Split(r.Xml.Parent!, index, editType == RunTextType.InsertMarker ? EditType.Insert : EditType.Delete);
-            before = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.Parent!.ElementsBeforeSelf(), leftElement);
-            after = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.Parent.ElementsAfterSelf(), rightElement);
-        }
-        else
-        {
-            var (leftElement, rightElement) = r.Split(index);
-            before = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.ElementsBeforeSelf(), leftElement);
-            after = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), rightElement, r.Xml.ElementsAfterSelf());
-        }
-
-        if (!before.Elements().Any()) before = null;
-        if (!after.Elements().Any()) after = null;
-        return (before, after);
     }
 }

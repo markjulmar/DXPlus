@@ -24,7 +24,7 @@ public sealed class Run : DocXElement, IEquatable<Run>
             var parentXml = Xml.Parent;
             while (parentXml != null)
             {
-                var wrapper = WrapDocumentElement(Document, Document.PackagePart, parentXml);
+                var wrapper = WrapParentElement(Document, Document.PackagePart, parentXml);
                 if (wrapper != null) return wrapper;
                 parentXml = parentXml.Parent;
             }
@@ -324,7 +324,7 @@ public sealed class Run : DocXElement, IEquatable<Run>
     /// <param name="packagePart">Package part owner</param>
     /// <param name="xml">XML fragment</param>
     /// <returns>Element wrapper</returns>
-    private static DocXElement? WrapDocumentElement(Document document, PackagePart packagePart, XElement xml)
+    private static DocXElement? WrapParentElement(Document document, PackagePart packagePart, XElement xml)
     {
         if (xml.Name.LocalName == Name.Hyperlink.LocalName)
             return new Hyperlink(document, packagePart, xml);

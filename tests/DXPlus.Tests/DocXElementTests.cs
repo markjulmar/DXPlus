@@ -25,7 +25,7 @@ namespace DXPlus.Tests
         {
             using var doc = Document.Create();
             var hl1 = new Hyperlink("test", new Uri("https://google.com"));
-            var p1 = doc.Add("This is a ").Add(hl1);
+            var p1 = doc.Add("This is a ").AddText(hl1);
 
             var hl2 = p1.Hyperlinks.First();
 

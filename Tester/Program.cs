@@ -28,8 +28,8 @@ namespace Tester
         {
             doc.AddRange(new[] {
                 "This is a video.",
-                new Paragraph().WithProperties(new() {Alignment = Alignment.Center})
-                    .Add(doc.CreateVideo(
+                new Paragraph { Properties = new() {Alignment = Alignment.Center} }
+                    .AddText(doc.CreateVideo(
                         "video-placeholder.png",
                         new Uri("https://www.youtube.com/watch?v=5-gF-tmblA8", UriKind.Absolute),
                         400, 225)),
@@ -61,14 +61,14 @@ namespace Tester
 
             var img = doc.CreateImage(@"test.svg");
             var p = doc.Add("This is a picture:");
-            p.Add(img.CreatePicture(string.Empty, string.Empty));
+            p.AddText(img.CreatePicture(string.Empty, string.Empty));
 
             var im2 = doc.CreateImage(@"test2.png");
-            p.Add(im2.CreatePicture(string.Empty, string.Empty));
+            p.AddText(im2.CreatePicture(string.Empty, string.Empty));
 
             // Add with different size.
             p = doc.Add("And a final pic (dup of svg!):");
-            p.Add(img.CreatePicture(50, 50));
+            p.AddText(img.CreatePicture(50, 50));
         }
 
         private static void AddHeaderAndFooter(IDocument doc)

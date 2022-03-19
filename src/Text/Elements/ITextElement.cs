@@ -14,4 +14,9 @@ public interface ITextElement
     /// Name for this element.
     /// </summary>
     string ElementType { get; }
+
+    /// <summary>
+    /// Text length of this element
+    /// </summary>
+    int Length { get; }
 }
