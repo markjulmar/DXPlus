@@ -10,7 +10,7 @@ namespace DXPlus;
 /// <summary>
 /// Represents a document paragraph.
 /// </summary>
-[DebuggerDisplay("({StartIndex}-{EndIndex}) {Text}")]
+[DebuggerDisplay("{" + nameof(Text) + "}")]
 public sealed class Paragraph : Block, IEquatable<Paragraph>
 {
     private Table? tableAfterParagraph;
@@ -32,26 +32,12 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     {
         get
         {
-            int start = 0;
             // Only look at the localName so we capture Math.r and Main.r
-            foreach (var runXml in Xml.Descendants().Where(x => x.Name.LocalName == Name.Run.LocalName))
-            {
-                var run = new Run(SafeDocument, SafePackagePart, runXml, start);
-                yield return run;
-                start = run.EndIndex;
-            }
+            return Xml.Descendants()
+                .Where(x => x.Name.LocalName == Name.Run.LocalName)
+                .Select(runXml => new Run(SafeDocument, SafePackagePart, runXml));
         }
     }
-
-    /// <summary>
-    /// Starting index for this paragraph
-    /// </summary>
-    internal int? StartIndex { get; set; }
-
-    /// <summary>
-    /// End index for this paragraph
-    /// </summary>
-    internal int? EndIndex => StartIndex + DocumentHelpers.GetTextLength(Xml);
 
     /// <summary>
     /// Create a paragraph from a string.
@@ -69,7 +55,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// Public constructor for the paragraph
     /// </summary>
     public Paragraph() 
-        : this(null, null, new XElement(Name.Paragraph), null)
+        : this(null, null, new XElement(Name.Paragraph))
     {
     }
 
@@ -107,13 +93,10 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// <param name="document">Document owner</param>
     /// <param name="packagePart">Package owner</param>
     /// <param name="xml">XML for the paragraph</param>
-    /// <param name="startIndex">Starting position in the doc</param>
-    internal Paragraph(Document? document, PackagePart? packagePart, XElement xml, int? startIndex) : base(xml)
+    internal Paragraph(Document? document, PackagePart? packagePart, XElement xml) : base(xml)
     {
         if (document != null)
             SetOwner(document, packagePart, false);
-
-        StartIndex = startIndex;
     }
 
     /// <summary>
@@ -183,33 +166,6 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     {
         Runs.ToList().ForEach(r => r.Properties = null);
         DefaultFormatting = null;
-        return this;
-    }
-
-    /// <summary>
-    /// Adds to the existing formatting for the paragraph and/or last run.
-    /// </summary>
-    /// <param name="formatting">Formatting to add</param>
-    /// <returns>paragraph</returns>
-    public Paragraph MergeFormatting(Formatting formatting)
-    {
-        if (formatting == null) throw new ArgumentNullException(nameof(formatting));
-
-        var firstRun = Runs.Reverse().FirstOrDefault(r => r.HasText);
-        if (firstRun != null)
-        {
-            if (firstRun.Properties == null)
-                firstRun.Properties = formatting;
-            else
-                firstRun.Properties.Merge(formatting);
-        }
-        else
-        {
-            if (DefaultFormatting == null)
-                DefaultFormatting = formatting;
-            else
-                DefaultFormatting.Merge(formatting);
-        }
         return this;
     }
 
@@ -325,6 +281,54 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
         : Document.Sections.SingleOrDefault(s => s.Paragraphs.Contains(this));
 
     /// <summary>
+    /// Optimize the runs in this paragraph by collapsing all adjacent w:r elements with the same formatting
+    /// into a single run.
+    /// </summary>
+    public void OptimizeRuns()
+    {
+        Run? currentRun = null;
+
+        var children = Xml.Elements().Where(e => e.Name != Name.ParagraphProperties).ToList();
+        foreach (var child in children)
+        {
+            if (child.Name != Name.Run)
+            {
+                currentRun = null;
+                continue;
+            }
+
+            if (currentRun == null)
+                currentRun = new Run(null, null, child);
+            else
+            {
+                // See if we can merge.
+                var testRun = new Run(null, null, child);
+                if (testRun.HasText 
+                    && (testRun.Properties == null && currentRun.Properties == null
+                    || testRun.Properties?.Equals(currentRun.Properties) == true))
+                {
+                    var insertText = testRun.Xml.Element(Name.Text)!;
+                    var text = currentRun.Xml.Element(Name.Text);
+                    if (text == null)
+                    {
+                        currentRun.Xml.Add(insertText);
+                    }
+                    else
+                    {
+                        text.Value += insertText.Value;
+                        text.PreserveSpace();
+                    }
+                    child.Remove();
+                }
+                else
+                {
+                    currentRun = testRun;
+                }
+            }
+        }
+    }
+
+    /// <summary>
     /// Insert a table before this paragraph
     /// </summary>
     /// <param name="table"></param>
@@ -415,12 +419,12 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// </summary>
     public string Text
     {
-        get => DocumentHelpers.GetText(Xml);
+        get => DocumentHelpers.GetText(Xml, false);
         set
         {
             Xml.Descendants(Name.Run).Remove();
             if (!string.IsNullOrEmpty(value))
-                Xml.Add(DocumentHelpers.FormatInput(value, null));
+                Xml.Add(DocumentHelpers.CreateRunElements(value, null));
         }
     }
 
@@ -431,7 +435,23 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// <returns>Paragraph with the text added</returns>
     public Paragraph AddText(Run run)
     {
-        Xml.Add(run.Xml);
+        var child = run.InDocument ? run.Xml.Clone() : run.Xml;
+        Xml.Add(child);
+        return this;
+    }
+
+    /// <summary>
+    /// Add a run of text to this paragraph
+    /// </summary>
+    /// <param name="text">Run of text to add</param>
+    /// <param name="formatting">Formatting to merge into the run</param>
+    /// <returns>Paragraph with the text added</returns>
+    public Paragraph AddText(string text, Formatting formatting)
+    {
+        DocumentHelpers.CreateRunElements(text, formatting.Xml)
+            .ToList()
+            .ForEach(Xml.Add);
+        
         return this;
     }
 
@@ -501,7 +521,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// </summary>
     /// <param name="equation">The Equation to append.</param>
     /// <returns>The paragraph with the Equation now appended.</returns>
-    public Paragraph AppendEquation(string equation)
+    public Paragraph AddEquation(string equation)
     {
         // Create equation element
         var oMathPara = new XElement(Name.MathParagraph,
@@ -521,10 +541,10 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// <summary>
     /// This function inserts a hyperlink into a paragraph at a specified character index.
     /// </summary>
+    /// <param name="index">The character index in the owning paragraph to insert at.</param>
     /// <param name="hyperlink">The hyperlink to insert.</param>
-    /// <param name="charIndex">The character index in the owning paragraph to insert at.</param>
     /// <returns>The paragraph with the Hyperlink inserted at the specified index.</returns>
-    public Paragraph Insert(Hyperlink hyperlink, int charIndex = 0)
+    public Paragraph Insert(int index, Hyperlink hyperlink)
     {
         if (InDocument)
         {
@@ -536,28 +556,27 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
             unownedHyperlinks.Add(hyperlink);
         }
 
-        if (charIndex == 0)
+        if (index == 0)
         {
-            // Add this hyperlink as the last element.
+            // Add this hyperlink as the first element.
             Xml.AddFirst(hyperlink.Xml);
         }
         else
         {
-            // Get the first run effected by this Insert
-            var run = FindRunAffectedByEdit(EditType.Insert, charIndex);
-            if (run == null)
+            if (index >= DocumentHelpers.GetTextLength(Xml))
             {
                 // Add this hyperlink as the last element.
                 Xml.Add(hyperlink.Xml);
             }
-            else
-            {
-                // Split this run at the point you want to insert
-                var (leftElement, rightElement) = run.Split(charIndex);
 
-                // Replace the original run.
-                run.Xml.ReplaceWith(leftElement, hyperlink.Xml, rightElement);
-            }
+            // Get the first run effected by this Insert
+            var (run, startIndex) = FindRunAffectedByEdit(index);
+
+            // Split this run at the point you want to insert
+            var (leftElement, rightElement) = run.Split(index - startIndex);
+
+            // Replace the original run.
+            run.Xml.ReplaceWith(leftElement, hyperlink.Xml, rightElement);
         }
 
         return this;
@@ -573,7 +592,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// </summary>
     /// <param name="hyperlink">The hyperlink to append.</param>
     /// <returns>The paragraph with the hyperlink appended.</returns>
-    public Paragraph AddText(Hyperlink hyperlink)
+    public Paragraph Add(Hyperlink hyperlink)
     {
         if (InDocument)
         {
@@ -593,31 +612,31 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// Append a PageCount place holder onto the end of a paragraph.
     /// </summary>
     /// <param name="format">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
-    public void AddPageCount(PageNumberFormat format) => AddPageNumberInfo(format, "numPages");
-
-    /// <summary>
-    /// Append a PageNumber place holder onto the end of a paragraph.
-    /// </summary>
-    /// <param name="format">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
-    public void AddPageNumber(PageNumberFormat format) => AddPageNumberInfo(format, "page");
+    public void AddPageCount(PageNumberFormat format) => InsertPageNumberInfo(format, "numPages");
 
     /// <summary>
     /// Insert a PageCount place holder into a paragraph.
     /// This place holder should only be inserted into a Header or Footer paragraph.
     /// Word will not automatically update this field if it is inserted into a document level paragraph.
     /// </summary>
-    /// <param name="pnf">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
     /// <param name="index">The text index to insert this PageCount place holder at.</param>
-    public void InsertPageCount(PageNumberFormat pnf, int index = 0) => AddPageNumberInfo(pnf, "numPages", index);
+    /// <param name="pnf">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
+    public void InsertPageCount(int index, PageNumberFormat pnf) => InsertPageNumberInfo(pnf, "numPages", index);
+
+    /// <summary>
+    /// Append a PageNumber place holder onto the end of a paragraph.
+    /// </summary>
+    /// <param name="format">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
+    public void AddPageNumber(PageNumberFormat format) => InsertPageNumberInfo(format, "page");
 
     /// <summary>
     /// Insert a PageNumber place holder into a paragraph.
     /// This place holder should only be inserted into a Header or Footer paragraph.
     /// Word will not automatically update this field if it is inserted into a document level paragraph.
     /// </summary>
-    /// <param name="pnf">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
     /// <param name="index">The text index to insert this PageNumber place holder at.</param>
-    public void InsertPageNumber(PageNumberFormat pnf, int index = 0) => AddPageNumberInfo(pnf, "page", index);
+    /// <param name="pnf">The PageNumberFormat can be normal: (1, 2, ...) or Roman: (I, II, ...)</param>
+    public void InsertPageNumber(int index, PageNumberFormat pnf) => InsertPageNumberInfo(pnf, "page", index);
 
     /// <summary>
     /// Internal method to populate page numbers or page counts.
@@ -625,7 +644,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// <param name="format">Page number format</param>
     /// <param name="type">Numbers or Counts</param>
     /// <param name="index">Position to insert</param>
-    private void AddPageNumberInfo(PageNumberFormat format, string type, int? index = null)
+    private void InsertPageNumberInfo(PageNumberFormat format, string type, int? index = null)
     {
         var fldSimple = new XElement(Name.SimpleField);
 
@@ -653,12 +672,9 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
         }
         else
         {
-            var r = FindRunAffectedByEdit(EditType.Insert, index.Value);
-            if (r != null)
-            {
-                var (leftElement, rightElement) = Split(r.Xml, index.Value, EditType.Insert);
-                r.Xml.ReplaceWith(leftElement, fldSimple, rightElement);
-            }
+            var (run, startIndex) = FindRunAffectedByEdit(index.Value);
+            var (leftElement, rightElement) = run.Split(index.Value - startIndex);
+            run.Xml.ReplaceWith(leftElement, fldSimple, rightElement);
         }
     }
 
@@ -667,12 +683,12 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// </summary>
     /// <param name="drawing">The Picture to append.</param>
     /// <returns>The paragraph with the Picture now appended.</returns>
-    public Paragraph AddText(Drawing drawing)
+    public Paragraph Add(Drawing drawing)
     {
         if (InDocument)
         {
             drawing.SetOwner(Document, PackagePart, true);
-            var picture = drawing.Picture ?? throw new InvalidOperationException("Failed to create picture from drawing - possibly missing image?"); ;
+            var picture = drawing.Picture ?? throw new InvalidOperationException("Failed to create picture from drawing - possibly missing image?");
             picture.RelationshipId = picture.GetOrCreateImageRelationship();
         }
 
@@ -696,7 +712,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     {
         if (findText == null) throw new ArgumentNullException(nameof(findText));
 
-        List<int> foundIndexes = new List<int>();
+        var foundIndexes = new List<int>();
         var text = Text;
         if (!string.IsNullOrEmpty(text))
         {
@@ -718,8 +734,8 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// <returns>Index and matched text</returns>
     public IEnumerable<(int index, string text)> FindPattern(Regex regex)
     {
-        MatchCollection mc = regex.Matches(Text);
-        return mc.Select(m => (index: m.Index, text: m.Value));
+        if (regex == null) throw new ArgumentNullException(nameof(regex));
+        return regex.Matches(Text).Select(m => (index: m.Index, text: m.Value));
     }
 
     /// <summary>
@@ -743,7 +759,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
         if (bookmark == null) 
             return false;
             
-        var run = DocumentHelpers.FormatInput(toInsert, null);
+        var run = DocumentHelpers.CreateRunElements(toInsert, null);
         bookmark.Xml!.AddBeforeSelf(run);
         return true;
     }
@@ -839,12 +855,11 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
 
     /// <summary>
     /// Insert a Picture into a paragraph at the given text index.
-    /// If not index is provided defaults to 0.
     /// </summary>
-    /// <param name="picture">The Picture to insert.</param>
     /// <param name="index">The text index to insert at.</param>
+    /// <param name="picture">The Picture to insert.</param>
     /// <returns>The modified paragraph.</returns>
-    public Paragraph Insert(Picture picture, int index = 0)
+    public Paragraph Insert(int index, Picture picture)
     {
         if (InDocument)
         {
@@ -863,25 +878,45 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
             // Add this hyperlink as the last element.
             Xml.AddFirst(xml);
         }
+        else if (index >= DocumentHelpers.GetTextLength(Xml))
+        {
+            Xml.Add(xml);
+        }
         else
         {
             // Get the first run effected by this Insert
-            var run = FindRunAffectedByEdit(EditType.Insert, index);
-            if (run == null)
-            {
-                // Add this picture as the last element.
-                Xml.Add(xml);
-            }
-            else
-            {
-                // Split this run at the point you want to insert
-                var (leftElement, rightElement) = run.Split(index);
+            var (run, startIndex) = FindRunAffectedByEdit(index);
+            // Split this run at the point you want to insert
+            var (leftElement, rightElement) = run.Split(index - startIndex);
 
-                // Replace the original run.
-                run.Xml.ReplaceWith(leftElement, xml, rightElement);
-            }
+            // Replace the original run.
+            run.Xml.ReplaceWith(leftElement, xml, rightElement);
         }
 
+        return this;
+    }
+
+    /// <summary>
+    /// Inserts a string into the paragraph at the specified index.
+    /// </summary>
+    /// <param name="index">The index position of the insertion.</param>
+    /// <param name="run">The text to insert.</param>
+    public Paragraph InsertText(int index, Run run)
+    {
+        InsertRuns(index, new [] { run.InDocument ? run.Xml.Clone() : run.Xml });
+        return this;
+    }
+
+    /// <summary>
+    /// Inserts a string into the paragraph at the specified index.
+    /// </summary>
+    /// <param name="index">The index position of the insertion.</param>
+    /// <param name="text">The text to insert.</param>
+    public Paragraph InsertText(int index, string text)
+    {
+        // Create the runs.
+        var runsXml = DocumentHelpers.CreateRunElements(text, null);
+        InsertRuns(index, runsXml);
         return this;
     }
 
@@ -891,36 +926,42 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// <param name="index">The index position of the insertion.</param>
     /// <param name="value">The System.String to insert.</param>
     /// <param name="formatting">The text formatting.</param>
-    public Paragraph InsertText(int index, string value, Formatting? formatting = null)
+    public Paragraph InsertText(int index, string value, Formatting formatting)
     {
+        // Create the runs.
+        var runsXml = DocumentHelpers.CreateRunElements(value, formatting.Xml);
+        InsertRuns(index, runsXml);
+        return this;
+    }
+
+    /// <summary>
+    /// Insert a set of runs into a specified location in this paragraph.
+    /// The existing run at the given index will be broken if necessary
+    /// </summary>
+    /// <param name="index">Index to insert at</param>
+    /// <param name="elements">Elements to insert</param>
+    /// <returns></returns>
+    private void InsertRuns(int index, IEnumerable<XElement> elements)
+    {
+        if (index < 0 || index > DocumentHelpers.GetTextLength(Xml))
+            throw new ArgumentOutOfRangeException(nameof(index));
+
         // Get the first run effected by this Insert
-        var run = FindRunAffectedByEdit(EditType.Insert, index);
-        if (run == null)
+        var (run, startIndex) = FindRunAffectedByEdit(index);
+        var parentElement = run.Xml.Parent!;
+
+        if (parentElement.Name != Name.Paragraph)
         {
-            Xml.Add(DocumentHelpers.FormatInput(value, formatting?.Xml));
+            var (leftElement, rightElement) = Split(parentElement, index);
+            parentElement.ReplaceWith(leftElement, elements, rightElement);
         }
         else
         {
-            object insert = DocumentHelpers.FormatInput(value, formatting?.Xml);
-            var parentElement = run.Xml.Parent;
-            if (parentElement == null)
-            {
-                throw new InvalidOperationException("Orphaned run not connected to paragraph.");
-            }
-
-            if (parentElement.Name.LocalName is RunTextType.InsertMarker or RunTextType.DeleteMarker)
-            {
-                var (leftElement, rightElement) = Split(parentElement, index, EditType.Insert);
-                parentElement.ReplaceWith(leftElement, insert, rightElement);
-            }
-            else
-            {
-                var (leftElement, rightElement) = run.Split(index);
-                run.Xml.ReplaceWith(leftElement, insert, rightElement);
-            }
+            var (leftElement, rightElement) = run.Split(index - startIndex);
+            run.Xml.ReplaceWith(leftElement, elements, rightElement);
         }
 
-        return this;
+        OptimizeRuns();
     }
 
     /// <summary>
@@ -952,48 +993,37 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
 
         do
         {
-            // Get the first run effected by this Remove
-            var run = FindRunAffectedByEdit(EditType.Delete, index);
+            // Get the run affected by this edit
+            var (run, startIndex) = FindRunAffectedByEdit(index);
 
-            // The parent of this Run
-            var parentElement = run?.Xml.Parent;
-            switch (parentElement?.Name.LocalName)
+            // Get the parent element of the run
+            var parentElement = run.Xml.Parent!;
+
+            // Based on the parent of the run (direct paragraph vs. insert/delete marker), split
+            // the run at the index point so we can begin removing the text.
+            if (parentElement.Name != Name.Paragraph)
             {
-                case RunTextType.InsertMarker:
-                case RunTextType.DeleteMarker:
-                {
-                    var splitEditBefore = Split(parentElement, index, EditType.Delete);
-                    int take = count - processed;
-                    var splitEditAfter = Split(parentElement, index + take, EditType.Delete);
-                    var before = splitEditBefore.rightElement;
-                    Debug.Assert(before != null);
-                    var middle = Split(before, index + take, EditType.Delete).rightElement;
-                    processed += DocumentHelpers.GetTextLength(middle);
-                    parentElement.ReplaceWith(splitEditBefore.leftElement, null, splitEditAfter.rightElement);
-                }
-                    break;
-
-                default:
-                    if (run != null && DocumentHelpers.GetTextLength(run.Xml) > 0)
-                    {
-                        var splitRunBefore = run.Split(index);
-                        int min = Math.Min(index + (count - processed), run.EndIndex);
-                        var splitRunAfter = run.Split(min);
-                        var middle = new Run(SafeDocument, SafePackagePart, splitRunBefore.rightElement!, run.StartIndex + DocumentHelpers.GetTextLength(splitRunBefore.leftElement)).Split(min).leftElement;
-                        processed += DocumentHelpers.GetTextLength(middle);
-                        run.Xml.ReplaceWith(splitRunBefore.leftElement, null, splitRunAfter.rightElement);
-                    }
-                    else
-                    {
-                        processed = count;
-                    }
-
-                    break;
+                var (leftElement, rightElement) = Split(parentElement, index);
+                int take = count - processed;
+                var (_, after) = Split(parentElement, index + take);
+                Debug.Assert(rightElement != null);
+                var remove = Split(rightElement, index + take).rightElement;
+                processed += DocumentHelpers.GetTextLength(remove);
+                parentElement.ReplaceWith(leftElement, null, after);
+            }
+            else
+            {
+                var (leftElement, rightElement) = run.Split(index - startIndex);
+                int endIndex = startIndex + DocumentHelpers.GetTextLength(run.Xml);
+                int min = Math.Min(index + (count - processed), endIndex) - startIndex;
+                var (_, splitRunAfter) = run.Split(min);
+                var removeElement = new Run(SafeDocument, SafePackagePart, rightElement!).Split(count).leftElement ?? rightElement;
+                processed += DocumentHelpers.GetTextLength(removeElement);
+                run.Xml.ReplaceWith(leftElement, null, splitRunAfter);
             }
 
             // See if the paragraph is empty -- if so we can remove it.
-            if (parentElement != null
-                && DocumentHelpers.GetTextLength(parentElement) == 0
+            if (DocumentHelpers.GetTextLength(parentElement) == 0
                 && parentElement.Parent != null
                 && parentElement.Parent.Name.LocalName != "tc"
                 && parentElement.Parent.Elements(Name.Paragraph).Any()
@@ -1003,6 +1033,8 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
             }
         }
         while (processed < count);
+
+        OptimizeRuns();
 
         return this;
     }
@@ -1026,7 +1058,9 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
         {
             RemoveText(start, text.Length);
             if (!string.IsNullOrEmpty(replaceText))
+            {
                 InsertText(start, replaceText);
+            }
 
             start = Text.IndexOf(text, start+replaceText?.Length??0, comparisonType);
         }
@@ -1044,23 +1078,20 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     {
         if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
 
-        var r = FindRunAffectedByEdit(EditType.Insert, index);
-        if (r == null) return (null, null);
-
-        string? editType = r.Xml.Parent?.Name.LocalName;
+        var (run, startIndex) = FindRunAffectedByEdit(index);
 
         XElement? before, after;
-        if (editType is RunTextType.InsertMarker or RunTextType.DeleteMarker)
+        if (run.Xml.Parent?.Name.LocalName != Name.Paragraph.LocalName)
         {
-            var (leftElement, rightElement) = Split(r.Xml.Parent!, index, editType == RunTextType.InsertMarker ? EditType.Insert : EditType.Delete);
-            before = new XElement(Xml.Name, Xml.Attributes(), r.Xml.Parent!.ElementsBeforeSelf(), leftElement);
-            after = new XElement(Xml.Name, Xml.Attributes(), r.Xml.Parent.ElementsAfterSelf(), rightElement);
+            var (leftElement, rightElement) = Split(run.Xml.Parent!, index);
+            before = new XElement(Xml.Name, Xml.Attributes(), run.Xml.Parent!.ElementsBeforeSelf(), leftElement);
+            after = new XElement(Xml.Name, Xml.Attributes(), rightElement, run.Xml.Parent.ElementsAfterSelf());
         }
         else
         {
-            var (leftElement, rightElement) = r.Split(index);
-            before = new XElement(Xml.Name, Xml.Attributes(), r.Xml.ElementsBeforeSelf(), leftElement);
-            after = new XElement(Xml.Name, Xml.Attributes(), rightElement, r.Xml.ElementsAfterSelf());
+            var (leftElement, rightElement) = run.Split(index - startIndex);
+            before = new XElement(Xml.Name, Xml.Attributes(), run.Xml.ElementsBeforeSelf(), leftElement);
+            after = new XElement(Xml.Name, Xml.Attributes(), rightElement, run.Xml.ElementsAfterSelf());
         }
 
         if (!before.Elements().Any()) before = null;
@@ -1073,15 +1104,13 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// </summary>
     /// <param name="element">Parent element to split</param>
     /// <param name="index">Character index to split on</param>
-    /// <param name="type">Type of edit being performed (insert/delete)</param>
     /// <returns>Split XElement array</returns>
-    private (XElement? leftElement, XElement? rightElement) Split(XElement element, int index, EditType type)
+    private (XElement? leftElement, XElement? rightElement) Split(XElement element, int index)
     {
         // Find the run containing the index
-        var run = FindRunAffectedByEdit(type, index);
-        if (run == null) return (null, null);
+        var (run, startIndex) = FindRunAffectedByEdit(index);
 
-        var (leftElement, rightElement) = run.Split(index);
+        var (leftElement, rightElement) = run.Split(index-startIndex);
 
         XElement? splitLeft = new(element.Name, element.Attributes(), run.Xml.ElementsBeforeSelf(), leftElement);
         if (DocumentHelpers.GetTextLength(splitLeft) == 0)
@@ -1101,57 +1130,32 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// <summary>
     /// Walk all the text runs in the paragraph and find the one containing a specific index.
     /// </summary>
-    /// <param name="editType">Type of edit being performed (insert or delete)</param>
     /// <param name="index">Index to look for</param>
     /// <returns>Run containing index</returns>
-    private Run? FindRunAffectedByEdit(EditType editType, int index)
+    internal (Run, int startIndex) FindRunAffectedByEdit(int index)
     {
-        int len = DocumentHelpers.GetText(Xml).Length;
-        if (index < 0 || editType == EditType.Insert && index > len
-                      || editType == EditType.Delete && index >= len)
-            throw new ArgumentOutOfRangeException(nameof(index));
+        if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
 
-        int count = 0;
-        Run? run = null;
-        RecursiveSearchForRunByIndex(Xml, editType, index, ref count, ref run);
-
-        return run;
-    }
-
-    /// <summary>
-    /// Recursive method to identify a text run from a starting element and index.
-    /// </summary>
-    /// <param name="el">Element to search</param>
-    /// <param name="editType">Type of edit being performed (insert or delete)</param>
-    /// <param name="index">Index to look for</param>
-    /// <param name="count">Total searched</param>
-    /// <param name="run">The located text run</param>
-    private void RecursiveSearchForRunByIndex(XElement el, EditType editType, int index, ref int count, ref Run? run)
-    {
-        count += DocumentHelpers.GetSize(el);
-        if (count > 0 && (editType == EditType.Delete && count > index || editType == EditType.Insert && count >= index))
+        int startIndex = 0, total = 0;
+        Run? lastRun = null;
+        foreach (var run in Runs)
         {
-            // Correct the index
-            count -= el.ElementsBeforeSelf().Sum(DocumentHelpers.GetSize);
-            count -= DocumentHelpers.GetSize(el);
-            count = Math.Max(0, count);
-
-            // We have found the element, now find the run it belongs to.
-            var search = el.FindParent(Name.Run);
-            if (search == null) return;
-            run = new Run(SafeDocument, SafePackagePart, search, count);
-        }
-        else if (el.HasElements)
-        {
-            foreach (var e in el.Elements())
+            int size = DocumentHelpers.GetTextLength(run.Xml);
+            total += size;
+            if (index < total)
             {
-                if (run == null)
-                {
-                    // Run can be changed by this method.
-                    RecursiveSearchForRunByIndex(e, editType, index, ref count, ref run);
-                }
+                return (run, startIndex);
             }
+            startIndex += size;
+            lastRun = run;
         }
+
+        if (index == total && lastRun != null)
+        {
+            return (lastRun, startIndex - DocumentHelpers.GetTextLength(lastRun.Xml));
+        }
+
+        throw new ArgumentOutOfRangeException(nameof(index));
     }
 
     /// <summary>

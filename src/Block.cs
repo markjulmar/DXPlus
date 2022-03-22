@@ -37,13 +37,13 @@ public abstract class Block : DocXElement
     /// Add a page break after the current element.
     /// </summary>
     public void AddPageBreak() =>
-        Xml.AddAfterSelf(DocumentHelpers.PageBreak());
+        Xml.AddAfterSelf(CreatePageBreakElement);
 
     /// <summary>
     /// Insert a page break before the current element.
     /// </summary>
     public void InsertPageBreakBefore() =>
-        Xml.AddBeforeSelf(DocumentHelpers.PageBreak());
+        Xml.AddBeforeSelf(CreatePageBreakElement);
 
     /// <summary>
     /// Insert a paragraph before this one in the document.
@@ -134,4 +134,13 @@ public abstract class Block : DocXElement
 
         throw new Exception($"Unrecognized container type {e.Name}");
     }
+
+    /// <summary>
+    /// Create a page break paragraph element
+    /// </summary>
+    /// <returns>Page break element</returns>
+    private static XElement CreatePageBreakElement => new(Name.Paragraph,
+        new XAttribute(Name.ParagraphId, DocumentHelpers.GenerateHexId()),
+        new XElement(Name.Run, new XElement(Namespace.Main + RunTextType.LineBreak,
+            new XAttribute(Namespace.Main + "type", "page"))));
 }

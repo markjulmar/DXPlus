@@ -25,7 +25,7 @@ public sealed class Drawing: DocXElement, IEquatable<Drawing>, ITextElement
     /// Parent run object (if any)
     /// </summary>
     public Run? Parent => Xml.Parent?.Name == Internal.Name.Run 
-        ? new Run(Document, PackagePart, Xml.Parent, -1) : null;
+        ? new Run(Document, PackagePart, Xml.Parent) : null;
 
     /// <summary>
     /// Element type (for ITextElement)

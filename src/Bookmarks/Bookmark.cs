@@ -69,7 +69,7 @@ public sealed class Bookmark : XElementWrapper, IEquatable<Bookmark>
             {
                 if (item.Name.LocalName == Internal.Name.Run.LocalName)
                 {
-                    sb.Append(DocumentHelpers.GetText(item));
+                    sb.Append(DocumentHelpers.GetText(item, false));
                 }
                 else if (item.Name == Internal.Name.BookmarkEnd
                          && item.AttributeValue(Internal.Name.Id) == Id.ToString())
@@ -139,7 +139,7 @@ public sealed class Bookmark : XElementWrapper, IEquatable<Bookmark>
         if (bookmark == null) 
             throw new ArgumentNullException(nameof(bookmark));
             
-        bookmark.AddAfterSelf(DocumentHelpers.FormatInput(text, null));
+        bookmark.AddAfterSelf(DocumentHelpers.CreateRunElements(text, null));
         
         return true;
     }

@@ -186,14 +186,14 @@ public abstract class BlockContainer : DocXElement, IContainer
         if (!InDocument)
             throw new InvalidOperationException("Must be part of document structure.");
 
-        var targetParagraph = Document.FindParagraphByIndex(index);
+        var (targetParagraph, startIndex) = Document.FindParagraphByIndex(index);
         if (targetParagraph == null)
         {
             AddElementToContainer(paragraph.Xml);
         }
         else
         {
-            var (leftElement, rightElement) = targetParagraph.Split(index - targetParagraph.StartIndex!.Value);
+            var (leftElement, rightElement) = targetParagraph.Split(index - startIndex);
             targetParagraph.Xml.ReplaceWith(leftElement, paragraph.Xml, rightElement);
         }
 
@@ -254,12 +254,9 @@ public abstract class BlockContainer : DocXElement, IContainer
     internal Paragraph OnAddParagraph(Paragraph paragraph)
     {
         if (string.IsNullOrEmpty(paragraph.Id))
-        {
             paragraph.Xml.SetAttributeValue(Name.ParagraphId, DocumentHelpers.GenerateHexId());
-        }
 
         paragraph.SetOwner(Document, PackagePart, true);
-        paragraph.StartIndex = Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex!.Value;
 
         return paragraph;
     }
@@ -335,7 +332,7 @@ public abstract class BlockContainer : DocXElement, IContainer
     {
         if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
         if (paragraph.InDocument)
-            paragraph = new Paragraph(Document, PackagePart, paragraph.Xml.Normalize(), 0);
+            paragraph = new Paragraph(Document, PackagePart, paragraph.Xml.Normalize());
 
         AddElementToContainer(paragraph.Xml);
         return OnAddParagraph(paragraph);
@@ -386,10 +383,10 @@ public abstract class BlockContainer : DocXElement, IContainer
 
         table.SetOwner(Document, PackagePart, true);
 
-        var firstParagraph = Document.FindParagraphByIndex(index);
+        var (firstParagraph, startIndex) = Document.FindParagraphByIndex(index);
         if (firstParagraph != null)
         {
-            var (leftElement, rightElement) = firstParagraph.Split(index - firstParagraph.StartIndex!.Value);
+            var (leftElement, rightElement) = firstParagraph.Split(index - startIndex);
             firstParagraph.Xml.ReplaceWith(leftElement, table.Xml, rightElement);
         }
 

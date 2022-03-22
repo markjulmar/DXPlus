@@ -197,13 +197,13 @@ public sealed class Document : BlockContainer, IDocument
     /// Get the text of each endnote from this document
     /// </summary>
     public IEnumerable<string> EndnotesText
-        => endnotesDoc?.Root?.Elements(Namespace.Main + "endnote").Select(DocumentHelpers.GetText) ?? Enumerable.Empty<string>();
+        => endnotesDoc?.Root?.Elements(Namespace.Main + "endnote").Select(element => DocumentHelpers.GetText(element, false)) ?? Enumerable.Empty<string>();
 
     /// <summary>
     /// Get the text of each footnote from this document
     /// </summary>
     public IEnumerable<string> FootnotesText
-        => footnotesDoc?.Root?.Elements(Namespace.Main + "footnote").Select(DocumentHelpers.GetText) ?? Enumerable.Empty<string>();
+        => footnotesDoc?.Root?.Elements(Namespace.Main + "footnote").Select(element => DocumentHelpers.GetText(element, false)) ?? Enumerable.Empty<string>();
 
     /// <summary>
     /// Returns a list of Images in this document.
@@ -1345,23 +1345,25 @@ public sealed class Document : BlockContainer, IDocument
     /// <param name="index"></param>
     /// <returns>FirstParagraph</returns>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    internal Paragraph? FindParagraphByIndex(int index)
+    internal (Paragraph?, int startIndex) FindParagraphByIndex(int index)
     {
         if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
 
         // Special case inserting at the beginning of the document.
-        if (index == 0) return Paragraphs.FirstOrDefault();
+        if (index == 0) return (Paragraphs.FirstOrDefault(), 0);
 
         // Find the correct paragraph based on the length.
-        int count = 0;
+        int count = 0, startIndex = 0;
         foreach (var paragraph in Paragraphs)
         {
-            count += paragraph.Text.Length;
-            if (count > index) return paragraph;
+            var length = paragraph.Text.Length;
+            count += length;
+            if (count > index) return (paragraph, startIndex);
+            startIndex += length;
         }
 
         // Special case end of document.
-        if (count == index) return null;
+        if (count == index) return (null, startIndex);
 
         throw new ArgumentOutOfRangeException(nameof(index));
     }

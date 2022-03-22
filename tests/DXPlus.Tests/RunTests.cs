@@ -21,84 +21,39 @@ namespace DXPlus.Tests
         }
 
         [Fact]
-        public void SplitInsertRunReturnsBothSides()
+        public void SplitMiddleReturnsBothSides()
         {
             string text = "This is a test.";
-            var e = new XElement(Name.Run, new XElement(Name.Text, text));
-
-            Run r = new Run(null, null, e, 5);
+            var r = new Run(null, null, new XElement(Name.Run, new XElement(Name.Text, text)));
             Assert.Equal(text, r.Text);
-            var (leftElement, rightElement) = r.Split(10);
+
+            var (leftElement, rightElement) = r.Split(5);
 
             Assert.Equal("This ", leftElement.Value);
             Assert.Equal("is a test.", rightElement.Value);
         }
 
         [Fact]
-        public void SplitDeleteRunReturnsBothSides()
+        public void SplitAtZeroReturnsRightSide()
         {
             string text = "This is a test.";
-            var e = new XElement(Name.Run, new XElement(Name.Text, text));
-
-            Run r = new Run(null, null, e, 5);
+            var r = new Run(null, null, new XElement(Name.Run, new XElement(Name.Text, text)));
             Assert.Equal(text, r.Text);
-            var (leftElement, rightElement) = r.Split(10);
 
-            Assert.Equal("This ", leftElement.Value);
-            Assert.Equal("is a test.", rightElement.Value);
-        }
-
-        [Fact]
-        public void SplitInsertAtZeroRunReturnsRightSide()
-        {
-            string text = "This is a test.";
-            var e = new XElement(Name.Run, new XElement(Name.Text, text));
-
-            Run r = new Run(null, null, e, 5);
-            Assert.Equal(text, r.Text);
-            var (leftElement, rightElement) = r.Split(5);
+            var (leftElement, rightElement) = r.Split(0);
 
             Assert.Null(leftElement);
             Assert.Equal("This is a test.", rightElement.Value);
         }
 
         [Fact]
-        public void SplitDeleteAtZeroRunReturnsRightSide()
+        public void SplitAtLengthReturnsLeftSide()
         {
             string text = "This is a test.";
-            var e = new XElement(Name.Run, new XElement(Name.Text, text));
-
-            Run r = new Run(null, null, e, 5);
+            var r = new Run(null, null, new XElement(Name.Run, new XElement(Name.Text, text)));
             Assert.Equal(text, r.Text);
-            var (leftElement, rightElement) = r.Split(5);
 
-            Assert.Null(leftElement);
-            Assert.Equal("This is a test.", rightElement.Value);
-        }
-
-        [Fact]
-        public void SplitInsertAtLengthRunReturnsLeftSide()
-        {
-            string text = "This is a test.";
-            var e = new XElement(Name.Run, new XElement(Name.Text, text));
-
-            Run r = new Run(null, null, e, 5);
-            Assert.Equal(text, r.Text);
-            var (leftElement, rightElement) = r.Split(5 + text.Length);
-
-            Assert.Null(rightElement);
-            Assert.Equal("This is a test.", leftElement.Value);
-        }
-
-        [Fact]
-        public void SplitDeleteAtLengthRunReturnsLeftSide()
-        {
-            string text = "This is a test.";
-            var e = new XElement(Name.Run, new XElement(Name.Text, text));
-
-            Run r = new Run(null, null, e, 5);
-            Assert.Equal(text, r.Text);
-            var (leftElement, rightElement) = r.Split(5 + text.Length);
+            var (leftElement, rightElement) = r.Split(text.Length);
 
             Assert.Null(rightElement);
             Assert.Equal("This is a test.", leftElement.Value);
@@ -110,7 +65,7 @@ namespace DXPlus.Tests
             string text = "Test";
             var e = new XElement(Name.Run, new XElement(Name.Text, text));
 
-            Run r = new Run(null, null, e, 0);
+            Run r = new Run(null, null, e);
             Assert.Equal(text, r.Text);
             var (leftElement, rightElement) = r.Split(text.Length);
 
@@ -125,7 +80,7 @@ namespace DXPlus.Tests
                 @"<w:r xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
 					    <w:delText xml:space=""preserve"">deleted </w:delText>
 				    </w:r>";
-            Run run = new Run(null, null, XElement.Parse(xml), 0);
+            Run run = new Run(null, null, XElement.Parse(xml));
             Assert.Equal("", run.Text);
 
             Assert.Single(run.Elements);

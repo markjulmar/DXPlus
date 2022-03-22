@@ -34,26 +34,14 @@ public sealed class Run : DocXElement, IEquatable<Run>
     }
 
     /// <summary>
-    /// Gets the start index of this Text (text length before this text)
-    /// TODO: remove
-    /// </summary>
-    public int StartIndex { get; }
-
-    /// <summary>
-    /// Gets the end index of this Text (text length before this text + this texts length)
-    /// TODO: remove
-    /// </summary>
-    public int EndIndex { get; }
-
-    /// <summary>
     /// True if this run has a text block. False if it's a linebreak, paragraph break, or empty.
     /// </summary>
     public bool HasText => Xml.Element(Name.Text) != null;
-        
+
     /// <summary>
     /// The formatted text value of this run
     /// </summary>
-    public string Text { get; }
+    public string Text => DocumentHelpers.GetText(Xml, false);
 
     /// <summary>
     /// Returns the breaks in this run
@@ -133,23 +121,6 @@ public sealed class Run : DocXElement, IEquatable<Run>
     public static implicit operator Run(string text) => new(text);
 
     /// <summary>
-    /// Public constructor for a run of text
-    /// </summary>
-    /// <param name="text">Text for this run</param>
-    public Run(string text)
-    {
-        Text = text ?? throw new ArgumentNullException(nameof(text));
-
-        var xe = DocumentHelpers.FormatInput(text, null).ToList();
-        if (xe.Count > 1)
-            throw new InvalidEnumArgumentException(
-                "Text cannot mix-in tabs, newlines, or other special characters. Use Run.Create to generate a list of Run objects.");
-
-        Xml = xe.SingleOrDefault() ?? new XElement(Name.Run);
-        EndIndex = Text.Length;
-    }
-
-    /// <summary>
     /// Creates a set of runs from a text string. This properly handles tabs, line breaks, etc.
     /// </summary>
     /// <param name="text">Text</param>
@@ -157,8 +128,24 @@ public sealed class Run : DocXElement, IEquatable<Run>
     /// <returns>Enumerable set of run objects</returns>
     public static IEnumerable<Run> Create(string text, Formatting? formatting = null)
     {
-        return DocumentHelpers.FormatInput(text, formatting?.Xml)
-            .Select(xe => new Run(null, null, xe, 0));
+        return DocumentHelpers.CreateRunElements(text, formatting?.Xml)
+            .Select(xe => new Run(null, null, xe));
+    }
+
+    /// <summary>
+    /// Public constructor for a run of text
+    /// </summary>
+    /// <param name="text">Text for this run</param>
+    public Run(string text)
+    {
+        if (text == null) throw new ArgumentNullException(nameof(text));
+
+        var xe = DocumentHelpers.CreateRunElements(text, null).ToList();
+        if (xe.Count > 1)
+            throw new ArgumentOutOfRangeException(nameof(text),
+                "Text cannot mix-in tabs, newlines, or other special characters. Use Run.Create to generate a list of Run objects.");
+
+        Xml = xe.SingleOrDefault() ?? new XElement(Name.Run);
     }
 
     /// <summary>
@@ -166,12 +153,9 @@ public sealed class Run : DocXElement, IEquatable<Run>
     /// </summary>
     /// <param name="text">Text for this run</param>
     /// <param name="formatting">Formatting to apply</param>
-    public Run(string text, Formatting formatting)
+    public Run(string text, Formatting formatting) : this(text)
     {
-        Text = text ?? throw new ArgumentNullException(nameof(text));
-        Xml = new XElement(Name.Run, new XElement(Name.Text, text).PreserveSpace());
         Properties = formatting ?? throw new ArgumentNullException(nameof(formatting));
-        EndIndex = Text.Length;
     }
 
     /// <summary>
@@ -180,27 +164,10 @@ public sealed class Run : DocXElement, IEquatable<Run>
     /// <param name="document">Document owner</param>
     /// <param name="packagePart">Package part this run is in</param>
     /// <param name="xml">XML for the run</param>
-    /// <param name="startIndex">Start index</param>
-    internal Run(Document? document, PackagePart? packagePart, XElement xml, int startIndex) : base(xml)
+    internal Run(Document? document, PackagePart? packagePart, XElement xml) : base(xml)
     {
         if (document != null)
             SetOwner(document, packagePart, false);
-
-        StartIndex = startIndex;
-        Text = string.Empty;
-
-        // Determine the end and get the raw text from the run.
-        int currentPos = startIndex;
-        foreach (var te in xml.Descendants())
-        {
-            var text = DocumentHelpers.ToText(te);
-            if (!string.IsNullOrEmpty(text))
-            {
-                Text += text;
-                currentPos += text.Length;
-            }
-        }
-        EndIndex = currentPos;
     }
 
     /// <summary>
@@ -210,9 +177,22 @@ public sealed class Run : DocXElement, IEquatable<Run>
     /// <returns></returns>
     internal (XElement? leftElement, XElement? rightElement) Split(int index)
     {
-        // Find the (w:t) we need to split based on the index.
-        index -= StartIndex;
-        var (textXml, startIndex) = FindTextElementByIndex(index);
+        // Go through the child (w:t) elements and find the one where this index falls.
+        int count = 0, startIndex = 0;
+        XElement? textXml = null;
+        foreach (var el in Xml.Descendants())
+        {
+            int size = DocumentHelpers.GetSize(el);
+            count += size;
+            if (count >= index)
+            {
+                textXml = el;
+                startIndex = count - size;
+                break;
+            }
+        }
+
+        if (textXml == null) return (null, null);
 
         // Split the block.
         // Returns [textElement, leftSide, rightSide]
@@ -295,26 +275,6 @@ public sealed class Run : DocXElement, IEquatable<Run>
         }
 
         return (splitLeft, splitRight);
-    }
-
-    /// <summary>
-    /// Internal method to recursively walk all child elements in this run and find the spot
-    /// where an edit (insert/delete) would occur.
-    /// </summary>
-    /// <param name="index">Index to search for</param>
-    private (XElement textXml, int startIndex) FindTextElementByIndex(int index)
-    {
-        int count = 0;
-        foreach (var child in Xml.Descendants())
-        {
-            int size = DocumentHelpers.GetSize(child);
-            count += size;
-            if (count >= index)
-            {
-                return (child, count - size);
-            }
-        }
-        return default;
     }
 
     /// <summary>

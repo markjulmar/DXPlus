@@ -55,7 +55,7 @@ public sealed class DocProperty : DocXElement, IEquatable<DocProperty>
             Name = text.Contains(DocPropertyText)
                 ? dpre.Match(text).Groups["name"].Value.Trim('"')
                 : text[..text.IndexOf(' ')];
-            Value = new Run(document, packagePart, value, 0).Text;
+            Value = new Run(document, packagePart, value).Text;
         }
     }
 

@@ -78,8 +78,8 @@ internal static class DocumentHelpers
         if (element.Name != Name.Paragraph)
             throw new ArgumentException($"Passed element {element.Name} not a {Name.Paragraph}.", nameof(element));
 
-        var p = new Paragraph(document, packagePart, element, position);
-        position += GetText(element).Length;
+        var p = new Paragraph(document, packagePart, element);
+        position += GetText(element, false).Length;
         return p;
     }
 
@@ -160,32 +160,6 @@ internal static class DocumentHelpers
     }
 
     /// <summary>
-    /// Helper to return the text length of a document element.
-    /// </summary>
-    /// <param name="xml">Document element</param>
-    /// <returns>Length</returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    internal static int GetSize(XElement xml)
-    {
-        if (xml == null) throw new ArgumentNullException(nameof(xml));
-
-        switch (xml.Name.LocalName)
-        {
-            case RunTextType.Tab:
-            case RunTextType.CarriageReturn:
-            case RunTextType.LineBreak:
-                return 1;
-
-            case RunTextType.Text:
-            case RunTextType.DeletedText:
-                return xml.Value.Length;
-
-            default:
-                return 0;
-        }
-    }
-
-    /// <summary>
     /// Return the unique identifier assigned to a document element
     /// </summary>
     /// <param name="element">XML element</param>
@@ -197,62 +171,37 @@ internal static class DocumentHelpers
     /// Return the inner text for a document element.
     /// </summary>
     /// <param name="element">XML element</param>
+    /// <param name="includeDeletedText">True to include deleted text</param>
     /// <returns>Text or empty string</returns>
-    internal static string GetText(XElement element) 
-        => GetTextRecursive(element).ToString();
-
-    /// <summary>
-    /// Helper to enumerate through a document element and get all the text
-    /// contained within as a single string.
-    /// </summary>
-    /// <param name="xml">Document element (Paragraph, Run, Hyperlink, etc.)</param>
-    /// <param name="sb">StringBuilder used to build up text (pass null to start)</param>
-    /// <returns>Text</returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    internal static StringBuilder GetTextRecursive(XElement xml, StringBuilder? sb = null)
+    internal static string GetText(XElement element, bool includeDeletedText)
     {
-        if (xml == null) throw new ArgumentNullException(nameof(xml));
+        if (element == null) throw new ArgumentNullException(nameof(element));
 
-        sb ??= new StringBuilder();
+        var sb = new StringBuilder();
 
-        // Skip properties and deleted blocks
-        if (xml.Name == Name.ParagraphProperties
-            || xml.Name == Namespace.Main + RunTextType.DeleteMarker
-            || xml.Name == Name.RunProperties)
-            return sb;
-                
-        string text = ToText(xml);
-        if (!string.IsNullOrEmpty(text))
-            sb.Append(text);
-
-        if (xml.HasElements)
-            sb = xml.Elements().Aggregate(sb, (current, e) => GetTextRecursive(e, current));
-
-        return sb;
-    }
-
-    /// <summary>
-    /// Turn a Word (w:t) element into text.
-    /// </summary>
-    /// <param name="e"></param>
-    internal static string ToText(XElement e)
-    {
-        switch (e.Name)
+        foreach (var e in element.Descendants())
         {
-            case {LocalName: RunTextType.Tab}:
-                return "\t";
+            // Skip properties and deleted blocks
+            if (e.Name == Name.ParagraphProperties
+                || e.Name == Namespace.Main + RunTextType.DeleteMarker
+                || e.Name == Name.RunProperties)
+                continue;
 
-            case {LocalName: RunTextType.CarriageReturn}:
-            case {LocalName: RunTextType.LineBreak}:
-                return "\n";
+            string text = e.Name switch
+            {
+                { LocalName: RunTextType.Tab } => "\t",
+                { LocalName: RunTextType.CarriageReturn } or
+                    { LocalName: RunTextType.LineBreak } => "\n",
+                { LocalName: RunTextType.Text } => e.Value,
+                { LocalName: RunTextType.DeletedText } => includeDeletedText ? e.Value : string.Empty,
+                _ => string.Empty,
+            };
 
-            case {LocalName: RunTextType.Text}:
-            //case {LocalName: RunTextType.DeletedText}:
-                return e.Value;
-
-            default:
-                return string.Empty;
+            if (!string.IsNullOrEmpty(text))
+                sb.Append(text);
         }
+
+        return sb.ToString();
     }
 
     /// <summary>
@@ -261,7 +210,7 @@ internal static class DocumentHelpers
     /// <param name="text">Text to parse</param>
     /// <param name="rPr">Optional run properties</param>
     /// <returns>List of run objects</returns>
-    internal static IEnumerable<XElement> FormatInput(string text, XElement? rPr)
+    internal static IEnumerable<XElement> CreateRunElements(string text, XElement? rPr)
     {
         var newRuns = new List<XElement>();
         if (string.IsNullOrEmpty(text))
@@ -342,7 +291,7 @@ internal static class DocumentHelpers
     /// <returns></returns>
     internal static XElement CreateRunProperties(this XElement owner)
     {
-        XElement? rPr = owner.Element(Name.RunProperties);
+        var rPr = owner.Element(Name.RunProperties);
         if (rPr == null)
         {
             rPr = new XElement(Name.RunProperties);
@@ -407,43 +356,54 @@ internal static class DocumentHelpers
     }
 
     /// <summary>
-    /// Create a page break paragraph element
+    /// Retrieve the text length of the passed element by adding up all
+    /// the child text elements ({t}, {tab}, {cr}, {br}, etc.). This walks
+    /// the entire descendant tree from the passed starting point.
     /// </summary>
-    /// <returns>Page break element</returns>
-    internal static XElement PageBreak() => new(Name.Paragraph,
-        new XAttribute(Name.ParagraphId, GenerateHexId()),
-        new XElement(Name.Run, new XElement(Namespace.Main + RunTextType.LineBreak,
-            new XAttribute(Namespace.Main + "type", "page"))));
-
-    /// <summary>
-    /// Retrieve the text length of the passed element
-    /// </summary>
-    /// <param name="textElement"></param>
-    /// <returns></returns>
-    internal static int GetTextLength(XElement? textElement)
+    /// <param name="element">Starting point</param>
+    /// <returns>Total size of all child text elements</returns>
+    internal static int GetTextLength(XElement? element)
     {
+        if (element == null) return 0;
+
         int count = 0;
-        if (textElement != null)
+        foreach (var el in element.Descendants())
         {
-            foreach (var el in textElement.Descendants())
+            switch (el.Name.LocalName)
             {
-                switch (el.Name.LocalName)
-                {
-                    case RunTextType.Tab:
-                        if (el.Parent?.Name.LocalName != "tabs") count++;
-                        break;
+                case RunTextType.Tab:
+                    if (el.Parent?.Name.LocalName != "tabs") count++;
+                    break;
 
-                    case RunTextType.LineBreak:
-                        count++;
-                        break;
+                case RunTextType.CarriageReturn:
+                case RunTextType.LineBreak:
+                    count++;
+                    break;
 
-                    case RunTextType.Text:
-                    case RunTextType.DeletedText:
-                        count += el.Value.Length;
-                        break;
-                }
+                case RunTextType.Text:
+                case RunTextType.DeletedText:
+                    count += el.Value.Length;
+                    break;
             }
         }
         return count;
+    }
+
+    /// <summary>
+    /// Helper to return the text length of a single text child. If the element is not
+    /// a child of a run/insert/delete then zero is returned.
+    /// </summary>
+    /// <param name="xml">Document element</param>
+    /// <returns>Length or zero</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    internal static int GetSize(XElement xml)
+    {
+        if (xml == null) throw new ArgumentNullException(nameof(xml));
+        return xml.Name.LocalName switch
+        {
+            RunTextType.Tab or RunTextType.CarriageReturn or RunTextType.LineBreak => 1,
+            RunTextType.Text or RunTextType.DeletedText => xml.Value.Length,
+            _ => 0,
+        };
     }
 }
