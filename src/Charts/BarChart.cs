@@ -9,6 +9,22 @@ namespace DXPlus.Charts;
 public sealed class BarChart : Chart
 {
     /// <summary>
+    /// Default constructor for a BarChart.
+    /// </summary>
+    public BarChart()
+    {
+    }
+
+    /// <summary>
+    /// Constructor for a loaded BarChart
+    /// </summary>
+    /// <param name="chartDocument"></param>
+    internal BarChart(XDocument chartDocument) 
+        : base(chartDocument, Namespace.Chart + "barChart")
+    {
+    }
+
+    /// <summary>
     /// Specifies the possible directions for a bar chart.
     /// </summary>
     public BarDirection BarDirection

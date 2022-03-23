@@ -123,6 +123,11 @@ public sealed class Document : BlockContainer, IDocument
     }
 
     /// <summary>
+    /// The chart manager
+    /// </summary>
+    internal ChartManager ChartManager => chartManager!;
+
+    /// <summary>
     /// Editing session id for this session.
     /// </summary>
     public string RevisionId => revision.ToString("X8");
@@ -587,64 +592,6 @@ public sealed class Document : BlockContainer, IDocument
     void IDisposable.Dispose() => Close();
 
     /// <summary>
-    /// Create a new paragraph, append it to the document and add the specified chart to it
-    /// </summary>
-    public Paragraph Add(Chart chart)
-    {
-        ThrowIfNoPackage();
-
-        // Create a new chart part uri.
-        string chartPartUriPath;
-        int chartIndex = 0;
-
-        do
-        {
-            chartIndex++;
-            chartPartUriPath = $"/word/charts/chart{chartIndex}.xml";
-        } while (Package.PartExists(new Uri(chartPartUriPath, UriKind.Relative)));
-
-        // Create chart part.
-        var chartPackagePart = Package.CreatePart(new Uri(chartPartUriPath, UriKind.Relative), "application/vnd.openxmlformats-officedocument.drawingml.chart+xml", CompressionOption.Normal);
-
-        // Create a new chart relationship
-        string id = GetNextRelationshipId();
-        _ = PackagePart.CreateRelationship(chartPackagePart.Uri, TargetMode.Internal, $"{Namespace.RelatedDoc.NamespaceName}/chart", id);
-
-        // Save a chart info the chartPackagePart
-        chartPackagePart.Save(chart.Xml);
-
-        // Insert a new chart into a paragraph.
-        var p = this.AddParagraph();
-        var chartElement = new XElement(Name.Run,
-            new XElement(Namespace.Main + RunTextType.Drawing,
-                new XElement(Namespace.WordProcessingDrawing + "inline",
-                    new XElement(Namespace.WordProcessingDrawing + "extent",
-                        new XAttribute("cx", 5486400),
-                        new XAttribute("cy", 3200400)),
-                    new XElement(Namespace.WordProcessingDrawing + "effectExtent",
-                        new XAttribute("l", 0),
-                        new XAttribute("t", 0),
-                        new XAttribute("r", 19050),
-                        new XAttribute("b", 19050)),
-                    new XElement(Namespace.WordProcessingDrawing + "docPr",
-                        new XAttribute("id", 1),
-                        new XAttribute("name", "chart")),
-                    new XElement(Namespace.DrawingMain + "graphic",
-                        new XElement(Namespace.DrawingMain + "graphicData",
-                            new XAttribute("uri", Namespace.Chart.NamespaceName),
-                            new XElement(Namespace.Chart + "chart",
-                                new XAttribute(Namespace.RelatedDoc + "id", id)
-                            )
-                        )
-                    )
-                )
-            ));
-        p.Xml.Add(chartElement);
-        
-        return p;
-    }
-
-    /// <summary>
     /// Inserts a default TOC into the current document.
     /// Title: Table of contents
     /// Switches will be: TOC \h \o '1-3' \u \z
@@ -749,6 +696,8 @@ public sealed class Document : BlockContainer, IDocument
 
         styleManager?.Save();
         numberingStyles?.Save();
+
+        chartManager?.Save();
 
         coreProperties?.Save();
         customProperties?.Save();
@@ -942,6 +891,9 @@ public sealed class Document : BlockContainer, IDocument
         settingsDoc = settingsPart?.Load();
         endnotesDoc = endnotesPart?.Load();
         footnotesDoc = footnotesPart?.Load();
+
+        // Create the chart manager
+        chartManager = new ChartManager(this);
     }
 
     /// <summary>
@@ -966,21 +918,6 @@ public sealed class Document : BlockContainer, IDocument
         }
 
         return numberingStyles;
-    }
-
-    /// <summary>
-    /// Create a new relationship id by locating the last one used.
-    /// </summary>
-    /// <returns></returns>
-    private string GetNextRelationshipId()
-    {
-        // Last used id (0 if none)
-        int id = PackagePart.GetRelationships()
-            .Where(r => r.Id.Substring(0, 3).Equals("rId"))
-            .Select(r => int.TryParse(r.Id.Substring(3), out int result) ? result : 0)
-            .DefaultIfEmpty()
-            .Max();
-        return $"rId{id + 1}";
     }
 
     /// <summary>
@@ -1603,6 +1540,11 @@ public sealed class Document : BlockContainer, IDocument
     /// Comment manager for the document
     /// </summary>
     private CommentManager? commentManager;
+
+    /// <summary>
+    /// The chart manager used when charts are found in the document
+    /// </summary>
+    private ChartManager? chartManager;
 
     /// <summary>
     /// Core properties in document

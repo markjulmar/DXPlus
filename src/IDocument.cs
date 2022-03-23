@@ -129,11 +129,6 @@ public interface IDocument : IContainer, IDisposable
     void ApplyTemplate(Stream templateStream, bool includeContent);
 
     /// <summary>
-    /// Create a new paragraph, append it to the document and add the specified chart to it
-    /// </summary>
-    Paragraph Add(Chart chart);
-
-    /// <summary>
     /// Creates a new document comment which can be associated to a DocxElement
     /// </summary>
     /// <param name="authorName">Author name</param>

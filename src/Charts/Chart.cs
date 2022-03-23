@@ -24,6 +24,34 @@ namespace DXPlus.Charts
         private readonly XElement chartRootXml;
 
         /// <summary>
+        /// Loaded chart from an existing document
+        /// </summary>
+        /// <param name="document">Root document for the chart</param>
+        /// <param name="chartType">XName for the chart element</param>
+        internal Chart(XDocument document, XName chartType)
+        {
+            this.Xml = document;
+            this.ChartXml = document.Descendants(chartType).Single();
+            this.chartRootXml = Xml.Root!.Element(Namespace.Chart + "chart")!;
+
+            // Get the axis values
+            var categoryAxisXml = document.FirstLocalNameDescendant("catAx");
+            var valueAxisXml = document.FirstLocalNameDescendant("valAx");
+            if (categoryAxisXml != null && valueAxisXml != null)
+            {
+                CategoryAxis = new CategoryAxis(categoryAxisXml);
+                ValueAxis = new ValueAxis(valueAxisXml);
+            }
+
+            // Create the legend if it exists.
+            var legendXml = chartRootXml.FirstLocalNameDescendant("legend");
+            if (legendXml != null)
+            {
+                Legend = new ChartLegend(legendXml);
+            }
+        }
+
+        /// <summary>
         /// Create an Chart for this document
         /// </summary>
         internal Chart()

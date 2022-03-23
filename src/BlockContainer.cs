@@ -118,9 +118,9 @@ public abstract class BlockContainer : DocXElement, IContainer
     public IEnumerable<Hyperlink> Hyperlinks => Paragraphs.SelectMany(p => p.Hyperlinks);
 
     /// <summary>
-    /// Retrieve a list of all images (pictures) in the document
+    /// Retrieve a list of all drawings in the document
     /// </summary>
-    public IEnumerable<Picture> Pictures => Paragraphs.SelectMany(p => p.Pictures);
+    public IEnumerable<Drawing> Drawings => Paragraphs.SelectMany(p => p.Drawings);
 
     /// <summary>
     /// Replace matched text with a new value.
@@ -181,7 +181,7 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// <returns>Inserted paragraph</returns>
     public Paragraph Insert(int index, Paragraph paragraph)
     {
-        if (paragraph.Xml.InDom())
+        if (paragraph.Xml.HasParent())
             throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
         if (!InDocument)
             throw new InvalidOperationException("Must be part of document structure.");
@@ -201,15 +201,15 @@ public abstract class BlockContainer : DocXElement, IContainer
     }
 
     /// <summary>
-    /// Add a paragraph at the end of the container
+    /// Add a paragraph with the given text to the end of the container
     /// </summary>
-    public Paragraph AddParagraph(Paragraph paragraph)
+    /// <param name="paragraph">Text to add</param>
+    /// <returns></returns>
+    public Paragraph Add(Paragraph paragraph)
     {
-        if (paragraph == null)
-            throw new ArgumentNullException(nameof(paragraph));
-
-        if (paragraph.Xml.InDom())
-            throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
+        if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
+        if (paragraph.InDocument)
+            paragraph = new Paragraph(Document, PackagePart, paragraph.Xml.Normalize());
 
         AddElementToContainer(paragraph.Xml);
         return OnAddParagraph(paragraph);
@@ -324,28 +324,13 @@ public abstract class BlockContainer : DocXElement, IContainer
     }
 
     /// <summary>
-    /// Add a paragraph with the given text to the end of the container
-    /// </summary>
-    /// <param name="paragraph">Text to add</param>
-    /// <returns></returns>
-    public Paragraph Add(Paragraph paragraph)
-    {
-        if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
-        if (paragraph.InDocument)
-            paragraph = new Paragraph(Document, PackagePart, paragraph.Xml.Normalize());
-
-        AddElementToContainer(paragraph.Xml);
-        return OnAddParagraph(paragraph);
-    }
-
-    /// <summary>
     /// Add a new table to the end of the container
     /// </summary>
     /// <param name="table">Table to add</param>
     /// <returns>The table now associated with the document.</returns>
     public Table Add(Table table)
     {
-        if (table.Xml.InDom())
+        if (table.Xml.HasParent())
             throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
         // The table will be added to the end of the document. If the
@@ -376,7 +361,7 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// <returns>The Table now associated with this document.</returns>
     public Table Insert(int index, Table table)
     {
-        if (table.Xml.InDom())
+        if (table.Xml.HasParent())
             throw new ArgumentException("Cannot add table multiple times.", nameof(table));
         if (Document == null)
             throw new InvalidOperationException("Must be part of document structure.");

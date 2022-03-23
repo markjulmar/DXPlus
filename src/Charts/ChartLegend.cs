@@ -15,7 +15,16 @@ public sealed class ChartLegend
     internal XElement Xml { get; }
 
     /// <summary>
-    /// Constructor
+    /// Constructor used when creating from an existing document
+    /// </summary>
+    /// <param name="xml"></param>
+    public ChartLegend(XElement xml)
+    {
+        Xml = xml ?? throw new ArgumentNullException(nameof(xml));
+    }
+
+    /// <summary>
+    /// Constructor for a new chart legend
     /// </summary>
     /// <param name="position"></param>
     /// <param name="overlay"></param>

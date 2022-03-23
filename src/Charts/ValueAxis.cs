@@ -8,10 +8,18 @@ namespace DXPlus.Charts;
 public sealed class ValueAxis : Axis
 {
     /// <summary>
-    /// Constructor
+    /// Constructor used when loading from document.
+    /// </summary>
+    /// <param name="xml"></param>
+    public ValueAxis(XElement xml) : base(xml)
+    {
+    }
+
+    /// <summary>
+    /// Constructor for new chart value axis.
     /// </summary>
     /// <param name="id">Unique identifier</param>
-    public ValueAxis(uint id) : base(InitialXml(id))
+    internal ValueAxis(uint id) : base(InitialXml(id))
     {
     }
 

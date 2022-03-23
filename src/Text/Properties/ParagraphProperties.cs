@@ -130,7 +130,7 @@ public sealed class ParagraphProperties : XElementWrapper
     }
 
     /// <summary>
-    /// Set the left indentation in 1/20th pt for this FirstParagraph.
+    /// Set the left indentation for this paragraph.
     /// </summary>
     public double? LeftIndent
     {
@@ -152,7 +152,7 @@ public sealed class ParagraphProperties : XElementWrapper
     }
 
     /// <summary>
-    /// Set the right indentation in 1/20th pt for this FirstParagraph.
+    /// Set the right indentation for this paragraph.
     /// </summary>
     public double? RightIndent
     {
@@ -242,7 +242,7 @@ public sealed class ParagraphProperties : XElementWrapper
     }
 
     /// <summary>
-    /// Get or set the indentation of the first line of this FirstParagraph.
+    /// Get or set the indentation of the first line of this paragraph.
     /// </summary>
     public double? FirstLineIndent
     {
@@ -265,7 +265,7 @@ public sealed class ParagraphProperties : XElementWrapper
     }
 
     /// <summary>
-    /// Get or set the indentation of all but the first line of this FirstParagraph.
+    /// Get or set the indentation of all but the first line of this paragraph.
     /// </summary>
     public double? HangingIndent
     {

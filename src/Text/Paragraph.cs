@@ -3,6 +3,7 @@ using System.Drawing;
 using System.IO.Packaging;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using DXPlus.Charts;
 using DXPlus.Internal;
 
 namespace DXPlus;
@@ -15,6 +16,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
 {
     private Table? tableAfterParagraph;
     private readonly List<Hyperlink> unownedHyperlinks = new();
+    private readonly List<Chart> unownedCharts = new();
 
     /// <summary>
     /// Unique id for this paragraph
@@ -84,6 +86,15 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// </summary>
     /// <param name="text">Text to add</param>
     public Paragraph(string text) : this(new Run(text))
+    {
+    }
+
+    /// <summary>
+    /// Public constructor for the paragraph
+    /// </summary>
+    /// <param name="text">Text to add</param>
+    /// <param name="formatting">Formatting to apply</param>
+    public Paragraph(string text, Formatting formatting) : this(new Run(text, formatting))
     {
     }
 
@@ -329,13 +340,72 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
+    /// Create a new paragraph, append it to the document and add the specified chart to it
+    /// </summary>
+    public Paragraph Add(string name, Chart chart)
+    {
+        string relationId;
+        long chartId;
+
+        if (InDocument)
+        {
+            (relationId, chartId) = Document.ChartManager.CreateRelationship(chart);
+        }
+        else
+        {
+            unownedCharts.Add(chart);
+            relationId = (unownedCharts.Count * -1).ToString();
+            chartId = 0;
+        }
+
+
+
+        // Create the XML needed to host the chart in a run.
+        var chartElement = new XElement(Name.Run,
+            new XElement(Name.RunProperties, new XElement(Name.NoProof)),
+            new XElement(Namespace.Main + RunTextType.Drawing,
+                new XElement(Namespace.WordProcessingDrawing + "inline",
+                    new XAttribute("distB", 0), 
+                    new XAttribute("distL", 0),
+                    new XAttribute("distR", 0),
+                    new XAttribute("distT", 0),
+                    new XElement(Namespace.WordProcessingDrawing + "extent",
+                        new XAttribute("cx", 576 * Uom.EmuConversion),
+                        new XAttribute("cy", 336 * Uom.EmuConversion)),
+                    new XElement(Namespace.WordProcessingDrawing + "effectExtent",
+                        new XAttribute("l", 0),
+                        new XAttribute("t", 0),
+                        new XAttribute("r", 0),
+                        new XAttribute("b", 0)),
+                    new XElement(Namespace.WordProcessingDrawing + "docPr",
+                        new XAttribute("id", chartId),
+                        new XAttribute("name", name)),
+                    new XElement(Namespace.WordProcessingDrawing + "cNvGraphicFramePr"),
+                    new XElement(Namespace.DrawingMain + "graphic",
+                        new XElement(Namespace.DrawingMain + "graphicData",
+                            new XAttribute("uri", Namespace.Chart.NamespaceName),
+                            new XElement(Namespace.Chart + "chart",
+                                new XAttribute(Namespace.RelatedDoc + "id", relationId)
+                            )
+                        )
+                    )
+                )
+            ));
+        
+        // Add it to our paragraph
+        Xml.Add(chartElement);
+        return this;
+    }
+
+
+    /// <summary>
     /// Insert a table before this paragraph
     /// </summary>
     /// <param name="table"></param>
     public Paragraph InsertBefore(Table table)
     {
         if (table == null) throw new ArgumentNullException(nameof(table));
-        if (table.Xml.InDom())
+        if (table.Xml.HasParent())
             throw new ArgumentException("Cannot add table multiple times.", nameof(table));
         if (!InDocument)
             throw new InvalidOperationException("Cannot insert table without owning document.");
@@ -353,7 +423,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     public Paragraph InsertAfter(Table table)
     {
         if (table == null) throw new ArgumentNullException(nameof(table));
-        if (table.Xml.InDom())
+        if (table.Xml.HasParent())
             throw new ArgumentException("Cannot add table multiple times.", nameof(table));
         if (Table != null)
             throw new Exception("Can only add one table after a paragraph. Must add paragraph separators between tables or they merge.");
@@ -400,19 +470,8 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// <summary>
     /// Returns a list of all Pictures in a paragraph.
     /// </summary>
-    public IReadOnlyList<Picture> Pictures => (
-        from p in Xml.LocalNameDescendants("pic")
-        let id = p.FirstLocalNameDescendant("blip").AttributeValue(Namespace.RelatedDoc + "embed")
-        where id != null
-        select new Picture(SafeDocument, SafePackagePart, p,
-            new Image(SafeDocument, SafeDocument?.SafePackagePart?.GetRelationship(id)))
-    ).Union(
-        from p in Xml.LocalNameDescendants("pict")
-        let id = p.FirstLocalNameDescendant("imagedata").AttributeValue(Namespace.RelatedDoc + "id")
-        where id != null
-        select new Picture(SafeDocument, SafePackagePart, p,
-            new Image(SafeDocument, SafeDocument?.SafePackagePart?.GetRelationship(id)))
-    ).ToList().AsReadOnly();
+    public IEnumerable<Drawing> Drawings 
+        => Xml.Descendants(Name.Drawing).Select(e => new Drawing(SafeDocument, SafePackagePart, e));
 
     /// <summary>
     /// Gets or replaces the text value of this paragraph.
@@ -469,13 +528,37 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
+    /// Fluent method to add a bookmark to the end of the paragraph
+    /// </summary>
+    /// <param name="bookmarkName">Name</param>
+    /// <returns>Paragraph owner</returns>
+    public Paragraph AddBookmark(string bookmarkName)
+    {
+        if (this.BookmarkExists(bookmarkName))
+            throw new ArgumentException($"Bookmark '{bookmarkName}' already exists.", nameof(bookmarkName));
+
+        long id = InDocument
+            ? Document.GetNextDocumentId()
+            : 0;
+
+        var bookmarkStart = new XElement(Name.BookmarkStart,
+            new XAttribute(Name.Id, id), new XAttribute(Name.NameId, bookmarkName));
+
+        var bookmarkEnd = new XElement(Name.BookmarkEnd,
+            new XAttribute(Name.Id, id), new XAttribute(Name.NameId, bookmarkName));
+
+        Xml.Add(bookmarkStart, bookmarkEnd);
+        
+        return this;
+    }
+
+    /// <summary>
     /// Appends a new bookmark to the paragraph
     /// </summary>
     /// <param name="bookmarkName">Bookmark name</param>
     /// <param name="firstRun">Start run to set bookmark on</param>
     /// <param name="lastRun">End run to set bookmark on</param>
-    /// <returns>This paragraph</returns>
-    public Paragraph SetBookmark(string bookmarkName, Run? firstRun = null, Run? lastRun = null)
+    public void SetBookmark(string bookmarkName, Run? firstRun = null, Run? lastRun = null)
     {
         if (this.BookmarkExists(bookmarkName))
             throw new ArgumentException($"Bookmark '{bookmarkName}' already exists.", nameof(bookmarkName));
@@ -486,6 +569,10 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
 
         firstRun ??= Runs.FirstOrDefault();
         lastRun ??= Runs.LastOrDefault();
+
+        // Make sure we never insert bookmark start/end out of order.
+        if (firstRun == null && lastRun != null)
+            firstRun = lastRun;
 
         var bookmarkStart = new XElement(Name.BookmarkStart, 
             new XAttribute(Name.Id, id), new XAttribute(Name.NameId, bookmarkName));
@@ -512,8 +599,6 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
         {
             Xml.Add(bookmarkEnd);
         }
-
-        return this;
     }
 
     /// <summary>
@@ -521,13 +606,23 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// </summary>
     /// <param name="equation">The Equation to append.</param>
     /// <returns>The paragraph with the Equation now appended.</returns>
-    public Paragraph AddEquation(string equation)
+    public Paragraph AddEquation(string equation) => AddEquation(equation, new Formatting());
+
+    /// <summary>
+    /// Add an equation to a document.
+    /// </summary>
+    /// <param name="equation">The Equation to append.</param>
+    /// <param name="formatting">Additional formatting to apply</param>
+    /// <returns>The paragraph with the Equation now appended.</returns>
+    public Paragraph AddEquation(string equation, Formatting formatting)
     {
+        formatting.Font = new FontFamily("Cambria Math");
+
         // Create equation element
         var oMathPara = new XElement(Name.MathParagraph,
             new XElement(Name.OfficeMath,
                 new XElement(Namespace.Math + "r",
-                    new Formatting { Font = new FontFamily("Cambria Math") }.Xml,
+                    formatting.Xml,
                     new XElement(Namespace.Math + "t", equation)
                 )
             )
@@ -679,17 +774,22 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
-    /// Add an image to a document, create a custom view of that image (picture) and then insert it into a paragraph using append.
+    /// Add a picture into the document.
     /// </summary>
-    /// <param name="drawing">The Picture to append.</param>
-    /// <returns>The paragraph with the Picture now appended.</returns>
+    /// <param name="picture">Picture to add</param>
+    /// <returns>Paragraph owner</returns>
+    public Paragraph Add(Picture picture) => Add(picture.Drawing!);
+
+    /// <summary>
+    /// Add a drawing into the document.
+    /// </summary>
+    /// <param name="drawing">The drawing to append.</param>
+    /// <returns>The paragraph with the drawing now appended.</returns>
     public Paragraph Add(Drawing drawing)
     {
         if (InDocument)
         {
             drawing.SetOwner(Document, PackagePart, true);
-            var picture = drawing.Picture ?? throw new InvalidOperationException("Failed to create picture from drawing - possibly missing image?");
-            picture.RelationshipId = picture.GetOrCreateImageRelationship();
         }
 
         // Add a new run with the given drawing to the paragraph.
@@ -708,7 +808,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// <param name="findText">The string to find</param>
     /// <param name="comparisonType">True to ignore case in the search</param>
     /// <returns>A list of indexes.</returns>
-    public IEnumerable<int> FindAll(string findText, StringComparison comparisonType)
+    public IEnumerable<int> FindText(string findText, StringComparison comparisonType)
     {
         if (findText == null) throw new ArgumentNullException(nameof(findText));
 
@@ -854,24 +954,31 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     }
 
     /// <summary>
-    /// Insert a Picture into a paragraph at the given text index.
+    /// Insert a picture into the paragraph
     /// </summary>
-    /// <param name="index">The text index to insert at.</param>
-    /// <param name="picture">The Picture to insert.</param>
+    /// <param name="index">Zero-based index to insert at.</param>
+    /// <param name="picture">Picture to insert</param>
+    /// <returns>Paragraph owner</returns>
+    public Paragraph Insert(int index, Picture picture) => Insert(index, picture.Drawing!);
+
+    /// <summary>
+    /// Insert a Drawing into a paragraph at the given text index.
+    /// </summary>
+    /// <param name="index">Zero-based index to insert at.</param>
+    /// <param name="drawing">The drawing to insert.</param>
     /// <returns>The modified paragraph.</returns>
-    public Paragraph Insert(int index, Picture picture)
+    public Paragraph Insert(int index, Drawing drawing)
     {
         if (InDocument)
         {
-            picture.SetOwner(Document, PackagePart, true);
-            picture.RelationshipId = picture.GetOrCreateImageRelationship();
+            drawing.SetOwner(Document, PackagePart, true);
         }
 
-        // Create a run for the picture
+        // Create a run for the drawing
         var xml = new XElement(Name.Run,
             new XElement(Name.RunProperties,
                 new XElement(Namespace.Main + "noProof")),
-            picture.Xml);
+            drawing.Xml);
 
         if (index == 0)
         {
@@ -1045,7 +1152,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// <param name="text">Regular expression to search for</param>
     /// <param name="replaceText">Text to replace all occurrences of oldValue.</param>
     /// <param name="comparisonType">Comparison type - defaults to current culture</param>
-    public bool FindReplace(string text, string? replaceText, StringComparison comparisonType = StringComparison.CurrentCulture)
+    public bool FindReplace(string text, string? replaceText, StringComparison comparisonType)
     {
         if (text == null) throw new ArgumentNullException(nameof(text));
 
@@ -1190,18 +1297,38 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
             tableAfterParagraph = null;
         }
 
-        if (Pictures.Any())
+        Dictionary<int, (string relationId, long chartId)> chartIds = new();
+        if (unownedCharts.Any())
+        {
+            for (var index = 0; index < unownedCharts.Count; index++)
+            {
+                var chart = unownedCharts[index];
+                chartIds.Add((index + 1) * -1, Document.ChartManager.CreateRelationship(chart));
+            }
+        }
+
+        if (Drawings.Any())
         {
             // Check to see if the .rels file exists and create it if not.
             _ = Document.EnsureRelsPathExists(PackagePart);
 
             // Fix up pictures
-            foreach (var picture in Pictures)
+            foreach (var drawing in Drawings)
             {
-                picture.SetOwner(Document, PackagePart, true);
-                picture.RelationshipId = picture.GetOrCreateImageRelationship();
+                drawing.SetOwner(Document, PackagePart, true);
+
+                if (int.TryParse(drawing.ChartRelationId, out var id))
+                {
+                    if (chartIds.TryGetValue(id, out var relation))
+                    {
+                        drawing.ChartRelationId = relation.relationId;
+                        drawing.Id = relation.chartId;
+                    }
+                }
             }
         }
+
+        unownedCharts.Clear();
     }
 
     /// <summary>

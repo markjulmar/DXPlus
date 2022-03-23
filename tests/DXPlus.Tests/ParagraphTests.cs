@@ -1,4 +1,5 @@
 using System;
+using System.Drawing;
 using System.Linq;
 using System.Xml.Linq;
 using System.Xml.XPath;
@@ -218,6 +219,23 @@ namespace DXPlus.Tests
             Assert.Single(doc.Hyperlinks);
             Assert.Equal("link", doc.Hyperlinks.First().Text);
             Assert.Equal(microsoftUrl, doc.Hyperlinks.First().Uri);
+        }
+
+        [Fact]
+        void ComplexParagraphHasMultipleRuns()
+        {
+            var document = Document.Create();
+            var p = document.Add("Hello, World! This is the first paragraph.")
+                .Newline()
+                .AddText("This is a second line. ")
+                .AddText("It includes some ")
+                .AddText("large", new Formatting {Font = new FontFamily("Times New Roman"), FontSize = 32})
+                .AddText(", blue", new Formatting {Color = Color.Blue})
+                .AddText(", bold text.", new Formatting {Bold = true})
+                .Newline()
+                .AddText("And finally some normal text.");
+
+            Assert.Equal(9, p.Runs.Count());
         }
 
         [Fact]
@@ -747,14 +765,13 @@ namespace DXPlus.Tests
         {
             var document = Document.Create();
             var image = document.CreateImage("1022.jpg");
-            var drawing = image.CreatePicture(150, 150);
-            var pic = drawing.Picture;
+            var pic = image.CreatePicture(150, 150);
 
             var paragraph = new Paragraph();
-            paragraph.Add(drawing);
+            paragraph.Add(pic);
 
-            Assert.Single(paragraph.Pictures);
-            Assert.Same(pic.Xml, paragraph.Pictures.Single().Xml);
+            Assert.Single(paragraph.Drawings);
+            Assert.Same(pic.Drawing.Xml, paragraph.Drawings.Single().Xml);
         }
 
         [Fact]
@@ -767,11 +784,11 @@ namespace DXPlus.Tests
             var paragraph = new Paragraph();
             paragraph.Add(picture);
 
-            Assert.Single(paragraph.Pictures);
-            Assert.Null(paragraph.Pictures[0].SafePackagePart);
+            Assert.Single(paragraph.Drawings);
+            Assert.Null(paragraph.Drawings.First().SafePackagePart);
 
             document.Add(paragraph);
-            Assert.NotNull(paragraph.Pictures[0].PackagePart);
+            Assert.NotNull(paragraph.Drawings.First().PackagePart);
         }
 
         [Fact]
@@ -794,52 +811,54 @@ namespace DXPlus.Tests
             var paragraph = document.AddParagraph();
             var image = document.CreateImage("1022.jpg");
             var picture = image.CreatePicture(150, 150);
+            var drawing = picture.Drawing;
             
             paragraph.Add(picture);
-            picture.AddCaption(text);
+            drawing.AddCaption(text);
 
             document.Add("Ending paragraph");
 
-            Assert.Equal("Figure 1" + text, picture.GetCaption());
-            Assert.Throws<ArgumentException>(() => picture.AddCaption(text));
+            Assert.Equal("Figure 1" + text, drawing.GetCaption());
+            Assert.Throws<ArgumentException>(() => drawing.AddCaption(text));
 
             var picture2 = image.CreatePicture(200, 200);
+            var drawing2 = picture2.Drawing;
             document.AddParagraph().Add(picture2);
-            picture2.AddCaption("Another picture");
+            drawing2.AddCaption("Another picture");
 
-            Assert.Equal("Figure 2 Another picture", picture2.GetCaption());
+            Assert.Equal("Figure 2 Another picture", drawing2.GetCaption());
         }
 
         [Fact]
         public void FindReplaceReturnsFalseWhenNotFound()
         {
             var p = new Paragraph("This is a test paragraph");
-            Assert.False(p.FindReplace("tst", "Test"));
+            Assert.False(p.FindReplace("tst", "Test", StringComparison.CurrentCulture));
 
             p = new Paragraph();
-            Assert.False(p.FindReplace("test", null));
+            Assert.False(p.FindReplace("test", null, StringComparison.CurrentCulture));
         }
 
         [Fact]
         public void FindReplaceReplaceCharacter()
         {
             var p = new Paragraph("This is a test paragraph");
-            Assert.True(p.FindReplace("test", "Test"));
+            Assert.True(p.FindReplace("test", "Test", StringComparison.CurrentCulture));
             Assert.Equal("This is a Test paragraph", p.Text);
-            Assert.Throws<ArgumentNullException>(() => p.FindReplace(null, null));
+            Assert.Throws<ArgumentNullException>(() => p.FindReplace(null, null, StringComparison.CurrentCulture));
         }
 
         [Fact]
         public void FindReplaceCanRemoveWords()
         {
             var p = new Paragraph("This is a test paragraph");
-            Assert.True(p.FindReplace("test ", null));
+            Assert.True(p.FindReplace("test ", null, StringComparison.CurrentCulture));
             Assert.Equal("This is a paragraph", p.Text);
 
-            Assert.True(p.FindReplace("paragraph", null));
+            Assert.True(p.FindReplace("paragraph", null, StringComparison.CurrentCulture));
             Assert.Equal("This is a ", p.Text);
 
-            Assert.True(p.FindReplace("This is a ", null));
+            Assert.True(p.FindReplace("This is a ", null, StringComparison.CurrentCulture));
             Assert.Equal("", p.Text);
         }
 

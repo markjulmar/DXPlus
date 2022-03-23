@@ -11,9 +11,9 @@ namespace DXPlus.Internal;
 internal static class XLinqExtensions
 {
     /// <summary>
-    /// Returns whether this Xml fragment is in a document.
+    /// Returns whether this Xml fragment has a parent
     /// </summary>
-    public static bool InDom(this XNode? node) => node?.Parent != null;
+    public static bool HasParent(this XNode? node) => node?.Parent != null;
 
     /// <summary>
     /// Retrieves a specific attribute value by following a path of XNames

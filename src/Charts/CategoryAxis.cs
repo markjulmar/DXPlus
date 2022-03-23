@@ -8,13 +8,26 @@ namespace DXPlus.Charts;
 public sealed class CategoryAxis : Axis
 {
     /// <summary>
-    /// Constructor
+    /// Constructor when loading from an existing document
     /// </summary>
-    /// <param name="id">Identifier for the chart</param>
-    public CategoryAxis(uint id) : base(InitialXml(id))
+    /// <param name="xml"></param>
+    internal CategoryAxis(XElement xml) : base(xml)
     {
     }
 
+    /// <summary>
+    /// Constructor when creating a new chart
+    /// </summary>
+    /// <param name="id">Identifier for the chart</param>
+    internal CategoryAxis(uint id) : base(InitialXml(id))
+    {
+    }
+
+    /// <summary>
+    /// The initial XML used for a new chart axis.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     private static XElement InitialXml(uint id) =>
         XElement.Parse($@"<c:catAx xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
                 <c:axId val=""{id}""/>

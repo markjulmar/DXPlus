@@ -82,11 +82,11 @@ public class Image
     /// <param name="name">Name of the image</param>
     /// <param name="description">Description of the image</param>
     /// <returns>New picture</returns>
-    public Drawing CreatePicture(string name, string description)
+    public Picture CreatePicture(string name, string description)
     {
         if (document == null)
             throw new InvalidOperationException("Cannot create picture from image obtained by unowned element.");
-        return document.CreateDrawingWithEmbeddedPicture(Id, name, description);
+        return document.CreateDrawingWithEmbeddedPicture(Id, name, description).Picture!;
     }
 
     /// <summary>
@@ -95,7 +95,7 @@ public class Image
     /// <param name="width">Width of the picture</param>
     /// <param name="height">Height of the picture</param>
     /// <returns>New picture</returns>
-    public Drawing CreatePicture(double width, double height) =>
+    public Picture CreatePicture(double width, double height) =>
         CreatePicture(string.Empty, string.Empty, width, height);
 
     /// <summary>
@@ -106,23 +106,23 @@ public class Image
     /// <param name="height">Rendered height</param>
     /// <param name="width">Rendered width</param>
     /// <returns>New picture</returns>
-    public Drawing CreatePicture(string name, string description, double width, double height)
+    public Picture CreatePicture(string name, string description, double width, double height)
     {
         if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
         if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
 
         // Create the drawing.
-        var drawing = CreatePicture(name, description);
-            
+        var picture = CreatePicture(name, description);
+
         // Set the extent on the drawing
+        picture.Width = width;
+        picture.Height = height;
+
+        // Use the same values for the drawing owner
+        var drawing = picture.Drawing!;
         drawing.Width = width;
         drawing.Height = height;
-
-        // Use the same values for the embedded picture.
-        var pic = drawing.Picture!;
-        pic.Width = width;
-        pic.Height = height;
             
-        return drawing;
+        return picture;
     }
 }

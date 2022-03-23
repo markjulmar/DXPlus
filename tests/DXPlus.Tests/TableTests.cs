@@ -55,6 +55,24 @@ namespace DXPlus.Tests
         }
 
         [Fact]
+        public void TableWithValuesAddsColRows()
+        {
+            var t = new Table(new[,]
+            {
+                { "Heading 1", "Heading 2", "Heading 3", "Heading 4" },
+                { "One", "Two", "Three", "Four" },
+                { "One", "Two", "Three", "Four" },
+                { "One", "Two", "Three", "Four" },
+                { "One", "Two", "Three", "Four" }
+            });
+
+            Assert.Equal(4, t.ColumnCount);
+            Assert.Equal(5, t.Rows.Count);
+            Assert.Equal("Heading 3", t.Rows[0].Cells[2].Text);
+            Assert.Equal("Four", t.Rows[4].Cells[3].Text);
+        }
+
+        [Fact]
         public void TableWidthConvertersUseDxa()
         {
             var t = new Table

@@ -1,5 +1,4 @@
 ﻿using System.Text.RegularExpressions;
-using DXPlus.Internal;
 
 namespace DXPlus;
 
@@ -25,13 +24,23 @@ public static class ContainerExtensions
         => container.AddParagraph().AddEquation(equation);
 
     /// <summary>
+    /// Add a new equation using the specified text at the end of this container.
+    /// </summary>
+    /// <param name="container">Container to add equation to</param>
+    /// <param name="equation">Equation</param>
+    /// <param name="formatting">Formatting to use for the equation</param>
+    /// <returns>Newly added paragraph</returns>
+    public static Paragraph AddEquation(this IContainer container, string equation, Formatting formatting)
+        => container.AddParagraph().AddEquation(equation, formatting);
+
+    /// <summary>
     /// Find all occurrences of a string in the container. This searches headers, all paragraphs, and footers.
     /// </summary>
     /// <param name="container"></param>
     /// <param name="findText"></param>
     /// <param name="comparisonType"></param>
     /// <returns></returns>
-    public static IEnumerable<(Paragraph paragraphOwner, int index)> FindText(this IContainer container, string findText, StringComparison comparisonType)
+    public static IEnumerable<(Paragraph paragraphOwner, int index)> FindText(this IContainer container, string findText, StringComparison comparisonType = StringComparison.CurrentCulture)
     {
         if (container == null) throw new ArgumentNullException(nameof(container));
         if (string.IsNullOrEmpty(findText)) throw new ArgumentNullException(nameof(findText));
@@ -40,7 +49,7 @@ public static class ContainerExtensions
             .Union(container.Paragraphs)
             .Union(container.Sections.SelectMany(s => s.Footers).SelectMany(footer => footer.Paragraphs))
             .ToList()
-            .SelectMany(p => p.FindAll(findText, comparisonType).Select(n => (p, n)));
+            .SelectMany(p => p.FindText(findText, comparisonType).Select(n => (p, n)));
     }
 
     /// <summary>
@@ -50,7 +59,7 @@ public static class ContainerExtensions
     /// <param name="container"></param>
     /// <param name="regex">Pattern to search for</param>
     /// <returns>Index and matched strings</returns>
-    public static IEnumerable<(Paragraph paragraphOwner, int index, string text)> FindText(this IContainer container, Regex regex)
+    public static IEnumerable<(Paragraph paragraphOwner, int index, string text)> FindPattern(this IContainer container, Regex regex)
     {
         if (container == null) throw new ArgumentNullException(nameof(container));
         if (regex == null) throw new ArgumentNullException(nameof(regex));
@@ -78,16 +87,11 @@ public static class ContainerExtensions
     public static Drawing CreateVideo(this IDocument document, string imageFile, Uri video, double width, double height)
     {
         var img = document.CreateImage(imageFile);
-        var drawing = img.CreatePicture(width,height);
+        var picture = img.CreatePicture(width,height);
+        var drawing = picture.Drawing;
             
-        drawing.Hyperlink = video;
-            
-        var pic = drawing.Picture;
-        if (pic != null)
-        {
-            pic.Hyperlink = video;
-            pic.ImageExtensions.Add(new VideoExtension(video.OriginalString, width, height));
-        }
+        drawing.Hyperlink = picture.Hyperlink = video;
+        picture.ImageExtensions.Add(new VideoExtension(video.OriginalString, width, height));
 
         return drawing;
     }
@@ -106,16 +110,11 @@ public static class ContainerExtensions
         int width, int height)
     {
         var img = document.CreateImage(image, imageContentType);
-        var drawing = img.CreatePicture(width,height);
+        var picture = img.CreatePicture(width,height);
+        var drawing = picture.Drawing;
 
-        drawing.Hyperlink = video;
-            
-        var pic = drawing.Picture;
-        if (pic != null)
-        {
-            pic.Hyperlink = video;
-            pic.ImageExtensions.Add(new VideoExtension(video.OriginalString, width, height));
-        }
+        drawing.Hyperlink = picture.Hyperlink = video;
+        picture.ImageExtensions.Add(new VideoExtension(video.OriginalString, width, height));
 
         return drawing;
     }

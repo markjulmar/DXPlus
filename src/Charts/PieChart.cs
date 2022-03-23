@@ -9,6 +9,22 @@ namespace DXPlus.Charts;
 public sealed class PieChart : Chart
 {
     /// <summary>
+    /// Default constructor for a LineChart.
+    /// </summary>
+    public PieChart()
+    {
+    }
+
+    /// <summary>
+    /// Constructor for a loaded BarChart
+    /// </summary>
+    /// <param name="chartDocument"></param>
+    internal PieChart(XDocument chartDocument)
+        : base(chartDocument, Namespace.Chart + "pieChart")
+    {
+    }
+
+    /// <summary>
     /// Chart has an axis?
     /// </summary>
     public override bool HasAxis => false;

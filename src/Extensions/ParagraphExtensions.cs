@@ -119,13 +119,11 @@ public static class ParagraphExtensions
     public static Paragraph AddCaption(this Drawing drawing, string captionText)
     {
         if (drawing == null) throw new ArgumentNullException(nameof(drawing));
-        if (string.IsNullOrEmpty(captionText))
-            throw new ArgumentException("Value cannot be null or empty.", nameof(captionText));
+        if (string.IsNullOrEmpty(captionText)) throw new ArgumentException("Value cannot be null or empty.", nameof(captionText));
+        if (!drawing.InDocument) throw new InvalidOperationException("Drawing must be part of a document.");
+        if (drawing.Parent?.Parent is not Paragraph paragraphOwner) throw new InvalidOperationException("Drawing must be in paragraph to add caption.");
 
-        if (!drawing.Xml.InDom() || drawing.Parent?.Parent is not Paragraph previousParagraph)
-            throw new ArgumentException("Drawing must be in document.", nameof(drawing));
-
-        if (previousParagraph.NextParagraph?.Xml.Descendants(Name.SimpleField)
+        if (paragraphOwner.NextParagraph?.Xml.Descendants(Name.SimpleField)
                 .FirstOrDefault(x => x.Attribute(Name.Instr)?.Value == FigureSequence) != null)
             throw new ArgumentException("Drawing already has caption.", nameof(drawing));
 
@@ -169,7 +167,7 @@ public static class ParagraphExtensions
             
         captionParagraph.AddText(captionText);
 
-        previousParagraph.Xml.AddAfterSelf(captionParagraph.Xml);
+        paragraphOwner.Xml.AddAfterSelf(captionParagraph.Xml);
         return captionParagraph;
     }
 

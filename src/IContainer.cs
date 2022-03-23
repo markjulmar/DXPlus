@@ -31,9 +31,9 @@ public interface IContainer
     IEnumerable<Hyperlink> Hyperlinks { get; }
 
     /// <summary>
-    /// Retrieve a list of all images (pictures) in the document
+    /// Retrieve a list of all drawings in the document
     /// </summary>
-    IEnumerable<Picture> Pictures { get; }
+    IEnumerable<Drawing> Drawings { get; }
 
     /// <summary>
     /// Removes paragraph at specified position

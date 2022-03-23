@@ -24,7 +24,7 @@ public abstract class Block : DocXElement
     {
         get
         {
-            if (!Xml.InDom()) return null;
+            if (!Xml.HasParent()) return null;
             if (Xml.Parent?.Name == Name.Body) return this.Document;
             return Xml.Parent != null
                 ? WrapElementBlockContainer(this.Document, this.PackagePart, Xml.Parent)
@@ -55,7 +55,7 @@ public abstract class Block : DocXElement
         if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
         if (!InDocument)
             throw new InvalidOperationException("Can only append to paragraphs in an existing document structure.");
-        if (paragraph.Xml.InDom())
+        if (paragraph.Xml.HasParent())
             throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
         Xml.AddBeforeSelf(paragraph.Xml);
@@ -72,7 +72,7 @@ public abstract class Block : DocXElement
         if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
         if (!InDocument)
             throw new InvalidOperationException("Cannot add paragraphs to unowned paragraphs - must be part of a document structure.");
-        if (paragraph.Xml.InDom())
+        if (paragraph.Xml.HasParent())
             throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
         // If this element is a paragraph and it currently has a table after it, then add the given paragraph
