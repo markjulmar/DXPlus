@@ -11,7 +11,7 @@ public sealed class PieChart : Chart
     /// <summary>
     /// Default constructor for a LineChart.
     /// </summary>
-    public PieChart()
+    public PieChart() : base(Resources.Resource.PieChart(), false)
     {
     }
 
@@ -25,17 +25,7 @@ public sealed class PieChart : Chart
     }
 
     /// <summary>
-    /// Chart has an axis?
-    /// </summary>
-    public override bool HasAxis => false;
-
-    /// <summary>
     /// Return maximum count of series
     /// </summary>
     public override short MaxSeriesCount => 1;
-
-    /// <summary>
-    /// Method which creates the current chart XML
-    /// </summary>
-    protected override XElement CreateChartXml() => new(Namespace.Chart + "pieChart");
 }

@@ -18,32 +18,9 @@ public sealed class CategoryAxis : Axis
     /// <summary>
     /// Constructor when creating a new chart
     /// </summary>
-    /// <param name="id">Identifier for the chart</param>
-    internal CategoryAxis(uint id) : base(InitialXml(id))
+    /// <param name="id">Identifier for the axis</param>
+    /// <param name="vaxId">Identifier for the cross axis</param>
+    internal CategoryAxis(uint id, uint vaxId) : base(Resources.Resource.ChartCategoryAxis(id, vaxId))
     {
     }
-
-    /// <summary>
-    /// The initial XML used for a new chart axis.
-    /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
-    private static XElement InitialXml(uint id) =>
-        XElement.Parse($@"<c:catAx xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
-                <c:axId val=""{id}""/>
-                <c:scaling>
-                  <c:orientation val=""minMax""/>
-                </c:scaling>
-                <c:delete val=""0""/>
-                <c:axPos val=""b""/>
-                <c:majorTickMark val=""out""/>
-                <c:minorTickMark val=""none""/>
-                <c:tickLblPos val=""nextTo""/>
-                <c:crossAx val=""154227840""/>
-                <c:crosses val=""autoZero""/>
-                <c:auto val=""1""/>
-                <c:lblAlgn val=""ctr""/>
-                <c:lblOffset val=""100""/>
-                <c:noMultiLvlLbl val=""0""/>
-              </c:catAx>");
 }

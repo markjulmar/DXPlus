@@ -11,7 +11,7 @@ public sealed class LineChart : Chart
     /// <summary>
     /// Default constructor for a LineChart.
     /// </summary>
-    public LineChart()
+    public LineChart() : base(Resources.Resource.LineChart(), true)
     {
     }
 
@@ -31,16 +31,5 @@ public sealed class LineChart : Chart
     {
         get => ChartXml.Element(Namespace.Chart + "grouping")!.GetEnumValue<Grouping>();
         set => ChartXml.GetOrAddElement(Namespace.Chart + "grouping").SetEnumValue(value);
-    }
-
-    /// <summary>
-    /// Create the initial chart XML
-    /// </summary>
-    protected override XElement CreateChartXml()
-    {
-        return XElement.Parse(
-            @"<c:lineChart xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
-                 <c:grouping val=""standard""/>                    
-              </c:lineChart>");
     }
 }

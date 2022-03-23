@@ -8,9 +8,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DXPlus.Tests", "tests\DXPlu
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReadDocument", "tests\ReadDocument\ReadDocument.csproj", "{55E60748-A6AC-4AC5-BE61-AA5DBFFC75FE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tester", "Tester\Tester.csproj", "{1D39537A-0C5E-4322-964A-A8D56AEFB1AC}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenXmlValidator", "tests\OpenXmlValidator\OpenXmlValidator.csproj", "{EAF7FAA2-6372-44F2-9236-4A21EA98C316}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GenerateSampleDoc", "tests\GenerateSampleDoc\GenerateSampleDoc.csproj", "{1D39537A-0C5E-4322-964A-A8D56AEFB1AC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

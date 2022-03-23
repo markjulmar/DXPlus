@@ -61,7 +61,7 @@ internal sealed class ChartManager
 
         var relationship = document.PackagePart.GetRelationship(relationId);
 
-        Uri chartUri = relationship.SourceUri;
+        Uri chartUri = relationship.TargetUri;
         var chartPackagePart = document.Package.GetPart(chartUri);
 
         var chartDocument = chartPackagePart.Load();

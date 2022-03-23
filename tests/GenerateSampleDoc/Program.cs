@@ -6,13 +6,12 @@ using System.Linq;
 using DXPlus;
 using DXPlus.Charts;
 
-namespace Tester
+namespace GenerateSampleDoc
 {
     public static class Program
     {
-        private static List<Action<IDocument>> testers = new()
+        private static readonly List<Action<IDocument>> testers = new()
         {
-            /*
             WriteTitle, 
             WriteFirstParagraph,
             AddVideoToDoc,
@@ -24,8 +23,9 @@ namespace Tester
             CreateBasicTable,
             AddTableToDocument,
             AddBookmarkToDocument,
-            */
-            AddBarChartToDocument
+            AddBarChartToDocument,
+            AddLineChartToDocument,
+            AddPieChartToDocument
         };
 
         public static void Main()
@@ -324,13 +324,7 @@ namespace Tester
         {
             doc.AddPageBreak();
 
-            var chart = new BarChart
-            {
-                BarDirection = BarDirection.Column,
-                BarGrouping = BarGrouping.Standard,
-                GapWidth = 400
-            };
-
+            var chart = new BarChart();
             chart.AddLegend(ChartLegendPosition.Bottom, false);
 
             // Add series
@@ -344,6 +338,42 @@ namespace Tester
 
             // Insert chart into document
             doc.AddParagraph().Add("sales", chart);
+        }
+
+        static void AddLineChartToDocument(IDocument doc)
+        {
+            doc.AddPageBreak();
+
+            var chart = new LineChart();
+            chart.AddLegend(ChartLegendPosition.Bottom, false);
+
+            // Add series
+            var acmeSeries = new Series("ACME") { Color = Color.DarkBlue };
+            acmeSeries.Bind(CompanySales.Acme, nameof(CompanySales.Year), nameof(CompanySales.TotalSales));
+            chart.AddSeries(acmeSeries);
+
+            var sprocketsSeries = new Series("Cyberdyne") { Color = Color.FromArgb(1, 0xff, 0, 0xff) };
+            sprocketsSeries.Bind(CompanySales.Cyberdyne, nameof(CompanySales.Year), nameof(CompanySales.TotalSales));
+            chart.AddSeries(sprocketsSeries);
+
+            // Insert chart into document
+            doc.AddParagraph().Add("sales2", chart);
+        }
+
+        static void AddPieChartToDocument(IDocument doc)
+        {
+            doc.AddPageBreak();
+
+            var chart = new PieChart();
+            chart.AddLegend(ChartLegendPosition.Bottom, false);
+
+            // Add series
+            var acmeSeries = new Series("ACME");
+            acmeSeries.Bind(CompanySales.Acme, nameof(CompanySales.Year), nameof(CompanySales.TotalSales));
+            chart.AddSeries(acmeSeries);
+
+            // Insert chart into document
+            doc.AddParagraph().Add("sales3", chart);
         }
 
         static void AddBookmarkToDocument(IDocument doc)
