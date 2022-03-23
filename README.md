@@ -7,7 +7,7 @@ This library is a fork of [DocX](http://docx.codeplex.com/) which has been heavi
 The library is available on NuGet:
 
 ```
-Install-Package Julmar.DxPlus -Version 1.2.0
+Install-Package Julmar.DxPlus -Version 1.2.1
 ```
 
 > **Note**:
