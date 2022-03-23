@@ -118,9 +118,9 @@ public abstract class BlockContainer : DocXElement, IContainer
     public IEnumerable<Hyperlink> Hyperlinks => Paragraphs.SelectMany(p => p.Hyperlinks);
 
     /// <summary>
-    /// Retrieve a list of all images (pictures) in the document
+    /// Retrieve a list of all drawings in the document
     /// </summary>
-    public IEnumerable<Picture> Pictures => Paragraphs.SelectMany(p => p.Pictures);
+    public IEnumerable<Drawing> Drawings => Paragraphs.SelectMany(p => p.Drawings);
 
     /// <summary>
     /// Replace matched text with a new value.
@@ -146,7 +146,7 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// </summary>
     /// <param name="bookmarkName">Bookmark name</param>
     /// <param name="toInsert">Text to insert</param>
-    public bool InsertAtBookmark(string bookmarkName, string toInsert)
+    public bool InsertTextAtBookmark(string bookmarkName, string toInsert)
     {
         if (string.IsNullOrWhiteSpace(bookmarkName))
         {
@@ -156,13 +156,13 @@ public abstract class BlockContainer : DocXElement, IContainer
         // Try headers first
         if (Sections.SelectMany(s => s.Headers)
             .SelectMany(header => header.Paragraphs)
-            .Any(paragraph => paragraph.InsertAtBookmark(bookmarkName, toInsert)))
+            .Any(paragraph => paragraph.InsertTextAtBookmark(bookmarkName, toInsert)))
         {
             return true;
         }
 
         // Body
-        if (Paragraphs.Any(paragraph => paragraph.InsertAtBookmark(bookmarkName, toInsert)))
+        if (Paragraphs.Any(paragraph => paragraph.InsertTextAtBookmark(bookmarkName, toInsert)))
         {
             return true;
         }
@@ -170,7 +170,7 @@ public abstract class BlockContainer : DocXElement, IContainer
         // Footers
         return Sections.SelectMany(s => s.Footers)
             .SelectMany(header => header.Paragraphs)
-            .Any(paragraph => paragraph.InsertAtBookmark(bookmarkName, toInsert));
+            .Any(paragraph => paragraph.InsertTextAtBookmark(bookmarkName, toInsert));
     }
 
     /// <summary>
@@ -181,35 +181,35 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// <returns>Inserted paragraph</returns>
     public Paragraph Insert(int index, Paragraph paragraph)
     {
-        if (paragraph.Xml.InDom())
+        if (paragraph.Xml.HasParent())
             throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
         if (!InDocument)
             throw new InvalidOperationException("Must be part of document structure.");
 
-        var insertPos = Document.FindParagraphByIndex(index);
-        if (insertPos == null)
+        var (targetParagraph, startIndex) = Document.FindParagraphByIndex(index);
+        if (targetParagraph == null)
         {
             AddElementToContainer(paragraph.Xml);
         }
         else
         {
-            var split = SplitParagraph(insertPos, index - insertPos.StartIndex!.Value);
-            insertPos.Xml.ReplaceWith(split[0], paragraph.Xml, split[1]);
+            var (leftElement, rightElement) = targetParagraph.Split(index - startIndex);
+            targetParagraph.Xml.ReplaceWith(leftElement, paragraph.Xml, rightElement);
         }
 
         return OnAddParagraph(paragraph);
     }
 
     /// <summary>
-    /// Add a paragraph at the end of the container
+    /// Add a paragraph with the given text to the end of the container
     /// </summary>
-    public Paragraph AddParagraph(Paragraph paragraph)
+    /// <param name="paragraph">Text to add</param>
+    /// <returns></returns>
+    public Paragraph Add(Paragraph paragraph)
     {
-        if (paragraph == null)
-            throw new ArgumentNullException(nameof(paragraph));
-
-        if (paragraph.Xml.InDom())
-            throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
+        if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
+        if (paragraph.InDocument)
+            paragraph = new Paragraph(Document, PackagePart, paragraph.Xml.Normalize());
 
         AddElementToContainer(paragraph.Xml);
         return OnAddParagraph(paragraph);
@@ -254,12 +254,9 @@ public abstract class BlockContainer : DocXElement, IContainer
     internal Paragraph OnAddParagraph(Paragraph paragraph)
     {
         if (string.IsNullOrEmpty(paragraph.Id))
-        {
             paragraph.Xml.SetAttributeValue(Name.ParagraphId, DocumentHelpers.GenerateHexId());
-        }
 
         paragraph.SetOwner(Document, PackagePart, true);
-        paragraph.SetStartIndex(Paragraphs.Single(p => p.Id == paragraph.Id).StartIndex!.Value);
 
         return paragraph;
     }
@@ -327,28 +324,13 @@ public abstract class BlockContainer : DocXElement, IContainer
     }
 
     /// <summary>
-    /// Add a paragraph with the given text to the end of the container
-    /// </summary>
-    /// <param name="paragraph">Text to add</param>
-    /// <returns></returns>
-    public Paragraph Add(Paragraph paragraph)
-    {
-        if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
-        if (paragraph.InDocument)
-            paragraph = new Paragraph(Document, PackagePart, paragraph.Xml.Normalize(), 0);
-
-        AddElementToContainer(paragraph.Xml);
-        return OnAddParagraph(paragraph);
-    }
-
-    /// <summary>
     /// Add a new table to the end of the container
     /// </summary>
     /// <param name="table">Table to add</param>
     /// <returns>The table now associated with the document.</returns>
     public Table Add(Table table)
     {
-        if (table.Xml.InDom())
+        if (table.Xml.HasParent())
             throw new ArgumentException("Cannot add table multiple times.", nameof(table));
 
         // The table will be added to the end of the document. If the
@@ -379,18 +361,18 @@ public abstract class BlockContainer : DocXElement, IContainer
     /// <returns>The Table now associated with this document.</returns>
     public Table Insert(int index, Table table)
     {
-        if (table.Xml.InDom())
+        if (table.Xml.HasParent())
             throw new ArgumentException("Cannot add table multiple times.", nameof(table));
         if (Document == null)
             throw new InvalidOperationException("Must be part of document structure.");
 
         table.SetOwner(Document, PackagePart, true);
 
-        var firstParagraph = Document.FindParagraphByIndex(index);
+        var (firstParagraph, startIndex) = Document.FindParagraphByIndex(index);
         if (firstParagraph != null)
         {
-            var split = SplitParagraph(firstParagraph, index - firstParagraph.StartIndex!.Value);
-            firstParagraph.Xml.ReplaceWith(split[0], table.Xml, split[1]);
+            var (leftElement, rightElement) = firstParagraph.Split(index - startIndex);
+            firstParagraph.Xml.ReplaceWith(leftElement, table.Xml, rightElement);
         }
 
         return table;
@@ -426,50 +408,5 @@ public abstract class BlockContainer : DocXElement, IContainer
                 : e.Name != Name.SectionProperties
                     ? new UnknownBlock(blockContainer.Document, blockContainer.PackagePart, e)
                     : null;
-    }
-
-    /// <summary>
-    /// Split a paragraph at a specific index
-    /// </summary>
-    /// <param name="paragraph">FirstParagraph to split</param>
-    /// <param name="index">Character index to split at</param>
-    /// <returns>Left/Right split</returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    private static XElement?[] SplitParagraph(Paragraph paragraph, int index)
-    {
-        if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
-        if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
-
-        XElement?[] split = {null, null};
-
-        var r = paragraph.FindRunAffectedByEdit(EditType.Insert, index);
-        if (r == null)
-            return split;
-
-        XElement? before, after;
-        switch (r.Xml.Parent?.Name.LocalName)
-        {
-            case "ins":
-                split = paragraph.SplitEdit(r.Xml.Parent, index, EditType.Insert);
-                before = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.Parent.ElementsBeforeSelf(), split[0]);
-                after = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.Parent.ElementsAfterSelf(), split[1]);
-                break;
-
-            case "del":
-                split = paragraph.SplitEdit(r.Xml.Parent, index, EditType.Delete);
-                before = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.Parent.ElementsBeforeSelf(), split[0]);
-                after = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.Parent.ElementsAfterSelf(), split[1]);
-                break;
-
-            default:
-                split = r.SplitAtIndex(index);
-                before = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), r.Xml.ElementsBeforeSelf(), split[0]);
-                after = new XElement(paragraph.Xml.Name, paragraph.Xml.Attributes(), split[1], r.Xml.ElementsAfterSelf());
-                break;
-        }
-
-        if (!before.Elements().Any()) before = null;
-        if (!after.Elements().Any()) after = null;
-        return new[] { before, after };
     }
 }

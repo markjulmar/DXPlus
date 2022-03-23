@@ -71,19 +71,13 @@ public sealed class Picture : DocXElement, IEquatable<Picture>
     /// <summary>
     /// Returns the drawing owner of this picture.
     /// </summary>
-    public Drawing? Drawing
+    public Drawing Drawing
     {
         get
         {
-            var xml = Xml;
-            while (xml.Parent != null)
-            {
-                if (xml.Parent.Name.LocalName == "drawing")
-                {
-                    return new Drawing(Document, PackagePart, xml.Parent);
-                }
-            }
-            return null;
+            var xml = Xml.FindParent(Internal.Name.Drawing) ??
+                      throw new InvalidOperationException("Picture missing drawing element owner.");
+            return new Drawing(SafeDocument, SafePackagePart, xml);
         }
     }
         
@@ -383,19 +377,20 @@ public sealed class Picture : DocXElement, IEquatable<Picture>
     }
 
     /// <summary>
-    /// Get or create a relationship link to a picture
+    /// Called when this picture is added to a document.
     /// </summary>
-    /// <returns>Relationship id</returns>
-    internal string GetOrCreateImageRelationship()
+    protected override void OnAddToDocument()
     {
         string? uri = image.Uri?.OriginalString;
-        if (uri == null) return string.Empty;
-        return PackagePart.GetRelationshipsByType(Namespace.RelatedDoc.NamespaceName + "/image")
-                   .Where(r => r.TargetUri.OriginalString == uri)
-                   .Select(r => r.Id)
-                   .SingleOrDefault() ??
-               PackagePart.CreateRelationship(image.Uri!,
-                   TargetMode.Internal, Namespace.RelatedDoc.NamespaceName + "/image").Id;
+        if (uri != null)
+        {
+            RelationshipId = PackagePart.GetRelationshipsByType(Namespace.RelatedDoc.NamespaceName + "/image")
+                                 .Where(r => r.TargetUri.OriginalString == uri)
+                                 .Select(r => r.Id)
+                                 .SingleOrDefault() ??
+                             PackagePart.CreateRelationship(image.Uri!,
+                                 TargetMode.Internal, Namespace.RelatedDoc.NamespaceName + "/image").Id;
+        }
     }
 
     /// <summary>

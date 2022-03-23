@@ -7,20 +7,15 @@ namespace DXPlus;
 /// <summary>
 /// This represents a bookmark in the Word document.
 /// </summary>
-public sealed class Bookmark : IEquatable<Bookmark>
+public sealed class Bookmark : XElementWrapper, IEquatable<Bookmark>
 {
-    /// <summary>
-    /// XML behind this bookmark
-    /// </summary>
-    internal readonly XElement Xml;
-
     /// <summary>
     /// Name of the bookmark
     /// </summary>
     public string Name
     {
         get => Xml.AttributeValue(Internal.Name.NameId) ?? throw new DocumentFormatException(nameof(Name));
-        set => Xml.SetAttributeValue(Internal.Name.NameId, value);
+        set => Xml!.SetAttributeValue(Internal.Name.NameId, value);
     }
 
     /// <summary>
@@ -34,7 +29,7 @@ public sealed class Bookmark : IEquatable<Bookmark>
     public long Id
     {
         get => long.TryParse(Xml.AttributeValue(Internal.Name.Id), out var value) ? value : 0;
-        set => Xml.SetAttributeValue(Internal.Name.Id, value);
+        set => Xml!.SetAttributeValue(Internal.Name.Id, value);
     }
 
     /// <summary>
@@ -44,7 +39,7 @@ public sealed class Bookmark : IEquatable<Bookmark>
     public int? FirstTableColumn
     {
         get => int.TryParse(Xml.AttributeValue(Namespace.Main + "colFirst"), out var val) ? val : null;
-        set => Xml.SetAttributeValue(Namespace.Main + "colFirst", value);
+        set => Xml!.SetAttributeValue(Namespace.Main + "colFirst", value);
     }
 
     /// <summary>
@@ -54,7 +49,7 @@ public sealed class Bookmark : IEquatable<Bookmark>
     public int? LastTableColumn
     {
         get => int.TryParse(Xml.AttributeValue(Namespace.Main + "colLast"), out var val) ? val : null;
-        set => Xml.SetAttributeValue(Namespace.Main + "colLast", value);
+        set => Xml!.SetAttributeValue(Namespace.Main + "colLast", value);
     }
 
     /// <summary>
@@ -70,11 +65,11 @@ public sealed class Bookmark : IEquatable<Bookmark>
         get
         {
             var sb = new StringBuilder();
-            foreach (var item in Xml.ElementsAfterSelf())
+            foreach (var item in Xml!.ElementsAfterSelf())
             {
                 if (item.Name.LocalName == Internal.Name.Run.LocalName)
                 {
-                    sb.Append(DocumentHelpers.GetText(item));
+                    sb.Append(DocumentHelpers.GetText(item, false));
                 }
                 else if (item.Name == Internal.Name.BookmarkEnd
                          && item.AttributeValue(Internal.Name.Id) == Id.ToString())
@@ -92,7 +87,7 @@ public sealed class Bookmark : IEquatable<Bookmark>
     public bool SetText(string text)
     {
         // Look for either a sibling run, or the bookmarkEnd tag.
-        var nextNode = Xml.NextNode;
+        var nextNode = Xml!.NextNode;
         if (nextNode == null)
             return false;
         
@@ -144,7 +139,7 @@ public sealed class Bookmark : IEquatable<Bookmark>
         if (bookmark == null) 
             throw new ArgumentNullException(nameof(bookmark));
             
-        bookmark.AddAfterSelf(DocumentHelpers.FormatInput(text, null));
+        bookmark.AddAfterSelf(DocumentHelpers.CreateRunElements(text, null));
         
         return true;
     }
@@ -155,7 +150,7 @@ public sealed class Bookmark : IEquatable<Bookmark>
     /// <param name="other"></param>
     /// <returns></returns>
     public bool Equals(Bookmark? other) 
-        => other is not null && (ReferenceEquals(this, other) || Xml.Equals(other.Xml));
+        => other is not null && (ReferenceEquals(this, other) || Xml!.Equals(other.Xml));
 
     /// <summary>
     /// Equality check
@@ -168,5 +163,5 @@ public sealed class Bookmark : IEquatable<Bookmark>
     /// Hashcode generator
     /// </summary>
     /// <returns></returns>
-    public override int GetHashCode() => Xml.GetHashCode();
+    public override int GetHashCode() => Xml!.GetHashCode();
 }

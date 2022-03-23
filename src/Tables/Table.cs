@@ -12,12 +12,36 @@ public sealed class Table : Block, IEquatable<Table>
 {
     private string? customTableDesignName;
     private TableDesign tableDesign;
+    private List<TableRow>? rowCache;
 
     /// <summary>
     /// Public constructor to create an empty table
     /// </summary>
     public Table() : this(null, null, CreateEmptyTableXml())
     {
+    }
+
+    /// <summary>
+    /// Create a table from a multidimensional array of strings.
+    /// </summary>
+    /// <param name="values"></param>
+    public Table(string[,] values) : this(values.GetLength(0), values.GetLength(1))
+    {
+        if (!values.IsFixedSize)
+            throw new ArgumentOutOfRangeException(nameof(values), "Values must be a fixed multi-dimensional array.");
+
+        int totalRows = values.GetLength(0);
+        int totalColumns = values.GetLength(1);
+
+        for (int rowIndex = 0; rowIndex < totalRows; rowIndex++)
+        {
+            var row = Rows[rowIndex];
+            for (int colIndex = 0; colIndex < totalColumns; colIndex++)
+            {
+                var cell = row.Cells[colIndex];
+                cell.Text = values[rowIndex, colIndex];
+            }
+        }
     }
 
     /// <summary>
@@ -232,7 +256,8 @@ public sealed class Table : Block, IEquatable<Table>
                 style.SetAttributeValue(Name.MainVal, tableDesign.GetEnumName());
             }
 
-            ApplyTableStyleToDocumentOwner();
+            if (InDocument) 
+                EnsureTableStyleInDocument();
         }
     }
 
@@ -241,7 +266,10 @@ public sealed class Table : Block, IEquatable<Table>
     /// </summary>
     protected override void OnAddToDocument()
     {
-        if (ColumnCount == 0 || !Rows.Any())
+        // Force a regen of the rows.
+        rowCache = null;
+
+        if (ColumnCount == 0 || Rows.Count == 0)
             throw new Exception("Cannot add empty table to document.");
 
         // Fix up any unsized columns
@@ -251,7 +279,7 @@ public sealed class Table : Block, IEquatable<Table>
         }
 
         // Add any required styles
-        ApplyTableStyleToDocumentOwner();
+        EnsureTableStyleInDocument();
 
         // Set the document/package for each row.
         Rows.ToList().ForEach(r => r.SetOwner(Document, PackagePart, true));
@@ -260,10 +288,8 @@ public sealed class Table : Block, IEquatable<Table>
     /// <summary>
     /// This ensures the owning document has the table style applied.
     /// </summary>
-    private void ApplyTableStyleToDocumentOwner()
+    private void EnsureTableStyleInDocument()
     {
-        if (!InDocument) return;
-
         string? designName = TblPr.Element(Namespace.Main + "tblStyle").GetVal();
         if (string.IsNullOrWhiteSpace(designName) 
             || string.Compare(designName, "none", StringComparison.InvariantCultureIgnoreCase)==0)
@@ -274,7 +300,10 @@ public sealed class Table : Block, IEquatable<Table>
             var styleElement = Resource.DefaultTableStyles()
                 .Descendants()
                 .FindByAttrVal(Namespace.Main + "styleId", designName);
-            Document.Styles.Add(styleElement!);
+            if (styleElement == null) throw new InvalidOperationException("Unable to create/add table style.");
+            
+            styleElement.SetAttributeValue(Namespace.Main + "type", StyleType.Table.GetEnumName());
+            Document.Styles.Add(styleElement);
         }
     }
 
@@ -291,12 +320,19 @@ public sealed class Table : Block, IEquatable<Table>
     /// <summary>
     /// Returns Pictures in this container.
     /// </summary>
-    public IEnumerable<Picture> Pictures => Rows.SelectMany(r => r.Cells).SelectMany(c => c.Pictures);
+    public IEnumerable<Drawing> Drawings => Rows.SelectMany(r => r.Cells).SelectMany(c => c.Drawings);
 
     /// <summary>
     /// Returns a list of rows in this table.
     /// </summary>
-    public IEnumerable<TableRow> Rows => Xml.Elements(Namespace.Main + "tr").Select(r => new TableRow(this, r));
+    public IReadOnlyList<TableRow> Rows
+    {
+        get
+        {
+            return rowCache ??= 
+                new List<TableRow>(Xml.Elements(Namespace.Main + "tr").Select(r => new TableRow(this, r)));
+        }
+    }
 
     /// <summary>
     /// Gets or Sets the value of the Table Caption (Alternate Text Title) of this table.
@@ -338,6 +374,7 @@ public sealed class Table : Block, IEquatable<Table>
         if (index < 0 || index > ColumnCount)
             throw new ArgumentOutOfRangeException(nameof(index));
 
+        rowCache = null;
         bool insertAtEnd = (index == ColumnCount);
 
         // Create a new column by splitting the last column in half.
@@ -375,7 +412,7 @@ public sealed class Table : Block, IEquatable<Table>
     /// <summary>
     /// Insert a blank row at the end of this table.
     /// </summary>
-    public TableRow AddRow() => InsertRow(Rows.Count());
+    public TableRow AddRow() => InsertRow(Rows.Count);
 
     /// <summary>
     /// Insert a row into this table.
@@ -426,6 +463,7 @@ public sealed class Table : Block, IEquatable<Table>
         else
             rows[index].Xml.AddBeforeSelf(row.Xml);
 
+        rowCache = null;
         return row;
     }
 
@@ -441,7 +479,7 @@ public sealed class Table : Block, IEquatable<Table>
         if (startRow < 0 || startRow >= endRow)
             throw new IndexOutOfRangeException(nameof(startRow));
 
-        if (endRow > Rows.Count())
+        if (endRow > Rows.Count)
             throw new IndexOutOfRangeException(nameof(count));
 
         var startRowElement = Rows.ElementAt(startRow).Cells[columnIndex].Xml;
@@ -449,8 +487,8 @@ public sealed class Table : Block, IEquatable<Table>
         // Move the content over and add vMerge to each row cell
         for (int rowIndex = startRow; rowIndex <= endRow; rowIndex++)
         {
-            TableCell cell = Rows.ElementAt(rowIndex).Cells[columnIndex];
-            XElement vMerge = cell.Xml.GetOrAddElement(Namespace.Main + "tcPr")
+            var cell = Rows[rowIndex].Cells[columnIndex];
+            var vMerge = cell.Xml.GetOrAddElement(Namespace.Main + "tcPr")
                 .GetOrAddElement(Namespace.Main + "vMerge");
 
             if (rowIndex == startRow)
@@ -506,13 +544,14 @@ public sealed class Table : Block, IEquatable<Table>
     /// <param name="index">The row to remove.</param>
     public void RemoveRow(int index)
     {
-        List<TableRow> rows = Rows.ToList();
+        var rows = Rows.ToList();
         if (index < 0 || index > rows.Count - 1)
         {
             throw new IndexOutOfRangeException();
         }
 
         rows[index].Xml.Remove();
+        rowCache = null;
         if (!Rows.Any()) // use real property
             Remove();
     }
@@ -629,7 +668,11 @@ public sealed class Table : Block, IEquatable<Table>
         {
             double totalSpace;
             if (TableWidth?.Type == TableWidthUnit.Dxa || !InDocument)
-                totalSpace = TableWidth?.Width ?? PageSize.LetterWidth;
+            {
+                totalSpace = TableWidth?.Width ?? 0;
+                if (totalSpace == 0)
+                    totalSpace = PageSize.LetterWidth;
+            }
             else
             {
                 totalSpace = Document.Sections.First().Properties.AdjustedPageWidth;

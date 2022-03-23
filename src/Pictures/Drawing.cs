@@ -1,5 +1,6 @@
 using System.IO.Packaging;
 using System.Xml.Linq;
+using DXPlus.Charts;
 using DXPlus.Internal;
 
 namespace DXPlus;
@@ -19,19 +20,31 @@ public sealed class Drawing: DocXElement, IEquatable<Drawing>, ITextElement
     /// <summary>
     /// The unique id assigned to this drawing within the document.
     /// </summary>
-    public int Id => int.TryParse(DocPr.AttributeValue("id"), out var result) ? result : throw new DocumentFormatException(nameof(Id));
+    public long Id
+    {
+        get => long.TryParse(DocPr.AttributeValue("id"), out var result)
+                ? result
+                : throw new DocumentFormatException(nameof(Id));
+
+        internal set => DocPr.SetAttributeValue("id", value);
+    }
 
     /// <summary>
     /// Parent run object (if any)
     /// </summary>
     public Run? Parent => Xml.Parent?.Name == Internal.Name.Run 
-        ? new Run(Document, PackagePart, Xml.Parent, -1) : null;
+        ? new Run(Document, PackagePart, Xml.Parent) : null;
 
     /// <summary>
     /// Element type (for ITextElement)
     /// </summary>
-    public string ElementType => "drawing";
-        
+    public string ElementType => RunTextType.Drawing;
+
+    /// <summary>
+    /// Text length for this element
+    /// </summary>
+    public int Length => 0;
+
     /// <summary>
     /// Gets or sets the name of this drawing
     /// </summary>
@@ -39,6 +52,38 @@ public sealed class Drawing: DocXElement, IEquatable<Drawing>, ITextElement
     {
         get => DocPr.AttributeValue("name");
         set => DocPr.SetAttributeValue("name", value ?? "");
+    }
+
+    /// <summary>
+    /// Returns a related chart identifier.
+    /// </summary>
+    public string? ChartRelationId
+    {
+        get =>
+            Xml.Element(Namespace.WordProcessingDrawing + "inline")?
+                .Element(Namespace.DrawingMain + "graphic")?
+                .Element(Namespace.DrawingMain + "graphicData")?
+                .Element(Namespace.Chart + "chart")?
+                .AttributeValue(Namespace.RelatedDoc + "id");
+
+        set =>
+            Xml.GetOrAddElement(Namespace.WordProcessingDrawing + "inline")
+                .GetOrAddElement(Namespace.DrawingMain + "graphic")
+                .GetOrAddElement(Namespace.DrawingMain + "graphicData")
+                .GetOrAddElement(Namespace.Chart + "chart")
+                .SetAttributeValue(Namespace.RelatedDoc + "id", value);
+    }
+
+    /// <summary>
+    /// Returns the associated chart if it exists.
+    /// </summary>
+    public Chart? Chart
+    {
+        get
+        {
+            string? id = ChartRelationId;
+            return !string.IsNullOrEmpty(id) && InDocument ? Document.ChartManager.Get(id) : null;
+        }
     }
 
     /// <summary>
@@ -140,11 +185,24 @@ public sealed class Drawing: DocXElement, IEquatable<Drawing>, ITextElement
     /// <param name="document">Document owner</param>
     /// <param name="packagePart">Package owner</param>
     /// <param name="xml">The XElement to wrap</param>
-    internal Drawing(Document document, PackagePart packagePart, XElement xml) : base(xml)
+    internal Drawing(Document? document, PackagePart? packagePart, XElement xml) : base(xml)
     {
-        if (xml.Name.LocalName != "drawing")
+        if (xml.Name != Internal.Name.Drawing)
             throw new ArgumentException("Root element must be <drawing> for Drawing.");
-        SetOwner(document, packagePart, false);
+        if (document != null)
+        {
+            SetOwner(document, packagePart, false);
+        }
+    }
+
+    /// <summary>
+    /// Called when this drawing is added to the document.
+    /// </summary>
+    protected override void OnAddToDocument()
+    {
+        // If there's a picture in this drawing, make sure it has the correct relationship
+        // setup now that the drawing is in the document.
+        Picture?.SetOwner(Document, PackagePart, true);
     }
 
     /// <summary>
@@ -179,7 +237,7 @@ public sealed class Drawing: DocXElement, IEquatable<Drawing>, ITextElement
                 var image = Document.GetRelatedImage(id);
                 if (image != null)
                 {
-                    return new Picture(Document, PackagePart, pic, image);
+                    return new Picture(SafeDocument, SafePackagePart, pic, image);
                 }
             }
 

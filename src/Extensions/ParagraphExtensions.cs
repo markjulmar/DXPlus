@@ -21,7 +21,7 @@ public static class ParagraphExtensions
     public static Paragraph Newline(this Paragraph paragraph)
     {
         if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
-        return paragraph.Add("\n");
+        return paragraph.AddText("\n");
     }
 
     /// <summary>
@@ -119,13 +119,11 @@ public static class ParagraphExtensions
     public static Paragraph AddCaption(this Drawing drawing, string captionText)
     {
         if (drawing == null) throw new ArgumentNullException(nameof(drawing));
-        if (string.IsNullOrEmpty(captionText))
-            throw new ArgumentException("Value cannot be null or empty.", nameof(captionText));
+        if (string.IsNullOrEmpty(captionText)) throw new ArgumentException("Value cannot be null or empty.", nameof(captionText));
+        if (!drawing.InDocument) throw new InvalidOperationException("Drawing must be part of a document.");
+        if (drawing.Parent?.Parent is not Paragraph paragraphOwner) throw new InvalidOperationException("Drawing must be in paragraph to add caption.");
 
-        if (!drawing.Xml.InDom() || drawing.Parent?.Parent is not Paragraph previousParagraph)
-            throw new ArgumentException("Drawing must be in document.", nameof(drawing));
-
-        if (previousParagraph.NextParagraph?.Xml.Descendants(Name.SimpleField)
+        if (paragraphOwner.NextParagraph?.Xml.Descendants(Name.SimpleField)
                 .FirstOrDefault(x => x.Attribute(Name.Instr)?.Value == FigureSequence) != null)
             throw new ArgumentException("Drawing already has caption.", nameof(drawing));
 
@@ -144,7 +142,7 @@ public static class ParagraphExtensions
         }
 
         var captionParagraph = new Paragraph().Style(HeadingType.Caption.ToString());
-        captionParagraph.Add("Figure ");
+        captionParagraph.AddText("Figure ");
 
         var figureIds =
             document.Xml.Descendants(Name.SimpleField)
@@ -167,9 +165,9 @@ public static class ParagraphExtensions
         if (captionText[0] != ':' && captionText[0] != ' ')
             captionText = " " + captionText;
             
-        captionParagraph.Add(captionText);
+        captionParagraph.AddText(captionText);
 
-        previousParagraph.Xml.AddAfterSelf(captionParagraph.Xml);
+        paragraphOwner.Xml.AddAfterSelf(captionParagraph.Xml);
         return captionParagraph;
     }
 
@@ -200,4 +198,19 @@ public static class ParagraphExtensions
         properties.TopBorder = border;
         properties.BottomBorder = border;
     }
+
+    /// <summary>
+    /// Attaches a comment to this paragraph.
+    /// </summary>
+    /// <param name="paragraph"></param>
+    /// <param name="comment">Comment to add</param>
+    public static void AttachComment(this Paragraph paragraph, Comment comment) => paragraph.AttachComment(comment, paragraph.Runs.First());
+
+    /// <summary>
+    /// Attach a comment to this Run
+    /// </summary>
+    /// <param name="paragraph"></param>
+    /// <param name="comment">Comment</param>
+    /// <param name="run">Text run</param>
+    public static void AttachComment(this Paragraph paragraph, Comment comment, Run run) => paragraph.AttachComment(comment, run, run);
 }

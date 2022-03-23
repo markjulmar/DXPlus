@@ -162,7 +162,7 @@ public sealed class Comment : DocXElement, IEquatable<Comment>
         if (paragraph == null) 
             throw new ArgumentNullException(nameof(paragraph));
 
-        if (paragraph.Xml.InDom())
+        if (paragraph.Xml.HasParent())
             throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
         // Ensure we have the proper styles

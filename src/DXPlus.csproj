@@ -12,7 +12,7 @@
 	<Copyright>(c) 2020-2022 julmar.com</Copyright>
 	<Title>OpenXML DocX Utility Library</Title>
     <Description>.NET Core library to work with .docx format.</Description>
-    <Version>1.2.0.0</Version>
+    <Version>1.2.1.0</Version>
 	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageProjectUrl>https://github.com/markjulmar/DXPlus</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -31,18 +31,24 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\barChart.xml" />
+    <None Remove="Resources\chart.xml" />
+    <None Remove="Resources\chartCategoryAxis.xml" />
+    <None Remove="Resources\chartValueAxis.xml" />
     <None Remove="Resources\comment.xml" />
     <None Remove="Resources\comments.xml" />
     <None Remove="Resources\core.xml" />
     <None Remove="Resources\document.xml" />
     <None Remove="Resources\drawing.xml" />
     <None Remove="Resources\hyperlinkStyle.xml" />
+    <None Remove="Resources\lineChart.xml" />
     <None Remove="Resources\ListParagraphStyle.xml" />
     <None Remove="Resources\numbering.bullets.xml" />
     <None Remove="Resources\numbering.decimal.xml" />
     <None Remove="Resources\numbering.xml" />
     <None Remove="Resources\numbering.xml.gz" />
     <None Remove="Resources\people.xml" />
+    <None Remove="Resources\pieChart.xml" />
     <None Remove="Resources\styles.xml" />
     <None Remove="Resources\styles.xml.gz" />
     <None Remove="Resources\default_styles.xml.gz" />
@@ -57,14 +63,20 @@
     <None Remove="Text\Elements\" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Resources\barChart.xml" />
+    <EmbeddedResource Include="Resources\chart.xml" />
+    <EmbeddedResource Include="Resources\chartCategoryAxis.xml" />
+    <EmbeddedResource Include="Resources\chartValueAxis.xml" />
     <EmbeddedResource Include="Resources\comment.xml" />
     <EmbeddedResource Include="Resources\comments.xml" />
     <EmbeddedResource Include="Resources\core.xml" />
     <EmbeddedResource Include="Resources\document.xml" />
     <EmbeddedResource Include="Resources\drawing.xml" />
     <EmbeddedResource Include="Resources\hyperlinkStyle.xml" />
+    <EmbeddedResource Include="Resources\lineChart.xml" />
     <EmbeddedResource Include="Resources\ListParagraphStyle.xml" />
     <EmbeddedResource Include="Resources\people.xml" />
+    <EmbeddedResource Include="Resources\pieChart.xml" />
     <EmbeddedResource Include="Resources\styles.xml" />
     <EmbeddedResource Include="Resources\numbering.bullets.xml" />
     <EmbeddedResource Include="Resources\numbering.decimal.xml" />

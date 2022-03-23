@@ -156,7 +156,7 @@ public abstract class HeaderOrFooterCollection<T> : IEnumerable<T>
         var relationship = documentOwner.PackagePart.CreateRelationship(packagePart.Uri, TargetMode.Internal, relationTemplate.RelType);
 
         // Add the relationship to the owning section.
-        sectionOwner.Properties.Xml.Add(new XElement(Namespace.Main + $"{typeName}Reference",
+        sectionOwner.Properties.Xml!.Add(new XElement(Namespace.Main + $"{typeName}Reference",
             new XAttribute(Namespace.Main + "type", headerType.GetEnumName()),
             new XAttribute(Namespace.RelatedDoc + "id", relationship.Id)));
 
@@ -188,7 +188,7 @@ public abstract class HeaderOrFooterCollection<T> : IEnumerable<T>
     /// <param name="headerType"></param>
     private string? GetReferenceId(HeaderFooterType headerType)
     {
-        return sectionOwner.Properties.Xml
+        return sectionOwner.Properties.Xml!
             .QueryElement($"w:{typeName}Reference[@w:type='{headerType.GetEnumName()}']")
             .AttributeValue(Namespace.RelatedDoc + "id", null);
     }
@@ -237,7 +237,7 @@ public abstract class HeaderOrFooterCollection<T> : IEnumerable<T>
             documentOwner.Package.DeletePart(uri);
 
             // Get all references to this relationship in the document and remove them.
-            sectionOwner.Properties.Xml
+            sectionOwner.Properties.Xml!
                 .QueryElement($"w:{typeName}Reference[@w:type='{headerType.GetEnumName()}' and @r:id='{id}']")?
                 .Remove();
         }

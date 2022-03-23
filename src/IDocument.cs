@@ -23,6 +23,11 @@ public interface IDocument : IContainer, IDisposable
     StyleManager Styles { get; }
 
     /// <summary>
+    /// Basic text of this container
+    /// </summary>
+    string Text { get; }
+
+    /// <summary>
     /// Returns the reviewers who have commented on this document.
     /// </summary>
     IEnumerable<string> Reviewers { get; }
@@ -70,51 +75,14 @@ public interface IDocument : IContainer, IDisposable
     IReadOnlyList<Image> Images { get; }
 
     ///<summary>
-    /// Returns the list of document core properties with corresponding values.
+    /// Assigned document properties
     ///</summary>
-    IReadOnlyDictionary<DocumentPropertyName, string> DocumentProperties { get; }
+    CoreProperties Properties { get; }
 
     /// <summary>
     /// Returns a list of custom properties in this document.
     /// </summary>
-    IReadOnlyDictionary<string, object> CustomProperties { get; }
-
-    /// <summary>
-    /// Basic text of this document
-    /// </summary>
-    string Text => string.Join('\n', Paragraphs.Select(p => p.Text));
-
-    /// <summary>
-    /// Set a known core property value
-    /// </summary>
-    /// <param name="name">Property to set</param>
-    /// <param name="value">Value to assign</param>
-    void SetPropertyValue(DocumentPropertyName name, string value);
-
-    /// <summary>
-    /// Add a custom property to this document. If a custom property already exists with the same name it will be replace. CustomProperty names are case insensitive.
-    /// </summary>
-    void AddCustomProperty(string name, string value);
-
-    /// <summary>
-    /// Add a custom property to this document. If a custom property already exists with the same name it will be replace. CustomProperty names are case insensitive.
-    /// </summary>
-    void AddCustomProperty(string name, double value);
-
-    /// <summary>
-    /// Add a custom property to this document. If a custom property already exists with the same name it will be replace. CustomProperty names are case insensitive.
-    /// </summary>
-    void AddCustomProperty(string name, bool value);
-
-    /// <summary>
-    /// Add a custom property to this document. If a custom property already exists with the same name it will be replace. CustomProperty names are case insensitive.
-    /// </summary>
-    void AddCustomProperty(string name, DateTime value);
-
-    /// <summary>
-    /// Add a custom property to this document. If a custom property already exists with the same name it will be replace. CustomProperty names are case insensitive.
-    /// </summary>
-    void AddCustomProperty(string name, int value);
+    ICustomPropertyCollection CustomProperties { get; }
 
     /// <summary>
     /// Create an Image and add it into the properties of this document from a fully qualified or relative filename.
@@ -159,11 +127,6 @@ public interface IDocument : IContainer, IDisposable
     ///<param name="templateStream">The stream of the document template file.</param>
     ///<param name="includeContent">Whether to copy the document template text content to document.</param>
     void ApplyTemplate(Stream templateStream, bool includeContent);
-
-    /// <summary>
-    /// Create a new paragraph, append it to the document and add the specified chart to it
-    /// </summary>
-    Paragraph Add(Chart chart);
 
     /// <summary>
     /// Creates a new document comment which can be associated to a DocxElement

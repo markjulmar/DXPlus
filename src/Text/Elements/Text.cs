@@ -6,7 +6,7 @@ namespace DXPlus;
 /// <summary>
 /// Raw text from a Run. Wraps a {w:t} element.
 /// </summary>
-public sealed class Text : TextElement
+public class Text : TextElement
 {
     static readonly XName xspace = XNamespace.Xml + "space";
 

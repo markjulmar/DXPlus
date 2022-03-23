@@ -34,7 +34,7 @@ public sealed class Break : TextElement
         set
         {
             if (Type != BreakType.Line) return;
-            Xml.SetAttributeValue(Namespace.Main + "clear", value==null ? null : value.Value.GetEnumName());
+            Xml.SetAttributeValue(Namespace.Main + "clear", value?.GetEnumName());
         }
     }
 

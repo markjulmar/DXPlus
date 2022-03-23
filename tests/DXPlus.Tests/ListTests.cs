@@ -165,7 +165,7 @@ namespace DXPlus.Tests
             var section = doc.Sections.Single();
             var header = section.Headers.Default;
 
-            var p = header.AddParagraph("List in paragraph").ListStyle(nd);
+            var p = header.Add("List in paragraph").ListStyle(nd);
             Assert.NotNull(p.PackagePart);
             Assert.Equal(p.PackagePart, header.PackagePart);
         }

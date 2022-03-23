@@ -31,9 +31,9 @@ public interface IContainer
     IEnumerable<Hyperlink> Hyperlinks { get; }
 
     /// <summary>
-    /// Retrieve a list of all images (pictures) in the document
+    /// Retrieve a list of all drawings in the document
     /// </summary>
-    IEnumerable<Picture> Pictures { get; }
+    IEnumerable<Drawing> Drawings { get; }
 
     /// <summary>
     /// Removes paragraph at specified position
@@ -62,7 +62,7 @@ public interface IContainer
     /// </summary>
     /// <param name="bookmarkName">Bookmark name</param>
     /// <param name="toInsert">Text to insert</param>
-    bool InsertAtBookmark(string bookmarkName, string toInsert);
+    bool InsertTextAtBookmark(string bookmarkName, string toInsert);
 
     /// <summary>
     /// Insert a paragraph into this container at a specific index

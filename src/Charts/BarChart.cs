@@ -9,6 +9,22 @@ namespace DXPlus.Charts;
 public sealed class BarChart : Chart
 {
     /// <summary>
+    /// Default constructor for a BarChart.
+    /// </summary>
+    public BarChart() : base(Resources.Resource.BarChart(), true)
+    {
+    }
+
+    /// <summary>
+    /// Constructor for a loaded BarChart
+    /// </summary>
+    /// <param name="chartDocument"></param>
+    internal BarChart(XDocument chartDocument) 
+        : base(chartDocument, Namespace.Chart + "barChart")
+    {
+    }
+
+    /// <summary>
     /// Specifies the possible directions for a bar chart.
     /// </summary>
     public BarDirection BarDirection
@@ -39,18 +55,5 @@ public sealed class BarChart : Chart
 
             ChartXml.GetOrAddElement(Namespace.Chart + "gapWidth").SetAttributeValue("val", value.ToString());
         }
-    }
-
-    /// <summary>
-    /// Method to create the XML for this chart style.
-    /// </summary>
-    protected override XElement CreateChartXml()
-    {
-        return XElement.Parse(
-            @"<c:barChart xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
-                    <c:barDir val=""col""/>
-                    <c:grouping val=""clustered""/>                    
-                    <c:gapWidth val=""150""/>
-                  </c:barChart>");
     }
 }

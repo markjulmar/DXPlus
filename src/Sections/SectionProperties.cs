@@ -6,20 +6,15 @@ namespace DXPlus;
 /// <summary>
 /// This manages a block of section properties (w:sectPr)
 /// </summary>
-public sealed class SectionProperties
+public sealed class SectionProperties : XElementWrapper
 {
-    /// <summary>
-    /// XML that makes up this element
-    /// </summary>
-    internal XElement Xml {get;}
-
     /// <summary>
     /// Revision id tied to this section
     /// </summary>
     public string? RevisionId
     {
         get => Xml.AttributeValue(Namespace.Main + "rsidR");
-        set => Xml.SetAttributeValue(Namespace.Main + "rsidR", value);
+        set => Xml!.SetAttributeValue(Namespace.Main + "rsidR", value);
     }
 
     /// <summary>
@@ -27,10 +22,10 @@ public sealed class SectionProperties
     /// </summary>
     public SectionBreakType Type
     {
-        get => Xml.Element(Namespace.Main + "type").GetVal()
+        get => Xml!.Element(Namespace.Main + "type").GetVal()
             .TryGetEnumValue<SectionBreakType>(out var result)
             ? result : SectionBreakType.NextPage;
-        set => Xml.AddElementVal(Namespace.Main + "type", value.GetEnumName());
+        set => Xml!.AddElementVal(Namespace.Main + "type", value.GetEnumName());
     }
 
     /// <summary>
@@ -39,11 +34,11 @@ public sealed class SectionProperties
     /// </summary>
     public bool DifferentFirstPage
     {
-        get => Xml.Element(Namespace.Main + "titlePg") != null;
+        get => Xml!.Element(Namespace.Main + "titlePg") != null;
 
         set
         {
-            var titlePg = Xml.Element(Namespace.Main + "titlePg");
+            var titlePg = Xml!.Element(Namespace.Main + "titlePg");
             if (titlePg == null && value)
             {
                 Xml.Add(new XElement(Namespace.Main + "titlePg", string.Empty));
@@ -60,17 +55,17 @@ public sealed class SectionProperties
     /// </summary>
     public Direction Direction
     {
-        get => Xml.Element(Name.RightToLeft) == null ? Direction.LeftToRight : Direction.RightToLeft;
+        get => Xml!.Element(Name.RightToLeft) == null ? Direction.LeftToRight : Direction.RightToLeft;
 
         set
         {
             if (value == Direction.RightToLeft)
             {
-                Xml.GetOrAddElement(Name.RightToLeft);
+                Xml!.GetOrAddElement(Name.RightToLeft);
             }
             else
             {
-                Xml.Element(Name.RightToLeft)?.Remove();
+                Xml!.Element(Name.RightToLeft)?.Remove();
             }
         }
     }
@@ -85,9 +80,9 @@ public sealed class SectionProperties
     /// </summary>
     public double PageWidth
     {
-        get => double.TryParse(Xml.Element(Namespace.Main + "pgSz")?.AttributeValue(Namespace.Main + "w"), out var value) ? value : PageSize.LetterWidth;
+        get => double.TryParse(Xml!.Element(Namespace.Main + "pgSz")?.AttributeValue(Namespace.Main + "w"), out var value) ? value : PageSize.LetterWidth;
 
-        set => Xml.GetOrAddElement(Namespace.Main + "pgSz")
+        set => Xml!.GetOrAddElement(Namespace.Main + "pgSz")
             .SetAttributeValue(Namespace.Main + "w", value);
     }
 
@@ -96,8 +91,8 @@ public sealed class SectionProperties
     /// </summary>
     public double PageHeight
     {
-        get => double.TryParse(Xml.Element(Namespace.Main + "pgSz")?.AttributeValue(Namespace.Main + "h"), out var value) ? value : PageSize.LetterHeight;
-        set => Xml.GetOrAddElement(Namespace.Main + "pgSz").SetAttributeValue(Namespace.Main + "h", value);
+        get => double.TryParse(Xml!.Element(Namespace.Main + "pgSz")?.AttributeValue(Namespace.Main + "h"), out var value) ? value : PageSize.LetterHeight;
+        set => Xml!.GetOrAddElement(Namespace.Main + "pgSz").SetAttributeValue(Namespace.Main + "h", value);
     }
 
     /// <summary>
@@ -105,7 +100,7 @@ public sealed class SectionProperties
     /// </summary>
     public Orientation Orientation
     {
-        get => Xml.AttributeValue(Namespace.Main + "pgSz", Namespace.Main + "orient")
+        get => Xml!.AttributeValue(Namespace.Main + "pgSz", Namespace.Main + "orient")
             .TryGetEnumValue<Orientation>(out var result)
             ? result
             : Orientation.Portrait;
@@ -117,7 +112,7 @@ public sealed class SectionProperties
                 double pw = PageWidth;
                 double ph = PageHeight;
 
-                var pgSz = Xml.GetOrAddElement(Namespace.Main + "pgSz");
+                var pgSz = Xml!.GetOrAddElement(Namespace.Main + "pgSz");
                 pgSz.SetAttributeValue(Namespace.Main + "orient", value.GetEnumName());
                 pgSz.SetAttributeValue(Namespace.Main + "w", ph);
                 pgSz.SetAttributeValue(Namespace.Main + "h", pw);
@@ -130,16 +125,16 @@ public sealed class SectionProperties
     /// </summary>
     public bool MirrorMargins
     {
-        get => Xml.Element(Namespace.Main + "mirrorMargins") != null;
+        get => Xml!.Element(Namespace.Main + "mirrorMargins") != null;
         set
         {
             if (value)
             {
-                Xml.SetElementValue(Namespace.Main + "mirrorMargins", string.Empty);
+                Xml!.SetElementValue(Namespace.Main + "mirrorMargins", string.Empty);
             }
             else
             {
-                Xml.Element(Namespace.Main + "mirrorMargins")?.Remove();
+                Xml!.Element(Namespace.Main + "mirrorMargins")?.Remove();
             }
         }
     }
@@ -185,8 +180,8 @@ public sealed class SectionProperties
     /// </summary>
     public int? StartPageNumber
     {
-        get => int.TryParse(Xml.AttributeValue(Namespace.Main + "pgNumType", Namespace.Main + "start"), out var result) ? result : null;
-        set => Xml.GetOrAddElement(Namespace.Main + "pgNumType")
+        get => int.TryParse(Xml!.AttributeValue(Namespace.Main + "pgNumType", Namespace.Main + "start"), out var result) ? result : null;
+        set => Xml!.GetOrAddElement(Namespace.Main + "pgNumType")
                 .SetAttributeValue(Namespace.Main + "start", value?.ToString());
     }
 
@@ -197,7 +192,7 @@ public sealed class SectionProperties
     {
         get
         {
-            var val = Xml.Element(Namespace.Main + "vAlign")?.GetValAttr();
+            var val = Xml!.Element(Namespace.Main + "vAlign")?.GetValAttr();
             return val != null && val.TryGetEnumValue<VerticalAlignment>(out var result)
                 ? result
                 : null;
@@ -207,11 +202,11 @@ public sealed class SectionProperties
         {
             if (value == null)
             {
-                Xml.Element(Namespace.Main + "vAlign")?.Remove();
+                Xml!.Element(Namespace.Main + "vAlign")?.Remove();
             }
             else
             {
-                Xml.AddElementVal(Namespace.Main + "vAlign", value.Value.GetEnumName());
+                Xml!.AddElementVal(Namespace.Main + "vAlign", value.Value.GetEnumName());
             }
         }
     }
@@ -234,7 +229,7 @@ public sealed class SectionProperties
     /// <returns>Value in dxa units</returns>
     private double GetMarginAttribute(XName name)
     {
-        var top = Xml.Element(Namespace.Main + "pgMar")?.Attribute(name);
+        var top = Xml!.Element(Namespace.Main + "pgMar")?.Attribute(name);
         return top != null && double.TryParse(top.Value, out var value) ? value : 0;
     }
 
@@ -245,7 +240,7 @@ public sealed class SectionProperties
     /// <param name="value">Value in dxa units</param>
     private void SetMarginAttribute(XName name, double value)
     {
-        Xml.GetOrAddElement(Namespace.Main + "pgMar")
+        Xml!.GetOrAddElement(Namespace.Main + "pgMar")
             .SetAttributeValue(name, value);
     }
 }

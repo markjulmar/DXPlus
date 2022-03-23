@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Xml.Linq;
 using DXPlus.Internal;
+using Microsoft.VisualBasic.CompilerServices;
 
 namespace DXPlus;
 
@@ -10,9 +11,9 @@ namespace DXPlus;
 /// This holds all the formatting properties for a run of text.
 /// This is contained in a (w:rPr) element.
 /// </summary>
-public sealed class Formatting : IEquatable<Formatting>
+public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
 {
-    internal XElement Xml { get; }
+    private new XElement Xml => base.Xml!;
     private readonly HashSet<string> setProperties = new();
 
     /// <summary>
@@ -445,9 +446,8 @@ public sealed class Formatting : IEquatable<Formatting>
     /// <summary>
     /// Constructor
     /// </summary>
-    public Formatting()
+    public Formatting() : this(new XElement(Name.RunProperties))
     {
-        Xml = new XElement(Name.RunProperties);
     }
 
     /// <summary>
@@ -456,7 +456,7 @@ public sealed class Formatting : IEquatable<Formatting>
     /// <param name="element">Element containing run properties</param>
     internal Formatting(XElement element)
     {
-        Xml = element;
+        base.Xml = element ?? throw new ArgumentNullException(nameof(element));
     }
 
     /// <summary>
@@ -467,7 +467,7 @@ public sealed class Formatting : IEquatable<Formatting>
     public bool Equals(Formatting? other)
     {
         return ReferenceEquals(this, other) 
-               || (other != null && XNode.DeepEquals(Xml.Normalize(), other.Xml.Normalize()));
+               || other != null && XNode.DeepEquals(Xml.Normalize(), other.Xml.Normalize());
     }
 
     /// <summary>
@@ -484,11 +484,37 @@ public sealed class Formatting : IEquatable<Formatting>
     public override int GetHashCode() => Xml.GetHashCode();
 
     /// <summary>
+    /// Merge two formatting objects together
+    /// </summary>
+    /// <param name="lhs">Left hand operand</param>
+    /// <param name="rhs">Right hand operand</param>
+    /// <returns>Merged formatting object</returns>
+    public static Formatting operator +(Formatting lhs, Formatting rhs) => new Formatting(lhs.Xml.Clone()).Merge(rhs);
+
+    /// <summary>
+    /// Remove a set of formatting from the passed formatting object
+    /// </summary>
+    /// <param name="lhs">Left hand operand</param>
+    /// <param name="rhs">Right hand operand</param>
+    /// <returns>New formatting of left side minus right side</returns>
+    public static Formatting operator -(Formatting lhs, Formatting rhs)
+    {
+        var formatting = new Formatting(lhs.Xml.Clone());
+        foreach (var name in rhs.Xml.Elements())
+        {
+            var e = formatting.Xml.Element(name.Name); 
+            if (e != null && XNode.DeepEquals(e.Normalize(), name.Normalize()))
+                e.Remove();
+        }
+        return formatting;
+    }
+
+    /// <summary>
     /// Merge in the given formatting into this formatting object. This will add/remove settings
     /// from the given formatting into this one.
     /// </summary>
     /// <param name="other">Formatting to merge in</param>
-    public void Merge(Formatting other)
+    public Formatting Merge(Formatting other)
     {
         // First merge any changed properties.
         foreach (var propertyName in other.setProperties)
@@ -505,5 +531,7 @@ public sealed class Formatting : IEquatable<Formatting>
             if (Xml.Element(el.Name) == null)
                 Xml.Add(el.Clone());
         }
+
+        return this;
     }
 }

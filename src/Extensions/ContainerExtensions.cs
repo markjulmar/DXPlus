@@ -21,7 +21,17 @@ public static class ContainerExtensions
     /// <param name="equation">Equation</param>
     /// <returns>Newly added paragraph</returns>
     public static Paragraph AddEquation(this IContainer container, string equation) 
-        => container.AddParagraph().AppendEquation(equation);
+        => container.AddParagraph().AddEquation(equation);
+
+    /// <summary>
+    /// Add a new equation using the specified text at the end of this container.
+    /// </summary>
+    /// <param name="container">Container to add equation to</param>
+    /// <param name="equation">Equation</param>
+    /// <param name="formatting">Formatting to use for the equation</param>
+    /// <returns>Newly added paragraph</returns>
+    public static Paragraph AddEquation(this IContainer container, string equation, Formatting formatting)
+        => container.AddParagraph().AddEquation(equation, formatting);
 
     /// <summary>
     /// Find all occurrences of a string in the container. This searches headers, all paragraphs, and footers.
@@ -30,14 +40,16 @@ public static class ContainerExtensions
     /// <param name="findText"></param>
     /// <param name="comparisonType"></param>
     /// <returns></returns>
-    public static IEnumerable<int> FindText(this IContainer container, string findText, StringComparison comparisonType)
+    public static IEnumerable<(Paragraph paragraphOwner, int index)> FindText(this IContainer container, string findText, StringComparison comparisonType = StringComparison.CurrentCulture)
     {
+        if (container == null) throw new ArgumentNullException(nameof(container));
         if (string.IsNullOrEmpty(findText)) throw new ArgumentNullException(nameof(findText));
+
         return container.Sections.SelectMany(s => s.Headers).SelectMany(header => header.Paragraphs)
             .Union(container.Paragraphs)
             .Union(container.Sections.SelectMany(s => s.Footers).SelectMany(footer => footer.Paragraphs))
             .ToList()
-            .SelectMany(p => p.FindAll(findText, comparisonType).Select(n => n + p.StartIndex!.Value));
+            .SelectMany(p => p.FindText(findText, comparisonType).Select(n => (p, n)));
     }
 
     /// <summary>
@@ -47,13 +59,18 @@ public static class ContainerExtensions
     /// <param name="container"></param>
     /// <param name="regex">Pattern to search for</param>
     /// <returns>Index and matched strings</returns>
-    public static IEnumerable<(int index, string text)> FindText(this IContainer container, Regex regex)
+    public static IEnumerable<(Paragraph paragraphOwner, int index, string text)> FindPattern(this IContainer container, Regex regex)
     {
-        foreach (var p in container.Paragraphs)
+        if (container == null) throw new ArgumentNullException(nameof(container));
+        if (regex == null) throw new ArgumentNullException(nameof(regex));
+
+        foreach (var p in container.Sections.SelectMany(s => s.Headers).SelectMany(header => header.Paragraphs)
+                     .Union(container.Paragraphs)
+                     .Union(container.Sections.SelectMany(s => s.Footers).SelectMany(footer => footer.Paragraphs)))
         {
             foreach (var (index, text) in p.FindPattern(regex))
             {
-                yield return (index: index + p.StartIndex!.Value, text);
+                yield return (p, index, text);
             }
         }
     }
@@ -70,16 +87,11 @@ public static class ContainerExtensions
     public static Drawing CreateVideo(this IDocument document, string imageFile, Uri video, double width, double height)
     {
         var img = document.CreateImage(imageFile);
-        var drawing = img.CreatePicture(width,height);
+        var picture = img.CreatePicture(width,height);
+        var drawing = picture.Drawing;
             
-        drawing.Hyperlink = video;
-            
-        var pic = drawing.Picture;
-        if (pic != null)
-        {
-            pic.Hyperlink = video;
-            pic.ImageExtensions.Add(new VideoExtension(video.OriginalString, width, height));
-        }
+        drawing.Hyperlink = picture.Hyperlink = video;
+        picture.ImageExtensions.Add(new VideoExtension(video.OriginalString, width, height));
 
         return drawing;
     }
@@ -98,16 +110,11 @@ public static class ContainerExtensions
         int width, int height)
     {
         var img = document.CreateImage(image, imageContentType);
-        var drawing = img.CreatePicture(width,height);
+        var picture = img.CreatePicture(width,height);
+        var drawing = picture.Drawing;
 
-        drawing.Hyperlink = video;
-            
-        var pic = drawing.Picture;
-        if (pic != null)
-        {
-            pic.Hyperlink = video;
-            pic.ImageExtensions.Add(new VideoExtension(video.OriginalString, width, height));
-        }
+        drawing.Hyperlink = picture.Hyperlink = video;
+        picture.ImageExtensions.Add(new VideoExtension(video.OriginalString, width, height));
 
         return drawing;
     }

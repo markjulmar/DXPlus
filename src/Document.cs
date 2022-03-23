@@ -42,11 +42,12 @@ public sealed class Document : BlockContainer, IDocument
         stream.Seek(0, SeekOrigin.Begin);
         stream.CopyTo(ms);
 
-        var document = new Document();
-
-        document.documentPackage = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite);
-        document.memoryStream = ms;
-        document.stream = stream;
+        var document = new Document
+        {
+            documentPackage = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite),
+            memoryStream = ms,
+            stream = stream
+        };
 
         document.LoadDocumentParts();
 
@@ -78,11 +79,12 @@ public sealed class Document : BlockContainer, IDocument
         }
 
         // Create the document
-        var document = new Document();
-
-        document.documentPackage = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite);
-        document.filename = filename;
-        document.memoryStream = ms;
+        var document = new Document
+        {
+            documentPackage = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite),
+            filename = filename,
+            memoryStream = ms
+        };
 
         document.LoadDocumentParts();
 
@@ -121,6 +123,11 @@ public sealed class Document : BlockContainer, IDocument
     }
 
     /// <summary>
+    /// The chart manager
+    /// </summary>
+    internal ChartManager ChartManager => chartManager!;
+
+    /// <summary>
     /// Editing session id for this session.
     /// </summary>
     public string RevisionId => revision.ToString("X8");
@@ -139,6 +146,11 @@ public sealed class Document : BlockContainer, IDocument
     /// The style manager for this document.
     /// </summary>
     public StyleManager Styles => styleManager ??= AddDefaultStyles();
+
+    /// <summary>
+    /// Basic text of this container
+    /// </summary>
+    public string Text => string.Join('\n', Paragraphs.Select(p => p.Text));
 
     /// <summary>
     /// Returns all comments in the document
@@ -190,13 +202,13 @@ public sealed class Document : BlockContainer, IDocument
     /// Get the text of each endnote from this document
     /// </summary>
     public IEnumerable<string> EndnotesText
-        => endnotesDoc?.Root?.Elements(Namespace.Main + "endnote").Select(DocumentHelpers.GetText) ?? Enumerable.Empty<string>();
+        => endnotesDoc?.Root?.Elements(Namespace.Main + "endnote").Select(element => DocumentHelpers.GetText(element, false)) ?? Enumerable.Empty<string>();
 
     /// <summary>
     /// Get the text of each footnote from this document
     /// </summary>
     public IEnumerable<string> FootnotesText
-        => footnotesDoc?.Root?.Elements(Namespace.Main + "footnote").Select(DocumentHelpers.GetText) ?? Enumerable.Empty<string>();
+        => footnotesDoc?.Root?.Elements(Namespace.Main + "footnote").Select(element => DocumentHelpers.GetText(element, false)) ?? Enumerable.Empty<string>();
 
     /// <summary>
     /// Returns a list of Images in this document.
@@ -216,92 +228,24 @@ public sealed class Document : BlockContainer, IDocument
     ///<summary>
     /// Returns the list of document properties with corresponding values.
     ///</summary>
-    public IReadOnlyDictionary<DocumentPropertyName, string> DocumentProperties
+    public CoreProperties Properties
     {
         get
         {
             ThrowIfNoPackage();
-            return CorePropertyHelpers.Get(Package);
+            return coreProperties ??= new(Package, this);
         }
-    }
-
-    /// <summary>
-    /// Set a known core property value
-    /// </summary>
-    /// <param name="name">Property to set</param>
-    /// <param name="value">Value to assign</param>
-    public void SetPropertyValue(DocumentPropertyName name, string value)
-    {
-        ThrowIfNoPackage();
-        _ = CorePropertyHelpers.SetValue(Package, name.GetEnumName(), value);
-        UpdateComplexFieldUsage(name.ToString().ToUpper(), value);
     }
 
     /// <summary>
     /// Returns a list of custom properties in this document.
     /// </summary>
-    public IReadOnlyDictionary<string, object> CustomProperties
+    public ICustomPropertyCollection CustomProperties
     {
         get
         {
             ThrowIfNoPackage();
-            return CustomPropertyHelpers.Get(Package);
-        }
-    }
-
-    /// <summary>
-    /// Add a custom property to this document.
-    /// If a custom property already exists with the same name it will be replace.
-    /// CustomProperty names are case insensitive.
-    /// </summary>
-    public void AddCustomProperty(string name, string value) => AddCustomProperty(name, Internal.CustomPropertyType.LPWSTR, value);
-
-    /// <summary>
-    /// Add a custom property to this document.
-    /// If a custom property already exists with the same name it will be replace.
-    /// CustomProperty names are case insensitive.
-    /// </summary>
-    public void AddCustomProperty(string name, double value) => AddCustomProperty(name, Internal.CustomPropertyType.R8, value);
-
-    /// <summary>
-    /// Add a custom property to this document.
-    /// If a custom property already exists with the same name it will be replace.
-    /// CustomProperty names are case insensitive.
-    /// </summary>
-    public void AddCustomProperty(string name, bool value) => AddCustomProperty(name, Internal.CustomPropertyType.BOOL, value);
-
-    /// <summary>
-    /// Add a custom property to this document.
-    /// If a custom property already exists with the same name it will be replace.
-    /// CustomProperty names are case insensitive.
-    /// </summary>
-    public void AddCustomProperty(string name, DateTime value) => AddCustomProperty(name, Internal.CustomPropertyType.FILETIME, value.ToUniversalTime());
-
-    /// <summary>
-    /// Add a custom property to this document.
-    /// If a custom property already exists with the same name it will be replace.
-    /// CustomProperty names are case insensitive.
-    /// </summary>
-    public void AddCustomProperty(string name, int value) => AddCustomProperty(name, Internal.CustomPropertyType.I4, value);
-
-    /// <summary>
-    /// Add a custom property to this document.
-    /// If a custom property already exists with the same name it will be replace.
-    /// CustomProperty names are case insensitive.
-    /// </summary>
-    private void AddCustomProperty(string name, string type, object value)
-    {
-        ThrowIfNoPackage();
-
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Value cannot be null or whitespace.", nameof(name));
-        if (string.IsNullOrWhiteSpace(type))
-            throw new ArgumentException("Value cannot be null or whitespace.", nameof(type));
-        if (value == null) throw new ArgumentNullException(nameof(value));
-
-        if (CustomPropertyHelpers.Add(Package, name, type, value))
-        {
-            UpdateComplexFieldUsage(name.ToUpperInvariant(), value.ToString()??"");
+            return customProperties ??= new(Package, this);
         }
     }
 
@@ -648,64 +592,6 @@ public sealed class Document : BlockContainer, IDocument
     void IDisposable.Dispose() => Close();
 
     /// <summary>
-    /// Create a new paragraph, append it to the document and add the specified chart to it
-    /// </summary>
-    public Paragraph Add(Chart chart)
-    {
-        ThrowIfNoPackage();
-
-        // Create a new chart part uri.
-        string chartPartUriPath;
-        int chartIndex = 0;
-
-        do
-        {
-            chartIndex++;
-            chartPartUriPath = $"/word/charts/chart{chartIndex}.xml";
-        } while (Package.PartExists(new Uri(chartPartUriPath, UriKind.Relative)));
-
-        // Create chart part.
-        var chartPackagePart = Package.CreatePart(new Uri(chartPartUriPath, UriKind.Relative), "application/vnd.openxmlformats-officedocument.drawingml.chart+xml", CompressionOption.Normal);
-
-        // Create a new chart relationship
-        string id = GetNextRelationshipId();
-        _ = PackagePart.CreateRelationship(chartPackagePart.Uri, TargetMode.Internal, $"{Namespace.RelatedDoc.NamespaceName}/chart", id);
-
-        // Save a chart info the chartPackagePart
-        chartPackagePart.Save(chart.Xml);
-
-        // Insert a new chart into a paragraph.
-        var p = this.AddParagraph();
-        var chartElement = new XElement(Name.Run,
-            new XElement(Namespace.Main + "drawing",
-                new XElement(Namespace.WordProcessingDrawing + "inline",
-                    new XElement(Namespace.WordProcessingDrawing + "extent",
-                        new XAttribute("cx", 5486400),
-                        new XAttribute("cy", 3200400)),
-                    new XElement(Namespace.WordProcessingDrawing + "effectExtent",
-                        new XAttribute("l", 0),
-                        new XAttribute("t", 0),
-                        new XAttribute("r", 19050),
-                        new XAttribute("b", 19050)),
-                    new XElement(Namespace.WordProcessingDrawing + "docPr",
-                        new XAttribute("id", 1),
-                        new XAttribute("name", "chart")),
-                    new XElement(Namespace.DrawingMain + "graphic",
-                        new XElement(Namespace.DrawingMain + "graphicData",
-                            new XAttribute("uri", Namespace.Chart.NamespaceName),
-                            new XElement(Namespace.Chart + "chart",
-                                new XAttribute(Namespace.RelatedDoc + "id", id)
-                            )
-                        )
-                    )
-                )
-            ));
-        p.Xml.Add(chartElement);
-        
-        return p;
-    }
-
-    /// <summary>
     /// Inserts a default TOC into the current document.
     /// Title: Table of contents
     /// Switches will be: TOC \h \o '1-3' \u \z
@@ -810,6 +696,11 @@ public sealed class Document : BlockContainer, IDocument
 
         styleManager?.Save();
         numberingStyles?.Save();
+
+        chartManager?.Save();
+
+        coreProperties?.Save();
+        customProperties?.Save();
 
         settingsPart.Save(settingsDoc);
         
@@ -1000,6 +891,9 @@ public sealed class Document : BlockContainer, IDocument
         settingsDoc = settingsPart?.Load();
         endnotesDoc = endnotesPart?.Load();
         footnotesDoc = footnotesPart?.Load();
+
+        // Create the chart manager
+        chartManager = new ChartManager(this);
     }
 
     /// <summary>
@@ -1027,21 +921,6 @@ public sealed class Document : BlockContainer, IDocument
     }
 
     /// <summary>
-    /// Create a new relationship id by locating the last one used.
-    /// </summary>
-    /// <returns></returns>
-    private string GetNextRelationshipId()
-    {
-        // Last used id (0 if none)
-        int id = PackagePart.GetRelationships()
-            .Where(r => r.Id.Substring(0, 3).Equals("rId"))
-            .Select(r => int.TryParse(r.Id.Substring(3), out int result) ? result : 0)
-            .DefaultIfEmpty()
-            .Max();
-        return $"rId{id + 1}";
-    }
-
-    /// <summary>
     /// Method to throw an ObjectDisposedException
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1059,7 +938,7 @@ public sealed class Document : BlockContainer, IDocument
         ThrowIfNoPackage();
 
         var trackerIds = mainDoc!.Descendants()
-            .Where(d => d.Name.LocalName is "ins" or "del")
+            .Where(d => d.Name.LocalName is RunTextType.InsertMarker or RunTextType.DeleteMarker)
             .Select(d => d.Attribute(Name.Id))
             .OmitNull()
             .ToList();
@@ -1075,7 +954,7 @@ public sealed class Document : BlockContainer, IDocument
     /// </summary>
     /// <param name="name">Name of the core property</param>
     /// <param name="value">Value</param>
-    private void UpdateComplexFieldUsage(string name, string value)
+    internal void UpdateComplexFieldUsage(string name, string value)
     {
         ThrowIfNoPackage();
 
@@ -1403,28 +1282,25 @@ public sealed class Document : BlockContainer, IDocument
     /// <param name="index"></param>
     /// <returns>FirstParagraph</returns>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    internal Paragraph? FindParagraphByIndex(int index)
+    internal (Paragraph?, int startIndex) FindParagraphByIndex(int index)
     {
-        if (index < 0)
-            throw new ArgumentOutOfRangeException(nameof(index));
+        if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
 
-        // Collect all the paragraphs based on what character they end on.
-        var lookup = Paragraphs
-            .Where(p => p.StartIndex != null && p.EndIndex != null
-                        && p.StartIndex! < p.EndIndex!)
-            .ToDictionary(paragraph => paragraph.EndIndex!.Value);
+        // Special case inserting at the beginning of the document.
+        if (index == 0) return (Paragraphs.FirstOrDefault(), 0);
 
-        // If the insertion position is first (0) and there are no paragraphs, then return null.
-        if (lookup.Keys.Count == 0 && index == 0)
+        // Find the correct paragraph based on the length.
+        int count = 0, startIndex = 0;
+        foreach (var paragraph in Paragraphs)
         {
-            return null;
+            var length = paragraph.Text.Length;
+            count += length;
+            if (count > index) return (paragraph, startIndex);
+            startIndex += length;
         }
 
-        // Find the paragraph that contains the index
-        foreach (int paragraphEndIndex in lookup.Keys.Where(paragraphEndIndex => paragraphEndIndex >= index))
-        {
-            return lookup[paragraphEndIndex];
-        }
+        // Special case end of document.
+        if (count == index) return (null, startIndex);
 
         throw new ArgumentOutOfRangeException(nameof(index));
     }
@@ -1475,8 +1351,8 @@ public sealed class Document : BlockContainer, IDocument
         // Add the default styles + relationship
         _ = AddDefaultStylesXml(package, out _);
 
-        // Create the document properties.
-        _ = CorePropertyHelpers.CreateCoreProperties(package, out _);
+        // Create the default document properties.
+        _ = CoreProperties.CreateCoreProperties(package, out _);
 
         // Save the main new document back to the package.
         mainDocumentPart.Save(mainDoc);
@@ -1664,6 +1540,21 @@ public sealed class Document : BlockContainer, IDocument
     /// Comment manager for the document
     /// </summary>
     private CommentManager? commentManager;
+
+    /// <summary>
+    /// The chart manager used when charts are found in the document
+    /// </summary>
+    private ChartManager? chartManager;
+
+    /// <summary>
+    /// Core properties in document
+    /// </summary>
+    private CoreProperties? coreProperties;
+
+    /// <summary>
+    /// Custom properties in the document
+    /// </summary>
+    private CustomPropertyCollection? customProperties;
 
     /// <summary>
     /// Exception thrown if we end up in a bad state

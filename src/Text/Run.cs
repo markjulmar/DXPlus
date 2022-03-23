@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.IO.Packaging;
-using System.Reflection;
 using System.Xml.Linq;
 using DXPlus.Internal;
 
@@ -25,7 +24,7 @@ public sealed class Run : DocXElement, IEquatable<Run>
             var parentXml = Xml.Parent;
             while (parentXml != null)
             {
-                var wrapper = WrapDocumentElement(Document, Document.PackagePart, parentXml);
+                var wrapper = WrapParentElement(Document, Document.PackagePart, parentXml);
                 if (wrapper != null) return wrapper;
                 parentXml = parentXml.Parent;
             }
@@ -35,26 +34,14 @@ public sealed class Run : DocXElement, IEquatable<Run>
     }
 
     /// <summary>
-    /// Gets the start index of this Text (text length before this text)
-    /// TODO: remove
-    /// </summary>
-    public int StartIndex { get; }
-
-    /// <summary>
-    /// Gets the end index of this Text (text length before this text + this texts length)
-    /// TODO: remove
-    /// </summary>
-    public int EndIndex { get; }
-
-    /// <summary>
     /// True if this run has a text block. False if it's a linebreak, paragraph break, or empty.
     /// </summary>
     public bool HasText => Xml.Element(Name.Text) != null;
-        
+
     /// <summary>
     /// The formatted text value of this run
     /// </summary>
-    public string Text { get; }
+    public string Text => DocumentHelpers.GetText(Xml, false);
 
     /// <summary>
     /// Returns the breaks in this run
@@ -73,10 +60,12 @@ public sealed class Run : DocXElement, IEquatable<Run>
     {
         return child.Name.LocalName switch
         {
-            "br" => new Break(this, child),
-            "t" => new Text(this, child),
-            "drawing" => new Drawing(Document, Document.PackagePart, child),
-            "commentReference" => new CommentRef(this, child),
+            RunTextType.LineBreak => new Break(this, child),
+            RunTextType.Text => new Text(this, child),
+            RunTextType.DeletedText => new DeletedText(this, child),
+            RunTextType.Drawing => new Drawing(Document, Document.PackagePart, child),
+            RunTextType.CommentReference => new CommentRef(this, child),
+            // Tab, delText, etc.
             _ => new TextElement(this, child),
         };
     }
@@ -105,7 +94,7 @@ public sealed class Run : DocXElement, IEquatable<Run>
             Xml.GetRunProperties()?.Remove();
             if (value != null)
             {
-                var xml = value.Xml;
+                var xml = value.Xml!;
                 if (xml.Parent != null)
                     xml = xml.Clone();
                 Xml.AddFirst(xml);
@@ -132,23 +121,6 @@ public sealed class Run : DocXElement, IEquatable<Run>
     public static implicit operator Run(string text) => new(text);
 
     /// <summary>
-    /// Public constructor for a run of text
-    /// </summary>
-    /// <param name="text">Text for this run</param>
-    public Run(string text)
-    {
-        Text = text ?? throw new ArgumentNullException(nameof(text));
-
-        var xe = DocumentHelpers.FormatInput(text, null).ToList();
-        if (xe.Count > 1)
-            throw new InvalidEnumArgumentException(
-                "Text cannot mix-in tabs, newlines, or other special characters. Use Run.Create to generate a list of Run objects.");
-
-        Xml = xe.SingleOrDefault() ?? new XElement(Name.Run);
-        EndIndex = Text.Length;
-    }
-
-    /// <summary>
     /// Creates a set of runs from a text string. This properly handles tabs, line breaks, etc.
     /// </summary>
     /// <param name="text">Text</param>
@@ -156,8 +128,24 @@ public sealed class Run : DocXElement, IEquatable<Run>
     /// <returns>Enumerable set of run objects</returns>
     public static IEnumerable<Run> Create(string text, Formatting? formatting = null)
     {
-        return DocumentHelpers.FormatInput(text, formatting?.Xml)
-            .Select(xe => new Run(null, null, xe, 0));
+        return DocumentHelpers.CreateRunElements(text, formatting?.Xml)
+            .Select(xe => new Run(null, null, xe));
+    }
+
+    /// <summary>
+    /// Public constructor for a run of text
+    /// </summary>
+    /// <param name="text">Text for this run</param>
+    public Run(string text)
+    {
+        if (text == null) throw new ArgumentNullException(nameof(text));
+
+        var xe = DocumentHelpers.CreateRunElements(text, null).ToList();
+        if (xe.Count > 1)
+            throw new ArgumentOutOfRangeException(nameof(text),
+                "Text cannot mix-in tabs, newlines, or other special characters. Use Run.Create to generate a list of Run objects.");
+
+        Xml = xe.SingleOrDefault() ?? new XElement(Name.Run);
     }
 
     /// <summary>
@@ -165,12 +153,9 @@ public sealed class Run : DocXElement, IEquatable<Run>
     /// </summary>
     /// <param name="text">Text for this run</param>
     /// <param name="formatting">Formatting to apply</param>
-    public Run(string text, Formatting formatting)
+    public Run(string text, Formatting formatting) : this(text)
     {
-        Text = text ?? throw new ArgumentNullException(nameof(text));
-        Xml = new XElement(Name.Run, new XElement(Name.Text, text).PreserveSpace());
         Properties = formatting ?? throw new ArgumentNullException(nameof(formatting));
-        EndIndex = Text.Length;
     }
 
     /// <summary>
@@ -179,29 +164,10 @@ public sealed class Run : DocXElement, IEquatable<Run>
     /// <param name="document">Document owner</param>
     /// <param name="packagePart">Package part this run is in</param>
     /// <param name="xml">XML for the run</param>
-    /// <param name="startIndex">Start index</param>
-    internal Run(Document? document, PackagePart? packagePart, XElement xml, int startIndex) : base(xml)
+    internal Run(Document? document, PackagePart? packagePart, XElement xml) : base(xml)
     {
         if (document != null)
-        {
             SetOwner(document, packagePart, false);
-        }
-
-        StartIndex = startIndex;
-        Text = string.Empty;
-
-        // Determine the end and get the raw text from the run.
-        int currentPos = startIndex;
-        foreach (var te in xml.Descendants())
-        {
-            var text = DocumentHelpers.ToText(te);
-            if (!string.IsNullOrEmpty(text))
-            {
-                Text += text;
-                currentPos += text.Length;
-            }
-        }
-        EndIndex = currentPos;
     }
 
     /// <summary>
@@ -209,21 +175,34 @@ public sealed class Run : DocXElement, IEquatable<Run>
     /// </summary>
     /// <param name="index">Index to split this run at</param>
     /// <returns></returns>
-    internal XElement?[] SplitAtIndex(int index)
+    internal (XElement? leftElement, XElement? rightElement) Split(int index)
     {
-        // Find the (w:t) we need to split based on the index.
-        index -= StartIndex;
-        var (textXml, startIndex) = FindTextElementByIndex(Xml, index);
+        // Go through the child (w:t) elements and find the one where this index falls.
+        int count = 0, startIndex = 0;
+        XElement? textXml = null;
+        foreach (var el in Xml.Descendants())
+        {
+            int size = DocumentHelpers.GetSize(el);
+            count += size;
+            if (count >= index)
+            {
+                textXml = el;
+                startIndex = count - size;
+                break;
+            }
+        }
+
+        if (textXml == null) return (null, null);
 
         // Split the block.
         // Returns [textElement, leftSide, rightSide]
-        var splitText = SplitTextElementAtIndex(index, textXml, startIndex);
+        var (leftElement, rightElement) = Split(index, textXml, startIndex);
             
         var splitLeft = new XElement(Xml.Name,
             Xml.Attributes(),
             Xml.Element(Name.RunProperties),
-            splitText[0]!.ElementsBeforeSelf().Where(n => n.Name != Name.RunProperties),
-            splitText[1]);
+            textXml.ElementsBeforeSelf().Where(n => n.Name != Name.RunProperties),
+            leftElement);
 
         if (DocumentHelpers.GetTextLength(splitLeft) == 0)
         {
@@ -233,15 +212,15 @@ public sealed class Run : DocXElement, IEquatable<Run>
         var splitRight = new XElement(Xml.Name,
             Xml.Attributes(),
             Xml.Element(Name.RunProperties),
-            splitText[2],
-            splitText[0]!.ElementsAfterSelf().Where(n => n.Name != Name.RunProperties));
+            rightElement,
+            textXml.ElementsAfterSelf().Where(n => n.Name != Name.RunProperties));
 
         if (DocumentHelpers.GetTextLength(splitRight) == 0)
         {
             splitRight = null;
         }
 
-        return new[] { splitLeft, splitRight };
+        return (splitLeft, splitRight);
     }
 
     /// <summary>
@@ -251,18 +230,15 @@ public sealed class Run : DocXElement, IEquatable<Run>
     /// <param name="xml">Text block to split</param>
     /// <param name="startIndex">Start index of the text block in parent Run</param>
     /// <returns>Array with left/right XElement values</returns>
-    private static XElement?[] SplitTextElementAtIndex(int index, XElement xml, int startIndex)
+    private static (XElement? leftElement, XElement? rightElement) Split(int index, XElement xml, int startIndex)
     {
-        if (xml == null)
-            throw new ArgumentNullException(nameof(xml));
-
         int endIndex = startIndex + DocumentHelpers.GetSize(xml);
         if (index < startIndex || index > endIndex)
             throw new ArgumentOutOfRangeException(nameof(index));
 
         XElement? splitLeft = null, splitRight = null;
 
-        if (xml.Name.LocalName is "t" or "delText")
+        if (xml.Name.LocalName is RunTextType.Text or RunTextType.DeletedText)
         {
             // The original text element, now containing only the text before the index point.
             splitLeft = new XElement(xml.Name, xml.Attributes(), xml.Value[..(index - startIndex)]);
@@ -276,7 +252,7 @@ public sealed class Run : DocXElement, IEquatable<Run>
             }
 
             // The original text element, now containing only the text after the index point.
-            splitRight = new XElement(xml.Name, xml.Attributes(), xml.Value.Substring(index - startIndex, xml.Value.Length - (index-startIndex)));
+            splitRight = new XElement(xml.Name, xml.Attributes(), xml.Value[(index - startIndex)..]);
             if (splitRight.Value.Length == 0)
             {
                 splitRight = null;
@@ -298,28 +274,7 @@ public sealed class Run : DocXElement, IEquatable<Run>
             }
         }
 
-        return new[] { xml, splitLeft, splitRight };
-    }
-
-    /// <summary>
-    /// Internal method to recursively walk all (w:t) elements in this run and find the spot
-    /// where an edit (insert/delete) would occur.
-    /// </summary>
-    /// <param name="element">XML graph to examine</param>
-    /// <param name="index">Index to search for</param>
-    private static (XElement textXml, int startIndex) FindTextElementByIndex(XElement element, int index)
-    {
-        int count = 0;
-        foreach (var child in element.Descendants())
-        {
-            int size = DocumentHelpers.GetSize(child);
-            count += size;
-            if (count >= index)
-            {
-                return (child, count - size);
-            }
-        }
-        return default;
+        return (splitLeft, splitRight);
     }
 
     /// <summary>
@@ -329,24 +284,13 @@ public sealed class Run : DocXElement, IEquatable<Run>
     /// <param name="packagePart">Package part owner</param>
     /// <param name="xml">XML fragment</param>
     /// <returns>Element wrapper</returns>
-    private static DocXElement? WrapDocumentElement(Document document, PackagePart packagePart, XElement xml)
+    private static DocXElement? WrapParentElement(Document document, PackagePart packagePart, XElement xml)
     {
         if (xml.Name.LocalName == Name.Hyperlink.LocalName)
             return new Hyperlink(document, packagePart, xml);
-
-        if (xml.Name == Name.Paragraph)
-        {
-            // See if we can find it first. That way we get the proper index.
-            var p = document.Paragraphs.FirstOrDefault(p => p.Xml == xml);
-            if (p != null) return p;
-
-            // Hmm. Unowned perhaps?
-            int pos = 0;
-            return DocumentHelpers.WrapParagraphElement(xml, document, packagePart, ref pos);
-        }
-        return null;
+        Debug.Assert(xml.Name == Name.Paragraph);
+        return document.Paragraphs.FirstOrDefault(p => p.Xml == xml);
     }
-
 
     /// <summary>
     /// Determines equality for a run

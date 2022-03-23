@@ -12,21 +12,23 @@ namespace DXPlus.Tests
         {
             Document doc = (Document) Document.Create();
 
-            doc.AddParagraph("This is a test paragraph.");
+            doc.Add("This is a test paragraph.");
             var p = doc
-                .AddParagraph("This is a second paragraph with a book mark - ")
-                .SetBookmark("bookmark1")
-                .Add(" added into the text.");
+                .Add("This is a second paragraph with a book mark - ")
+                .AddBookmark("bookmark1")
+                .AddText(" added into the text.");
 
             Assert.True(p.BookmarkExists("bookmark1"));
             Assert.Single(doc.Xml.RemoveNamespaces().XPathSelectElements("//bookmarkStart"));
 
             var bookmark = p.Bookmarks[0];
+            bookmark.SetText("HI!");
 
             Assert.Equal(bookmark, p.Bookmarks["bookmark1"]);
             Assert.Equal("bookmark1",bookmark.Name);
             Assert.Equal(p, bookmark.Paragraph);
-            Assert.Equal(p.Runs.First().Text, bookmark.Text);
+            Assert.Equal("HI!", bookmark.Text);
+            Assert.Equal("This is a second paragraph with a book mark - HI! added into the text.", p.Text);
 
             Assert.Throws<ArgumentException>(() => p.SetBookmark("bookmark1"));
         }
@@ -37,10 +39,10 @@ namespace DXPlus.Tests
             Document doc = (Document)Document.Create();
 
             var p = doc
-                .AddParagraph("This is a test paragraph.")
-                .Add(" With lots of text.")
-                .Add(" Added over time.")
-                .Add(" And a final sentence.");
+                .Add("This is a test paragraph.")
+                .AddText(" With lots of text.")
+                .AddText(" Added over time.")
+                .AddText(" And a final sentence.");
 
             var runs = p.Runs.ToList();
 

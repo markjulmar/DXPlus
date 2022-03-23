@@ -9,17 +9,23 @@ namespace DXPlus.Charts;
 public sealed class PieChart : Chart
 {
     /// <summary>
-    /// Chart has an axis?
+    /// Default constructor for a LineChart.
     /// </summary>
-    public override bool HasAxis => false;
+    public PieChart() : base(Resources.Resource.PieChart(), false)
+    {
+    }
+
+    /// <summary>
+    /// Constructor for a loaded BarChart
+    /// </summary>
+    /// <param name="chartDocument"></param>
+    internal PieChart(XDocument chartDocument)
+        : base(chartDocument, Namespace.Chart + "pieChart")
+    {
+    }
 
     /// <summary>
     /// Return maximum count of series
     /// </summary>
     public override short MaxSeriesCount => 1;
-
-    /// <summary>
-    /// Method which creates the current chart XML
-    /// </summary>
-    protected override XElement CreateChartXml() => new(Namespace.Chart + "pieChart");
 }

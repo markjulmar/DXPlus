@@ -112,7 +112,7 @@ public static class ListExtensions
         {
             // See if the ListParagraph style has a default definition assigned.
             numProperties = documentOwner.Styles.GetStyle(StyleName, StyleType.Paragraph)?
-                .ParagraphFormatting?.Xml.FirstLocalNameDescendant("numPr");
+                .ParagraphFormatting.Xml?.FirstLocalNameDescendant("numPr");
         }
 
         return numProperties;

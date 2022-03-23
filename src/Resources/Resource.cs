@@ -26,6 +26,48 @@ internal static class Resource
         => GetDocument("DXPlus.Resources.document.xml", new {rsid});
 
     /// <summary>
+    /// Retrieve the base chart XML used for all charts.
+    /// </summary>
+    /// <returns></returns>
+    public static XDocument BaseChart()
+        => GetDocument("DXPlus.Resources.chart.xml");
+
+    /// <summary>
+    /// Basic bar chart
+    /// </summary>
+    /// <returns></returns>
+    public static XElement BarChart()
+        => GetElement("DXPlus.Resources.barChart.xml");
+
+    /// <summary>
+    /// Basic line chart
+    /// </summary>
+    /// <returns></returns>
+    public static XElement LineChart()
+        => GetElement("DXPlus.Resources.lineChart.xml");
+
+    /// <summary>
+    /// Basic pie chart
+    /// </summary>
+    /// <returns></returns>
+    public static XElement PieChart()
+        => GetElement("DXPlus.Resources.pieChart.xml");
+
+    /// <summary>
+    /// Default category axis
+    /// </summary>
+    /// <returns></returns>
+    public static XElement ChartCategoryAxis(uint id, uint vaxId)
+        => GetElement("DXPlus.Resources.chartCategoryAxis.xml", new { id, vaxId });
+
+    /// <summary>
+    /// Default value axis
+    /// </summary>
+    /// <returns></returns>
+    public static XElement ChartValueAxis(uint id, uint caxId)
+        => GetElement("DXPlus.Resources.chartValueAxis.xml", new { id, caxId });
+
+    /// <summary>
     /// People document needed when comments are added to the docx file.
     /// </summary>
     /// <returns></returns>

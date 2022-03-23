@@ -46,7 +46,7 @@ public sealed class Hyperlink : DocXElement, IEquatable<Hyperlink>
                     new XAttribute(Name.MainVal, "Hyperlink")));
 
             // Format and add the new text.
-            var newRuns = DocumentHelpers.FormatInput(value, rPr);
+            var newRuns = DocumentHelpers.CreateRunElements(value, rPr);
             if (type == 0)
             {
                 Xml.Elements(Name.Run).Remove();
@@ -143,7 +143,7 @@ public sealed class Hyperlink : DocXElement, IEquatable<Hyperlink>
     {
         type = 0;
         Id = xml.AttributeValue(Namespace.RelatedDoc + "id");
-        text = DocumentHelpers.GetTextRecursive(xml).ToString();
+        text = DocumentHelpers.GetText(xml, false);
 
         SetOwner(document, packagePart, false);
     }
@@ -168,7 +168,7 @@ public sealed class Hyperlink : DocXElement, IEquatable<Hyperlink>
         if (start != -1 && end != -1)
         {
             Uri = new Uri(instrText.Value[start..end], UriKind.Absolute);
-            text = DocumentHelpers.GetTextRecursive(new XElement(Namespace.Main + "temp", runs)).ToString();
+            text = DocumentHelpers.GetText(new XElement(Namespace.Main + "temp", runs), false);
         }
         else
         {

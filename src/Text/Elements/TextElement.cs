@@ -1,16 +1,17 @@
 ﻿using System.Xml.Linq;
+using DXPlus.Internal;
 
 namespace DXPlus;
 
 /// <summary>
 /// This class is the base for text/breaks in a Run object.
 /// </summary>
-public class TextElement : ITextElement
+public class TextElement : XElementWrapper, ITextElement
 {
     /// <summary>
-    /// XML element for this text
+    /// XML for this element
     /// </summary>
-    protected readonly XElement Xml;
+    protected new XElement Xml => base.Xml!;
 
     /// <summary>
     /// Parent run object
@@ -23,6 +24,11 @@ public class TextElement : ITextElement
     public string ElementType => Xml.Name.LocalName;
 
     /// <summary>
+    /// Length of this element
+    /// </summary>
+    public int Length => DocumentHelpers.GetSize(Xml);
+
+    /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="runOwner"></param>
@@ -30,6 +36,6 @@ public class TextElement : ITextElement
     internal TextElement(Run runOwner, XElement xml)
     {
         this.Parent = runOwner ?? throw new ArgumentNullException(nameof(runOwner));
-        this.Xml = xml ?? throw new ArgumentNullException(nameof(xml));
+        base.Xml = xml ?? throw new ArgumentNullException(nameof(xml));
     }
 }

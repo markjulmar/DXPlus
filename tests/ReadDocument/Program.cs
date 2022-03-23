@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using DXPlus;
+using DXPlus.Charts;
 
 namespace ReadDocument
 {
@@ -151,74 +152,9 @@ namespace ReadDocument
                     {
                         text += $", Hyperlink=\"{d.Hyperlink.OriginalString}\"";
                     }
-                
-                    var p = d.Picture;
-                    if (p != null)
-                    {
-                        text += $"{Environment.NewLine}{prefix}   pic: Id={p.Id}, Rid=\"{p.RelationshipId}\" {p.FileName} ({Math.Round(p.Width??0,0)}x{Math.Round(p.Height??0,0)}) - {p.Name}: \"{p.Description}\"";
-                        if (p.Hyperlink != null)
-                        {
-                            text += $", Hyperlink=\"{p.Hyperlink.OriginalString}\"";
-                        }
 
-                        if (p.BorderColor != null)
-                        {
-                            text += $", BorderColor={p.BorderColor}";
-                        }
-
-                        string captionText = d.GetCaption();
-                        if (captionText != null)
-                        {
-                            text += $", Caption=\"{captionText}\"";
-                        }
-
-                        foreach (var ext in p.ImageExtensions)
-                        {
-                            if (ext is SvgExtension svg)
-                            {
-                                text += $"{Environment.NewLine}{prefix}      SvgId={svg.RelationshipId} ({svg.Image.FileName})";
-                            }
-                            else if (ext is VideoExtension video)
-                            {
-                                text += $"{Environment.NewLine}{prefix}      Video=\"{video.Source}\" H={video.Height}, W={video.Width}";
-                            }
-                            else if (ext is DecorativeImageExtension dix)
-                            {
-                                text += $"{Environment.NewLine}{prefix}      DecorativeImage={dix.Value}";
-                            }
-                            else if (ext is LocalDpiExtension dpi)
-                            {
-                                text += $"{Environment.NewLine}{prefix}      LocalDpiOverride={dpi.Value}";
-                            }
-                            else
-                            {
-                                text += $"{Environment.NewLine}{prefix}      Extension {ext.UriId}";
-                            }
-                        }
-
-                            /*
-                            string fn;
-                            Image theImage;
-                            if (p.ImageExtensions.Contains(SvgExtension.ExtensionId))
-                            {
-                                var svgExt = (SvgExtension) p.ImageExtensions.Get(SvgExtension.ExtensionId);
-                                theImage = svgExt.Image;
-                                fn = theImage.FileName;
-                                text += $", SvgId={svgExt.RelationshipId} ({theImage.FileName})";
-                            }
-                            else
-                            {
-                                fn = p.FileName;
-                                theImage = p.Image;
-                            }
-
-                            fn = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), fn);
-
-                            using var input = theImage.OpenStream();
-                            using var output = File.OpenWrite(fn);
-                            input.CopyTo(output);
-                            */
-                    }
+                    text += DumpPicture(prefix, d.Picture);
+                    text += DumpChart(prefix, d.ChartRelationId, d.Chart);
 
                     Console.WriteLine(text);
                     text = null;
@@ -228,6 +164,90 @@ namespace ReadDocument
 
             if (text != null)
                 Console.WriteLine($"{prefix}{item.ElementType}: {text}");
+        }
+
+        private static string DumpChart(string prefix, string id, Chart chart)
+        {
+            if (chart == null) return string.Empty;
+
+            StringBuilder sb = new StringBuilder();
+
+            sb.Append($"{Environment.NewLine}{prefix}   chart: Rid={id}, Type={chart.GetType().Name} HasAxis={chart.HasAxis}, HasLegend={chart.HasLegend}, MaxSeriesCount={chart.MaxSeriesCount}, Is3D={chart.View3D}");
+
+            return sb.ToString();
+        }
+
+        private static string DumpPicture(string prefix, Picture picture)
+        {
+            if (picture == null) return string.Empty;
+
+            StringBuilder sb = new StringBuilder();
+
+            sb.Append($"{Environment.NewLine}{prefix}   pic: Id={picture.Id}, Rid=\"{picture.RelationshipId}\" {picture.FileName} ({Math.Round(picture.Width ?? 0, 0)}x{Math.Round(picture.Height ?? 0, 0)}) - {picture.Name}: \"{picture.Description}\"");
+            if (picture.Hyperlink != null)
+            {
+                sb.Append($", Hyperlink=\"{picture.Hyperlink.OriginalString}\"");
+            }
+
+            if (picture.BorderColor != null)
+            {
+                sb.Append($", BorderColor={picture.BorderColor}");
+            }
+
+            string captionText = picture.Drawing.GetCaption();
+            if (captionText != null)
+            {
+                sb.Append($", Caption=\"{captionText}\"");
+            }
+
+            foreach (var ext in picture.ImageExtensions)
+            {
+                if (ext is SvgExtension svg)
+                {
+                    sb.Append($"{Environment.NewLine}{prefix}      SvgId={svg.RelationshipId} ({svg.Image.FileName})");
+                }
+                else if (ext is VideoExtension video)
+                {
+                    sb.Append($"{Environment.NewLine}{prefix}      Video=\"{video.Source}\" H={video.Height}, W={video.Width}");
+                }
+                else if (ext is DecorativeImageExtension dix)
+                {
+                    sb.Append($"{Environment.NewLine}{prefix}      DecorativeImage={dix.Value}");
+                }
+                else if (ext is LocalDpiExtension dpi)
+                {
+                    sb.Append($"{Environment.NewLine}{prefix}      LocalDpiOverride={dpi.Value}");
+                }
+                else
+                {
+                    sb.Append($"{Environment.NewLine}{prefix}      Extension {ext.UriId}");
+                }
+            }
+
+            /*
+            string fn;
+            Image theImage;
+            if (p.ImageExtensions.Contains(SvgExtension.ExtensionId))
+            {
+                var svgExt = (SvgExtension) p.ImageExtensions.Get(SvgExtension.ExtensionId);
+                theImage = svgExt.Image;
+                fn = theImage.FileName;
+                text += $", SvgId={svgExt.RelationshipId} ({theImage.FileName})";
+            }
+            else
+            {
+                fn = p.FileName;
+                theImage = p.Image;
+            }
+
+            fn = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), fn);
+
+            using var input = theImage.OpenStream();
+            using var output = File.OpenWrite(fn);
+            input.CopyTo(output);
+            */
+
+            return sb.ToString();
         }
 
         private static string DumpObject(object obj)

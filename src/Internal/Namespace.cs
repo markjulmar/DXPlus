@@ -16,6 +16,7 @@ internal static class Name
     public static readonly XName Break = Namespace.Main + "br";
     public static readonly XName Color = Namespace.Main + "color";
     public static readonly XName ComplexField = Namespace.Main + "fldChar";
+    public static readonly XName Drawing = Namespace.Main + RunTextType.Drawing;
     public static readonly XName DrawingProperties = Namespace.WordProcessingDrawing + "docPr";
     public static readonly XName Emphasis = Namespace.Main + "em";
     public static readonly XName Fill = Namespace.Main + "fill";

@@ -6,11 +6,10 @@ namespace DXPlus;
 /// <summary>
 /// This manages the [pPr] element in a Word document structure which holds all paragraph-level properties.
 /// </summary>
-public sealed class ParagraphProperties
+public sealed class ParagraphProperties : XElementWrapper
 {
+    private new XElement Xml => base.Xml!;
     private const string DefaultStyle = "Normal";
-
-    internal XElement Xml { get; }
 
     /// <summary>
     /// True to keep with the next element on the page.
@@ -74,8 +73,7 @@ public sealed class ParagraphProperties
     /// </summary>
     public LineRule? LineRule
     {
-        get => Xml.Element(Name.Spacing).AttributeValue(Namespace.Main + "lineRule")
-            .TryGetEnumValue<LineRule>(out var result) ? result : null;
+        get => Xml.Element(Name.Spacing).AttributeValue(Namespace.Main + "lineRule").TryGetEnumValue<LineRule>(out var result) ? result : null;
         set => Xml.GetOrAddElement(Name.Spacing).SetAttributeValue(Namespace.Main + "lineRule", value?.GetEnumName());
     }
 
@@ -132,7 +130,7 @@ public sealed class ParagraphProperties
     }
 
     /// <summary>
-    /// Set the left indentation in 1/20th pt for this FirstParagraph.
+    /// Set the left indentation for this paragraph.
     /// </summary>
     public double? LeftIndent
     {
@@ -154,7 +152,7 @@ public sealed class ParagraphProperties
     }
 
     /// <summary>
-    /// Set the right indentation in 1/20th pt for this FirstParagraph.
+    /// Set the right indentation for this paragraph.
     /// </summary>
     public double? RightIndent
     {
@@ -244,7 +242,7 @@ public sealed class ParagraphProperties
     }
 
     /// <summary>
-    /// Get or set the indentation of the first line of this FirstParagraph.
+    /// Get or set the indentation of the first line of this paragraph.
     /// </summary>
     public double? FirstLineIndent
     {
@@ -267,7 +265,7 @@ public sealed class ParagraphProperties
     }
 
     /// <summary>
-    /// Get or set the indentation of all but the first line of this FirstParagraph.
+    /// Get or set the indentation of all but the first line of this paragraph.
     /// </summary>
     public double? HangingIndent
     {
@@ -314,11 +312,25 @@ public sealed class ParagraphProperties
     public Formatting DefaultFormatting => new(Xml.CreateRunProperties());
 
     /// <summary>
+    /// Specifies a sequence of custom tab stops which will be used for the tab characters in this paragraph.
+    /// If these are omitted, stops are determined by the setting in the style.
+    /// </summary>
+    public IList<TabStop> TabStops => new XElementCollection<TabStop>(Xml, Namespace.Main + "tabs",
+        Namespace.Main + RunTextType.Tab, xe => new TabStop(xe));
+
+    /// <summary>
+    /// Formatting properties for the paragraph
+    /// </summary>
+    public ParagraphProperties() : this(new XElement(Name.ParagraphProperties))
+    {
+    }
+
+    /// <summary>
     /// Formatting properties for the paragraph
     /// </summary>
     /// <param name="xml"></param>
-    public ParagraphProperties(XElement? xml = null)
+    internal ParagraphProperties(XElement xml)
     {
-        Xml = xml ?? new XElement(Name.ParagraphProperties);
+        base.Xml = xml ?? throw new ArgumentNullException(nameof(xml));
     }
 }

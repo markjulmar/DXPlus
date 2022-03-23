@@ -24,7 +24,7 @@ public abstract class Block : DocXElement
     {
         get
         {
-            if (!Xml.InDom()) return null;
+            if (!Xml.HasParent()) return null;
             if (Xml.Parent?.Name == Name.Body) return this.Document;
             return Xml.Parent != null
                 ? WrapElementBlockContainer(this.Document, this.PackagePart, Xml.Parent)
@@ -37,13 +37,13 @@ public abstract class Block : DocXElement
     /// Add a page break after the current element.
     /// </summary>
     public void AddPageBreak() =>
-        Xml.AddAfterSelf(DocumentHelpers.PageBreak());
+        Xml.AddAfterSelf(CreatePageBreakElement);
 
     /// <summary>
     /// Insert a page break before the current element.
     /// </summary>
     public void InsertPageBreakBefore() =>
-        Xml.AddBeforeSelf(DocumentHelpers.PageBreak());
+        Xml.AddBeforeSelf(CreatePageBreakElement);
 
     /// <summary>
     /// Insert a paragraph before this one in the document.
@@ -55,7 +55,7 @@ public abstract class Block : DocXElement
         if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
         if (!InDocument)
             throw new InvalidOperationException("Can only append to paragraphs in an existing document structure.");
-        if (paragraph.Xml.InDom())
+        if (paragraph.Xml.HasParent())
             throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
         Xml.AddBeforeSelf(paragraph.Xml);
@@ -72,7 +72,7 @@ public abstract class Block : DocXElement
         if (paragraph == null) throw new ArgumentNullException(nameof(paragraph));
         if (!InDocument)
             throw new InvalidOperationException("Cannot add paragraphs to unowned paragraphs - must be part of a document structure.");
-        if (paragraph.Xml.InDom())
+        if (paragraph.Xml.HasParent())
             throw new ArgumentException("Cannot add paragraph multiple times.", nameof(paragraph));
 
         // If this element is a paragraph and it currently has a table after it, then add the given paragraph
@@ -134,4 +134,13 @@ public abstract class Block : DocXElement
 
         throw new Exception($"Unrecognized container type {e.Name}");
     }
+
+    /// <summary>
+    /// Create a page break paragraph element
+    /// </summary>
+    /// <returns>Page break element</returns>
+    private static XElement CreatePageBreakElement => new(Name.Paragraph,
+        new XAttribute(Name.ParagraphId, DocumentHelpers.GenerateHexId()),
+        new XElement(Name.Run, new XElement(Namespace.Main + RunTextType.LineBreak,
+            new XAttribute(Namespace.Main + "type", "page"))));
 }

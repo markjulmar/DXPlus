@@ -9,74 +9,87 @@ namespace DXPlus.Charts
     public abstract class Chart
     {
         /// <summary>
+        /// The document related to this chart
+        /// </summary>
+        internal XDocument Xml { get; }
+
+        /// <summary>
+        /// The root XML node of the specific chart (bar, pie, etc.)
+        /// </summary>
+        protected XElement ChartXml { get; }
+
+        /// <summary>
         /// The root XML node of the chart (c:chart)
         /// </summary>
         private readonly XElement chartRootXml;
 
         /// <summary>
+        /// Loaded chart from an existing document
+        /// </summary>
+        /// <param name="document">Root document for the chart</param>
+        /// <param name="chartType">XName for the chart element</param>
+        internal Chart(XDocument document, XName chartType)
+        {
+            this.Xml = document;
+            this.ChartXml = document.Descendants(chartType).Single();
+            this.chartRootXml = Xml.Root!.Element(Namespace.Chart + "chart")!;
+
+            // Get the axis values
+            var categoryAxisXml = document.FirstLocalNameDescendant("catAx");
+            var valueAxisXml = document.FirstLocalNameDescendant("valAx");
+            if (categoryAxisXml != null && valueAxisXml != null)
+            {
+                CategoryAxis = new CategoryAxis(categoryAxisXml);
+                ValueAxis = new ValueAxis(valueAxisXml);
+            }
+
+            // Create the legend if it exists.
+            var legendXml = chartRootXml.FirstLocalNameDescendant("legend");
+            if (legendXml != null)
+            {
+                Legend = new ChartLegend(legendXml);
+            }
+        }
+
+        /// <summary>
         /// Create an Chart for this document
         /// </summary>
-        internal Chart()
+        internal Chart(XElement chartXml, bool hasAxis)
         {
-            Xml = XDocument.Parse
-                (@"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
-                   <c:chartSpace xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"" xmlns:a=""http://schemas.openxmlformats.org/drawingml/2006/main"" xmlns:r=""http://schemas.openxmlformats.org/officeDocument/2006/relationships"">
-                       <c:roundedCorners val=""0""/>
-                       <c:chart>
-                           <c:autoTitleDeleted val=""0""/>
-                           <c:plotVisOnly val=""1""/>
-                           <c:dispBlanksAs val=""gap""/>
-                           <c:showDLblsOverMax val=""0""/>
-                       </c:chart>
-                   </c:chartSpace>");
+            Xml = Resources.Resource.BaseChart();
+            ChartXml = chartXml;
+            chartRootXml = Xml.Root!.Element(Namespace.Chart + "chart")!;
 
-            // Create a real chart xml in an inheritor
-            ChartXml = CreateChartXml();
+            // Insert the chart
+            var plotAreaXml = Xml.Descendants(Namespace.Chart + "plotArea").Single();
+            plotAreaXml.Add(ChartXml);
 
-            // Create result plotarea element
-            var plotAreaXml = new XElement(Namespace.Chart + "plotArea",
-                                        new XElement(Namespace.Chart + "layout"),
-                                            ChartXml);
-
-            // Set labels
-            var dLblsXml = XElement.Parse(
-                @"<c:dLbls xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart"">
-                    <c:showLegendKey val=""0""/>
-                    <c:showVal val=""0""/>
-                    <c:showCatName val=""0""/>
-                    <c:showSerName val=""0""/>
-                    <c:showPercent val=""0""/>
-                    <c:showBubbleSize val=""0""/>
-                    <c:showLeaderLines val=""1""/>
-                </c:dLbls>");
-            ChartXml.Add(dLblsXml);
-
-            if (HasAxis)
+            if (hasAxis)
             {
-                CategoryAxis = new CategoryAxis((uint)new Random().Next());
-                ValueAxis = new ValueAxis((uint)new Random().Next());
+                uint cxId = (uint) new Random().Next();
+                uint vxId = (uint) new Random().Next();
 
-                var axIDcatXml = XElement.Parse($@"<c:axId val=""{CategoryAxis.Id}"" xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart""/>");
-                var axIDvalXml = XElement.Parse($@"<c:axId val=""{ValueAxis.Id}"" xmlns:c=""http://schemas.openxmlformats.org/drawingml/2006/chart""/>");
+                CategoryAxis = new CategoryAxis(cxId, vxId);
+                ValueAxis = new ValueAxis(vxId, cxId);
+
+                var categoryAxisId = XElement.Parse($@"<c:axId val=""{CategoryAxis.Id}"" xmlns:c=""{Namespace.Chart.NamespaceName}""/>");
+                var valueAxisId = XElement.Parse($@"<c:axId val=""{ValueAxis.Id}"" xmlns:c=""{Namespace.Chart.NamespaceName}""/>");
 
                 var insertPoint = ChartXml.Element(Namespace.Chart + "gapWidth");
                 if (insertPoint != null)
                 {
-                    insertPoint.AddAfterSelf(axIDvalXml);
-                    insertPoint.AddAfterSelf(axIDcatXml);
+                    insertPoint.AddAfterSelf(valueAxisId);
+                    insertPoint.AddAfterSelf(categoryAxisId);
                 }
                 else
                 {
-                    ChartXml.Add(axIDcatXml);
-                    ChartXml.Add(axIDvalXml);
+                    ChartXml.Add(categoryAxisId);
+                    ChartXml.Add(valueAxisId);
                 }
 
                 plotAreaXml.Add(CategoryAxis!.Xml);
                 plotAreaXml.Add(ValueAxis.Xml);
             }
-
-            chartRootXml = Xml.Root!.Element(Namespace.Chart + "chart")!;
-            chartRootXml.Element(Namespace.Chart + "autoTitleDeleted")!.AddAfterSelf(plotAreaXml);
         }
 
         /// <summary>
@@ -91,7 +104,7 @@ namespace DXPlus.Charts
         /// <summary>
         /// Chart has an axis?
         /// </summary>
-        public virtual bool HasAxis => true;
+        public bool HasAxis => CategoryAxis != null || ValueAxis != null;
 
         /// <summary>
         /// The values axis (can be null).
@@ -157,16 +170,6 @@ namespace DXPlus.Charts
         }
 
         /// <summary>
-        /// The XML representation of this chart
-        /// </summary>
-        internal XDocument Xml { get; }
-
-        /// <summary>
-        /// The root XML node of the specific chart (bar, pie, etc.)
-        /// </summary>
-        protected XElement ChartXml { get; }
-
-        /// <summary>
         /// True if this chart has a legend
         /// </summary>
         public bool HasLegend => Legend != null;
@@ -216,10 +219,5 @@ namespace DXPlus.Charts
 
             ChartXml.Add(series.Xml);
         }
-
-        /// <summary>
-        /// An abstract method which creates the current chart xml
-        /// </summary>
-        protected abstract XElement CreateChartXml();
-    }
+   }
 }

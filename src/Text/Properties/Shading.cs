@@ -6,9 +6,9 @@ namespace DXPlus;
 /// <summary>
 /// Wrapper for all the shading properties for a run of text.
 /// </summary>
-public class Shading
+public class Shading : XElementWrapper
 {
-    private readonly XElement properties;
+    private new XElement Xml => base.Xml!;
 
     /// <summary>
     /// The Shade element
@@ -16,8 +16,8 @@ public class Shading
     private XElement? Shd(bool create)
     {
         return create 
-            ? properties.GetOrAddElement(Namespace.Main + "shd")
-            : properties.Element(Namespace.Main + "shd");
+            ? Xml.GetOrAddElement(Namespace.Main + "shd")
+            : Xml.Element(Namespace.Main + "shd");
     }
 
     /// <summary>
@@ -130,9 +130,8 @@ public class Shading
     /// <summary>
     /// Public constructor
     /// </summary>
-    public Shading()
+    public Shading() : this(new XElement("props"))
     {
-        properties = new XElement("props");
     }
 
     /// <summary>
@@ -141,7 +140,7 @@ public class Shading
     /// <param name="rp">Run properties</param>
     private Shading(XElement rp)
     {
-        properties = rp;
+        base.Xml = rp ?? throw new ArgumentNullException(nameof(rp));
     }
 
     /// <summary>
@@ -179,7 +178,7 @@ public class Shading
 
         // Copy the shading over.
         var xml = value.Shd(false);
-        rp.Add(new XElement(Namespace.Main + "shd", xml!.Attributes()));
+        rp.Add(new XElement(Namespace.Main + "shd", xml?.Attributes()));
         return true;
     }
 }
