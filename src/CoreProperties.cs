@@ -274,7 +274,7 @@ public sealed class CoreProperties
     /// </summary>
     public string? Status
     {
-        get => GetValue(DocumentPropertyName.Title);
-        set => SetValue(DocumentPropertyName.Title, value ?? string.Empty);
+        get => GetValue(DocumentPropertyName.Status);
+        set => SetValue(DocumentPropertyName.Status, value ?? string.Empty);
     }
 }
