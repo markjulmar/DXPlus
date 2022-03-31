@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Linq;
 using System.Xml.Linq;
 using Xunit;
 
@@ -197,6 +199,25 @@ namespace DXPlus.Tests
         {
             var prop = new CustomProperty("test", Guid.NewGuid());
             Assert.Throws<ArgumentOutOfRangeException>(()=>prop.SetValue(20));
+        }
+
+        [Fact]
+        public void SaveAddsPidsToNewProperties()
+        {
+            var doc = Document.Create();
+
+            doc.CustomProperties.Add("TestInt", 10);
+            doc.CustomProperties.Add("TestText", "Hello");
+
+            Assert.Equal(2, doc.CustomProperties.Count);
+            Assert.Null(doc.CustomProperties.First().Id);
+            Assert.Null(doc.CustomProperties[1].Id);
+
+            string fn = Path.GetTempFileName();
+            doc.SaveAs(fn);
+
+            Assert.Equal(2, doc.CustomProperties.First().Id);
+            Assert.Equal(3, doc.CustomProperties[1].Id);
         }
     }
 }

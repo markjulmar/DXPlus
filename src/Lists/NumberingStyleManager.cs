@@ -1,5 +1,6 @@
 ﻿using DXPlus.Resources;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO.Packaging;
 using System.Xml.Linq;
 using DXPlus.Internal;
@@ -52,54 +53,95 @@ public sealed class NumberingStyleManager : DocXElement
     /// Creates a new numbering section in the w:numbering document and adds a relationship to
     /// that section in the passed document.
     /// </summary>
-    /// <param name="listType">Type of list to create</param>
-    /// <param name="startNumber">Starting number</param>
     /// <returns></returns>
-    public NumberingDefinition Create(NumberingFormat listType, int startNumber = 1)
+    public NumberingDefinition BulletStyle()
     {
         Debug.Assert(numberingDoc != null);
 
-        if (startNumber < 1)
-        {
-            throw new ArgumentOutOfRangeException(nameof(startNumber));
-        }
+        var styles = Styles.ToList();
+        var style = styles.FirstOrDefault(s => s.Levels.Any(nl => nl.Level == 0 && nl.Format == NumberingFormat.Bullet))
+            ?? AddNumberingStyle(Resource.DefaultBulletNumberingXml(DocumentHelpers.GenerateHexId()), styles);
+        
+        return AddNumberingDefinition(1, style);
+    }
+
+    /// <summary>
+    /// Creates a new numbering section in the w:numbering document and adds a relationship to
+    /// that section in the passed document.
+    /// </summary>
+    /// <returns></returns>
+    public NumberingDefinition NumberStyle(int? startNumber = null)
+    {
+        Debug.Assert(numberingDoc != null);
+        if (startNumber < 1) throw new ArgumentOutOfRangeException(nameof(startNumber));
 
         var styles = Styles.ToList();
-        var definitions = Definitions.ToList();
+        var style = styles.FirstOrDefault(s => s.Levels.Any(nl => nl.Level == 0 && nl.Format == NumberingFormat.Numbered))
+            ?? AddNumberingStyle(Resource.DefaultBulletNumberingXml(DocumentHelpers.GenerateHexId()), styles);
 
-        // TODO: improve the search.
-        NumberingStyle? style = null; // styles.FirstOrDefault(s => s.Levels.FirstOrDefault()?.Format == listType);
-        if (style == null)
+        return AddNumberingDefinition(startNumber??1, style);
+    }
+
+    /// <summary>
+    /// Creates a new numbering section in the w:numbering document and adds a relationship to
+    /// that section in the passed document.
+    /// </summary>
+    /// <param name="text">Text to use for 1st level of list.</param>
+    /// <param name="fontFamily">Font to use for text, defaults to Courier New</param>
+    /// <returns></returns>
+    public NumberingDefinition CustomBulletStyle(string text, FontFamily? fontFamily = null)
+    {
+        Debug.Assert(numberingDoc != null);
+
+        var styles = Styles.ToList();
+        var style = styles.FirstOrDefault(s => s.Levels.Any(nl => nl.Level == 0 && nl.Text == text)) 
+            ?? AddNumberingStyle(Resource.CustomBulletNumberingXml(DocumentHelpers.GenerateHexId(), 
+                    text, fontFamily?.Name), styles);
+
+        return AddNumberingDefinition(1, style);
+    }
+
+    /// <summary>
+    /// Method to create a new {abstractNum} style definition from a passed XML template.
+    /// </summary>
+    /// <param name="styleTemplate">XML template</param>
+    /// <param name="styles">Existing style list.</param>
+    /// <returns>New added numbering style</returns>
+    private NumberingStyle AddNumberingStyle(XElement styleTemplate, IReadOnlyCollection<NumberingStyle> styles)
+    {
+        int abstractNumId = styles.Count > 0 ? styles.Max(s => s.Id) + 1 : 0;
+        var style = new NumberingStyle(styleTemplate) { Id = abstractNumId };
+
+        // Style definition goes first -- this new one should be at the end of the existing styles
+        var lastStyle = numberingDoc.Root!.Descendants().LastOrDefault(e => e.Name == Namespace.Main + "abstractNum");
+        if (lastStyle != null)
         {
-            var template = listType switch
-            {
-                NumberingFormat.Bullet => Resource.DefaultBulletNumberingXml(DocumentHelpers.GenerateHexId()),
-                NumberingFormat.Numbered => Resource.DefaultDecimalNumberingXml(DocumentHelpers.GenerateHexId()),
-                _ => throw new InvalidOperationException($"Unable to create {nameof(NumberingFormat)}: {listType}."),
-            };
-            int abstractNumId = styles.Count > 0 ? styles.Max(s => s.Id) + 1 : 0;
-            style = new NumberingStyle(template) { Id = abstractNumId };
-
-            // Style definition goes first -- this new one should be at the end of the existing styles
-            var lastStyle = numberingDoc.Root!.Descendants().LastOrDefault(e => e.Name == Namespace.Main + "abstractNum");
-            if (lastStyle != null)
-            {
-                lastStyle.AddAfterSelf(style.Xml);
-            }
-            // Or at the beginning of the document.
-            else
-            {
-                numberingDoc.Root.AddFirst(style.Xml);
-            }
+            lastStyle.AddAfterSelf(style.Xml);
+        }
+        // Or at the beginning of the document.
+        else
+        {
+            numberingDoc.Root.AddFirst(style.Xml);
         }
 
+        return style;
+
+    }
+
+    /// <summary>
+    /// Method to create a new {w:num} tied to an abstract definition in our numbering document.
+    /// </summary>
+    /// <param name="startNumber">Starting number</param>
+    /// <param name="style"></param>
+    /// <returns></returns>
+    private NumberingDefinition AddNumberingDefinition(int startNumber, NumberingStyle style)
+    {
+        var definitions = Definitions.ToList();
         int numId = definitions.Count > 0 ? definitions.Max(d => d.Id) + 1 : 1;
         var definition = new NumberingDefinition(numId, style);
 
         if (startNumber != 1)
-        {
-            definition.AddOverrideForLevel(0, new NumberingLevel { Start = startNumber });
-        }
+            definition.AddOverrideForLevel(0, new NumberingLevel {Start = startNumber});
 
         // Definition is always at the end of the document.
         numberingDoc.Root!.Add(definition.Xml);

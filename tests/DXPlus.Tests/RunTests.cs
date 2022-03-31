@@ -113,6 +113,27 @@ namespace DXPlus.Tests
         }
 
         [Fact]
+        public void CanGetParentFromTableRun()
+        {
+            var doc = Document.Create();
+
+            doc.Add("First paragraph");
+            doc.Add(new Table(new[,] {{"H1", "H2"}, {"C1", "C2"}, {"C3", "C4"}}));
+
+            Assert.Equal(2, doc.Blocks.Count());
+            Assert.Equal(7, doc.Paragraphs.Count());
+
+            var p = doc.Paragraphs.Skip(3).First();
+            Assert.Equal("C1", p.Text);
+
+            var r = p.Runs.First();
+
+            Assert.NotNull(r.Parent);
+            Assert.Equal(p, r.Parent);
+
+        }
+
+        [Fact]
         public void CombinationOperatorMergesFormatting()
         {
             var f1 = new Formatting() {Bold = true};

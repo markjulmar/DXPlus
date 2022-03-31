@@ -14,6 +14,7 @@ namespace GenerateSampleDoc
         {
             WriteTitle, 
             WriteFirstParagraph,
+            AddCustomList,
             AddVideoToDoc,
             AddImageToDoc,
             AddHeaderAndFooter,
@@ -166,7 +167,7 @@ namespace GenerateSampleDoc
 
             doc.Add("Numbered List").Style(HeadingType.Heading2);
 
-            var numberStyle = doc.NumberingStyles.Create(NumberingFormat.Numbered);
+            var numberStyle = doc.NumberingStyles.NumberStyle();
             doc.Add("First Item").ListStyle(numberStyle)
                 .AddParagraph("First sub list item").ListStyle(numberStyle, level: 1)
                 .AddParagraph("Second item.").ListStyle(numberStyle)
@@ -181,7 +182,7 @@ namespace GenerateSampleDoc
             doc.AddPageBreak();
 
             doc.Add("Lists with fonts").Style(HeadingType.Heading2);
-            var style = doc.NumberingStyles.Create(NumberingFormat.Bullet);
+            var style = doc.NumberingStyles.BulletStyle();
 
             foreach (var fontFamily in FontFamily.Families.Take(20))
             {
@@ -189,6 +190,23 @@ namespace GenerateSampleDoc
                         new() {Font = fontFamily, FontSize = fontSize})
                     .ListStyle(style));
             }
+        }
+
+        static void AddCustomList(IDocument doc)
+        {
+            doc.AddPageBreak();
+
+            var nd = doc.NumberingStyles.CustomBulletStyle("", new FontFamily("Wingdings"));
+            nd.Style.Levels.First().Formatting.Color = Color.Green;
+
+            doc.Add("Item #1").ListStyle(nd);
+            doc.Add("Item #2").ListStyle(nd);
+            doc.Add("Sub-item #1").ListStyle(nd, 1);
+            doc.Add("Sub-item #2").ListStyle(nd, 1);
+            doc.Add("Sub-item #1").ListStyle(nd, 2);
+            doc.Add("Sub-item #2").ListStyle(nd, 2);
+            doc.Add("Item #3").ListStyle(nd);
+            doc.Add("Item #4").ListStyle(nd);
         }
 
         static void AddTableToDocument(IDocument doc)
@@ -258,7 +276,7 @@ namespace GenerateSampleDoc
 
             doc.Add(table);
 
-            var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
+            var nd = doc.NumberingStyles.NumberStyle();
 
             foreach (var row in table.Rows)
             {

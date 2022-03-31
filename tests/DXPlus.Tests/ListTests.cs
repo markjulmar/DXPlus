@@ -9,7 +9,7 @@ namespace DXPlus.Tests
         public void ListStyleAddsNumberingDefinitionId()
         {
             using var doc = Document.Create();
-            var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
+            var nd = doc.NumberingStyles.BulletStyle();
 
             var p = doc.Add("1").ListStyle(nd);
 
@@ -19,10 +19,24 @@ namespace DXPlus.Tests
         }
 
         [Fact]
+        public void CustomBulletAddsNumberingDefinitionId()
+        {
+            using var doc = Document.Create();
+            var nd = doc.NumberingStyles.CustomBulletStyle("(*)");
+
+            var p = doc.Add("1").ListStyle(nd);
+
+            Assert.True(p.IsListItem());
+            Assert.Equal(1, p.GetListNumberingDefinitionId());
+            Assert.Equal(0, p.GetListLevel());
+            Assert.Equal("(*)", nd.Style.Levels.First().Text);
+        }
+
+        [Fact]
         public void ChildItemsHaveListStyle()
         {
             using var doc = Document.Create();
-            var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
+            var nd = doc.NumberingStyles.BulletStyle();
 
             var p = doc.Add("Starting list").ListStyle(nd);
             p = p.AddParagraph("With another paragraph").ListStyle();
@@ -34,7 +48,7 @@ namespace DXPlus.Tests
         public void CanGetNumberingDefinitionFromParagraph()
         {
             using var doc = Document.Create();
-            var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
+            var nd = doc.NumberingStyles.BulletStyle();
 
             doc.Add("Separator paragraph.");
 
@@ -54,7 +68,7 @@ namespace DXPlus.Tests
         public void CanGetNumberingDefinitionFromParagraphWhenNoIdIsPresent()
         {
             using var doc = Document.Create();
-            var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
+            var nd = doc.NumberingStyles.BulletStyle();
 
             doc.Add("Separator paragraph.");
 
@@ -73,8 +87,8 @@ namespace DXPlus.Tests
         public void CanGetNumberingDefinitionFromParagraphWhenMultipleAreUsed()
         {
             using var doc = Document.Create();
-            var n1 = doc.NumberingStyles.Create(NumberingFormat.Bullet);
-            var n2 = doc.NumberingStyles.Create(NumberingFormat.Numbered);
+            var n1 = doc.NumberingStyles.BulletStyle();
+            var n2 = doc.NumberingStyles.NumberStyle();
 
             doc.Add("Separator paragraph.");
 
@@ -101,7 +115,7 @@ namespace DXPlus.Tests
         public void ExtensionReturnsAllListItems()
         {
             using var doc = Document.Create();
-            var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
+            var nd = doc.NumberingStyles.BulletStyle();
 
             doc.Add("Separator paragraph.");
             doc.Add("Separator paragraph.");
@@ -138,7 +152,7 @@ namespace DXPlus.Tests
         public void CanFindListItemIndex()
         {
             using var doc = Document.Create();
-            var nd = doc.NumberingStyles.Create(NumberingFormat.Numbered);
+            var nd = doc.NumberingStyles.NumberStyle();
 
             doc.Add("Separator paragraph.");
 
@@ -160,7 +174,7 @@ namespace DXPlus.Tests
         public void ListAddsToHeaderPart()
         {
             using var doc = Document.Create();
-            var nd = doc.NumberingStyles.Create(NumberingFormat.Bullet);
+            var nd = doc.NumberingStyles.BulletStyle();
 
             var section = doc.Sections.Single();
             var header = section.Headers.Default;

@@ -165,6 +165,12 @@ internal static class Resource
     public static XElement DefaultBulletNumberingXml(string nsid) => GetElement("DXPlus.Resources.numbering.bullets.xml", new { nsid });
 
     /// <summary>
+    /// Custom bullet style for custom bullet lists - added when a new bullet list is used.
+    /// </summary>
+    /// <returns></returns>
+    public static XElement CustomBulletNumberingXml(string nsid, string bulletText, string? bulletFontFamily) => GetElement("DXPlus.Resources.numbering.custom.xml", new { nsid, bulletText, bulletFontFamily = bulletFontFamily ?? "Courier New" });
+
+    /// <summary>
     /// Default numbering style for numbered lists - added when a numbered list is used
     /// </summary>
     /// <returns></returns>

@@ -26,10 +26,10 @@ namespace DXPlus.Tests
 
             Assert.Empty(doc.Paragraphs);
             doc.Add(new Table(1, 1));
-            Assert.Empty(doc.Paragraphs);
+            Assert.Single(doc.Paragraphs);
 
             doc.Add(new Table(2, 2));
-            Assert.Single(doc.Paragraphs);
+            Assert.Single(doc.Blocks.OfType<Paragraph>());
 
             Assert.IsType<Table>(doc.Blocks.First());
             Assert.IsType<Paragraph>(doc.Blocks.ElementAt(1));

@@ -93,10 +93,10 @@ internal sealed class CustomPropertyCollection : ICustomPropertyCollection
 
         // Get the next property id in the document
         int nextId = Math.Max(2, document.LocalNameDescendants("property")
-            .Select(p => int.TryParse(p.AttributeValue("pid"), out int result) ? result : 0)
+            .Select(p => int.TryParse(p.AttributeValue("pid"), out var result) ? result : 0)
             .DefaultIfEmpty().Max() + 1);
         
-        foreach (var cp in propertyCollection.Where(p => p.Id == null))
+        foreach (var cp in propertyCollection.Where(p => p.Id is null or 0))
             cp.Id = nextId++;
 
         var customPropertiesPart = package.GetPart(Relations.CustomProperties.Uri);

@@ -111,7 +111,7 @@ public sealed class CustomProperty : XElementWrapper
         internal set
         {
             if (value < 2) throw new ArgumentOutOfRangeException(nameof(value));
-            Xml.SetAttributeValue("pid", value == null ? "" : Id.ToString());
+            Xml.SetAttributeValue("pid", value == null ? "" : value.ToString());
         }
     }
 

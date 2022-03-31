@@ -289,7 +289,9 @@ public sealed class Run : DocXElement, IEquatable<Run>
         if (xml.Name.LocalName == Name.Hyperlink.LocalName)
             return new Hyperlink(document, packagePart, xml);
         Debug.Assert(xml.Name == Name.Paragraph);
-        return document.Paragraphs.FirstOrDefault(p => p.Xml == xml);
+        var paragraph = document.Paragraphs.FirstOrDefault(p => p.Xml == xml);
+
+        return paragraph;
     }
 
     /// <summary>

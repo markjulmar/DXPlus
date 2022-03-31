@@ -24,18 +24,14 @@ namespace DXPlus.Tests
             doc.Add(new Table(3, 2));
             doc.Add("This is paragraph #2.");
 
-            var blocks = doc.Paragraphs.ToList();
-
-            Assert.Equal(2, blocks.Count);
-
-            Assert.IsType<Paragraph>(blocks[0]);
-            Assert.IsType<Paragraph>(blocks[1]);
-            Assert.NotNull(blocks[0].Table);
-
+            var blocks = doc.Blocks.ToList();
             Assert.Equal(3, doc.Blocks.Count());
             Assert.IsType<Paragraph>(doc.Blocks.First());
             Assert.IsType<Table>(doc.Blocks.ElementAt(1));
             Assert.IsType<Paragraph>(doc.Blocks.Last());
+
+            var p = (Paragraph)blocks[0];
+            Assert.NotNull(p.Table);
         }
 
         [Fact]

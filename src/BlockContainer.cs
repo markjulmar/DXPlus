@@ -40,14 +40,14 @@ public abstract class BlockContainer : DocXElement, IContainer
     }
 
     /// <summary>
-    /// Enumerates the paragraphs inside this container.
+    /// Enumerates the root paragraphs inside this container.
     /// </summary>
     public IEnumerable<Paragraph> Paragraphs
     {
         get
         {
             int current = 0;
-            foreach (var e in Xml.Elements(Name.Paragraph))
+            foreach (var e in Xml.Descendants(Name.Paragraph))
             {
                 yield return DocumentHelpers.WrapParagraphElement(e, SafeDocument, SafePackagePart, ref current);
             }
