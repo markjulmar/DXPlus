@@ -70,6 +70,21 @@ public sealed class ColorValue : IEquatable<ColorValue>
     }
 
     /// <summary>
+    /// Public constructor with theme color values
+    /// </summary>
+    /// <param name="color">Fallback color</param>
+    /// <param name="themeColor">Theme color</param>
+    /// <param name="tint">Optional tint to apply</param>
+    /// <param name="shading">Optional shading to apply</param>
+    public ColorValue(Color color, ThemeColor themeColor, byte? tint = null, byte? shading = null)
+    {
+        Color = color;
+        ThemeColor = themeColor;
+        ThemeTint = tint;
+        ThemeShade = shading;
+    }
+
+    /// <summary>
     /// Internal constructor to set the object from an existing XML set of values.
     /// </summary>
     /// <param name="color">Color value</param>

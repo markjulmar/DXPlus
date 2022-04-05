@@ -8,6 +8,7 @@ namespace DXPlus.Internal;
 /// </summary>
 internal static class Name
 {
+    public static readonly XName Alignment = Namespace.Main + "jc";
     public static readonly XName Body = Namespace.Main + "body";
     public static readonly XName Bold = Namespace.Main + "b";
     public static readonly XName BookmarkEnd = Namespace.Main + "bookmarkEnd";
@@ -39,7 +40,6 @@ internal static class Name
     public static readonly XName NoProof = Namespace.Main + "noProof";
     public static readonly XName OfficeMath = Namespace.Math + "oMath";
     public static readonly XName Paragraph = Namespace.Main + "p";
-    public static readonly XName ParagraphAlignment = Namespace.Main + "jc";
     public static readonly XName ParagraphId = Namespace.W2010 + "paraId";
     public static readonly XName ParagraphProperties = Namespace.Main + "pPr";
     public static readonly XName ParagraphStyle = Namespace.Main + "pStyle";
@@ -56,7 +56,11 @@ internal static class Name
     public static readonly XName Spacing = Namespace.Main + "spacing";
     public static readonly XName Table = Namespace.Main + "tbl";
     public static readonly XName TableCell = Namespace.Main + "tc";
+    public static readonly XName TableCellProperties = Namespace.Main + "tcPr";
     public static readonly XName TableIndent = Namespace.Main + "tblInd";
+    public static readonly XName TableProperties = Namespace.Main + "tblPr";
+    public static readonly XName TableRowProperties = Namespace.Main + "trPr";
+    public static readonly XName TableStyles = Namespace.Main + "tblStylePr";
     public static readonly XName Text = Namespace.Main + "t";
     public static readonly XName ThemeColor = Namespace.Main + "themeColor";
     public static readonly XName ThemeShade = Namespace.Main + "themeShade";

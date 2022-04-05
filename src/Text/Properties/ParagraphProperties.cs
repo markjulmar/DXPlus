@@ -32,11 +32,11 @@ public sealed class ParagraphProperties : XElementWrapper
     /// <summary>
     /// Gets or set this Paragraphs text alignment.
     /// </summary>
-    public Alignment Alignment
+    public Alignment? Alignment
     {
-        get => Xml.Element(Name.ParagraphAlignment).GetVal()
-            .TryGetEnumValue<Alignment>(out var result) ? result : Alignment.Left;
-        set => Xml.AddElementVal(Name.ParagraphAlignment, value == Alignment.Left ? null : value.GetEnumName());
+        get => Xml.Element(Name.Alignment).GetVal()
+            .TryGetEnumValue<Alignment>(out var result) ? result : null;
+        set => Xml.AddElementVal(Name.Alignment, value?.GetEnumName());
     }
 
     ///<summary>

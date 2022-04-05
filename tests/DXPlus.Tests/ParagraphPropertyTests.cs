@@ -79,18 +79,19 @@ namespace DXPlus.Tests
         public void AlignmentGetAndSetAreAligned()
         {
             var p = new ParagraphProperties();
-            Assert.Equal(Alignment.Left, p.Alignment);
+            Assert.Null(p.Alignment);
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("jc"));
 
             p.Alignment = Alignment.Center;
             Assert.Equal(Alignment.Center, p.Alignment);
             Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("jc"));
 
-            p.Alignment = Alignment.Center;
-            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("jc"));
-
             p.Alignment = Alignment.Left;
             Assert.Equal(Alignment.Left, p.Alignment);
+            Assert.Single(p.Xml.RemoveNamespaces().XPathSelectElements("jc"));
+
+            p.Alignment = null;
+            Assert.Null(p.Alignment);
             Assert.Empty(p.Xml.RemoveNamespaces().XPathSelectElements("jc"));
         }
 

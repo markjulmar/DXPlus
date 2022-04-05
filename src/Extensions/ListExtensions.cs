@@ -111,8 +111,8 @@ public static class ListExtensions
         if (numProperties == null)
         {
             // See if the ListParagraph style has a default definition assigned.
-            numProperties = documentOwner.Styles.GetStyle(StyleName, StyleType.Paragraph)?
-                .ParagraphFormatting.Xml?.FirstLocalNameDescendant("numPr");
+            numProperties = documentOwner.Styles.Find(StyleName, StyleType.Paragraph)?
+                .ParagraphFormatting?.Xml?.FirstLocalNameDescendant("numPr");
         }
 
         return numProperties;
@@ -144,7 +144,7 @@ public static class ListExtensions
         if (id is null or 0) return null;
 
         var styles = paragraph.Document.NumberingStyles;
-        var definition = styles.Definitions.SingleOrDefault(d => d.Id == id.Value);
+        var definition = styles.SingleOrDefault(d => d.Id == id.Value);
         if (definition == null)
         {
             throw new Exception(
@@ -229,7 +229,7 @@ public static class ListExtensions
 
         // Find the number definition instance.
         var styles = paragraph.Document.NumberingStyles;
-        var definition = styles.Definitions.SingleOrDefault(d => d.Id == numId);
+        var definition = styles.SingleOrDefault(d => d.Id == numId);
         if (definition == null)
         {
             throw new Exception(

@@ -128,17 +128,23 @@ public static class ParagraphExtensions
             throw new ArgumentException("Drawing already has caption.", nameof(drawing));
 
         var document = drawing.Document;
-        var captionStyle = document.Styles.GetStyle(HeadingType.Caption.ToString(), StyleType.Paragraph);
+        var captionStyle = document.Styles.Find(HeadingType.Caption.ToString(), StyleType.Paragraph);
         if (captionStyle == null)
         {
-            captionStyle = document.Styles.AddStyle(HeadingType.Caption.ToString(), StyleType.Paragraph);
+            captionStyle = document.Styles.Add(HeadingType.Caption.ToString(), HeadingType.Caption.ToString(), StyleType.Paragraph);
             captionStyle.NextParagraphStyle = "Normal";
-            captionStyle.ParagraphFormatting.LineSpacingAfter = Uom.FromPoints(10).Dxa;
-            captionStyle.ParagraphFormatting.LineSpacing = Uom.FromPoints(12).Dxa;
-            captionStyle.ParagraphFormatting.LineRule = LineRule.Auto;
-            captionStyle.ParagraphFormatting.DefaultFormatting.Italic = true;
-            captionStyle.ParagraphFormatting.DefaultFormatting.Color = Color.FromArgb(0x1F,0x37,0x63);
-            captionStyle.ParagraphFormatting.DefaultFormatting.FontSize = 9;
+            captionStyle.ParagraphFormatting = new()
+            {
+                LineSpacingAfter = Uom.FromPoints(10).Dxa,
+                LineSpacing = Uom.FromPoints(12).Dxa,
+                LineRule = LineRule.Auto,
+                DefaultFormatting =
+                {
+                    Italic = true,
+                    Color = Color.FromArgb(0x1F,0x37,0x63),
+                    FontSize = 9
+                }
+            };
         }
 
         var captionParagraph = new Paragraph().Style(HeadingType.Caption.ToString());

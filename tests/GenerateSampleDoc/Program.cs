@@ -12,12 +12,13 @@ namespace GenerateSampleDoc
     {
         private static readonly List<Action<IDocument>> testers = new()
         {
+            AddHeaderAndFooter,
             WriteTitle, 
             WriteFirstParagraph,
             AddCustomList,
             AddVideoToDoc,
             AddImageToDoc,
-            AddHeaderAndFooter,
+            AddPageBreak,
             CreateTableWithList,
             CreateNumberedList,
             CreateBulletedList,
@@ -26,7 +27,9 @@ namespace GenerateSampleDoc
             AddBookmarkToDocument,
             AddBarChartToDocument,
             AddLineChartToDocument,
-            AddPieChartToDocument
+            AddPieChartToDocument,
+            CreateCustomTableStyle,
+            DumpStyles,
         };
 
         public static void Main()
@@ -93,8 +96,6 @@ namespace GenerateSampleDoc
                     { Properties = new() { FirstLineIndent = Uom.FromInches(0.5) } })
                 .Newline()
                 .AddText("This line shouldn't be indented - instead, it should start over on the left side.");
-
-            doc.AddPageBreak();
         }
 
         private static void AddVideoToDoc(IDocument doc)
@@ -121,8 +122,6 @@ namespace GenerateSampleDoc
 
         private static void AddImageToDoc(IDocument doc)
         {
-            doc.AddParagraph();
-
             var svgImage = doc.CreateImage(Path.Combine("images", "test.svg"));
             var p = doc.Add("This is a picture:");
             p.Add(svgImage.CreatePicture(string.Empty, string.Empty));
@@ -163,11 +162,9 @@ namespace GenerateSampleDoc
 
         static void CreateNumberedList(IDocument doc)
         {
-            doc.AddPageBreak();
-
             doc.Add("Numbered List").Style(HeadingType.Heading2);
 
-            var numberStyle = doc.NumberingStyles.NumberStyle();
+            var numberStyle = doc.NumberingStyles.AddNumberedDefinition(1);
             doc.Add("First Item").ListStyle(numberStyle)
                 .AddParagraph("First sub list item").ListStyle(numberStyle, level: 1)
                 .AddParagraph("Second item.").ListStyle(numberStyle)
@@ -179,10 +176,9 @@ namespace GenerateSampleDoc
         static void CreateBulletedList(IDocument doc)
         {
             const double fontSize = 15;
-            doc.AddPageBreak();
 
             doc.Add("Lists with fonts").Style(HeadingType.Heading2);
-            var style = doc.NumberingStyles.BulletStyle();
+            var style = doc.NumberingStyles.AddBulletDefinition();
 
             foreach (var fontFamily in FontFamily.Families.Take(20))
             {
@@ -194,9 +190,7 @@ namespace GenerateSampleDoc
 
         static void AddCustomList(IDocument doc)
         {
-            doc.AddPageBreak();
-
-            var nd = doc.NumberingStyles.CustomBulletStyle("", new FontFamily("Wingdings"));
+            var nd = doc.NumberingStyles.AddCustomDefinition("", new FontFamily("Wingdings"));
             nd.Style.Levels.First().Formatting.Color = Color.Green;
 
             doc.Add("Item #1").ListStyle(nd);
@@ -211,8 +205,6 @@ namespace GenerateSampleDoc
 
         static void AddTableToDocument(IDocument doc)
         {
-            doc.AddPageBreak();
-
             doc.Add("Large 10x10 table across whole page width")
                 .Style(HeadingType.Heading2);
 
@@ -227,8 +219,8 @@ namespace GenerateSampleDoc
             foreach (var cell in table.Rows.SelectMany(row => row.Cells))
             {
                 cell.Paragraphs.First().Text = new Random().Next().ToString();
-                cell.CellWidth = colWidth;
-                cell.SetMargins(0);
+                cell.Properties.CellWidth = colWidth;
+                cell.Properties.SetMargins(0);
             }
 
             // Auto fit the table and set a border
@@ -245,7 +237,6 @@ namespace GenerateSampleDoc
 
         static void CreateBasicTable(IDocument doc)
         {
-            doc.AddPageBreak();
             doc.Add("Basic Table").Style(HeadingType.Heading2);
 
             var table = new Table(new[,]
@@ -257,9 +248,11 @@ namespace GenerateSampleDoc
                 { "Marvel town", "230,000 per year." }
             })
             {
-                Design = TableDesign.ColorfulGridAccent6,
-                ConditionalFormatting = TableConditionalFormatting.FirstRow,
-                Alignment = Alignment.Center
+                Properties = new() {
+                    Design = TableDesign.ColorfulGridAccent6,
+                    ConditionalFormatting = TableConditionalFormatting.FirstRow,
+                    Alignment = Alignment.Center
+                }
             };
 
             doc.AddParagraph().InsertAfter(table);
@@ -267,23 +260,22 @@ namespace GenerateSampleDoc
 
         static void CreateTableWithList(IDocument doc)
         {
-            doc.AddPageBreak();
             doc.Add("This is a table.");
 
-            var table = new Table(rows: 2, columns: 2) {Design = TableDesign.None};
+            var table = new Table(rows: 2, columns: 2);
             table.SetOutsideBorders(new Border(BorderStyle.Single, Uom.FromPoints(1))) //1pt
                  .SetInsideBorders(new Border(BorderStyle.Single, Uom.FromPoints(1.5))); // 1.5pt
 
             doc.Add(table);
 
-            var nd = doc.NumberingStyles.NumberStyle();
+            var nd = doc.NumberingStyles.AddNumberedDefinition(1);
 
             foreach (var row in table.Rows)
             {
                 for (int col = 0; col < row.ColumnCount; col++)
                 {
                     var cell = row.Cells[col];
-                    cell.Shading = new() {Fill = col % 2 == 0 ? Color.Pink : Color.LightBlue};
+                    cell.Properties.Shading = new() {Fill = col % 2 == 0 ? Color.Pink : Color.LightBlue};
 
                     int index = 0;
                     var paragraph = cell.Paragraphs.First();
@@ -340,8 +332,6 @@ namespace GenerateSampleDoc
 
         static void AddBarChartToDocument(IDocument doc)
         {
-            doc.AddPageBreak();
-
             var chart = new BarChart();
             chart.AddLegend(ChartLegendPosition.Bottom, false);
 
@@ -360,8 +350,6 @@ namespace GenerateSampleDoc
 
         static void AddLineChartToDocument(IDocument doc)
         {
-            doc.AddPageBreak();
-
             var chart = new LineChart();
             chart.AddLegend(ChartLegendPosition.Bottom, false);
 
@@ -380,8 +368,6 @@ namespace GenerateSampleDoc
 
         static void AddPieChartToDocument(IDocument doc)
         {
-            doc.AddPageBreak();
-
             var chart = new PieChart();
             chart.AddLegend(ChartLegendPosition.Bottom, false);
 
@@ -394,9 +380,96 @@ namespace GenerateSampleDoc
             doc.AddParagraph().Add("sales3", chart);
         }
 
+        static void CreateCustomTableStyle(IDocument doc)
+        {
+            doc.Add("Custom table style").Style(HeadingType.Heading2);
+
+            var style = doc.Styles.Add("MyTableStyle", "My Table Style", StyleType.Table);
+
+            var border = new Border(BorderStyle.Single, Uom.FromPoints(.5))
+                {Color = new ColorValue(Color.FromArgb(0x9C, 0xC2, 0xE5), ThemeColor.Accent5, 153)};
+
+            style.ParagraphFormatting = new() {LineSpacingAfter = 0};
+
+            style.TableFormatting = new() { RowBands = 1 };
+            style.TableFormatting.SetOutsideBorders(border);
+            style.TableFormatting.SetInsideBorders(border);
+
+            style.TableCellFormatting = new() {VerticalAlignment = VerticalAlignment.Center};
+
+            border = new Border(BorderStyle.Single, Uom.FromPoints(.5))
+                { Color = new ColorValue(Color.FromArgb(0x5B,0x9B,0xD5), ThemeColor.Accent5) };
+
+            // First row style
+            style.TableStyles.Add(new TableStyle(TableStyleType.FirstRow)
+            {
+                Formatting = new() {Bold = true, Color = new ColorValue(Color.White, ThemeColor.Background1)},
+                TableCellFormatting = new()
+                {
+                    TopBorder = border, BottomBorder = border,
+                    LeftBorder = border, RightBorder = border,
+                    Shading = new()
+                    {
+                        Color = ColorValue.Auto,
+                        Pattern = ShadePattern.Clear,
+                        Fill = new ColorValue(Color.FromArgb(0x5B,0x9B,0xD5), ThemeColor.Accent5)
+                    }
+                }
+            });
+
+            style.TableStyles.Add(new TableStyle(TableStyleType.LastRow)
+            {
+                Formatting = new() { Bold = true },
+                TableCellFormatting = new()
+                {
+                    TopBorder = new Border(BorderStyle.Double, Uom.FromPoints(.5))
+                        { Color = new ColorValue(Color.FromArgb(0x5B, 0x9B, 0xD5), ThemeColor.Accent5) }
+                }
+            });
+
+            style.TableStyles.Add(new TableStyle(TableStyleType.FirstColumn) {
+                Formatting = new() { Bold = true },
+            });
+
+            style.TableStyles.Add(new TableStyle(TableStyleType.LastColumn) {
+                Formatting = new() { Bold = true },
+            });
+
+            var cellBand = new TableCellProperties
+            {
+                Shading = new()
+                {
+                    Color = ColorValue.Auto, 
+                    Pattern = ShadePattern.Clear,
+                    Fill = new ColorValue(Color.FromArgb(0xDE, 0xEA, 0xF6), ThemeColor.Accent5, 51)
+                }
+            };
+            style.TableStyles.Add(new TableStyle(TableStyleType.BandedEvenRows) {TableCellFormatting = cellBand});
+
+            var table = new Table(4, 2)
+            {
+                Properties =
+                {
+                    Design = "MyTableStyle",
+                    ConditionalFormatting = TableConditionalFormatting.FirstRow | TableConditionalFormatting.FirstColumn
+                }
+            };
+
+            table.Rows[0].Cells[0].Text = "Header 1";
+            table.Rows[0].Cells[1].Text = "Header 2";
+            table.Rows[1].Cells[0].Text = "First cell";
+            table.Rows[1].Cells[1].Text = "Right cell";
+            table.Rows[2].Cells[0].Text = "Left cell";
+            table.Rows[2].Cells[1].Text = "Last cell";
+            table.Rows[3].Cells[0].Text = "Summary row";
+
+            table.Rows[3].MergeCells(0,2);
+
+            doc.Add(table);
+        }
+
         static void AddBookmarkToDocument(IDocument doc)
         {
-            doc.AddPageBreak();
             doc.Add("Bookmark test").Style(HeadingType.Heading2);
 
             // Add a bookmark
@@ -407,6 +480,26 @@ namespace GenerateSampleDoc
 
             // Set text at the bookmark
             paragraph.InsertTextAtBookmark("namedBookmark", "handy ");
+        }
+
+        static void AddPageBreak(IDocument doc)
+        {
+            doc.AddPageBreak();
+            doc.Add("This page was intentionally blank")
+                .Properties = new() {Alignment = Alignment.Center, LineSpacingBefore = Uom.FromPoints(288) };
+            doc.AddPageBreak();
+        }
+
+        static void DumpStyles(IDocument doc)
+        {
+            doc.Add("Available Styles").Style(HeadingType.Heading2);
+
+            var bulletList = doc.NumberingStyles.AddBulletDefinition();
+            foreach (var style in doc.Styles)
+            {
+                doc.Add($"Id: {style.Id}, Name: {style.Name}, Type: {style.Type}, IsCustom: {style.IsCustom}")
+                    .ListStyle(bulletList);
+            }
         }
     }
 }

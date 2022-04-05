@@ -148,19 +148,19 @@ namespace DXPlus.Tests
         public void HideAddsRemovesElement()
         {
             var rPr = new Formatting();
-            Assert.False(rPr.IsHidden);
+            Assert.False(rPr.Hidden);
 
-            rPr.IsHidden = true;
-            Assert.True(rPr.IsHidden);
+            rPr.Hidden = true;
+            Assert.True(rPr.Hidden);
             Assert.Single(rPr.Xml.RemoveNamespaces().XPathSelectElements("vanish"));
 
             // Make sure we don't dup the tag
-            rPr.IsHidden = true;
-            Assert.True(rPr.IsHidden);
+            rPr.Hidden = true;
+            Assert.True(rPr.Hidden);
             Assert.Single(rPr.Xml.RemoveNamespaces().XPathSelectElements("vanish"));
 
-            rPr.IsHidden = false;
-            Assert.False(rPr.IsHidden);
+            rPr.Hidden = false;
+            Assert.False(rPr.Hidden);
             Assert.Empty(rPr.Xml.RemoveNamespaces().XPathSelectElements("vanish"));
         }
 
@@ -466,16 +466,16 @@ namespace DXPlus.Tests
         [Fact]
         public void BasicFormattingIsEqual()
         {
-            var f1 = new Formatting { Bold = true, IsHidden =  true };
-            var f2 = new Formatting { Bold = true, IsHidden = true };
+            var f1 = new Formatting { Bold = true, Hidden =  true };
+            var f2 = new Formatting { Bold = true, Hidden = true };
             Assert.True(f1.Equals(f2));
         }
 
         [Fact]
         public void DifferentFormattingIsNotEqual()
         {
-            var f1 = new Formatting { Bold = true, IsHidden = true, Italic = true };
-            var f2 = new Formatting { Bold = true, IsHidden = true };
+            var f1 = new Formatting { Bold = true, Hidden = true, Italic = true };
+            var f2 = new Formatting { Bold = true, Hidden = true };
             Assert.False(f1.Equals(f2));
         }
 

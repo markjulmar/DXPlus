@@ -10,25 +10,17 @@ namespace DXPlus;
 public enum NumberingLevelType
 {
     /// <summary>
-    /// Numbering level not specified (omitted)
-    /// </summary>
-    None,
-
-    /// <summary>
     /// Numbering format has only one level
     /// </summary>
-    [XmlAttribute("singleLevel")]
-    Single,
+    [XmlAttribute("singleLevel")] Single,
         
     /// <summary>
     /// Multiple levels of the same type (numbers, bullets, etc.)
     /// </summary>
-    [XmlAttribute("multiLevel")]
-    Multi,
+    [XmlAttribute("multiLevel")] Multi,
         
     /// <summary>
     /// Hybrid list of multiple levels of different types.
     /// </summary>
-    [XmlAttribute("hybridMultilevel")]
-    Hybrid
+    [XmlAttribute("hybridMultilevel")] Hybrid
 }

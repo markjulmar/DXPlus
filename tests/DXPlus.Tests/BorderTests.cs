@@ -22,10 +22,10 @@ namespace DXPlus.Tests
         public void TablePropertiesUsesTblBdrTag()
         {
             var t = new Table();
-            Assert.Null(t.LeftBorder);
+            Assert.Null(t.Properties.LeftBorder);
 
-            t.LeftBorder = new Border(BorderStyle.Single, Uom.FromPoints(1));
-            Assert.NotNull(t.LeftBorder);
+            t.Properties.LeftBorder = new Border(BorderStyle.Single, Uom.FromPoints(1));
+            Assert.NotNull(t.Properties.LeftBorder);
 
             Assert.Single(t.Xml.RemoveNamespaces().XPathSelectElements("//tblBorders/left"));
         }

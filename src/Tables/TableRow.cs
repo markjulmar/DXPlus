@@ -29,22 +29,9 @@ public sealed class TableRow : DocXElement, IEquatable<TableRow>
     }
 
     /// <summary>
-    /// Retrieve the row properties. This is optional and can be null.
+    /// Table row properties
     /// </summary>
-    private XElement? trPr(bool create = false) => create ? Xml.GetOrAddElement(Namespace.Main + "trPr") : Xml.Element(Namespace.Main + "trPr");
-
-    /// <summary>
-    /// Allow row to break across pages.
-    /// The default value is true: Word will break the contents of the row across pages.
-    /// If set to false, the contents of the row will not be split across pages, the
-    /// entire row will be moved to the next page instead.
-    /// </summary>
-    public bool BreakAcrossPages
-    {
-        get => trPr(false)?.Element(Namespace.Main + "cantSplit") == null;
-
-        set => trPr(true)!.SetElementValue(Namespace.Main + "cantSplit", value ? null : string.Empty);
-    }
+    public TableRowProperties Properties => new(Xml.GetOrInsertElement(Name.TableRowProperties));
 
     /// <summary>
     /// A list of Cells in this Row.
@@ -62,48 +49,7 @@ public sealed class TableRow : DocXElement, IEquatable<TableRow>
         get
         {
             var cells = Cells;
-            return cells.Count + cells.Select(cell => cell.GridSpan - 1).Sum();
-        }
-    }
-
-    /// <summary>
-    /// Row height (can be null). Value is in dxa units
-    /// </summary>
-    public double? Height
-    {
-        get
-        {
-            var value = trPr()?.Element(Namespace.Main + "trHeight")?.GetValAttr();
-            if (value == null || !double.TryParse(value.Value, out var heightInDxa))
-            {
-                value?.Remove();
-                return null;
-            }
-
-            return heightInDxa;
-        }
-        set => SetHeight(value, true);
-    }
-
-    /// <summary>
-    /// Set to true to make this row the table header row that will be repeated on each page
-    /// </summary>
-    public bool TableHeader
-    {
-        get => trPr(false)?.Element(Namespace.Main + "tblHeader") != null;
-        set
-        {
-            var trPr = this.trPr(true);
-            var tblHeader = trPr!.Element(Namespace.Main + "tblHeader");
-
-            if (tblHeader == null && value)
-            {
-                trPr.SetElementValue(Namespace.Main + "tblHeader", string.Empty);
-            }
-            else if (tblHeader != null && !value)
-            {
-                tblHeader.Remove();
-            }
+            return cells.Count + cells.Select(cell => cell.Properties.GridSpan - 1).Sum();
         }
     }
 
@@ -129,10 +75,10 @@ public sealed class TableRow : DocXElement, IEquatable<TableRow>
         for (int i = startIndex; i <= endIndex; i++)
         {
             var cell = cells[i];
-            gridSpanSum += cell.GridSpan - 1;
+            gridSpanSum += cell.Properties.GridSpan - 1;
 
             // Add the contents of the cell to the starting cell and remove it.
-            if (cell != startCell)
+            if (!ReferenceEquals(cell, startCell))
             {
                 startCell.Xml.Add(cell.Xml.Elements(Name.Paragraph).Where(p => !p.IsEmpty));
                 cell.Xml.Remove();
@@ -148,7 +94,7 @@ public sealed class TableRow : DocXElement, IEquatable<TableRow>
         }
 
         // Set the gridSpan to the number of merged cells.
-        startCell.Xml.GetOrAddElement(Namespace.Main + "tcPr")
+        startCell.Xml.GetOrAddElement(Name.TableCellProperties)
             .GetOrAddElement(Namespace.Main + "gridSpan")
             .SetAttributeValue(Name.MainVal, gridSpanSum + endIndex - startIndex + 1);
     }
@@ -158,30 +104,10 @@ public sealed class TableRow : DocXElement, IEquatable<TableRow>
     /// </summary>
     public void Remove()
     {
-        if (Table.Rows.Count() == 1)
+        if (Table.Rows.Count == 1)
             throw new Exception("Cannot remove final row from table. Must delete table instead.");
 
         Xml.Remove();
-    }
-
-    /// <summary>
-    /// Helper method to set either the exact height or the min-height
-    /// </summary>
-    /// <param name="height">The height value to set in dxa units</param>
-    /// <param name="exact">If true, the height will be forced, otherwise it will be treated as a minimum height, auto growing past it if need be.
-    /// </param>
-    private void SetHeight(double? height, bool exact)
-    {
-        if (height != null)
-        {
-            XElement trHeight = trPr(true)!.GetOrAddElement(Namespace.Main + "trHeight");
-            trHeight.SetAttributeValue(Namespace.Main + "hRule", exact ? "exact" : "atLeast");
-            trHeight.SetAttributeValue(Name.MainVal, height);
-        }
-        else
-        {
-            trPr()?.Element(Namespace.Main + "trHeight")?.Remove();
-        }
     }
 
     /// <summary>
@@ -194,7 +120,7 @@ public sealed class TableRow : DocXElement, IEquatable<TableRow>
         var cells = Cells;
         if (cells.Count != columnWidths.Length)
         {
-            if (!cells.Any(c => c.GridSpan > 0))
+            if (!cells.Any(c => c.Properties.GridSpan > 0))
                 throw new Exception($"Row column count {cells.Count} does not match passed width count {columnWidths.Length}.");
 
             // The passed array can have more values that we
@@ -203,7 +129,7 @@ public sealed class TableRow : DocXElement, IEquatable<TableRow>
             List<double> cw = new(); int cellIndex = 0;
             for (int index = 0; index < columnWidths.Length; index++)
             {
-                int span = cells[cellIndex++].GridSpan;
+                int span = cells[cellIndex++].Properties.GridSpan;
                 double val = columnWidths[index];
                 if (span == 1)
                     cw.Add(val);
@@ -225,7 +151,7 @@ public sealed class TableRow : DocXElement, IEquatable<TableRow>
         // Assign the widths
         for (int index = 0; index < cells.Count; index++)
         {
-            cells[index].CellWidth = new TableWidth(TableWidthUnit.Dxa, columnWidths[index]);
+            cells[index].Properties.CellWidth = new TableElementWidth(TableWidthUnit.Dxa, columnWidths[index]);
         }
     }
 

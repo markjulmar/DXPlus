@@ -268,15 +268,119 @@ finalPicture.Drawing.AddCaption("The batman!");
 
 ### Styles
 
-Default and custom styles can be applied to text.
+By default, the styles represented by the `HeadingType` class are available and can be set onto the appropriate objects (Paragraph, Character, or Table). For example:
 
 ```csharp
-// Set the style of the text
+// Set the style of the text through a fluent method:
 document.Add("Styled Text").Style(HeadingType.Heading2);
 
 // Can also set through properties.
 var paragraph = document.Add("This is the title");
 paragraph.Properties.StyleName = HeadingType.Title;
+```
+
+You can also examine the existing styles through the `Document.Styles` collection. Notice here we are using a bulleted list to display the details of each one.
+
+```csharp
+var bulletList = doc.NumberingStyles.BulletStyle();
+foreach (var style in doc.Styles.AvailableStyles)
+{
+    doc.Add($"Id: {style.Id}, Name: {style.Name}, Type: {style.Type}, IsCustom: {style.IsCustom}")
+        .ListStyle(bulletList);
+}
+
+```
+
+Finally, you can add new styles though the `Add` method - here is a new table style:
+
+```csharp
+if (!document.Styles.HasStyle("myStyle", StyleType.Table))
+{
+    var style = document.Styles.AddStyle("myStyle", "My Custom Style", StyleType.Table);
+
+    var border = new Border(BorderStyle.Single, Uom.FromPoints(.5))
+    {
+        Color = new ColorValue(Color.FromArgb(0x9C, 0xC2, 0xE5), ThemeColor.Accent5, 153)
+    };
+
+    // No line spacing in tables.
+    style.ParagraphFormatting = new() { LineSpacingAfter = 0 };
+
+    // Set the default table formatting
+    style.TableFormatting = new() { RowBands = 1 };
+    style.TableFormatting.SetOutsideBorders(border);
+    style.TableFormatting.SetInsideBorders(border);
+
+    // Default cell formatting
+    style.TableCellFormatting = new() { VerticalAlignment = VerticalAlignment.Center };
+
+    var mainColor = new ColorValue(Color.FromArgb(0x5B, 0x9B, 0xD5), ThemeColor.Accent5);
+    border = new Border(BorderStyle.Single, Uom.FromPoints(.5)) { Color = mainColor };
+
+    // First row formatting
+    style.TableStyles.Add(new TableStyle(TableStyleType.FirstRow)
+    {
+        Formatting = new() { Bold = true, Color = new ColorValue(Color.White, ThemeColor.Background1) },
+        TableCellFormatting = new()
+        {
+            TopBorder = border,
+            BottomBorder = border,
+            LeftBorder = border,
+            RightBorder = border,
+            Shading = new()
+            {
+                Color = ColorValue.Auto,
+                Pattern = ShadePattern.Clear,
+                Fill = mainColor
+            }
+        }
+    });
+
+    // Last row formatting
+    style.TableStyles.Add(new TableStyle(TableStyleType.LastRow)
+    {
+        Formatting = new() { Bold = true },
+        TableCellFormatting = new()
+        {
+            TopBorder = new Border(BorderStyle.Double, Uom.FromPoints(.5)) { Color = mainColor }
+        }
+    });
+
+    // First column
+    style.TableStyles.Add(new TableStyle(TableStyleType.FirstColumn)
+    {
+        Formatting = new() { Bold = true },
+    });
+
+    // Last column
+    style.TableStyles.Add(new TableStyle(TableStyleType.LastColumn)
+    {
+        Formatting = new() { Bold = true },
+    });
+
+    // Even rows
+    style.TableStyles.Add(new TableStyle(TableStyleType.BandedEvenRows) 
+    { 
+        TableCellFormatting = new()
+        {
+            Shading = new()
+            {
+                Color = ColorValue.Auto,
+                Pattern = ShadePattern.Clear,
+                Fill = new ColorValue(Color.FromArgb(0xDE, 0xEA, 0xF6), ThemeColor.Accent5, 51)
+            }
+        }
+    });
+}
+```
+
+Once added, you can use the style by setting the `Design` property to the Style Id:
+
+```csharp
+Table table = ...;
+
+table.Design = "myStyle";
+
 ```
 
 ### Headers and Footers

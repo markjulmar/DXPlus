@@ -83,7 +83,7 @@ namespace ReadDocument
         private static void DumpTable(Table table, int level)
         {
             string prefix = new(' ', level*3);
-            Console.WriteLine($"{prefix}tbl Design={table.Design} {table.CustomTableDesignName} {table.ConditionalFormatting}");
+            Console.WriteLine($"{prefix}tbl {DumpObject(table.Properties)}");
             foreach (var row in table.Rows)
             {
                 DumpRow(row, level + 1);

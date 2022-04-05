@@ -39,10 +39,10 @@ namespace DXPlus.Tests
         [Fact]
         public void TableRespectsExplicitWidthRequest()
         {
-            Table t = new Table(1, 4) {TableWidth = Uom.FromInches(4)};
+            Table t = new Table(1, 4) {Properties = new() { TableWidth = Uom.FromInches(4)} };
 
             double expectedSize = 4 * 1440.0;
-            Assert.Equal(expectedSize, t.TableWidth.Width);
+            Assert.Equal(expectedSize, t.Properties.TableWidth.Width);
             Assert.True(double.IsNaN(t.DefaultColumnWidths.First()));
 
             var doc = Document.Create();
@@ -50,8 +50,8 @@ namespace DXPlus.Tests
 
             Assert.False(double.IsNaN(t.DefaultColumnWidths.First()));
             Assert.Equal(expectedSize / 4, t.DefaultColumnWidths.First());
-            Assert.Equal(expectedSize / 4, t.Rows.First().Cells[0].CellWidth?.Width);
-            Assert.Equal(TableWidthUnit.Dxa, t.Rows.First().Cells[0].CellWidth?.Type);
+            Assert.Equal(expectedSize / 4, t.Rows.First().Cells[0].Properties.CellWidth?.Width);
+            Assert.Equal(TableWidthUnit.Dxa, t.Rows.First().Cells[0].Properties.CellWidth?.Type);
         }
 
         [Fact]
@@ -77,11 +77,11 @@ namespace DXPlus.Tests
         {
             var t = new Table
             {
-                TableWidth = 100
+                Properties = new() { TableWidth = 100 }
             };
 
-            Assert.Equal(TableWidthUnit.Dxa, t.TableWidth!.Type);
-            Assert.Equal(100, t.TableWidth.Width);
+            Assert.Equal(TableWidthUnit.Dxa, t.Properties.TableWidth!.Type);
+            Assert.Equal(100, t.Properties.TableWidth.Width);
         }
 
         [Fact]
@@ -89,13 +89,13 @@ namespace DXPlus.Tests
         {
             var t = new Table(1, 1)
             {
-                TableWidth = TableWidth.FromPercent(50)
+                Properties = new() {TableWidth = TableElementWidth.FromPercent(50)}
             };
 
-            Assert.Equal(2500, t.TableWidth.Width);
+            Assert.Equal(2500, t.Properties.TableWidth.Width);
 
-            t.TableWidth = TableWidth.FromPercent(100);
-            Assert.Equal(5000, t.TableWidth.Width);
+            t.Properties.TableWidth = TableElementWidth.FromPercent(100);
+            Assert.Equal(5000, t.Properties.TableWidth.Width);
         }
 
         [Fact]
@@ -110,7 +110,7 @@ namespace DXPlus.Tests
         public void TableLayoutDefaultsToNull()
         {
             var table = new Table();
-            Assert.Null(table.TableLayout);
+            Assert.Null(table.Properties.TableLayout);
         }
 
         [Fact]
@@ -136,15 +136,15 @@ namespace DXPlus.Tests
         {
             Table t = new Table(1,1);
 
-            Assert.Equal(Alignment.Left, t.Alignment);
+            Assert.Null(t.Properties.Alignment);
             Assert.Empty(t.Xml.RemoveNamespaces().XPathSelectElements("//tblPr/jc"));
 
-            t.Alignment = Alignment.Center;
-            Assert.Equal(Alignment.Center, t.Alignment);
+            t.Properties.Alignment = Alignment.Center;
+            Assert.Equal(Alignment.Center, t.Properties.Alignment);
             Assert.Single(t.Xml.RemoveNamespaces().XPathSelectElements("//tblPr/jc"));
 
-            t.Alignment = Alignment.Right;
-            Assert.Equal(Alignment.Right, t.Alignment);
+            t.Properties.Alignment = Alignment.Right;
+            Assert.Equal(Alignment.Right, t.Properties.Alignment);
             Assert.Single(t.Xml.RemoveNamespaces().XPathSelectElements("//tblPr/jc"));
             Assert.Single(t.Xml.RemoveNamespaces().XPathSelectElements("//tblPr/jc[@val='right']"));
         }
@@ -154,10 +154,10 @@ namespace DXPlus.Tests
         {
             Table t = new Table(1, 1);
 
-            Assert.Null(t.TableLayout);
+            Assert.Null(t.Properties.TableLayout);
 
             t.AutoFit();
-            Assert.Equal(TableLayout.AutoFit, t.TableLayout);
+            Assert.Equal(TableLayout.AutoFit, t.Properties.TableLayout);
 
             var e = t.Xml.RemoveNamespaces().XPathSelectElements("//tblPr/tblLayout[@type='autofit']");
             Assert.Single(e);
@@ -169,29 +169,29 @@ namespace DXPlus.Tests
             Table t = new Table(1, 1);
 
             t.SetColumnWidths(new[] { 120.0 });
-            Assert.Null(t.TableLayout);
+            Assert.Null(t.Properties.TableLayout);
 
-            Assert.Equal(120.0, t.Rows.First().Cells[0].CellWidth?.Width);
+            Assert.Equal(120.0, t.Rows.First().Cells[0].Properties.CellWidth?.Width);
             Assert.Equal(120.0, t.DefaultColumnWidths.First());
         }
 
         [Fact]
         public void TableDesignAddsAndRemovesElements()
         {
-            Table t = new Table(1,1);
+            Table t = new(1,1);
 
-            Assert.Equal(TableDesign.None, t.Design);
+            Assert.Equal(TableDesign.Grid, t.Properties.Design);
 
-            t.Design = TableDesign.ColorfulGrid;
-            Assert.Equal(TableDesign.ColorfulGrid, t.Design);
+            t.Properties.Design = TableDesign.ColorfulGrid;
+            Assert.Equal(TableDesign.ColorfulGrid, t.Properties.Design);
             Assert.Single(t.Xml.RemoveNamespaces().XPathSelectElements("//tblPr/tblStyle"));
             Assert.Single(t.Xml.RemoveNamespaces().XPathSelectElements("//tblPr/tblStyle[@val='ColorfulGrid']"));
 
-            t.Design = TableDesign.None;
+            t.Properties.Design = null;
             Assert.Empty(t.Xml.RemoveNamespaces().XPathSelectElements("//tblPr/tblStyle"));
 
-            t.CustomTableDesignName = "TestDesign";
-            Assert.Equal(TableDesign.Custom, t.Design);
+            t.Properties.Design = "TestDesign";
+            Assert.Equal("TestDesign", t.Properties.Design);
             Assert.Single(t.Xml.RemoveNamespaces().XPathSelectElements("//tblPr/tblStyle"));
             Assert.Single(t.Xml.RemoveNamespaces().XPathSelectElements("//tblPr/tblStyle[@val='TestDesign']"));
         }
@@ -223,14 +223,14 @@ namespace DXPlus.Tests
         {
             var t = new Table(1, 1);
 
-            var width = TableWidth.FromPercent(100);
+            var width = TableElementWidth.FromPercent(100);
             Assert.Equal(5000, width.Width);
             Assert.Equal("tblW", width.Xml.Name.LocalName);
 
             var cell = t.Rows.First().Cells[0];
-            cell.CellWidth = width;
-            Assert.NotEqual(width, cell.CellWidth);
-            Assert.Equal(5000, cell.CellWidth.Width);
+            cell.Properties.CellWidth = width;
+            Assert.NotEqual(width, cell.Properties.CellWidth);
+            Assert.Equal(5000, cell.Properties.CellWidth.Width);
             Assert.Single(cell.Xml.RemoveNamespaces().XPathSelectElements("//tcW"));
             Assert.Empty(cell.Xml.RemoveNamespaces().XPathSelectElements("//tblW"));
         }
@@ -246,14 +246,14 @@ namespace DXPlus.Tests
             double width = t.DefaultColumnWidths.First();
             var rows = t.Rows.ToList();
 
-            Assert.Equal(width, rows[0].Cells[0].CellWidth?.Width);
-            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[0].CellWidth?.Type);
-            Assert.Equal(width, rows[0].Cells[1].CellWidth?.Width);
-            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[1].CellWidth?.Type);
-            Assert.Equal(width, rows[0].Cells[2].CellWidth?.Width);
-            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[2].CellWidth?.Type);
-            Assert.Equal(width, rows[0].Cells[3].CellWidth?.Width);
-            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[3].CellWidth?.Type);
+            Assert.Equal(width, rows[0].Cells[0].Properties.CellWidth?.Width);
+            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[0].Properties.CellWidth?.Type);
+            Assert.Equal(width, rows[0].Cells[1].Properties.CellWidth?.Width);
+            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[1].Properties.CellWidth?.Type);
+            Assert.Equal(width, rows[0].Cells[2].Properties.CellWidth?.Width);
+            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[2].Properties.CellWidth?.Type);
+            Assert.Equal(width, rows[0].Cells[3].Properties.CellWidth?.Width);
+            Assert.Equal(TableWidthUnit.Dxa, rows[0].Cells[3].Properties.CellWidth?.Type);
 
             Assert.Equal(width, t.DefaultColumnWidths.First());
             Assert.Equal(width, t.DefaultColumnWidths.ElementAt(1));
@@ -285,8 +285,8 @@ namespace DXPlus.Tests
             Assert.Equal(width, t.DefaultColumnWidths.ElementAt(2));
             Assert.Equal(width, t.DefaultColumnWidths.ElementAt(3));
 
-            Assert.Equal(TableWidthUnit.Auto, t.TableWidth?.Type);
-            Assert.Equal(0, t.TableWidth?.Width);
+            Assert.Equal(TableWidthUnit.Auto, t.Properties.TableWidth?.Type);
+            Assert.Equal(0, t.Properties.TableWidth?.Width);
         }
 
         [Fact]
@@ -332,7 +332,7 @@ namespace DXPlus.Tests
         public void ConditionalFormattingParsesCorrectly()
         {
             Table t = new Table(1, 1);
-            t.ConditionalFormatting = TableConditionalFormatting.FirstColumn | TableConditionalFormatting.FirstRow | TableConditionalFormatting.NoColumnBand;
+            t.Properties.ConditionalFormatting = TableConditionalFormatting.FirstColumn | TableConditionalFormatting.FirstRow | TableConditionalFormatting.NoColumnBand;
 
             string val = t.Xml.RemoveNamespaces().XPathSelectElement("//tblLook").GetVal();
             Assert.Equal("04A0", val);
@@ -344,9 +344,9 @@ namespace DXPlus.Tests
             var flags = TableConditionalFormatting.FirstColumn | TableConditionalFormatting.FirstRow | TableConditionalFormatting.NoColumnBand;
 
             Table t = new Table(1, 1);
-            t.ConditionalFormatting = flags;
+            t.Properties.ConditionalFormatting = flags;
 
-            Assert.Equal(flags, t.ConditionalFormatting);
+            Assert.Equal(flags, t.Properties.ConditionalFormatting);
         }
 
         [Fact]
@@ -355,7 +355,7 @@ namespace DXPlus.Tests
             Table t = new Table(1, 1);
             var e = t.Xml.Element(Namespace.Main + "tblPr").Element(Namespace.Main + "tblLook");
             e.SetAttributeValue(Name.MainVal, "badvalue");
-            Assert.Equal(TableConditionalFormatting.None, t.ConditionalFormatting);
+            Assert.Equal(TableConditionalFormatting.None, t.Properties.ConditionalFormatting);
         }
 
         [Fact]
@@ -402,18 +402,18 @@ namespace DXPlus.Tests
             Table t = new Table(1, 1);
 
             // Defaults
-            Assert.Null(t.GetDefaultCellMargin(TableCellMarginType.Left));
-            Assert.Null(t.GetDefaultCellMargin(TableCellMarginType.Top));
-            Assert.Null(t.GetDefaultCellMargin(TableCellMarginType.Right));
-            Assert.Null(t.GetDefaultCellMargin(TableCellMarginType.Bottom));
+            Assert.Null(t.Properties.GetDefaultCellMargin(TableCellMarginType.Left));
+            Assert.Null(t.Properties.GetDefaultCellMargin(TableCellMarginType.Top));
+            Assert.Null(t.Properties.GetDefaultCellMargin(TableCellMarginType.Right));
+            Assert.Null(t.Properties.GetDefaultCellMargin(TableCellMarginType.Bottom));
 
-            t.SetDefaultCellMargin(TableCellMarginType.Top, 100);
-            Assert.Equal(100, t.GetDefaultCellMargin(TableCellMarginType.Top));
+            t.Properties.SetDefaultCellMargin(TableCellMarginType.Top, 100);
+            Assert.Equal(100, t.Properties.GetDefaultCellMargin(TableCellMarginType.Top));
             Assert.Single(t.Xml.RemoveNamespaces().XPathSelectElements("//tblPr/tblCellMar"));
             Assert.Single(t.Xml.RemoveNamespaces().XPathSelectElements("//tblPr/tblCellMar/top[@w='100' and @type='dxa']"));
 
-            t.SetDefaultCellMargin(TableCellMarginType.Top, null);
-            Assert.Null(t.GetDefaultCellMargin(TableCellMarginType.Top));
+            t.Properties.SetDefaultCellMargin(TableCellMarginType.Top, null);
+            Assert.Null(t.Properties.GetDefaultCellMargin(TableCellMarginType.Top));
             Assert.Empty(t.Xml.RemoveNamespaces().XPathSelectElements("//tblPr/tblCellMar"));
         }
 
@@ -497,15 +497,14 @@ namespace DXPlus.Tests
             Table t = new Table(2,2);
 
             TableRow row = t.Rows.First();
-            Assert.True(row.BreakAcrossPages);
+            Assert.True(row.Properties.BreakAcrossPages);
             Assert.Empty(row.Xml.RemoveNamespaces().XPathSelectElements("//trPr/cantSplit"));
 
-            row.BreakAcrossPages = false;
-            Assert.False(row.BreakAcrossPages);
+            row.Properties.BreakAcrossPages = false;
+            Assert.False(row.Properties.BreakAcrossPages);
             Assert.Single(row.Xml.RemoveNamespaces().XPathSelectElements("//trPr/cantSplit"));
         }
 
-        /*
         [Fact]
         public void MergeCellsAffectGridSpan()
         {
@@ -514,7 +513,7 @@ namespace DXPlus.Tests
             // Merge cells 2-4
             t.Rows[0].MergeCells(1,3);
 
-            Assert.Equal(3, t.Rows[0].Cells[1].GridSpan);
+            Assert.Equal(3, t.Rows[0].Cells[1].Properties.GridSpan);
             Assert.Equal(4, t.ColumnCount);
             Assert.Equal(4, t.Rows[0].ColumnCount);
             Assert.Equal("2\n3\n4", t.Rows[0].Cells[1].Text);
@@ -546,7 +545,6 @@ namespace DXPlus.Tests
             Assert.Equal(string.Empty, t.Rows[2].Cells[1].Text);
             Assert.Equal(string.Empty, t.Rows[3].Cells[1].Text);
         }
-        */
 
         [Fact]
         public void PackagePartSetWhenAddedToDoc()

@@ -559,7 +559,7 @@
 		<w:semiHidden/>
 		<w:unhideWhenUsed/>
 	</w:style>
-	<w:style w:default="1" w:styleId="TableNormal" w:type="paragraph">
+	<w:style w:default="1" w:styleId="TableNormal" w:type="table">
 		<w:name w:val="Normal Table"/>
 		<w:uiPriority w:val="99"/>
 		<w:semiHidden/>

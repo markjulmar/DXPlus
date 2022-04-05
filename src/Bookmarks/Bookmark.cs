@@ -21,7 +21,7 @@ public sealed class Bookmark : XElementWrapper, IEquatable<Bookmark>
     /// <summary>
     /// Word inserts hidden bookmarks which are prefaced with an underscore. These should be ignored by most processors.
     /// </summary>
-    public bool IsHidden => Name.StartsWith('_');
+    public bool Hidden => Name.StartsWith('_');
 
     /// <summary>
     /// Unique identifier for this bookmark in the document

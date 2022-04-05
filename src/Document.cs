@@ -791,8 +791,8 @@ public sealed class Document : BlockContainer, IDocument
     /// </summary>
     internal void AddHyperlinkStyle()
     {
-        if (!Styles.HasStyle("Hyperlink", StyleType.Character))
-            Styles.Add(Resource.HyperlinkStyle(RevisionId));
+        if (!Styles.Exists("Hyperlink", StyleType.Character))
+            Styles.AddStyle(Resource.HyperlinkStyle(RevisionId));
     }
 
     /// <summary>
@@ -912,9 +912,9 @@ public sealed class Document : BlockContainer, IDocument
         }
 
         // See if we have the list style
-        if (!Styles.HasStyle("ListParagraph", StyleType.Paragraph))
+        if (!Styles.Exists("ListParagraph", StyleType.Paragraph))
         {
-            Styles.Add(Resource.ListParagraphStyle(RevisionId));
+            Styles.AddStyle(Resource.ListParagraphStyle(RevisionId));
         }
 
         return numberingStyles;

@@ -10,8 +10,6 @@ namespace DXPlus;
 /// </summary>
 public sealed class Table : Block, IEquatable<Table>
 {
-    private string? customTableDesignName;
-    private TableDesign tableDesign;
     private List<TableRow>? rowCache;
 
     /// <summary>
@@ -55,7 +53,7 @@ public sealed class Table : Block, IEquatable<Table>
         if (rows <= 0) throw new ArgumentOutOfRangeException(nameof(rows), "Rows must be >= 1");
         if (columns <= 0) throw new ArgumentOutOfRangeException(nameof(columns), "Columns must be >= 1");
 
-        WriteTableConditionalFormat(TblPr, TableConditionalFormatting.None);
+        Properties.ConditionalFormatting = TableConditionalFormatting.None;
 
         var grid = Xml.GetOrAddElement(Namespace.Main + "tblGrid");
         double width = double.NaN;
@@ -85,107 +83,29 @@ public sealed class Table : Block, IEquatable<Table>
         if (xml.Name != Name.Table) throw new ArgumentException($"Root element must be {Name.Table}", nameof(xml));
 
         if (document != null)
-        {
             SetOwner(document, packagePart, false);
-        }
-
-        var style = TblPr.Element(Namespace.Main + "tblStyle");
-        if (style == null)
-        {
-            tableDesign = TableDesign.None;
-        }
-        else
-        {
-            tableDesign = style.TryGetEnumValue(out TableDesign tdr) ? tdr : TableDesign.Custom;
-            if (tableDesign == TableDesign.Custom)
-            {
-                customTableDesignName = style.GetVal();
-            }
-        }
     }
 
     /// <summary>
-    /// Get the table properties
+    /// Properties applied to this table
     /// </summary>
-    private XElement TblPr => GetOrCreateTablePropertiesSection();
-
-    /// <summary>
-    /// The conditional formatting applied to the table
-    /// </summary>
-    public TableConditionalFormatting ConditionalFormatting
+    public TableProperties Properties
     {
-        get => ReadTableConditionalFormatting(TblPr);
-        set => WriteTableConditionalFormat(TblPr, value);
-    }
+        get => new(Xml.GetOrInsertElement(Name.TableProperties), this);
 
-    /// <summary>
-    /// Preferred width for the table
-    /// </summary>
-    public TableWidth? TableWidth
-    {
-        get => new(TblPr.Element(Namespace.Main + "tblW"));
         set
         {
-            TblPr.Element(Namespace.Main + "tblW")?.Remove();
-            if (value == null
-                || value.Type == null && value.Width == null) return;
-            TblPr.Add(value.Xml);
-        }
-    }
+            var tPr = Xml.Element(Name.TableProperties);
+            tPr?.Remove();
 
-    /// <summary>
-    /// True if the table will auto-fit the contents. This corresponds to the {tblLayout.type} value of the table properties.
-    /// </summary>
-    public TableLayout? TableLayout
-    {
-        get => TblPr.Element(Namespace.Main + "tblLayout")?
-                    .AttributeValue(Namespace.Main + "type")?
-                    .TryGetEnumValue<TableLayout>(out var result) == true ? result : null;
+            var xml = value.Xml!;
+            if (xml.Parent != null)
+                xml = xml.Clone();
 
-        set => TblPr.GetOrAddElement(Namespace.Main + "tblLayout")
-                    .SetAttributeValue(Namespace.Main + "type", value?.GetEnumName());
-    }
+            Xml.AddFirst(xml);
 
-    /// <summary>
-    /// Specifies the alignment of the current table with respect to the text margins in the current section
-    /// </summary>
-    public Alignment Alignment
-    {
-        get => TblPr.Element(Name.ParagraphAlignment)
-            .GetVal().TryGetEnumValue(out Alignment result)
-            ? result
-            : Alignment.Left;
-
-        set => TblPr.GetOrAddElement(Name.ParagraphAlignment)
-            .SetAttributeValue(Name.MainVal, value.GetEnumName());
-    }
-
-    /// <summary>
-    /// Indentation in dxa units
-    /// </summary>
-    public double? Indent
-    {
-        get
-        {
-            var value = TblPr.Element(Name.TableIndent)?.Attribute(Namespace.Main + "w");
-            if (value != null && double.TryParse(value.Value, out var indentUnits))
-                return indentUnits;
-
-            value?.Remove();
-            return null;
-        }
-        set
-        {
-            XElement tblIndent = TblPr.GetOrAddElement(Name.TableIndent);
-            if (value is null or < 0)
-            {
-                tblIndent.Remove();
-            }
-            else
-            {
-                tblIndent.SetAttributeValue(Namespace.Main + "type", "dxa");
-                tblIndent.SetAttributeValue(Namespace.Main + "w", value);
-            }
+            if (InDocument) 
+                EnsureTableStyleInDocument();
         }
     }
 
@@ -208,56 +128,6 @@ public sealed class Table : Block, IEquatable<Table>
                     double.TryParse(c.AttributeValue(Namespace.Main + "w"), out var dbl) 
                         ? dbl : double.NaN); 
             return columns ?? Enumerable.Empty<double>();
-        }
-    }
-
-    /// <summary>
-    /// Custom Table Style name
-    /// </summary>
-    public string? CustomTableDesignName
-    {
-        get => customTableDesignName;
-        set
-        {
-            if (value != null)
-            {
-                customTableDesignName = value;
-                tableDesign = TableDesign.Custom;
-                TblPr.GetOrAddElement(Namespace.Main + "tblStyle")
-                     .SetAttributeValue(Name.MainVal, value);
-            }
-            else
-            {
-                Design = TableDesign.Normal;
-            }
-        }
-    }
-
-    /// <summary>
-    /// The design\style to apply to this table.
-    /// </summary>
-    public TableDesign Design
-    {
-        get => tableDesign;
-        set
-        {
-            if (value == TableDesign.Custom)
-                throw new ArgumentOutOfRangeException(nameof(Design), $"Cannot set custom design value - use {CustomTableDesignName} property instead.");
-
-            tableDesign = value;
-
-            var style = TblPr.GetOrAddElement(Namespace.Main + "tblStyle");
-            if (tableDesign == TableDesign.None)
-            {
-                style.Remove();
-            }
-            else
-            {
-                style.SetAttributeValue(Name.MainVal, tableDesign.GetEnumName());
-            }
-
-            if (InDocument) 
-                EnsureTableStyleInDocument();
         }
     }
 
@@ -288,22 +158,23 @@ public sealed class Table : Block, IEquatable<Table>
     /// <summary>
     /// This ensures the owning document has the table style applied.
     /// </summary>
-    private void EnsureTableStyleInDocument()
+    internal void EnsureTableStyleInDocument()
     {
-        string? designName = TblPr.Element(Namespace.Main + "tblStyle").GetVal();
-        if (string.IsNullOrWhiteSpace(designName) 
-            || string.Compare(designName, "none", StringComparison.InvariantCultureIgnoreCase)==0)
-            return;
+        string? designName = Properties.Design;
+        if (string.IsNullOrWhiteSpace(designName)) return;
 
-        if (!Document.Styles.HasStyle(designName, StyleType.Table))
+        if (!Document.Styles.Exists(designName, StyleType.Table))
         {
             var styleElement = Resource.DefaultTableStyles()
                 .Descendants()
                 .FindByAttrVal(Namespace.Main + "styleId", designName);
-            if (styleElement == null) throw new InvalidOperationException("Unable to create/add table style.");
+            
+            // if it's not a default style we know about, then ignore it.
+            if (styleElement == null) 
+                return;
             
             styleElement.SetAttributeValue(Namespace.Main + "type", StyleType.Table.GetEnumName());
-            Document.Styles.Add(styleElement);
+            Document.Styles.AddStyle(styleElement);
         }
     }
 
@@ -331,32 +202,6 @@ public sealed class Table : Block, IEquatable<Table>
         {
             return rowCache ??= 
                 new List<TableRow>(Xml.Elements(Namespace.Main + "tr").Select(r => new TableRow(this, r)));
-        }
-    }
-
-    /// <summary>
-    /// Gets or Sets the value of the Table Caption (Alternate Text Title) of this table.
-    /// </summary>
-    public string TableCaption
-    {
-        get => TblPr.Element(Namespace.Main + "tblCaption")?.GetVal() ?? string.Empty;
-        set
-        {
-            TblPr.Descendants(Namespace.Main + "tblCaption").FirstOrDefault()?.Remove();
-            TblPr.Add(new XElement(Namespace.Main + "tblCaption", new XAttribute(Name.MainVal, value)));
-        }
-    }
-
-    /// <summary>
-    /// Gets or Sets the value of the Table Description (Alternate Text Description) of this table.
-    /// </summary>
-    public string TableDescription
-    {
-        get => TblPr.Element(Namespace.Main + "tblDescription")?.GetVal() ?? string.Empty;
-        set
-        {
-            TblPr.Descendants(Namespace.Main + "tblDescription").FirstOrDefault()?.Remove();
-            TblPr.Add(new XElement(Namespace.Main + "tblDescription", new XAttribute(Name.MainVal, value)));
         }
     }
 
@@ -476,7 +321,7 @@ public sealed class Table : Block, IEquatable<Table>
         if (columnIndex < 0 || columnIndex >= ColumnCount)
             throw new IndexOutOfRangeException(nameof(columnIndex));
 
-        if (startRow < 0 || startRow >= endRow)
+        if (startRow < 0 || startRow > endRow)
             throw new IndexOutOfRangeException(nameof(startRow));
 
         if (endRow > Rows.Count)
@@ -556,64 +401,6 @@ public sealed class Table : Block, IEquatable<Table>
             Remove();
     }
 
-    /// <summary>
-    /// Table border
-    /// </summary>
-    private static readonly XName tblBorders = Namespace.Main + "tblBorders";
-
-    /// <summary>
-    /// Top border for this table
-    /// </summary>
-    public Border? TopBorder
-    {
-        get => Border.FromElement(BorderType.Top, TblPr, tblBorders);
-        set => Border.SetElementValue(BorderType.Top, TblPr, tblBorders, value);
-    }
-
-    /// <summary>
-    /// Bottom border for this table
-    /// </summary>
-    public Border? BottomBorder
-    {
-        get => Border.FromElement(BorderType.Bottom, TblPr, tblBorders);
-        set => Border.SetElementValue(BorderType.Bottom, TblPr, tblBorders, value);
-    }
-
-    /// <summary>
-    /// Left border for this table
-    /// </summary>
-    public Border? LeftBorder
-    {
-        get => Border.FromElement(BorderType.Left, TblPr, tblBorders);
-        set => Border.SetElementValue(BorderType.Left, TblPr, tblBorders, value);
-    }
-
-    /// <summary>
-    /// Right border for this table
-    /// </summary>
-    public Border? RightBorder
-    {
-        get => Border.FromElement(BorderType.Right, TblPr, tblBorders);
-        set => Border.SetElementValue(BorderType.Right, TblPr, tblBorders, value);
-    }
-
-    /// <summary>
-    /// Inside horizontal border for this table
-    /// </summary>
-    public Border? InsideHorizontalBorder
-    {
-        get => Border.FromElement(BorderType.InsideH, TblPr, tblBorders);
-        set => Border.SetElementValue(BorderType.InsideH, TblPr, tblBorders, value);
-    }
-
-    /// <summary>
-    /// Inside horizontal border for this table
-    /// </summary>
-    public Border? InsideVerticalBorder
-    {
-        get => Border.FromElement(BorderType.InsideV, TblPr, tblBorders);
-        set => Border.SetElementValue(BorderType.InsideV, TblPr, tblBorders, value);
-    }
 
     /// <summary>
     /// Supply all the column widths
@@ -646,7 +433,7 @@ public sealed class Table : Block, IEquatable<Table>
                 throw new InvalidOperationException("Must have at least one row to determine column widths.");
             }
 
-            columnWidths = Rows.ToList()[^1].Cells.Select(c => c.CellWidth?.Width ?? 0).ToArray();
+            columnWidths = Rows.ToList()[^1].Cells.Select(c => c.Properties.CellWidth?.Width ?? 0).ToArray();
         }
 
         if (width >= 0)
@@ -666,19 +453,21 @@ public sealed class Table : Block, IEquatable<Table>
         // Fill in any missing values.
         if (columnWidths.Any(double.IsNaN))
         {
+            var tableWidth = Properties.TableWidth;
+
             double totalSpace;
-            if (TableWidth?.Type == TableWidthUnit.Dxa || !InDocument)
+            if (tableWidth?.Type == TableWidthUnit.Dxa || !InDocument)
             {
-                totalSpace = TableWidth?.Width ?? 0;
+                totalSpace = tableWidth?.Width ?? 0;
                 if (totalSpace == 0)
                     totalSpace = PageSize.LetterWidth;
             }
             else
             {
                 totalSpace = Document.Sections.First().Properties.AdjustedPageWidth;
-                if (TableWidth?.Type == TableWidthUnit.Percentage)
+                if (tableWidth?.Type == TableWidthUnit.Percentage)
                 {
-                    totalSpace *= (TableWidth?.Width ?? 100*TableWidth.PctMultiplier)/ TableWidth.PctMultiplier;
+                    totalSpace *= (tableWidth.Width ?? 100*TableElementWidth.PctMultiplier)/ TableElementWidth.PctMultiplier;
                 }
             }
 
@@ -702,7 +491,7 @@ public sealed class Table : Block, IEquatable<Table>
         else
         {
             grid = new XElement(Namespace.Main + "tblGrid");
-            TblPr.AddAfterSelf(grid);
+            Properties.Xml!.AddAfterSelf(grid);
         }
 
         foreach (var width in columnWidths)
@@ -719,103 +508,10 @@ public sealed class Table : Block, IEquatable<Table>
     }
 
     /// <summary>
-    /// Gets the table margin value in pixels for the specified margin
-    /// </summary>
-    /// <param name="type">Table margin type</param>
-    /// <returns>The value for the specified margin in pixels, null if it's not set.</returns>
-    public double? GetDefaultCellMargin(TableCellMarginType type)
-    {
-        return double.TryParse(TblPr.Element(Namespace.Main + "tblCellMar")?
-            .Element(Namespace.Main + type.GetEnumName())?
-            .AttributeValue(Namespace.Main + "w"), out double result) ? result : null;
-    }
-
-    /// <summary>
-    /// Set the specified cell margin for the table-level.
-    /// </summary>
-    /// <param name="type">The side of the cell margin.</param>
-    /// <param name="margin">The value for the specified cell margin in dxa units.</param>
-    public void SetDefaultCellMargin(TableCellMarginType type, double? margin)
-    {
-        if (margin != null)
-        {
-            var cellMargin = TblPr.GetOrAddElement(Namespace.Main + "tblCellMar")
-                .GetOrAddElement(Namespace.Main + type.GetEnumName());
-            cellMargin.SetAttributeValue(Namespace.Main + "w", margin);
-            cellMargin.SetAttributeValue(Namespace.Main + "type", "dxa");
-        }
-        else
-        {
-            var margins = TblPr.Element(Namespace.Main + "tblCellMar");
-            margins?.Element(Namespace.Main + type.GetEnumName())?.Remove();
-            if (margins?.IsEmpty == true)
-            {
-                margins.Remove();
-            }
-        }
-    }
-
-    /// <summary>
-    /// Retrieves or create the table properties (tblPr) section.
-    /// </summary>
-    /// <returns>The w:tbl/tblPr element.</returns>
-    private XElement GetOrCreateTablePropertiesSection() => Xml.GetOrAddElement(Namespace.Main + "tblPr");
-
-    /// <summary>
-    /// Read the hex value for table conditional formatting and turn it back
-    /// into an enumeration.
-    /// </summary>
-    /// <param name="tblPr">Table properties</param>
-    /// <returns>Enum value</returns>
-    private static TableConditionalFormatting ReadTableConditionalFormatting(XElement tblPr)
-    {
-        string? value = tblPr.Element(Namespace.Main + "tblLook")?.GetVal();
-        if (!string.IsNullOrEmpty(value))
-        {
-            // It's represented as a hex value, we need to turn it back to
-            // an integer base-10 value to use Enum.Parse.
-            if (int.TryParse(value, System.Globalization.NumberStyles.HexNumber,
-                    null, out int num))
-            {
-                return Enum.TryParse<TableConditionalFormatting>(
-                    num.ToString(), out var tcf)
-                    ? tcf
-                    : TableConditionalFormatting.None;
-            }
-        }
-        return TableConditionalFormatting.None;
-    }
-
-    /// <summary>
-    /// Write the element children for the TableConditionalFormatting
-    /// </summary>
-    /// <param name="tblPr"></param>
-    /// <param name="format"></param>
-    private static void WriteTableConditionalFormat(XElement tblPr, TableConditionalFormatting format)
-    {
-        var e = tblPr.GetOrAddElement(Namespace.Main + "tblLook");
-        e.RemoveAttributes();
-
-        e.Add(
-            new XAttribute(Namespace.Main + "firstColumn", format.HasFlag(TableConditionalFormatting.FirstColumn) ? 1 : 0),
-            new XAttribute(Namespace.Main + "lastColumn", format.HasFlag(TableConditionalFormatting.LastColumn) ? 1 : 0),
-            new XAttribute(Namespace.Main + "firstRow", format.HasFlag(TableConditionalFormatting.FirstRow) ? 1 : 0),
-            new XAttribute(Namespace.Main + "lastRow", format.HasFlag(TableConditionalFormatting.LastRow) ? 1 : 0),
-            new XAttribute(Namespace.Main + "noHBand", format.HasFlag(TableConditionalFormatting.NoRowBand) ? 1 : 0),
-            new XAttribute(Namespace.Main + "noVBand", format.HasFlag(TableConditionalFormatting.NoColumnBand) ? 1 : 0),
-            new XAttribute(Name.MainVal, format.ToHex(4)));
-    }
-
-    /// <summary>
     /// Create and return the default {tbl} root element
     /// </summary>
     private static XElement CreateEmptyTableXml() => new(Name.Table,
-        new XElement(Namespace.Main + "tblPr",
-            new XElement(Namespace.Main + "tblStyle",
-                new XAttribute(Name.MainVal, "None")),
-            new XElement(Namespace.Main + "tblW",
-                new XAttribute(Namespace.Main + "type", "auto"),
-                new XAttribute(Namespace.Main + "w", 0))),
+        TableProperties.CreateDefaultTableProperties(),
         new XElement(Namespace.Main + "tblGrid"));
 
     /// <summary>

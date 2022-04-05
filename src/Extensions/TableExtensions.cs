@@ -13,10 +13,8 @@ public static class TableExtensions
     /// <returns></returns>
     public static Table Alignment(this Table table, Alignment value)
     {
-        if (table == null)
-            throw new ArgumentNullException(nameof(table));
-
-        table.Alignment = value;
+        if (table == null) throw new ArgumentNullException(nameof(table));
+        table.Properties.Alignment = value;
         return table;
     }
 
@@ -27,10 +25,8 @@ public static class TableExtensions
     /// <returns></returns>
     public static Table AutoFit(this Table table)
     {
-        if (table == null)
-            throw new ArgumentNullException(nameof(table));
-
-        table.TableLayout = TableLayout.AutoFit;
+        if (table == null) throw new ArgumentNullException(nameof(table));
+        table.Properties.TableLayout = TableLayout.AutoFit;
         return table;
     }
 
@@ -42,10 +38,8 @@ public static class TableExtensions
     /// <returns></returns>
     public static Table SetOutsideBorders(this Table table, Border border)
     {
-        table.LeftBorder = border;
-        table.RightBorder = border;
-        table.TopBorder = border;
-        table.BottomBorder = border;
+        if (table == null) throw new ArgumentNullException(nameof(table));
+        table.Properties.SetOutsideBorders(border);
         return table;
     }
 
@@ -57,9 +51,38 @@ public static class TableExtensions
     /// <returns></returns>
     public static Table SetInsideBorders(this Table table, Border border)
     {
-        table.InsideHorizontalBorder = border;
-        table.InsideVerticalBorder = border;
+        if (table == null) throw new ArgumentNullException(nameof(table));
+        table.Properties.SetInsideBorders(border);
         return table;
+    }
+
+    /// <summary>
+    /// Set all the outside borders of the table
+    /// </summary>
+    /// <param name="properties"></param>
+    /// <param name="border"></param>
+    /// <returns></returns>
+    public static void SetOutsideBorders(this TableProperties properties, Border border)
+    {
+        if (properties == null) throw new ArgumentNullException(nameof(properties));
+
+        properties.LeftBorder = border;
+        properties.RightBorder = border;
+        properties.TopBorder = border;
+        properties.BottomBorder = border;
+    }
+
+    /// <summary>
+    /// Set all the outside borders of the table
+    /// </summary>
+    /// <param name="properties"></param>
+    /// <param name="border"></param>
+    /// <returns></returns>
+    public static void SetInsideBorders(this TableProperties properties, Border border)
+    {
+        if (properties == null) throw new ArgumentNullException(nameof(properties));
+        properties.InsideHorizontalBorder = border;
+        properties.InsideVerticalBorder = border;
     }
 
 }

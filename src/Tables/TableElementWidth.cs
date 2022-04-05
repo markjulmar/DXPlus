@@ -6,7 +6,7 @@ namespace DXPlus;
 /// <summary>
 /// This wraps width values used on table and table cell elements.
 /// </summary>
-public sealed class TableWidth : IEquatable<TableWidth>
+public sealed class TableElementWidth : IEquatable<TableElementWidth>
 {
     internal const double PctMultiplier = 50.0;
     internal readonly XElement Xml;
@@ -15,7 +15,7 @@ public sealed class TableWidth : IEquatable<TableWidth>
     /// Constructor
     /// </summary>
     /// <param name="element">TblW element or null to create one.</param>
-    internal TableWidth(XElement? element)
+    internal TableElementWidth(XElement? element)
     {
         // Assume table width, will be replaced by tableCell if this
         // gets assigned to a cell.
@@ -25,7 +25,7 @@ public sealed class TableWidth : IEquatable<TableWidth>
     /// <summary>
     /// Constructor used with static methods and conversion operators.
     /// </summary>
-    private TableWidth() : this(null)
+    private TableElementWidth() : this(null)
     {
     }
 
@@ -34,7 +34,7 @@ public sealed class TableWidth : IEquatable<TableWidth>
     /// </summary>
     /// <param name="units">Unit type</param>
     /// <param name="width">Width</param>
-    public TableWidth(TableWidthUnit units, double width) : this(null)
+    public TableElementWidth(TableWidthUnit units, double width) : this(null)
     {
         Type = units;
         Width = width;
@@ -55,13 +55,13 @@ public sealed class TableWidth : IEquatable<TableWidth>
     /// Converter from a double to a TableWidth - always converts to DXA.
     /// </summary>
     /// <param name="d">Value</param>
-    public static implicit operator TableWidth(double d) => FromDxa(d);
+    public static implicit operator TableElementWidth(double d) => FromDxa(d);
 
     /// <summary>
     /// Converter from a Uom to a TableWidth - always converts to DXA.
     /// </summary>
     /// <param name="value">Value</param>
-    public static implicit operator TableWidth(Uom value) => FromDxa(value);
+    public static implicit operator TableElementWidth(Uom value) => FromDxa(value);
 
     /// <summary>
     /// Preferred table width.
@@ -78,10 +78,10 @@ public sealed class TableWidth : IEquatable<TableWidth>
     /// </summary>
     /// <param name="value">Percentage value</param>
     /// <returns>Table width</returns>
-    public static TableWidth FromPercent(double value)
+    public static TableElementWidth FromPercent(double value)
     {
         if (value is <= 0 or > 100) throw new ArgumentOutOfRangeException(nameof(value));
-        return new TableWidth {Type = TableWidthUnit.Percentage, Width = value * PctMultiplier};
+        return new TableElementWidth {Type = TableWidthUnit.Percentage, Width = value * PctMultiplier};
     }
 
     /// <summary>
@@ -89,10 +89,10 @@ public sealed class TableWidth : IEquatable<TableWidth>
     /// </summary>
     /// <param name="value">value</param>
     /// <returns></returns>
-    public static TableWidth FromDxa(Uom value)
+    public static TableElementWidth FromDxa(Uom value)
     {
         if (value == null) throw new ArgumentNullException(nameof(value));
-        return new TableWidth { Type = TableWidthUnit.Dxa, Width = value.Dxa };
+        return new TableElementWidth { Type = TableWidthUnit.Dxa, Width = value.Dxa };
     }
 
     /// <summary>
@@ -100,7 +100,7 @@ public sealed class TableWidth : IEquatable<TableWidth>
     /// </summary>
     /// <param name="other">Other value</param>
     /// <returns></returns>
-    public bool Equals(TableWidth? other) 
+    public bool Equals(TableElementWidth? other) 
         => other is not null && (ReferenceEquals(this, other) || Xml.Equals(other.Xml));
 
     /// <summary>
@@ -109,7 +109,7 @@ public sealed class TableWidth : IEquatable<TableWidth>
     /// <param name="obj"></param>
     /// <returns></returns>
     public override bool Equals(object? obj) 
-        => ReferenceEquals(this, obj) || obj is TableWidth other && Equals(other);
+        => ReferenceEquals(this, obj) || obj is TableElementWidth other && Equals(other);
 
     /// <summary>
     /// Hashcode override

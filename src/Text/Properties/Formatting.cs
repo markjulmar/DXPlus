@@ -165,13 +165,13 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// <summary>
     /// True if this paragraph is hidden.
     /// </summary>
-    public bool IsHidden
+    public bool Hidden
     {
         get => Xml.Element(Name.Vanish) != null;
         set
         {
             Xml.SetElementValue(Name.Vanish, value ? string.Empty : null);
-            setProperties.Add(nameof(IsHidden));
+            setProperties.Add(nameof(Hidden));
         }
     }
 

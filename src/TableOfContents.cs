@@ -99,10 +99,10 @@ public sealed class TableOfContents : DocXElement, IEquatable<TableOfContents>
         var mgr = document.Styles;
         foreach (var (style, applyTo, template, name) in availableStyles)
         {
-            if (!mgr.HasStyle(style, applyTo))
+            if (!mgr.Exists(style, applyTo))
             {
                 var xml = template.Invoke(style, name);
-                mgr.Add(xml);
+                mgr.AddStyle(xml);
             }
         }
     }

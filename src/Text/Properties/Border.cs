@@ -150,7 +150,7 @@ public sealed class Border : IEquatable<Border>
     }
 
     /// <summary>
-    /// Specifies the width of the border. Paragraph borders are line borders, the width is specified in eighths of a point
+    /// Specifies the width of the border. Borders are specified in 1/8 of a point
     /// with a minimum value of two (1/4 of a point) and a maximum value of 96 (twelve points).
     /// </summary>
     public double? Size
@@ -158,8 +158,13 @@ public sealed class Border : IEquatable<Border>
         get => double.TryParse(Get(false).AttributeValue(Name.Size), out var result) ? result : null;
         set
         {
-            if (value is < 2 or > 96)
-                throw new ArgumentOutOfRangeException(nameof(Size));
+            value = value switch
+            {
+                < 2 => 2,
+                > 96 => 96,
+                _ => value
+            };
+
             if (value == null)
             {
                 Get(false)?.Attribute(Name.Size)?.Remove();

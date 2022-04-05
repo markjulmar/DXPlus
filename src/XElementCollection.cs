@@ -8,11 +8,12 @@ namespace DXPlus;
 /// Base collection class to manage a collection of children.
 /// </summary>
 /// <typeparam name="T">Child type</typeparam>
-public class XElementCollection<T> : IList<T> where T : XElementWrapper
+public class XElementCollection<T> : IList<T>, IReadOnlyList<T> where T : XElementWrapper
 {
     private readonly XName? parentTag;
     private readonly XName childTag;
     private readonly Func<XElement, T> createChildFunc;
+    private readonly bool isReadOnly;
     private readonly XElement parent;
 
     /// <summary>
@@ -22,12 +23,14 @@ public class XElementCollection<T> : IList<T> where T : XElementWrapper
     /// <param name="parentTag"></param>
     /// <param name="childTag"></param>
     /// <param name="createChildFunc"></param>
-    internal XElementCollection(XElement parent, XName? parentTag, XName childTag, Func<XElement, T> createChildFunc)
+    /// <param name="isReadOnly"></param>
+    internal XElementCollection(XElement parent, XName? parentTag, XName childTag, Func<XElement, T> createChildFunc, bool isReadOnly = false)
     {
         this.parent = parent;
         this.parentTag = parentTag;
         this.childTag = childTag;
         this.createChildFunc = createChildFunc;
+        this.isReadOnly = isReadOnly;
     }
 
     /// <inheritdoc />
@@ -37,7 +40,6 @@ public class XElementCollection<T> : IList<T> where T : XElementWrapper
         return (root?.Elements(childTag).Select(el => createChildFunc(el))
                 ?? Enumerable.Empty<T>()).GetEnumerator();
     }
-
 
     IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
@@ -59,6 +61,7 @@ public class XElementCollection<T> : IList<T> where T : XElementWrapper
     /// <inheritdoc />
     public void Add(T item)
     {
+        if (isReadOnly) throw new NotSupportedException("Collection is read-only.");
         if (item == null) throw new ArgumentNullException(nameof(item));
 
         var xe = item.Xml;
@@ -72,6 +75,7 @@ public class XElementCollection<T> : IList<T> where T : XElementWrapper
     /// <inheritdoc />
     public void Clear()
     {
+        if (isReadOnly) throw new NotSupportedException("Collection is read-only.");
         if (parentTag != null)
         {
             // Remove the parent and all children.
@@ -112,6 +116,7 @@ public class XElementCollection<T> : IList<T> where T : XElementWrapper
     /// <inheritdoc />
     public bool Remove(T item)
     {
+        if (isReadOnly) throw new NotSupportedException("Collection is read-only.");
         if (item == null) throw new ArgumentNullException(nameof(item));
 
         int pos = IndexOf(item);
@@ -127,7 +132,7 @@ public class XElementCollection<T> : IList<T> where T : XElementWrapper
     /// <inheritdoc />
     public int Count => ArrayElement(false)?.Elements(childTag).Count() ?? 0;
 
-    bool ICollection<T>.IsReadOnly => false;
+    bool ICollection<T>.IsReadOnly => isReadOnly;
 
     /// <inheritdoc />
     public int IndexOf(T item)
@@ -153,6 +158,7 @@ public class XElementCollection<T> : IList<T> where T : XElementWrapper
     /// <inheritdoc />
     public void Insert(int index, T item)
     {
+        if (isReadOnly) throw new NotSupportedException("Collection is read-only.");
         if (item == null) throw new ArgumentNullException(nameof(item));
         if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
 
@@ -178,6 +184,7 @@ public class XElementCollection<T> : IList<T> where T : XElementWrapper
     /// <inheritdoc />
     public void RemoveAt(int index)
     {
+        if (isReadOnly) throw new NotSupportedException("Collection is read-only.");
         if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
         var array = ArrayElement(true);
         var children = array!.Elements(childTag).ToList();
@@ -204,6 +211,7 @@ public class XElementCollection<T> : IList<T> where T : XElementWrapper
         }
         set
         {
+            if (isReadOnly) throw new NotSupportedException("Collection is read-only.");
             if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
             if (value == null) throw new ArgumentNullException(nameof(value));
 

@@ -1,4 +1,5 @@
-﻿using DXPlus.Resources;
+﻿using System.Collections;
+using DXPlus.Resources;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO.Packaging;
@@ -10,29 +11,16 @@ namespace DXPlus;
 /// <summary>
 /// Manager for the numbering styles (numbering.xml) in the document.
 /// </summary>
-public sealed class NumberingStyleManager : DocXElement
+public sealed class NumberingStyleManager : DocXElement, IReadOnlyList<NumberingDefinition>
 {
     private readonly XDocument numberingDoc;
+    private readonly XElementCollection<NumberingStyle> numberingStyles;
+    private readonly XElementCollection<NumberingDefinition> numberingDefinitions;
 
     /// <summary>
-    /// A list of all the available numbering styles in this document.
+    /// Returns the defined abstract styles.
     /// </summary>
-    public IEnumerable<NumberingStyle> Styles =>
-        Xml.Elements(Namespace.Main + "abstractNum").Select(e => new NumberingStyle(e));
-
-    /// <summary>
-    /// A list of all the current numbering definitions available to this document.
-    /// </summary>
-    public IEnumerable<NumberingDefinition> Definitions
-    {
-        get
-        {
-            var styles = Styles.ToList();
-            return Xml.Elements(Namespace.Main + "num")
-                .Select(e => new NumberingDefinition(e, styles))
-                .ToList();
-        }
-    }
+    public IReadOnlyList<NumberingStyle> NumberingStyles => numberingStyles;
 
     /// <summary>
     /// Constructor
@@ -47,70 +35,77 @@ public sealed class NumberingStyleManager : DocXElement
         SetOwner(documentOwner, numberingPart, false);
         numberingDoc = numberingPart.Load();
         Xml = numberingDoc.Root ?? throw new DocumentFormatException("NumberingDoc");
+
+        numberingStyles =
+            new XElementCollection<NumberingStyle>(Xml, null, Namespace.Main + "abstractNum",
+                e => new NumberingStyle(e), isReadOnly: true);
+
+        numberingDefinitions =
+            new XElementCollection<NumberingDefinition>(Xml, null, Namespace.Main + "num",
+                e => new NumberingDefinition(e, numberingStyles), isReadOnly: true);
     }
 
     /// <summary>
-    /// Creates a new numbering section in the w:numbering document and adds a relationship to
-    /// that section in the passed document.
+    /// Creates a new circular bullet style and related numbering definition and adds it to the document.
+    /// The return style on the returned NumberingDefinition can be changed.
     /// </summary>
     /// <returns></returns>
-    public NumberingDefinition BulletStyle()
+    public NumberingDefinition AddBulletDefinition()
     {
         Debug.Assert(numberingDoc != null);
 
-        var styles = Styles.ToList();
-        var style = styles.FirstOrDefault(s => s.Levels.Any(nl => nl.Level == 0 && nl.Format == NumberingFormat.Bullet))
-            ?? AddNumberingStyle(Resource.DefaultBulletNumberingXml(DocumentHelpers.GenerateHexId()), styles);
-        
-        return AddNumberingDefinition(1, style);
+        var ns = new NumberingStyle(Resource.DefaultBulletNumberingXml(DocumentHelpers.GenerateHexId()));
+        AddNumberingStyle(ns);
+        return CreateNumberingDefinition(ns);
     }
 
     /// <summary>
-    /// Creates a new numbering section in the w:numbering document and adds a relationship to
-    /// that section in the passed document.
+    /// Creates a new numbered (1.2.3) style and related numbering definition and adds it to the document
+    /// The return style on the returned NumberingDefinition can be changed.
     /// </summary>
     /// <returns></returns>
-    public NumberingDefinition NumberStyle(int? startNumber = null)
+    public NumberingDefinition AddNumberedDefinition(int startNumber)
     {
         Debug.Assert(numberingDoc != null);
         if (startNumber < 1) throw new ArgumentOutOfRangeException(nameof(startNumber));
 
-        var styles = Styles.ToList();
-        var style = styles.FirstOrDefault(s => s.Levels.Any(nl => nl.Level == 0 && nl.Format == NumberingFormat.Numbered))
-            ?? AddNumberingStyle(Resource.DefaultBulletNumberingXml(DocumentHelpers.GenerateHexId()), styles);
-
-        return AddNumberingDefinition(startNumber??1, style);
+        var ns = new NumberingStyle(Resource.DefaultDecimalNumberingXml(DocumentHelpers.GenerateHexId()));
+        AddNumberingStyle(ns);
+        return CreateNumberingDefinition(ns, startNumber);
     }
 
     /// <summary>
-    /// Creates a new numbering section in the w:numbering document and adds a relationship to
-    /// that section in the passed document.
+    /// Creates a new custom bullet style with a single level and related numbering definition and
+    /// adds it to the document. The return style on the returned NumberingDefinition can be changed.
     /// </summary>
     /// <param name="text">Text to use for 1st level of list.</param>
     /// <param name="fontFamily">Font to use for text, defaults to Courier New</param>
     /// <returns></returns>
-    public NumberingDefinition CustomBulletStyle(string text, FontFamily? fontFamily = null)
+    public NumberingDefinition AddCustomDefinition(string text, FontFamily? fontFamily = null)
     {
+        if (text == null) throw new ArgumentNullException(nameof(text));
         Debug.Assert(numberingDoc != null);
 
-        var styles = Styles.ToList();
-        var style = styles.FirstOrDefault(s => s.Levels.Any(nl => nl.Level == 0 && nl.Text == text)) 
-            ?? AddNumberingStyle(Resource.CustomBulletNumberingXml(DocumentHelpers.GenerateHexId(), 
-                    text, fontFamily?.Name), styles);
-
-        return AddNumberingDefinition(1, style);
+        var ns = new NumberingStyle(Resource.CustomBulletNumberingXml(DocumentHelpers.GenerateHexId(), text, fontFamily?.Name));
+        AddNumberingStyle(ns);
+        return CreateNumberingDefinition(ns);
     }
 
     /// <summary>
-    /// Method to create a new {abstractNum} style definition from a passed XML template.
+    /// Get the next available abstract id.
     /// </summary>
-    /// <param name="styleTemplate">XML template</param>
-    /// <param name="styles">Existing style list.</param>
-    /// <returns>New added numbering style</returns>
-    private NumberingStyle AddNumberingStyle(XElement styleTemplate, IReadOnlyCollection<NumberingStyle> styles)
+    private int NextAbstractId => this.Any() ? this.Max(s => s.Id) + 1 : 0;
+
+    /// <summary>
+    /// Adds a new numbering style to the available styles.
+    /// </summary>
+    /// <param name="style">Defined abstract numbering style</param>
+    public void AddNumberingStyle(NumberingStyle style)
     {
-        int abstractNumId = styles.Count > 0 ? styles.Max(s => s.Id) + 1 : 0;
-        var style = new NumberingStyle(styleTemplate) { Id = abstractNumId };
+        if (style == null) throw new ArgumentNullException(nameof(style));
+        if (style.Id != -1) throw new ArgumentException("Style already added to document.", nameof(style));
+
+        style.Id = NextAbstractId;
 
         // Style definition goes first -- this new one should be at the end of the existing styles
         var lastStyle = numberingDoc.Root!.Descendants().LastOrDefault(e => e.Name == Namespace.Main + "abstractNum");
@@ -123,25 +118,38 @@ public sealed class NumberingStyleManager : DocXElement
         {
             numberingDoc.Root.AddFirst(style.Xml);
         }
-
-        return style;
-
     }
 
     /// <summary>
-    /// Method to create a new {w:num} tied to an abstract definition in our numbering document.
+    /// Method to create a new usable numbering definition from an existing style.
     /// </summary>
+    /// <param name="style">Created style</param>
+    /// <returns>Numbering definition that can be applied to a list.</returns>
+    public NumberingDefinition CreateNumberingDefinition(NumberingStyle style) => CreateNumberingDefinition(style, 1);
+
+    /// <summary>
+    /// Method to create a new usable numbering definition from an existing style.
+    /// </summary>
+    /// <param name="style">Created style</param>
     /// <param name="startNumber">Starting number</param>
-    /// <param name="style"></param>
-    /// <returns></returns>
-    private NumberingDefinition AddNumberingDefinition(int startNumber, NumberingStyle style)
+    /// <returns>Numbering definition that can be applied to a list.</returns>
+    public NumberingDefinition CreateNumberingDefinition(NumberingStyle style, int startNumber)
     {
-        var definitions = Definitions.ToList();
+        if (style == null) throw new ArgumentNullException(nameof(style));
+        if (style.Id == -1)
+        {
+            AddNumberingStyle(style);
+        }
+
+        var definitions = this.ToList();
         int numId = definitions.Count > 0 ? definitions.Max(d => d.Id) + 1 : 1;
         var definition = new NumberingDefinition(numId, style);
 
         if (startNumber != 1)
-            definition.AddOverrideForLevel(0, new NumberingLevel {Start = startNumber});
+        {
+            definition.AddOverrideForLevel(0)
+                .NumberingLevel.Start = startNumber;
+        }
 
         // Definition is always at the end of the document.
         numberingDoc.Root!.Add(definition.Xml);
@@ -157,20 +165,20 @@ public sealed class NumberingStyleManager : DocXElement
         PackagePart.Save(numberingDoc);
     }
 
-    /// <summary>
-    /// Returns the starting number (with override) for the given NumId and Level
-    /// </summary>
-    /// <param name="numId">NumId</param>
-    /// <param name="level">Level</param>
-    /// <returns></returns>
-    internal int GetStartingNumber(int numId, int level = 0)
-    {
-        var definition = Definitions.SingleOrDefault(n => n.Id == numId);
-        if (definition == null)
-            throw new ArgumentException("No numbering definition found.", nameof(numId));
+    /// <summary>Returns an enumerator that iterates through the collection.</summary>
+    /// <returns>An enumerator that can be used to iterate through the collection.</returns>
+    public IEnumerator<NumberingDefinition> GetEnumerator() => numberingDefinitions.GetEnumerator();
 
-        var levelOverride = definition.GetOverrideForLevel(level);
-        return levelOverride?.Start ??
-               definition.Style.Levels.Single(l => l.Level == level).Start;
-    }
+    /// <summary>Returns an enumerator that iterates through a collection.</summary>
+    /// <returns>An <see cref="T:System.Collections.IEnumerator" /> object that can be used to iterate through the collection.</returns>
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    /// <summary>Gets the number of elements in the collection.</summary>
+    /// <returns>The number of elements in the collection.</returns>
+    public int Count => numberingDefinitions.Count;
+
+    /// <summary>Gets the element at the specified index in the read-only list.</summary>
+    /// <param name="index">The zero-based index of the element to get.</param>
+    /// <returns>The element at the specified index in the read-only list.</returns>
+    public NumberingDefinition this[int index] => numberingDefinitions[index];
 }

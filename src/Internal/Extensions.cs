@@ -72,7 +72,7 @@ internal static class Extensions
     /// </summary>
     /// <param name="value"></param>
     /// <returns></returns>
-    internal static string ToHex(this byte value) => value.ToString("2X");
+    internal static string ToHex(this byte value) => value.ToString("X2");
 
     /// <summary>
     /// Convert a string value to a byte.

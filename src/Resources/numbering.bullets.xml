@@ -1,5 +1,6 @@
-<w:abstractNum w:abstractNumId="1" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:abstractNum xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
 	<w:nsid w:val="{nsid}"/>
+	<w:name w:val="defaultBulletList" />
 	<w:multiLevelType w:val="multilevel" />
 	<w:lvl w:ilvl="0">
 		<w:start w:val="1"/>

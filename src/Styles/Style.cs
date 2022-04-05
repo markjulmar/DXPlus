@@ -10,13 +10,15 @@ namespace DXPlus;
 [DebuggerDisplay("{Id} - {Name} Type={Type} Default={IsDefault}")]
 public sealed class Style : XElementWrapper
 {
+    private new XElement Xml => base.Xml!;
+
     /// <summary>
     /// Unique id for this style
     /// </summary>
     public string? Id
     {
         get => Xml.AttributeValue(Namespace.Main + "styleId");
-        set => Xml!.SetAttributeValue(Namespace.Main + "styleId", value);
+        set => Xml.SetAttributeValue(Namespace.Main + "styleId", value);
     }
 
     /// <summary>
@@ -24,8 +26,8 @@ public sealed class Style : XElementWrapper
     /// </summary>
     public string? Name
     {
-        get => Xml!.Element(Internal.Name.NameId).GetVal();
-        set => Xml!.AddElementVal(Internal.Name.NameId, value);
+        get => Xml.Element(Internal.Name.NameId).GetVal();
+        set => Xml.AddElementVal(Internal.Name.NameId, value);
     }
 
     /// <summary>
@@ -33,8 +35,8 @@ public sealed class Style : XElementWrapper
     /// </summary>
     public bool IsCustom
     {
-        get => Xml!.BoolAttributeValue(Namespace.Main + "customStyle") == true;
-        set => Xml!.SetAttributeValue(Namespace.Main + "customStyle", value ? "1" : null);
+        get => Xml.BoolAttributeValue(Namespace.Main + "customStyle") == true;
+        set => Xml.SetAttributeValue(Namespace.Main + "customStyle", value ? "1" : null);
     }
 
     /// <summary>
@@ -42,8 +44,8 @@ public sealed class Style : XElementWrapper
     /// </summary>
     public bool IsDefault
     {
-        get => Xml!.BoolAttributeValue(Namespace.Main + "default") == true;
-        set => Xml!.SetAttributeValue(Namespace.Main + "default", value ? "1" : null);
+        get => Xml.BoolAttributeValue(Namespace.Main + "default") == true;
+        set => Xml.SetAttributeValue(Namespace.Main + "default", value ? "1" : null);
     }
 
     /// <summary>
@@ -51,30 +53,140 @@ public sealed class Style : XElementWrapper
     /// </summary>
     public StyleType Type
     {
-        get => Xml!.AttributeValue(Namespace.Main + "type").TryGetEnumValue<StyleType>(out var result)
+        get => Xml.AttributeValue(Namespace.Main + "type").TryGetEnumValue<StyleType>(out var result)
             ? result
             : StyleType.Paragraph;
 
-        set => Xml!.SetAttributeValue(Namespace.Main + "type", value.GetEnumName());
+        set => Xml.SetAttributeValue(Namespace.Main + "type", value.GetEnumName());
     }
 
     /// <summary>
-    /// Retrieve the formatting options
+    /// Returns all the optional table styles assigned to this style.
     /// </summary>
-    public Formatting Formatting => new(Xml!.GetOrAddElement(Internal.Name.RunProperties));
+    public IList<TableStyle> TableStyles { get; }
 
     /// <summary>
-    /// FirstParagraph properties
+    /// The optional paragraph properties to apply to this table section.
     /// </summary>
-    public ParagraphProperties ParagraphFormatting => new(Xml!.GetOrAddElement(Internal.Name.ParagraphProperties));
+    public ParagraphProperties? ParagraphFormatting
+    {
+        get
+        {
+            var xml = Xml.Element(Internal.Name.ParagraphProperties);
+            return xml != null ? new ParagraphProperties(xml) : null;
+        }
+
+        set
+        {
+            Xml.Element(Internal.Name.ParagraphProperties)?.Remove();
+            if (value == null) return;
+
+            var xml = value.Xml!;
+            if (xml.Parent != null)
+                xml = xml.Clone();
+            Xml.Add(xml);
+        }
+    }
+
+    /// <summary>
+    /// The optional run properties to apply to this table section.
+    /// </summary>
+    public Formatting? Formatting
+    {
+        get
+        {
+            var xml = Xml.Element(Internal.Name.RunProperties);
+            return xml != null ? new Formatting(xml) : null;
+        }
+
+        set
+        {
+            Xml.Element(Internal.Name.RunProperties)?.Remove();
+            if (value == null) return;
+
+            var xml = value.Xml!;
+            if (xml.Parent != null)
+                xml = xml.Clone();
+            Xml.Add(xml);
+        }
+    }
+
+    /// <summary>
+    /// The optional table properties to apply to this table section.
+    /// </summary>
+    public TableProperties? TableFormatting
+    {
+        get
+        {
+            var xml = Xml.Element(Internal.Name.TableProperties);
+            return xml != null ? new TableProperties(xml, null) : null;
+        }
+
+        set
+        {
+            Xml.Element(Internal.Name.TableProperties)?.Remove();
+            if (value == null) return;
+
+            var xml = value.Xml!;
+            if (xml.Parent != null)
+                xml = xml.Clone();
+            Xml.Add(xml);
+        }
+    }
+
+    /// <summary>
+    /// The optional table row properties to apply to this table section.
+    /// </summary>
+    public TableRowProperties? TableRowFormatting
+    {
+        get
+        {
+            var xml = Xml.Element(Internal.Name.TableRowProperties);
+            return xml != null ? new TableRowProperties(xml) : null;
+        }
+
+        set
+        {
+            Xml.Element(Internal.Name.TableRowProperties)?.Remove();
+            if (value == null) return;
+
+            var xml = value.Xml!;
+            if (xml.Parent != null)
+                xml = xml.Clone();
+            Xml.Add(xml);
+        }
+    }
+
+    /// <summary>
+    /// The optional table cell properties to apply to this table section.
+    /// </summary>
+    public TableCellProperties? TableCellFormatting
+    {
+        get
+        {
+            var xml = Xml.Element(Internal.Name.TableCellProperties);
+            return xml != null ? new TableCellProperties(xml) : null;
+        }
+
+        set
+        {
+            Xml.Element(Internal.Name.TableCellProperties)?.Remove();
+            if (value == null) return;
+
+            var xml = value.Xml!;
+            if (xml.Parent != null)
+                xml = xml.Clone();
+            Xml.Add(xml);
+        }
+    }
 
     /// <summary>
     /// The style this one is based on.
     /// </summary>
     public string? BasedOn
     {
-        get => Xml!.Element(Namespace.Main + "basedOn").GetVal(null);
-        set => Xml!.AddElementVal(Namespace.Main + "basedOn", string.IsNullOrWhiteSpace(value) ? null : value);
+        get => Xml.Element(Namespace.Main + "basedOn").GetVal(null);
+        set => Xml.AddElementVal(Namespace.Main + "basedOn", string.IsNullOrWhiteSpace(value) ? null : value);
     }
 
     /// <summary>
@@ -82,8 +194,8 @@ public sealed class Style : XElementWrapper
     /// </summary>
     public string? NextParagraphStyle
     {
-        get => Xml!.Element(Namespace.Main + "next").GetVal(null);
-        set => Xml!.AddElementVal(Namespace.Main + "next", string.IsNullOrWhiteSpace(value) ? null : value);
+        get => Xml.Element(Namespace.Main + "next").GetVal(null);
+        set => Xml.AddElementVal(Namespace.Main + "next", string.IsNullOrWhiteSpace(value) ? null : value);
     }
 
     /// <summary>
@@ -91,8 +203,8 @@ public sealed class Style : XElementWrapper
     /// </summary>
     public string? LinkedStyle
     {
-        get => Xml!.Element(Namespace.Main + "link").GetVal(null);
-        set => Xml!.AddElementVal(Namespace.Main + "link", string.IsNullOrWhiteSpace(value) ? null : value);
+        get => Xml.Element(Namespace.Main + "link").GetVal(null);
+        set => Xml.AddElementVal(Namespace.Main + "link", string.IsNullOrWhiteSpace(value) ? null : value);
     }
 
     // TODO: add tblPr, tblStylePr, tcPr, trPr
@@ -103,17 +215,19 @@ public sealed class Style : XElementWrapper
     /// <param name="xml">Element in the style document</param>
     internal Style(XElement xml)
     {
-        Xml = xml ?? throw new ArgumentNullException(nameof(xml));
+        base.Xml = xml ?? throw new ArgumentNullException(nameof(xml));
+        TableStyles = new TableStyleCollection(Xml);
     }
 
     /// <summary>
     /// Constructor to add a new style to the document.
     /// </summary>
     /// <param name="owner">Style manager owner</param>
-    /// <param name="id">Name of the style</param>
+    /// <param name="id">ID for the style</param>
+    /// <param name="name">Name of the style</param>
     /// <param name="type">Style type</param>
     /// <param name="latentStyle"></param>
-    internal Style(XDocument owner, string id, StyleType type, XElement? latentStyle)
+    internal Style(XDocument owner, string id, string name, StyleType type, XElement? latentStyle)
     {
         if (owner == null) throw new ArgumentNullException(nameof(owner));
 
@@ -122,13 +236,13 @@ public sealed class Style : XElementWrapper
                 <w:qFormat/>
             </w:style>  */
 
-        Xml = new XElement(Namespace.Main + "style",
+        base.Xml = new XElement(Namespace.Main + "style",
             new XAttribute(Namespace.Main + "styleId", id),
             new XAttribute(Namespace.Main + "type", type.ToString().ToLower()));
 
         if (latentStyle == null)
         {
-            Xml.Add(new XElement(Namespace.Main + "name", new XAttribute(Namespace.Main + "val", id)));
+            Xml.Add(new XElement(Namespace.Main + "name", new XAttribute(Namespace.Main + "val", name)));
             Xml.Add(new XAttribute(Namespace.Main + "customStyle", 1));
             Xml.Add(new XElement(Namespace.Main + "qFormat"));
         }
@@ -149,5 +263,6 @@ public sealed class Style : XElementWrapper
         }
 
         owner.Root!.Add(Xml);
+        TableStyles = new TableStyleCollection(Xml);
     }
 }

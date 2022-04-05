@@ -15,7 +15,7 @@ public enum BorderStyle
     /// <summary>
     /// Single line border
     /// </summary>
-    Single = 1,
+    Single,
     /// <summary>
     /// Thick line border
     /// </summary>
@@ -23,7 +23,7 @@ public enum BorderStyle
     /// <summary>
     /// Double-line border
     /// </summary>
-    DoubleLine,
+    Double,
     /// <summary>
     /// Dotted line border
     /// </summary>

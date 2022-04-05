@@ -7,9 +7,9 @@ namespace DXPlus;
 /// This provides the mapping from a NumId to an abstractNumId in the /word/numbering.xml document.
 /// This mapping is needed because the Numbering Styles can be reused.
 /// </summary>
-public sealed class NumberingDefinition
+public sealed class NumberingDefinition : XElementWrapper
 {
-    internal XElement Xml { get; }
+    private new XElement Xml => base.Xml!;
 
     /// <summary>
     /// Numbering Id
@@ -26,6 +26,17 @@ public sealed class NumberingDefinition
     /// </summary>
     public NumberingStyle Style { get; internal set; }
 
+    /// <summary>
+    /// Returns the starting number (with override) for this definition.
+    /// </summary>
+    /// <param name="level">Level</param>
+    /// <returns></returns>
+    public int GetStartingNumber(int level = 0)
+    {
+        var levelOverride = GetOverrideForLevel(level);
+        return levelOverride?.Start ??
+               Style.Levels.Single(l => l.Level == level).Start;
+    }
 
     /// <summary>
     /// Optional override information for one or more levels.
@@ -46,14 +57,12 @@ public sealed class NumberingDefinition
     /// Adds a new override for the given level.
     /// </summary>
     /// <param name="level">Level to override - must not already exist.</param>
-    /// <param name="numberingLevel">Numbering level info</param>
-    public LevelOverride AddOverrideForLevel(int level, NumberingLevel numberingLevel)
+    public LevelOverride AddOverrideForLevel(int level)
     {
         if (GetOverrideForLevel(level) != null)
             throw new ArgumentException("Level override already exists.", nameof(level));
-        if (numberingLevel == null)
-            throw new ArgumentNullException(nameof(numberingLevel));
 
+        var numberingLevel = new NumberingLevel(level);
         var e = new XElement(Namespace.Main + "lvlOverride",
             new XAttribute(Namespace.Main + "ilvl", level),
             numberingLevel.Xml);
@@ -69,7 +78,7 @@ public sealed class NumberingDefinition
     /// <param name="availableStyles">Available styles</param>
     internal NumberingDefinition(XElement xml, IEnumerable<NumberingStyle> availableStyles)
     {
-        Xml = xml;
+        base.Xml = xml;
         Style = availableStyles.Single(s => s.Id == StyleId);
     }
 
@@ -80,10 +89,13 @@ public sealed class NumberingDefinition
     /// <param name="numberingStyle">Abstract numbering style</param>
     internal NumberingDefinition(int numId, NumberingStyle numberingStyle)
     {
-        Xml = new XElement(Namespace.Main + "num",
+        if (numberingStyle == null) throw new ArgumentNullException(nameof(numberingStyle));
+
+        base.Xml = new XElement(Namespace.Main + "num",
             new XAttribute(Namespace.Main + "numId", numId),
             new XElement(Namespace.Main + "abstractNumId",
                 new XAttribute(Name.MainVal, numberingStyle.Id)));
+        
         Style = numberingStyle;
     }
 }
