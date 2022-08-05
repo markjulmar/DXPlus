@@ -633,7 +633,7 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
     /// <returns>The paragraph with the Equation now appended.</returns>
     public Paragraph AddEquation(string equation, Formatting formatting)
     {
-        formatting.Font = new FontFamily("Cambria Math");
+        formatting.Font = new FontValue("Cambria Math");
 
         // Create equation element
         var oMathPara = new XElement(Name.MathParagraph,

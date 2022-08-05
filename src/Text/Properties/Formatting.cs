@@ -1,4 +1,3 @@
-using System.Drawing;
 using System.Globalization;
 using System.Reflection;
 using System.Xml.Linq;
@@ -114,14 +113,14 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// <summary>
     /// Change the font for the paragraph
     /// </summary>
-    public FontFamily? Font
+    public FontValue? Font
     {
         get
         {
             var font = Xml.Element(Name.RunFonts);
             if (font == null) return null;
             var name = font.AttributeValue(Namespace.Main + "ascii");
-            return !string.IsNullOrEmpty(name) ? new FontFamily(name) : null;
+            return !string.IsNullOrEmpty(name) ? new FontValue(name) : null;
         }
         set
         {

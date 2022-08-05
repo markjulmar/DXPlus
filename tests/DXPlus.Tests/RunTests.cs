@@ -102,12 +102,12 @@ namespace DXPlus.Tests
         [Fact]
         public void MergeAddsToFormatting()
         {
-            var r1 = new Run("This is a test", new Formatting { Italic = true, Font = new FontFamily("Arial"), FontSize = 16 });
+            var r1 = new Run("This is a test", new Formatting { Italic = true, Font = new FontValue("Arial"), FontSize = 16 });
             Assert.NotNull(r1.Properties);
 
             var f = new Formatting { Bold = true, Color = Color.Red };
             var f2 = new Formatting
-                {Bold = true, Color = Color.Red, Italic = true, Font = new FontFamily("Arial"), FontSize = 16};
+                {Bold = true, Color = Color.Red, Italic = true, Font = new FontValue("Arial"), FontSize = 16};
             r1.MergeFormatting(f);
             Assert.Equal(f2, r1.Properties);
         }

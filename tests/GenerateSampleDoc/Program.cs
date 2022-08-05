@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using DXPlus;
 using DXPlus.Charts;
+
+using Color = System.Drawing.Color;
 
 namespace GenerateSampleDoc
 {
@@ -65,7 +66,7 @@ namespace GenerateSampleDoc
                 .Newline()
                 .AddText("This is a second line. ")
                 .AddText("It includes some ")
-                .AddText("large", new Formatting { Font = new FontFamily("Times New Roman"), FontSize = 32 })
+                .AddText("large", new Formatting { Font = new FontValue("Times New Roman"), FontSize = 32 })
                 .AddText(", blue", new Formatting { Color = Color.Blue })
                 .AddText(", bold text.", new Formatting { Bold = true })
                 .Newline()
@@ -88,7 +89,7 @@ namespace GenerateSampleDoc
 
             // Centered paragraph
             doc.Add(new Paragraph("I am centered 20pt Comic Sans.",
-                    new() { Font = new FontFamily("Comic Sans MS"), FontSize = 20 })
+                    new() { Font = new FontValue("Comic Sans MS"), FontSize = 20 })
                 { Properties = new() { Alignment = Alignment.Center } });
 
             doc.Add(new Paragraph("This paragraph has the first sentence indented. "
@@ -180,7 +181,7 @@ namespace GenerateSampleDoc
             doc.Add("Lists with fonts").Style(HeadingType.Heading2);
             var style = doc.NumberingStyles.AddBulletDefinition();
 
-            foreach (var fontFamily in FontFamily.Families.Take(20))
+            foreach (var fontFamily in FontValue.FontFamilies.Take(20))
             {
                 doc.Add(new Paragraph(fontFamily.Name, 
                         new() {Font = fontFamily, FontSize = fontSize})
@@ -190,7 +191,7 @@ namespace GenerateSampleDoc
 
         static void AddCustomList(IDocument doc)
         {
-            var nd = doc.NumberingStyles.AddCustomDefinition("", new FontFamily("Wingdings"));
+            var nd = doc.NumberingStyles.AddCustomDefinition("", new FontValue("Wingdings"));
             nd.Style.Levels.First().Formatting.Color = Color.Green;
 
             doc.Add("Item #1").ListStyle(nd);

@@ -81,7 +81,7 @@ public sealed class NumberingStyleManager : DocXElement, IReadOnlyList<Numbering
     /// <param name="text">Text to use for 1st level of list.</param>
     /// <param name="fontFamily">Font to use for text, defaults to Courier New</param>
     /// <returns></returns>
-    public NumberingDefinition AddCustomDefinition(string text, FontFamily? fontFamily = null)
+    public NumberingDefinition AddCustomDefinition(string text, FontValue? fontFamily = null)
     {
         if (text == null) throw new ArgumentNullException(nameof(text));
         Debug.Assert(numberingDoc != null);

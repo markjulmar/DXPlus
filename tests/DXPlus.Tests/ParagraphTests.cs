@@ -229,7 +229,7 @@ namespace DXPlus.Tests
                 .Newline()
                 .AddText("This is a second line. ")
                 .AddText("It includes some ")
-                .AddText("large", new Formatting {Font = new FontFamily("Times New Roman"), FontSize = 32})
+                .AddText("large", new Formatting {Font = new FontValue("Times New Roman"), FontSize = 32})
                 .AddText(", blue", new Formatting {Color = Color.Blue})
                 .AddText(", bold text.", new Formatting {Bold = true})
                 .Newline()
