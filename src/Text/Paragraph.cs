@@ -258,9 +258,17 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
         get
         {
             if (!InDocument) return null;
+            /*
             var ps = Document.Paragraphs.ToList();
             int pos = ps.IndexOf(this);
             return pos > 0 ? ps[pos - 1] : null;
+            */
+
+            var previous = this.Xml.PreviousSibling(Name.Paragraph);
+            if (previous == null) return null;
+
+            int pos = 0;
+            return DocumentHelpers.WrapParagraphElement(previous, this.Document, this.PackagePart, ref pos);
         }
     }
 
@@ -272,9 +280,18 @@ public sealed class Paragraph : Block, IEquatable<Paragraph>
         get
         {
             if (!InDocument) return null;
+
+            /*
             var ps = Document.Paragraphs.ToList();
             int pos = ps.IndexOf(this);
             return pos >= 0 && pos < ps.Count-1 ? ps[pos+1] : null;
+            */
+
+            var next = this.Xml.NextSibling(Name.Paragraph);
+            if (next == null) return null;
+
+            int pos = 0;
+            return DocumentHelpers.WrapParagraphElement(next, this.Document, this.PackagePart, ref pos);
         }
     }
 
