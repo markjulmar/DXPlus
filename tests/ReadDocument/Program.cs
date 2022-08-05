@@ -27,6 +27,16 @@ namespace ReadDocument
             Console.WriteLine(new string('-',10));
             Console.WriteLine();
 
+            Console.WriteLine("Custom Document Styles: ");
+            foreach (var style in doc.Styles.Where(s => s.IsCustom))
+            {
+                Console.WriteLine(DumpObject(style));
+            }
+
+            Console.WriteLine();
+            Console.WriteLine(new string('-', 10));
+            Console.WriteLine();
+
             foreach (var block in doc.Blocks)
             {
                 DumpBlock(block, 0);
@@ -122,7 +132,13 @@ namespace ReadDocument
                 level++;
             }
 
-            Console.WriteLine($"{prefix}r: {DumpObject(run.Properties)}");
+            string runStyle = "";
+            if (!string.IsNullOrEmpty(run.StyleName))
+            {
+                runStyle = $"StyleName =\"{run.StyleName}\" ";
+            }
+
+            Console.WriteLine($"{prefix}r: {runStyle}{DumpObject(run.Properties)}");
             foreach (var item in run.Elements)
             {
                 DumpRunElement(item, level + 1);
@@ -250,7 +266,7 @@ namespace ReadDocument
             return sb.ToString();
         }
 
-        private static string DumpObject(object obj)
+        private static string DumpObject(object obj, bool addName = true)
         {
             if (obj == null)
                 return "";
@@ -258,15 +274,30 @@ namespace ReadDocument
             var sb = new StringBuilder();
             Type t = obj.GetType();
 
-            sb.Append($"{t.Name}: [");
+            if (addName) sb.Append($"{t.Name}:");
+            sb.Append('[');
             for (var index = 0; index < t.GetProperties().Length; index++)
             {
                 var pi = t.GetProperties()[index];
-                object val = pi.GetValue(obj);
+                object val;
+
+                try
+                {
+                    val = pi.GetValue(obj);
+                }
+                catch
+                {
+                    val = "n/a";
+                }
+
                 if (val != null)
                 {
                     if (index > 0) sb.Append(", ");
-                    sb.Append($"{pi.Name}={val}");
+
+                    if (val.ToString()?.StartsWith("DXPlus") == true)
+                        sb.Append($"{pi.Name}={DumpObject(val)}");
+                    else 
+                        sb.Append($"{pi.Name}={val}");
                 }
             }
 

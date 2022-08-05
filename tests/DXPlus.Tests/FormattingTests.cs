@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
+using System.Xml.Linq;
 using System.Xml.XPath;
 using DXPlus.Internal;
 using Xunit;
@@ -24,6 +25,30 @@ namespace DXPlus.Tests
             rPr.Bold = false;
             Assert.False(rPr.Bold);
             Assert.Empty(rPr.Xml.Elements());
+        }
+
+        [Fact]
+        public void ExplicitVal0OnItalicReturnsFalse()
+        {
+            var rp = "<w:rPr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">\r\n\t\t\t<w:rFonts w:ascii=\"Segoe UI Semibold\" w:hAnsi=\"Segoe UI Semibold\"/>\r\n\t\t\t<w:i w:val=\"0\"/>\r\n\t\t\t<w:iCs/>\r\n\t\t\t<w:sz w:val=\"20\"/>\r\n\t\t</w:rPr>";
+
+            var rPr = new Formatting(XElement.Parse(rp));
+            Assert.False(rPr.Italic);
+
+            rPr.Italic = true;
+            Assert.True(rPr.Italic);
+        }
+
+        [Fact]
+        public void ExplicitVal1OnItalicReturnsFalse()
+        {
+            var rp = "<w:rPr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">\r\n\t\t\t<w:rFonts w:ascii=\"Segoe UI Semibold\" w:hAnsi=\"Segoe UI Semibold\"/>\r\n\t\t\t<w:i w:val=\"1\"/>\r\n\t\t\t<w:iCs/>\r\n\t\t\t<w:sz w:val=\"20\"/>\r\n\t\t</w:rPr>";
+
+            var rPr = new Formatting(XElement.Parse(rp));
+            Assert.True(rPr.Italic);
+
+            rPr.Italic = false;
+            Assert.False(rPr.Italic);
         }
 
         [Fact]

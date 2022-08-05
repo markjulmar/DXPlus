@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Xml.Linq;
 using DXPlus.Internal;
-using Microsoft.VisualBasic.CompilerServices;
 
 namespace DXPlus;
 
@@ -16,14 +15,18 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     private new XElement Xml => base.Xml!;
     private readonly HashSet<string> setProperties = new();
 
+    private bool IsValueOn(XName xn) => Xml.Element(xn) != null
+                                        && Xml.Element(xn)!.BoolAttributeValue(Name.MainVal, true) == true;
+
     /// <summary>
     /// Returns whether this paragraph is marked as BOLD
     /// </summary>
     public bool Bold
     {
-        get => Xml.Element(Name.Bold) != null;
+        get => IsValueOn(Name.Bold);
         set
         {
+            Xml.Element(Name.Bold)?.Remove();
             Xml.SetElementValue(Name.Bold, value ? string.Empty : null);
             Xml.SetElementValue(Name.Bold + "Cs", value ? string.Empty : null);
             setProperties.Add(nameof(Bold));
@@ -35,9 +38,10 @@ public sealed class Formatting : XElementWrapper, IEquatable<Formatting>
     /// </summary>
     public bool Italic
     {
-        get => Xml.Element(Name.Italic) != null;
+        get => IsValueOn(Name.Italic);
         set
         {
+            Xml.Element(Name.Italic)?.Remove();
             Xml.SetElementValue(Name.Italic, value ? string.Empty : null);
             Xml.SetElementValue(Name.Italic + "Cs", value ? string.Empty : null);
             setProperties.Add(nameof(Italic));
