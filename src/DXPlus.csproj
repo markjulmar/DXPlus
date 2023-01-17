@@ -12,7 +12,7 @@
 	<Copyright>(c) 2020-2022 julmar.com</Copyright>
 	<Title>OpenXML DocX Utility Library</Title>
     <Description>.NET Core library to work with .docx format.</Description>
-    <Version>1.3.4-preview</Version>
+    <Version>1.3.5-preview</Version>
 	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageProjectUrl>https://github.com/markjulmar/DXPlus</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

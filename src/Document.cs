@@ -1153,8 +1153,8 @@ public sealed class Document : BlockContainer, IDocument
             throw new ArgumentException($"'{nameof(rid)}' cannot be null or empty.", nameof(rid));
 
         //TODO: find a better way to do this.
-        int cx = 100;
-        int cy = 100;
+        int cx = 300;
+        int cy = 300;
 
         var relationship = PackagePart.GetRelationship(rid);
         using (var partStream = Package.GetPart(relationship.TargetUri).GetStream())
@@ -1178,9 +1178,16 @@ public sealed class Document : BlockContainer, IDocument
             }
             else
             {
-                using var img = System.Drawing.Image.FromStream(partStream);
-                cx = img.Width;
-                cy = img.Height;
+                try
+                {
+                    using var img = System.Drawing.Image.FromStream(partStream);
+                    cx = img.Width;
+                    cy = img.Height;
+                }
+                catch
+                {
+                    cx = cy = 300;
+                }
             }
         }
 
