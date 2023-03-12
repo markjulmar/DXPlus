@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO.Packaging;
 using System.Xml.Linq;
 using DXPlus.Internal;

@@ -42,6 +42,21 @@ namespace GenerateSampleDoc
 
             doc.Save();
             Console.WriteLine("Wrote document");
+
+            ReadDocumentBack(fn);
+        }
+
+        private static void ReadDocumentBack(string fn)
+        {
+            using var doc = Document.Load(fn);
+
+            foreach (var paragraph in doc.Paragraphs)
+            {
+                foreach (var run in paragraph.Runs)
+                {
+                    Console.WriteLine(run.Text);
+                }
+            }
         }
 
         private static void WriteTitle(IDocument doc)

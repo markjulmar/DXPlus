@@ -1118,7 +1118,7 @@ public sealed class Document : BlockContainer, IDocument
         // Load the svg
         var svg = new SKSvg();
         var relationship = PackagePart.GetRelationship(image.Id);
-        SKPicture? pict;
+        SKPicture pict;
 
         using (var svgStream = Package.GetPart(relationship.TargetUri).GetStream())
         {
@@ -1130,10 +1130,11 @@ public sealed class Document : BlockContainer, IDocument
             (int)Math.Ceiling(pict.CullRect.Width),
             (int)Math.Ceiling(pict.CullRect.Height));
         var matrix = SKMatrix.MakeScale(1, 1);
-        var img = SKImage.FromPicture(pict, dimen, matrix);
+        using var img = SKImage.FromPicture(pict, dimen, matrix);
+        pict.Dispose();
 
         // convert to PNG
-        var skdata = img.Encode(SKEncodedImageFormat.Png, quality:100);
+        using var skdata = img.Encode(SKEncodedImageFormat.Png, quality:100);
         using var pngStream = new MemoryStream();
         skdata.SaveTo(pngStream);
 

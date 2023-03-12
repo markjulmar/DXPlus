@@ -49,8 +49,8 @@ namespace DXPlus.Tests
             if (path.Contains('/'))
             {
                 int pos = path.IndexOf('/');
-                string name = path.Substring(0, pos);
-                path = path.Substring(pos + 1);
+                string name = path[..pos];
+                path = path[(pos + 1)..];
 
                 foreach (var item in xml.Descendants().Where(e => e.Name.LocalName == name))
                 {
