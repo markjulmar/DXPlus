@@ -1,4 +1,4 @@
-﻿using System.Drawing;
+﻿using SixLabors.Fonts;
 
 namespace DXPlus;
 
@@ -31,8 +31,15 @@ public sealed class FontValue : IEquatable<FontValue>
     /// <summary>
     /// Returns all the available font families on this computer.
     /// </summary>
-    public static IEnumerable<FontValue> FontFamilies 
-        => FontFamily.Families.Select(item => new FontValue(item.Name));
+    public static IEnumerable<FontValue> FontFamilies
+    {
+        get
+        {
+            var fontCollection = new FontCollection();
+	        fontCollection.AddSystemFonts();
+            return fontCollection.Families.OrderBy(f => f.Name).Select(item => new FontValue(item.Name));
+        }
+    }
 
     /// <summary>Indicates whether the current object is equal to another object of the same type.</summary>
     /// <param name="other">An object to compare with this object.</param>

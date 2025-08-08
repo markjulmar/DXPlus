@@ -287,6 +287,13 @@ public sealed class Run : DocXElement, IEquatable<Run>
     {
         if (xml.Name.LocalName == Name.Hyperlink.LocalName)
             return new Hyperlink(document, packagePart, xml);
+
+        while (xml.Name != Name.Paragraph)
+        {
+            if (xml.Parent == null) return null;
+            xml = xml.Parent;
+        }
+
         Debug.Assert(xml.Name == Name.Paragraph);
         var paragraph = document.Paragraphs.FirstOrDefault(p => p.Xml == xml);
 

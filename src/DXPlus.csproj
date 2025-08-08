@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
 	<ImplicitUsings>enable</ImplicitUsings>
 	<Nullable>enable</Nullable>
 	<RootNamespace>DXPlus</RootNamespace>
@@ -9,16 +9,17 @@
     <Authors>Mark Smith, Cathal Coffey</Authors>
 	<CompanyName>julmar.com</CompanyName>
 	<Owners>julmar.com</Owners>
-	<Copyright>(c) 2020-2022 julmar.com</Copyright>
+	<Copyright>(c) 2020-2024 julmar.com</Copyright>
 	<Title>OpenXML DocX Utility Library</Title>
     <Description>.NET Core library to work with .docx format.</Description>
-    <Version>1.3.5-preview</Version>
+    <Version>1.4.0-preview</Version>
 	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageProjectUrl>https://github.com/markjulmar/DXPlus</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/markjulmar/dxplus</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>docx;openxml;.net;dotnet</PackageTags>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
@@ -65,9 +66,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources\numbering.custom.xml" />
+	<None Include="..\README.md">
+		<Pack>True</Pack>
+		<PackagePath>\</PackagePath>
+	</None>
   </ItemGroup>
+	
   <ItemGroup>
+    <EmbeddedResource Include="Resources\numbering.custom.xml" />
     <EmbeddedResource Include="Resources\barChart.xml" />
     <EmbeddedResource Include="Resources\chart.xml" />
     <EmbeddedResource Include="Resources\chartCategoryAxis.xml" />
@@ -94,9 +100,9 @@
     <EmbeddedResource Include="Resources\settings.xml" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="SixLabors.Fonts" Version="2.0.6" />
+    <PackageReference Include="SkiaSharp" Version="2.88.9" />
     <PackageReference Include="SkiaSharp.Svg" Version="1.60.0" />
-    <PackageReference Include="System.IO.Packaging" Version="6.0.0" />
-    <PackageReference Include="runtime.osx.10.10-x64.CoreCompat.System.Drawing" Version="5.8.64" />
-    <PackageReference Include="System.Drawing.Common" Version="5.0.3" />
+    <PackageReference Include="System.IO.Packaging" Version="8.0.1" />
   </ItemGroup>
 </Project>

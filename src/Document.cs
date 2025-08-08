@@ -1129,7 +1129,7 @@ public sealed class Document : BlockContainer, IDocument
         var dimen = new SKSizeI(
             (int)Math.Ceiling(pict.CullRect.Width),
             (int)Math.Ceiling(pict.CullRect.Height));
-        var matrix = SKMatrix.MakeScale(1, 1);
+        var matrix = SKMatrix.CreateScale(1, 1);
         using var img = SKImage.FromPicture(pict, dimen, matrix);
         pict.Dispose();
 
@@ -1181,9 +1181,7 @@ public sealed class Document : BlockContainer, IDocument
             {
                 try
                 {
-                    using var img = System.Drawing.Image.FromStream(partStream);
-                    cx = img.Width;
-                    cy = img.Height;
+                    (cx,cy) = GetImageDimensions(partStream);
                 }
                 catch
                 {
@@ -1194,6 +1192,23 @@ public sealed class Document : BlockContainer, IDocument
 
         // Return in EMUs.
         return (cx * (int)Uom.EmuConversion, cy * (int)Uom.EmuConversion);
+    }
+
+    /// <summary>
+    /// Retrieve the dimensions of an image from a stream.
+    /// </summary>
+    /// <param name="stream">Stream holding an image</param>
+    /// <returns>Tuple with width/height of image</returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    private (int width, int height) GetImageDimensions(Stream stream)
+    {
+	    // Decode the image from the stream
+	    using var skImage = SKImage.FromEncodedData(stream);
+	    if (skImage == null)
+		    throw new InvalidOperationException("Unable to decode the image.");
+
+	    // Get the width and height
+	    return (skImage.Width, skImage.Height);
     }
 
     /// <summary>

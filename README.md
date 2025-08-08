@@ -7,12 +7,16 @@ This library is a fork of [DocX](http://docx.codeplex.com/) which has been heavi
 The library is available on NuGet:
 
 ```
-Install-Package Julmar.DxPlus -Version 1.2.1
+Install-Package Julmar.DxPlus -Version 1.4.0-preview
 ```
 
 > **Note**:
 >
 > The original DocX code has been purchased by Xceed and is now maintained in [their open source GitHub repo](https://github.com/xceedsoftware/DocX) with options for support.
+
+## Dependencies
+
+This is currently built against .NET 8 and uses SixLabors.Fonts to retrieve the font families, and SkiaSharp to work with images in the documents.
 
 ## Working with documents
 

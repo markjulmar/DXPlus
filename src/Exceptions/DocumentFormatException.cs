@@ -49,11 +49,4 @@ public class DocumentFormatException : Exception
     {
         Element = elementName;
     }
-
-    /// <inheritdoc />
-    protected DocumentFormatException(
-        SerializationInfo info,
-        StreamingContext context) : base(info, context)
-    {
-    }
 }

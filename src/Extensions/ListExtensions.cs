@@ -240,8 +240,9 @@ public static class ListExtensions
         int level = paragraph.GetListLevel() ?? 0;
 
         // Return the specific format for the given level.
-        return definition.Style.Levels
-            .Single(l => l.Level == level)
-            .Format;
+        var foundStyleLevel = definition.Style.Levels
+            .SingleOrDefault(l => l.Level == level) ?? definition.Style.Levels.First();
+        
+        return foundStyleLevel.Format;
     }
 }
